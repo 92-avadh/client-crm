@@ -140,6 +140,20 @@ export const App: React.FC = () => {
           // If backend is unreachable (network error / not running), allow demo login
           const isNetworkError = apiErr.message === 'Failed to fetch' || apiErr.message?.includes('NetworkError') || apiErr.message?.includes('fetch');
           if (isNetworkError) {
+            // Check for custom registered demo user first
+            const customUserRaw = localStorage.getItem('retentio_custom_demo_user');
+            if (customUserRaw) {
+              try {
+                const customUser = JSON.parse(customUserRaw);
+                if (customUser.email === resolvedEmail && (!customUser.password || customUser.password === resolvedPassword)) {
+                  setToken('demo_offline_token');
+                  setLoginUser(customUser);
+                  setIsLoggedIn(true);
+                  return;
+                }
+              } catch (_) {}
+            }
+
             // Fall back to local demo user — find by email in INITIAL_USERS
             const { INITIAL_USERS } = await import('./data/mockData');
             const fallbackUser = INITIAL_USERS.find(u => u.email === resolvedEmail);
