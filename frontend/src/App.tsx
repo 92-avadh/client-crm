@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api, setToken, clearToken } from './services/api';
+import { api, getToken, setToken, clearToken } from './services/api';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
@@ -106,74 +106,38 @@ export const App: React.FC = () => {
   const [loginError, setLoginError] = useState<string>('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const handleLogin = async (userId: string, email?: string, password?: string) => {
+  // Restore authenticated session from token & saved user on mount
+  React.useEffect(() => {
+    const token = getToken();
+    const savedUser = localStorage.getItem('retentio_user');
+    if (token && token !== 'demo_offline_token' && savedUser) {
+      try {
+        setLoginUser(JSON.parse(savedUser));
+        setIsLoggedIn(true);
+      } catch (_) {
+        clearToken();
+        localStorage.removeItem('retentio_user');
+      }
+    }
+  }, []);
+
+  const handleLogin = async (email: string, password: string) => {
+    if (!email || !password) {
+      setLoginError('Email and password are required');
+      return;
+    }
     setLoginError('');
     setLoginLoading(true);
     try {
-      let resolvedEmail = email;
-      let resolvedPassword = password;
-
-      // Quick-login button passes userId without creds — resolve from known list
-      if (!resolvedEmail || !resolvedPassword) {
-        const demoCredentials: Record<string, { email: string; password: string }> = {
-          'user_admin':      { email: 'alex@retentio.co',     password: 'Admin@1234' },
-          'usr_admin':       { email: 'alex@retentio.co',     password: 'Admin@1234' },
-          'user_hr':         { email: 'sarah.j@retentio.co',  password: 'Admin@1234' },
-          'usr_hr':          { email: 'sarah.j@retentio.co',  password: 'Admin@1234' },
-          'user_team1':      { email: 'rahul.v@retentio.co',  password: 'Admin@1234' },
-          'usr_team_rahul':  { email: 'rahul.v@retentio.co',  password: 'Admin@1234' },
-          'user_team2':      { email: 'priya.s@retentio.co',  password: 'Admin@1234' },
-          'usr_team_priya':  { email: 'priya.s@retentio.co',  password: 'Admin@1234' },
-          'user_brand_apex': { email: 'vikram@apexmedia.in',  password: 'Admin@1234' },
-          'usr_brand_vikram':{ email: 'vikram@apexmedia.in',  password: 'Admin@1234' },
-        };
-        const creds = demoCredentials[userId];
-        if (creds) { resolvedEmail = creds.email; resolvedPassword = creds.password; }
-      }
-
-      if (resolvedEmail && resolvedPassword) {
-        try {
-          const res = await api.auth.login(resolvedEmail, resolvedPassword);
-          setToken(res.token);
-          setLoginUser(res.user);
-        } catch (apiErr: any) {
-          // If backend is unreachable (network error / not running), allow demo login
-          const isNetworkError = apiErr.message === 'Failed to fetch' || apiErr.message?.includes('NetworkError') || apiErr.message?.includes('fetch');
-          if (isNetworkError) {
-            // Check for custom registered demo user first
-            const customUserRaw = localStorage.getItem('retentio_custom_demo_user');
-            if (customUserRaw) {
-              try {
-                const customUser = JSON.parse(customUserRaw);
-                if (customUser.email === resolvedEmail && (!customUser.password || customUser.password === resolvedPassword)) {
-                  setToken('demo_offline_token');
-                  setLoginUser(customUser);
-                  setIsLoggedIn(true);
-                  return;
-                }
-              } catch (_) {}
-            }
-
-            // Fall back to local demo user — find by email in INITIAL_USERS
-            const { INITIAL_USERS } = await import('./data/mockData');
-            const fallbackUser = INITIAL_USERS.find(u => u.email === resolvedEmail);
-            if (fallbackUser) {
-              // Store a fake token so context doesn't try to reload
-              setToken('demo_offline_token');
-              setLoginUser(fallbackUser);
-            } else {
-              throw new Error('Backend is not running. Start the server and try again.');
-            }
-          } else {
-            throw apiErr;
-          }
-        }
-      } else {
-        throw new Error('Email and password are required');
+      const res = await api.auth.login(email.trim().toLowerCase(), password);
+      setToken(res.token);
+      if (res.user) {
+        localStorage.setItem('retentio_user', JSON.stringify(res.user));
+        setLoginUser(res.user);
       }
       setIsLoggedIn(true);
     } catch (e: any) {
-      setLoginError(e.message || 'Login failed');
+      setLoginError(e.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoginLoading(false);
     }
@@ -181,6 +145,8 @@ export const App: React.FC = () => {
 
   const handleLogout = () => {
     clearToken();
+    localStorage.removeItem('retentio_user');
+    localStorage.removeItem('retentio_custom_demo_user');
     setLoginUser(null);
     setIsLoggedIn(false);
   };
@@ -190,7 +156,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <AppProvider initialUser={loginUser} initialUserId={loginUser?.id}>
+    <AppProvider initialUser={loginUser} initialUserId={loginUser?.id} onLogout={handleLogout}>
       <MainLayout onLogout={handleLogout} />
     </AppProvider>
   );

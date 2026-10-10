@@ -12,14 +12,14 @@ import {
   FolderKanban,
   UserCheck,
   X,
-  ArrowRight
+  ArrowRight,
+  LogOut
 } from 'lucide-react';
 
 export const Topbar: React.FC = () => {
   const {
     currentUser,
-    switchUser,
-    allUsers,
+    logout,
     notifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
@@ -806,87 +806,36 @@ export const Topbar: React.FC = () => {
                 zIndex: 100,
               }}
             >
-              <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid #f0f0f0' }}>
-                <p
+              {/* User info banner */}
+              <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
                   style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    color: '#888888',
+                    width: 36,
+                    height: 36,
+                    borderRadius: 9,
+                    objectFit: 'cover',
+                    border: '1px solid #e2e2e2',
                   }}
-                >
-                  Switch Persona
-                </p>
+                />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div className="truncate" style={{ fontSize: 13, fontWeight: 750, color: '#0a0a0a' }}>
+                    {currentUser.name}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#888888', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {currentUser.email}
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f0f0f0', padding: '2px 7px', borderRadius: 4, color: '#525252' }}>
+                      {roleLabel[currentUser.role] || currentUser.role}
+                    </span>
+                  </div>
+                </div>
               </div>
 
+              {/* Navigation links */}
               <div style={{ padding: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {allUsers.map(u => {
-                  const isCurrent = u.id === currentUser.id;
-                  return (
-                    <button
-                      key={u.id}
-                      onClick={() => {
-                        switchUser(u.id);
-                        setShowUserMenu(false);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        background: isCurrent ? '#f0f0f0' : 'transparent',
-                        border: isCurrent ? '1px solid #e2e2e2' : '1px solid transparent',
-                        width: '100%',
-                      }}
-                      onMouseEnter={e => {
-                        if (!isCurrent) e.currentTarget.style.background = '#f7f7f7';
-                      }}
-                      onMouseLeave={e => {
-                        if (!isCurrent) e.currentTarget.style.background = 'transparent';
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <img
-                          src={u.avatar}
-                          alt={u.name}
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 7,
-                            objectFit: 'cover',
-                            border: '1px solid #e2e2e2',
-                          }}
-                        />
-                        <div>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#0a0a0a' }}>
-                            {u.name}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 10,
-                              color: '#888888',
-                              textTransform: 'capitalize',
-                            }}
-                          >
-                            {u.role}
-                          </div>
-                        </div>
-                      </div>
-                      {isCurrent && (
-                        <CheckCircle
-                          style={{ width: 14, height: 14, color: '#0a0a0a', flexShrink: 0 }}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div style={{ padding: 6, borderTop: '1px solid #f0f0f0' }}>
                 <button
                   onClick={() => {
                     setActiveTab('settings');
@@ -903,12 +852,43 @@ export const Topbar: React.FC = () => {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    fontFamily: 'var(--font-sans)',
+                    fontFamily: 'inherit',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.background = '#f7f7f7')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 >
                   Settings & Account
+                </button>
+              </div>
+
+              {/* Logout button */}
+              <div style={{ padding: 6, borderTop: '1px solid #f0f0f0' }}>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    logout();
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    textAlign: 'left',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#dc2626',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >
+                  <LogOut style={{ width: 14, height: 14 }} />
+                  Log Out
                 </button>
               </div>
             </div>

@@ -15,11 +15,13 @@ import {
   Settings,
   Users,
   Inbox,
+  LogOut
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const {
     currentUser,
+    logout,
     activeTab,
     setActiveTab,
     retentionAlerts,
@@ -138,7 +140,7 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* Footer */}
-      <div className="p-2.5" style={{ borderTop: '1px solid #D0E0EF' }}>
+      <div className="p-2.5" style={{ borderTop: '1px solid #D0E0EF', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div
           className="px-3 py-2.5 rounded-lg"
           style={{ background: 'linear-gradient(135deg, #F0F5FA 0%, #ECFDF5 100%)', border: '1px solid #D0E0EF' }}
@@ -147,8 +149,33 @@ export const Sidebar: React.FC = () => {
             <span style={{ fontSize: 11, fontWeight: 750, color: '#0A2540' }}>Agency Pro</span>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00D05E' }} />
           </div>
-          <div style={{ fontSize: 10, color: '#50667F', marginTop: 2 }}>Renews Nov 1, 2026</div>
+          <div style={{ fontSize: 10, color: '#50667F', marginTop: 2 }}>{currentUser.email || 'Admin Workspace'}</div>
         </div>
+
+        <button
+          onClick={logout}
+          style={{
+            width: '100%',
+            padding: '7px 10px',
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            color: '#dc2626',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'background 0.15s',
+            fontFamily: 'inherit',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+        >
+          <LogOut style={{ width: 14, height: 14 }} />
+          <span>Log Out</span>
+        </button>
       </div>
     </aside>
   );

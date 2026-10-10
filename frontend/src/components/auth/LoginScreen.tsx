@@ -8,16 +8,10 @@ import {
 import { api, setToken } from '../../services/api';
 
 interface LoginScreenProps {
-  onLogin: (userId: string, email?: string, password?: string) => void;
+  onLogin: (email: string, password: string) => void;
   loginError?: string;
   loginLoading?: boolean;
 }
-
-const demoUsers = [
-  { label: 'Admin',       name: 'Alex Rivera',   userId: 'usr_admin',      role: 'Full access' },
-  { label: 'HR Manager',  name: 'Sarah Jenkins', userId: 'usr_hr',         role: 'Operations' },
-  { label: 'Team Member', name: 'Rahul Verma',    userId: 'usr_team_rahul', role: 'Assigned clients' },
-];
 
 const features = [
   { icon: <TrendingUp size={14} />, text: 'Real-time client retention alerts' },
@@ -47,7 +41,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [otp, setOtp]               = useState(['','','','','','']);
   const otpRefs                     = useRef<(HTMLInputElement|null)[]>([]);
   const [otpTimer, setOtpTimer]     = useState(300);
-  const [isOfflineDemo, setIsOfflineDemo] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend]   = useState(false);
 
@@ -103,17 +96,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       setRegStep('otp');
       setTimeout(() => otpRefs.current[0]?.focus(), 120);
     } catch (err: any) {
-      const msg = err.message || '';
-      if (msg === 'Failed to fetch' || msg.includes('fetch') || msg.includes('NetworkError')) {
-        // Fallback to offline demo mode
-        setIsOfflineDemo(true);
-        setOtp(['1','2','3','4','5','6']);
-        setOtpTimer(300); setResendTimer(60); setCanResend(false);
-        setRegStep('otp');
-        setError('');
-      } else {
-        setError(msg || 'Failed to send verification code.');
-      }
+      setError(err.message || 'Failed to send verification code.');
     }
     finally { setLoading(false); }
   };
@@ -124,42 +107,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     if (otpTimer === 0) { setError('Code has expired. Request a new one.'); return; }
     try {
       setLoading(true);
-      if (isOfflineDemo || otpValue === '123456') {
-        const customUser = {
-          id: 'usr_custom_owner',
-          name: regName,
-          email: regEmail,
-          role: 'owner',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-          designation: 'Agency Owner / Admin',
-          joinedDate: new Date().toISOString().split('T')[0]
-        };
-        localStorage.setItem('retentio_custom_demo_user', JSON.stringify({ ...customUser, password: regPassword, company: regCompany }));
-        setToken('demo_offline_token');
-        setRegStep('success');
-        return;
-      }
       const res = await api.auth.verifyOtp({ name: regName, email: regEmail, password: regPassword, company: regCompany, otp: otpValue });
       setToken(res.token);
+      if (res.user) {
+        localStorage.setItem('retentio_user', JSON.stringify(res.user));
+      }
       setRegStep('success');
     } catch (err: any) {
-      const msg = err.message || '';
-      if (msg === 'Failed to fetch' || msg.includes('fetch') || msg.includes('NetworkError') || otpValue === '123456') {
-        const customUser = {
-          id: 'usr_custom_owner',
-          name: regName,
-          email: regEmail,
-          role: 'owner',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-          designation: 'Agency Owner / Admin',
-          joinedDate: new Date().toISOString().split('T')[0]
-        };
-        localStorage.setItem('retentio_custom_demo_user', JSON.stringify({ ...customUser, password: regPassword, company: regCompany }));
-        setToken('demo_offline_token');
-        setRegStep('success');
-      } else {
-        setError(msg || 'Verification failed. Please try again.');
-      }
+      setError(err.message || 'Verification failed. Please try again.');
     }
     finally { setLoading(false); }
   };
@@ -329,7 +284,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       placeholder="you@agency.com"
                       value={siEmail}
                       onChange={e => setSiEmail(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && onLogin('', siEmail, siPassword)}
+                      onKeyDown={e => e.key === 'Enter' && onLogin(siEmail, siPassword)}
                       onFocus={e => { e.target.style.borderColor = '#0a0a0a'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; }}
                       onBlur={e => { e.target.style.borderColor = '#c8c8c8'; e.target.style.boxShadow = 'none'; }}
                     />
@@ -352,7 +307,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       placeholder="••••••••"
                       value={siPassword}
                       onChange={e => setSiPassword(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && onLogin('', siEmail, siPassword)}
+                      onKeyDown={e => e.key === 'Enter' && onLogin(siEmail, siPassword)}
                       onFocus={e => { e.target.style.borderColor = '#0a0a0a'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; }}
                       onBlur={e => { e.target.style.borderColor = '#c8c8c8'; e.target.style.boxShadow = 'none'; }}
                     />
@@ -364,7 +319,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
                 {/* Sign In button — matches .btn-primary */}
                 <button
-                  onClick={() => onLogin('', siEmail, siPassword)}
+                  onClick={() => onLogin(siEmail, siPassword)}
                   disabled={loginLoading}
                   style={{ width: '100%', padding: '10px', background: '#0a0a0a', color: '#fff', border: '1px solid #0a0a0a', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: loginLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loginLoading ? 0.7 : 1, marginBottom: 18, fontFamily: 'inherit', transition: 'background 0.15s' }}
                   onMouseEnter={e => { if (!loginLoading) (e.currentTarget as HTMLButtonElement).style.background = '#2a2a2a'; }}
@@ -374,40 +329,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   {loginLoading ? 'Signing in…' : 'Sign In'}
                 </button>
 
-                <p style={{ textAlign: 'center', fontSize: 13, color: '#909090', margin: '0 0 22px' }}>
+                <p style={{ textAlign: 'center', fontSize: 13, color: '#909090', margin: '0 0 8px' }}>
                   New agency?{' '}
                   <button onClick={() => { setMode('register'); setError(''); setRegStep('details'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#0a0a0a', textDecoration: 'underline', padding: 0, fontFamily: 'inherit' }}>
                     Create your account
                   </button>
                 </p>
-
-                {/* Divider */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  <div style={{ flex: 1, height: 1, background: '#e2e2e2' }} />
-                  <span style={{ fontSize: 11, color: '#909090', fontWeight: 700, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>QUICK DEMO</span>
-                  <div style={{ flex: 1, height: 1, background: '#e2e2e2' }} />
-                </div>
-
-                {/* Demo cards — matches nav-item style */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  {demoUsers.map(u => (
-                    <button
-                      key={u.userId}
-                      onClick={() => onLogin(u.userId)}
-                      disabled={loginLoading}
-                      style={{ padding: '10px 12px', background: '#f7f7f7', border: '1px solid #e2e2e2', borderRadius: 10, cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 3, transition: 'all 0.15s', fontFamily: 'inherit' }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#0a0a0a'; e.currentTarget.style.background = '#f0f0f0'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e2e2'; e.currentTarget.style.background = '#f7f7f7'; }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 10, fontWeight: 800, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{u.label}</span>
-                        <ChevronRight size={11} style={{ color: '#c8c8c8' }} />
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0a0a0a' }}>{u.name}</span>
-                      <span style={{ fontSize: 11, color: '#909090' }}>{u.role}</span>
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 
@@ -523,12 +450,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
                 <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0a0a0a', margin: '0 0 3px', letterSpacing: '-0.02em' }}>Enter verification code</h2>
                 <p style={{ fontSize: 13, color: '#909090', margin: '0 0 20px' }}>We sent a 6-digit code — check your inbox</p>
-
-                {isOfflineDemo && (
-                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 12px', marginBottom: 18, fontSize: 12, color: '#1e40af', lineHeight: 1.5 }}>
-                    🚀 <strong>Live Demo Mode:</strong> Backend server is offline. We have pre-filled your verification code <strong>123456</strong> so you can complete agency registration!
-                  </div>
-                )}
 
                 <form onSubmit={handleVerifyOtp}>
                   {/* OTP boxes */}

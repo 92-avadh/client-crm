@@ -102,15 +102,32 @@ interface AppContextType {
   addTeamMember: (data: any) => Promise<void>;
   updateTeamMember: (id: string, data: any) => Promise<any>;
   reloadAll: () => Promise<void>;
+  logout: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode; initialUserId?: string; initialUser?: User }> = ({
+export const AppProvider: React.FC<{
+  children: React.ReactNode;
+  initialUserId?: string;
+  initialUser?: User;
+  onLogout?: () => void;
+}> = ({
   children,
   initialUserId,
-  initialUser
+  initialUser,
+  onLogout
 }) => {
+  const logout = useCallback(() => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      localStorage.removeItem('retentio_token');
+      localStorage.removeItem('retentio_user');
+      localStorage.removeItem('retentio_custom_demo_user');
+      window.location.reload();
+    }
+  }, [onLogout]);
   const [currentUser, setCurrentUser] = useState<User>(() => {
     if (initialUser) return initialUser;
     if (initialUserId) {
@@ -155,8 +172,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUserId?: 
 
   const reloadAll = useCallback(async () => {
     if (!getToken()) return;
-    // Skip API calls in offline demo mode
-    if (getToken() === 'demo_offline_token') return;
     try {
       setIsLoading(true);
       setApiError(null);
@@ -250,50 +265,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUserId?: 
       showToast(`Client "${created.name}" onboarded successfully!`, 'success');
       return created;
     } catch (apiErr: any) {
-      console.warn('Backend API create brand failed, falling back to local creation:', apiErr);
-      const fee = Number(brandData.monthlyFee) || 0;
-      const payStatus = brandData.paymentStatus === 'Paid' ? 'Paid' : 'Pending';
-      const localBrand: Brand = {
-        id: 'brand_' + Date.now(),
-        name: brandData.name,
-        ownerName: brandData.ownerName || '',
-        mobile: brandData.mobile || '',
-        email: brandData.email || '',
-        billingAddress: brandData.billingAddress || '',
-        state: brandData.state || 'Maharashtra',
-        pincode: brandData.pincode || '',
-        gstNumber: brandData.gstNumber || '',
-        pan: brandData.pan || '',
-        serviceDetails: brandData.serviceDetails || '',
-        monthlyFee: fee,
-        billingCycleDay: Number(brandData.billingCycleDay) || 1,
-        onboardingDate: new Date().toISOString().split('T')[0],
-        lastActivityDate: new Date().toISOString().split('T')[0],
-        lastPaymentDate: new Date().toISOString().split('T')[0],
-        status: 'Active',
-        paymentStatus: payStatus,
-        assignedMemberIds: [],
-        documents: [],
-        notes: brandData.notes || ''
-      };
-      setBrands(prev => [localBrand, ...prev]);
-
-      if (fee > 0) {
-        const initialPayment: Payment = {
-          id: 'pay_' + Date.now(),
-          brandId: localBrand.id,
-          brandName: localBrand.name,
-          amount: fee,
-          paymentDate: today,
-          mode: 'Bank Transfer',
-          referenceNo: 'RET-' + localBrand.id.replace('brand_', '').toUpperCase(),
-          status: payStatus === 'Paid' ? 'Success' : 'Pending'
-        };
-        setPayments(prev => [initialPayment, ...prev]);
-      }
-
-      showToast(`Client "${localBrand.name}" onboarded successfully!`, 'success');
-      return localBrand;
+      console.error('Backend create brand failed:', apiErr);
+      showToast('Failed to create client in database: ' + apiErr.message, 'error');
+      throw apiErr;
     }
   };
 
@@ -335,8 +309,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUserId?: 
       showToast('Client details and payment status updated successfully', 'success');
     } catch (err: any) {
       console.error('Update brand failed:', err);
-      setBrands(prev => prev.map(b => (b.id === id ? { ...b, ...updates } : b)));
-      showToast('Client updated locally', 'success');
+      showToast('Failed to update client in database: ' + err.message, 'error');
+      throw err;
     }
   };
 
@@ -477,14 +451,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUserId?: 
         : 'Expense updated successfully';
       showToast(toastMsg, 'success');
     } catch (err: any) {
-      // Robust fallback to update local state in offline/demo environment
-      setExpenses(prev => prev.map(e => (e.id === id ? { ...e, ...data } : e)));
-      const toastMsg = data.paymentStatus === 'Paid'
-        ? 'Expense marked as Paid (now updated in Dashboard totals)'
-        : data.paymentStatus === 'Pending'
-        ? 'Expense marked as Pending (excluded from Dashboard totals)'
-        : 'Expense updated successfully';
-      showToast(toastMsg, 'success');
+      console.error('Update expense failed:', err);
+      showToast('Failed to update expense in database: ' + err.message, 'error');
+      throw err;
     }
   };
 
@@ -672,7 +641,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUserId?: 
         apiError,
         addTeamMember,
         updateTeamMember,
-        reloadAll
+        reloadAll,
+        logout
       }}
     >
       {children}
