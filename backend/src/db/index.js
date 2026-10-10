@@ -1,7 +1,15 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isProduction = process.env.NODE_ENV === 'production';
+const hasSslInUrl = process.env.DATABASE_URL && (process.env.DATABASE_URL.includes('sslmode=require') || process.env.DATABASE_URL.includes('render.com') || process.env.DATABASE_URL.includes('neon.tech') || process.env.DATABASE_URL.includes('supabase.co'));
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: (isProduction || hasSslInUrl) && process.env.DATABASE_SSL !== 'false'
+    ? { rejectUnauthorized: false }
+    : false
+});
 
 // Test connection with retry — handles slow DB startup in Docker
 async function connectWithRetry(retries = 10, delay = 3000) {
