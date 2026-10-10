@@ -9,9 +9,11 @@ const { sendOtpEmail } = require('../utils/mailer');
 const genId = () => 'usr_' + crypto.randomBytes(8).toString('hex');
 const genOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
+const JWT_SECRET = process.env.JWT_SECRET || 'retentio_jwt_secret_2026_default_key';
+
 const makeToken = (user) => jwt.sign(
   { id: user.id, name: user.name, email: user.email, role: user.role },
-  process.env.JWT_SECRET,
+  JWT_SECRET,
   { expiresIn: '7d' }
 );
 
