@@ -26,6 +26,15 @@ router.get('/', async (req, res) => {
     let query = 'SELECT * FROM projects WHERE 1=1';
     const params = [];
     let idx = 1;
+
+    if (req.user.role === 'brand') {
+      query += ` AND brand_id = $${idx}`;
+      params.push(req.user.brandId || ''); idx++;
+    } else if (req.user.role === 'admin' && req.user.id !== 'usr_admin') {
+      query += ` AND brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx})`;
+      params.push(req.user.id); idx++;
+    }
+
     if (req.query.brandId) { query += ` AND brand_id=$${idx}`; params.push(req.query.brandId); idx++; }
     const { rows } = await pool.query(query, params);
     const projects = await Promise.all(rows.map(async p => {
@@ -45,10 +54,11 @@ router.post('/', async (req, res) => {
     const { brandId, name, scope, startDate, endDate, status, billingAmount, progress, memberIds } = req.body;
     if (!brandId || !name) return res.status(400).json({ error: 'brandId and name required' });
     const id = genId();
+    const ownerId = req.user.id;
     await pool.query(
-      `INSERT INTO projects (id,brand_id,name,scope,start_date,end_date,status,billing_amount,progress)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [id, brandId, name, scope, startDate||null, endDate||null, status||'Not started', billingAmount||0, progress||0]
+      `INSERT INTO projects (id,brand_id,name,scope,start_date,end_date,status,billing_amount,progress,owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [id, brandId, name, scope, startDate||null, endDate||null, status||'Not started', billingAmount||0, progress||0, ownerId]
     );
     if (memberIds && memberIds.length) {
       for (const mid of memberIds) {

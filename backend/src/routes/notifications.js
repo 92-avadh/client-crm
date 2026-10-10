@@ -16,6 +16,18 @@ router.get('/', async (req, res) => {
   try {
     let query = `SELECT * FROM notifications WHERE ($1 = ANY(recipient_roles) OR recipient_roles IS NULL OR target_user_id = $2)`;
     const params = [req.user.role, req.user.id];
+    let idx = 3;
+
+    if (req.user.role === 'brand') {
+      query += ` AND brand_id = $${idx}`;
+      params.push(req.user.brandId || 'none');
+      idx++;
+    } else if (req.user.id !== 'usr_admin') {
+      query += ` AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}) OR target_user_id = $${idx})`;
+      params.push(req.user.id);
+      idx++;
+    }
+
     if (req.query.unreadOnly === 'true') { query += ` AND is_read = false`; }
     query += ' ORDER BY created_at DESC';
     const { rows } = await pool.query(query, params);

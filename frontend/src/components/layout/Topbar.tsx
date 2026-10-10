@@ -13,7 +13,9 @@ import {
   UserCheck,
   X,
   ArrowRight,
-  LogOut
+  LogOut,
+  PanelLeft,
+  PanelLeftClose
 } from 'lucide-react';
 
 export const Topbar: React.FC = () => {
@@ -32,6 +34,8 @@ export const Topbar: React.FC = () => {
     leads,
     setSelectedBrandId,
     setSelectedInvoiceId,
+    sidebarCollapsed,
+    toggleSidebar,
   } = useApp();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -61,6 +65,10 @@ export const Topbar: React.FC = () => {
         e.preventDefault();
         const input = searchRef.current?.querySelector('input');
         input?.focus();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebar();
       }
     };
 
@@ -152,8 +160,37 @@ export const Topbar: React.FC = () => {
         flexShrink: 0,
       }}
     >
-      {/* ── Left spacer ── */}
-      <div />
+      {/* ── Left: Sidebar Collapse/Expand Toggle ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button
+          onClick={toggleSidebar}
+          title={sidebarCollapsed ? 'Expand sidebar (Ctrl+B)' : 'Collapse sidebar (Ctrl+B)'}
+          style={{
+            background: 'none',
+            border: '1px solid #D0E0EF',
+            borderRadius: 8,
+            cursor: 'pointer',
+            padding: '7px 8px',
+            color: '#50667F',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = '#F0F5FA';
+            e.currentTarget.style.color = '#0A2540';
+            e.currentTarget.style.borderColor = '#B0C8DF';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'none';
+            e.currentTarget.style.color = '#50667F';
+            e.currentTarget.style.borderColor = '#D0E0EF';
+          }}
+        >
+          {sidebarCollapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
+        </button>
+      </div>
 
       {/* ── Centre: Search Bar with Active Results Popover ── */}
       <div ref={searchRef} style={{ position: 'relative', width: 420 }}>

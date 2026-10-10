@@ -45,6 +45,27 @@ connectWithRetry()
       await pool.query(schema);
       console.log('✅ Schema applied');
 
+      // Auto-migrate tables for user/customer isolation
+      await pool.query(`
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE invoices ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE payments ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE expenses ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE meetings ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+        UPDATE brands SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+        UPDATE tasks SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+        UPDATE projects SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+        UPDATE invoices SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+        UPDATE payments SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+        UPDATE expenses SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+        UPDATE meetings SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+        UPDATE leads SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+      `).catch(e => console.warn('Migration warning:', e.message));
+
       // Check if users exist; if not, auto-seed initial demo data
       const userCountRes = await pool.query('SELECT COUNT(*) FROM users');
       if (parseInt(userCountRes.rows[0].count, 10) === 0) {

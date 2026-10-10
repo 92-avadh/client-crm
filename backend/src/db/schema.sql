@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS brands (
   payment_status VARCHAR(20) DEFAULT 'Paid',
   last_activity_date DATE DEFAULT CURRENT_DATE,
   last_payment_date DATE DEFAULT CURRENT_DATE,
+  owner_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 

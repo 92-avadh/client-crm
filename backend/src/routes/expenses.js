@@ -45,6 +45,12 @@ router.get('/', async (req, res) => {
     const params = [];
     let idx = 1;
 
+    if (req.user && req.user.id !== 'usr_admin') {
+      query += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
+      params.push(req.user.id);
+      idx++;
+    }
+
     if (req.query.brandId) {
       if (req.query.brandId === 'other') {
         query += ` AND (brand_id IS NULL OR brand_id = '' OR brand_id = 'other')`;
@@ -128,17 +134,18 @@ router.post('/', async (req, res) => {
     const cleanReceipt = receiptUrl || null;
     const cleanBrandId = (brandId && brandId !== 'other') ? brandId : null;
     const cleanRecurring = Boolean(isRecurring);
+    const ownerId = req.user ? req.user.id : null;
 
     const { rows } = await pool.query(
       `INSERT INTO expenses (
         id, title, description, category, amount, date,
         payment_mode, payment_status, employee_name, employee_id,
-        note, receipt_url, brand_id, is_recurring
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+        note, receipt_url, brand_id, is_recurring, owner_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
       [
         id, cleanTitle, cleanDesc, category, cleanAmount, cleanDate,
         cleanMode, cleanPayStatus, cleanEmpName, cleanEmpId,
-        cleanNote, cleanReceipt, cleanBrandId, cleanRecurring
+        cleanNote, cleanReceipt, cleanBrandId, cleanRecurring, ownerId
       ]
     );
 

@@ -52,7 +52,12 @@ router.get('/', async (req, res) => {
       params.push(req.user.brandId || ''); idx++;
     } else {
       alias = '';
-      query = `SELECT * FROM brands WHERE 1=1`;
+      if (req.user.id === 'usr_admin') {
+        query = `SELECT * FROM brands WHERE (owner_id = 'usr_admin' OR owner_id IS NULL)`;
+      } else {
+        query = `SELECT * FROM brands WHERE owner_id = $${idx}`;
+        params.push(req.user.id); idx++;
+      }
     }
 
     const col = (name) => alias ? `${alias}.${name}` : name;
@@ -100,13 +105,14 @@ router.post('/', async (req, res) => {
     const fee = parseFloat(monthlyFee) || 0;
     const today = onboardingDate || new Date().toISOString().split('T')[0];
     const initialPaymentStatus = paymentStatus === 'Paid' ? 'Paid' : 'Pending';
+    const ownerId = req.user.id;
 
     await pool.query(
       `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,state,pincode,gst_number,pan,
-       service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$18)`,
+       service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date,owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$18,$19)`,
       [id, name, ownerName, mobile, email, billingAddress, state, pincode, gstNumber, pan,
-       serviceDetails, fee, billingCycleDay||1, today, notes, status||'Active', initialPaymentStatus, today]
+       serviceDetails, fee, billingCycleDay||1, today, notes, status||'Active', initialPaymentStatus, today, ownerId]
     );
     if (memberIds && memberIds.length) {
       for (const mid of memberIds) {
@@ -120,9 +126,9 @@ router.post('/', async (req, res) => {
       const refNo = 'RET-' + id.replace('brand_', '').toUpperCase();
       const pStatus = initialPaymentStatus === 'Paid' ? 'Success' : 'Pending';
       await pool.query(
-        `INSERT INTO payments (id, invoice_id, brand_id, brand_name, amount, payment_date, mode, reference_no, status)
-         VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, $7)`,
-        [pid, id, name, fee, today, refNo, pStatus]
+        `INSERT INTO payments (id, invoice_id, brand_id, brand_name, amount, payment_date, mode, reference_no, status, owner_id)
+         VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, $7, $8)`,
+        [pid, id, name, fee, today, refNo, pStatus, ownerId]
       );
     }
 

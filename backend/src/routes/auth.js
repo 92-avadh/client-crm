@@ -12,7 +12,7 @@ const genOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 const JWT_SECRET = process.env.JWT_SECRET || 'retentio_jwt_secret_2026_default_key';
 
 const makeToken = (user) => jwt.sign(
-  { id: user.id, name: user.name, email: user.email, role: user.role },
+  { id: user.id, name: user.name, email: user.email, role: user.role, brandId: user.brand_id },
   JWT_SECRET,
   { expiresIn: '7d' }
 );

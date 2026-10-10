@@ -18,6 +18,18 @@ router.get('/', async (req, res) => {
     let query = 'SELECT * FROM tasks WHERE 1=1';
     const params = [];
     let idx = 1;
+
+    if (req.user.role === 'brand') {
+      query += ` AND brand_id = $${idx}`;
+      params.push(req.user.brandId || ''); idx++;
+    } else if (req.user.role === 'team') {
+      query += ` AND (assignee_id = $${idx} OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx}))`;
+      params.push(req.user.id); idx++;
+    } else if (req.user.role === 'admin' && req.user.id !== 'usr_admin') {
+      query += ` AND brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx})`;
+      params.push(req.user.id); idx++;
+    }
+
     if (req.query.brandId) { query += ` AND brand_id=$${idx}`; params.push(req.query.brandId); idx++; }
     if (req.query.projectId) { query += ` AND project_id=$${idx}`; params.push(req.query.projectId); idx++; }
     if (req.query.assigneeId) { query += ` AND assignee_id=$${idx}`; params.push(req.query.assigneeId); idx++; }
@@ -37,10 +49,11 @@ router.post('/', async (req, res) => {
     const { projectId, brandId, title, description, assigneeId, dueDate, priority, status } = req.body;
     if (!title || !brandId) return res.status(400).json({ error: 'title and brandId required' });
     const id = genId();
+    const ownerId = req.user.id;
     const { rows } = await pool.query(
-      `INSERT INTO tasks (id,project_id,brand_id,title,description,assignee_id,due_date,priority,status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [id, projectId||null, brandId, title, description, assigneeId||null, dueDate||null, priority||'Medium', status||'To Do']
+      `INSERT INTO tasks (id,project_id,brand_id,title,description,assignee_id,due_date,priority,status,owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [id, projectId||null, brandId, title, description, assigneeId||null, dueDate||null, priority||'Medium', status||'To Do', ownerId]
     );
     res.status(201).json(mapTask(rows[0]));
   } catch (err) {

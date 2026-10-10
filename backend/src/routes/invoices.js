@@ -28,6 +28,15 @@ router.get('/', async (req, res) => {
     let query = 'SELECT * FROM invoices WHERE 1=1';
     const params = [];
     let idx = 1;
+
+    if (req.user.role === 'brand') {
+      query += ` AND brand_id = $${idx}`;
+      params.push(req.user.brandId || ''); idx++;
+    } else if (req.user.role === 'admin' && req.user.id !== 'usr_admin') {
+      query += ` AND brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx})`;
+      params.push(req.user.id); idx++;
+    }
+
     if (req.query.brandId) { query += ` AND brand_id=$${idx}`; params.push(req.query.brandId); idx++; }
     if (req.query.status) { query += ` AND status=$${idx}`; params.push(req.query.status); idx++; }
     if (req.query.search) {
@@ -73,13 +82,14 @@ router.post('/', async (req, res) => {
     const nextNum = parseInt(countRes.rows[0].count) + 42;
     const invoiceNumber = prefix + String(nextNum).padStart(4, '0');
     const id = genId();
+    const ownerId = req.user.id;
     await pool.query(
       `INSERT INTO invoices (id,invoice_number,brand_id,brand_name,issue_date,due_date,subtotal,has_gst,gst_type,
-       cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16)`,
+       cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring,owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16,$17)`,
       [id, invoiceNumber, brandId, brandName, issueDate||null, dueDate||null,
        subtotal||0, hasGst||false, gstType||'NONE', cgstAmount||0, sgstAmount||0, igstAmount||0,
-       totalAmount||0, notes, paymentMode||null, isRecurring||false]
+       totalAmount||0, notes, paymentMode||null, isRecurring||false, ownerId]
     );
     if (items && items.length) {
       for (const item of items) {

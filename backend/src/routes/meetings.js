@@ -19,6 +19,21 @@ router.get('/', async (req, res) => {
     let query = 'SELECT * FROM meetings WHERE 1=1';
     const params = [];
     let idx = 1;
+
+    // Scope by role & tenant
+    if (req.user) {
+      if (req.user.role === 'brand') {
+        const bId = req.user.brandId;
+        query += ` AND brand_id = $${idx}`;
+        params.push(bId || 'none');
+        idx++;
+      } else if (req.user.id !== 'usr_admin') {
+        query += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
+        params.push(req.user.id);
+        idx++;
+      }
+    }
+
     if (req.query.brandId) { query += ` AND brand_id=$${idx}`; params.push(req.query.brandId); idx++; }
     if (req.query.leadId) { query += ` AND lead_id=$${idx}`; params.push(req.query.leadId); idx++; }
     query += ' ORDER BY date ASC, time ASC';
@@ -40,10 +55,11 @@ router.post('/', async (req, res) => {
     const { title, brandId, leadId, date, time, durationMinutes, linkOrLocation, notes, attendeeIds } = req.body;
     if (!title) return res.status(400).json({ error: 'title required' });
     const id = genId();
+    const ownerId = req.user ? req.user.id : null;
     await pool.query(
-      `INSERT INTO meetings (id,title,brand_id,lead_id,date,time,duration_minutes,link_or_location,notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [id, title, brandId||null, leadId||null, date||null, time, durationMinutes||60, linkOrLocation, notes]
+      `INSERT INTO meetings (id,title,brand_id,lead_id,date,time,duration_minutes,link_or_location,notes,owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [id, title, brandId||null, leadId||null, date||null, time, durationMinutes||60, linkOrLocation, notes, ownerId]
     );
     if (attendeeIds && attendeeIds.length) {
       for (const uid of attendeeIds) {

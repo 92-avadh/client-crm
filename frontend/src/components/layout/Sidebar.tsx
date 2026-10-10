@@ -15,7 +15,9 @@ import {
   Settings,
   Users,
   Inbox,
-  LogOut
+  LogOut,
+  PanelLeftClose,
+  PanelLeft
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -28,6 +30,8 @@ export const Sidebar: React.FC = () => {
     invoices,
     tasks,
     conversations,
+    sidebarCollapsed,
+    toggleSidebar
   } = useApp();
 
   const role = currentUser.role;
@@ -91,12 +95,42 @@ export const Sidebar: React.FC = () => {
     const Icon = item.icon;
     const isActive = activeTab === item.id;
     return (
-      <button onClick={() => setActiveTab(item.id)} className={`nav-item ${isActive ? 'active' : ''}`}>
-        <span className="flex items-center gap-2.5 min-w-0">
+      <button
+        onClick={() => setActiveTab(item.id)}
+        className={`nav-item ${isActive ? 'active' : ''}`}
+        title={sidebarCollapsed ? item.label : undefined}
+        style={{
+          justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+          padding: sidebarCollapsed ? '9px 0' : '8px 10px',
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        <span
+          className="flex items-center min-w-0"
+          style={{
+            gap: sidebarCollapsed ? 0 : 10,
+            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+            width: sidebarCollapsed ? '100%' : 'auto',
+          }}
+        >
           <Icon className="w-[15px] h-[15px] shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
-          <span className="truncate">{item.label}</span>
+          {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
         </span>
-        <BadgePill item={item} />
+        {!sidebarCollapsed && <BadgePill item={item} />}
+        {sidebarCollapsed && item.badge && (
+          <span
+            style={{
+              position: 'absolute',
+              top: 7,
+              right: 12,
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: item.badgeVariant === 'danger' ? '#d93025' : '#f59e0b',
+            }}
+          />
+        )}
       </button>
     );
   };
@@ -104,29 +138,103 @@ export const Sidebar: React.FC = () => {
   return (
     <aside
       className="shrink-0 flex flex-col h-screen sticky top-0 select-none"
-      style={{ width: 220, background: '#ffffff', borderRight: '1px solid #D0E0EF' }}
+      style={{
+        width: sidebarCollapsed ? 68 : 220,
+        background: '#ffffff',
+        borderRight: '1px solid #D0E0EF',
+        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 40,
+      }}
     >
-      {/* Logo */}
+      {/* Header & Logo with 1-click collapse/expand */}
       <div
-        className="flex items-center px-4"
-        style={{ height: 56, borderBottom: '1px solid #D0E0EF', flexShrink: 0 }}
+        className="flex items-center"
+        style={{
+          height: 56,
+          borderBottom: '1px solid #D0E0EF',
+          flexShrink: 0,
+          padding: sidebarCollapsed ? '0 10px' : '0 12px 0 16px',
+          justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+        }}
       >
-        <img
-          src="/retentio-logo-horizontal.png"
-          alt="Retentio"
-          style={{ height: 26, width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
-        />
+        {sidebarCollapsed ? (
+          <button
+            onClick={toggleSidebar}
+            title="Expand sidebar (Ctrl+B)"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 4,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#F0F5FA')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <img
+              src="/retentio-icon.png"
+              alt="Expand sidebar"
+              style={{ height: 26, width: 26, objectFit: 'contain' }}
+            />
+          </button>
+        ) : (
+          <>
+            <img
+              src="/retentio-logo-horizontal.png"
+              alt="Retentio"
+              style={{ height: 26, width: 'auto', maxWidth: 136, objectFit: 'contain' }}
+            />
+            <button
+              onClick={toggleSidebar}
+              title="Collapse sidebar (Ctrl+B)"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '6px',
+                borderRadius: 6,
+                color: '#50667F',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#F0F5FA';
+                e.currentTarget.style.color = '#0A2540';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'none';
+                e.currentTarget.style.color = '#50667F';
+              }}
+            >
+              <PanelLeftClose size={16} />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto" style={{ padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <div className="section-label" style={{ color: '#50667F' }}>Workspace</div>
+      {/* Navigation list */}
+      <nav
+        className="flex-1 overflow-y-auto"
+        style={{
+          padding: sidebarCollapsed ? '8px 6px' : '8px 8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        {!sidebarCollapsed && <div className="section-label" style={{ color: '#50667F' }}>Workspace</div>}
         {coreItems.map(i => <NavButton key={i.id} item={i} />)}
 
         {commItems.length > 0 && (
           <>
             <div className="divider mx-1 my-1.5" style={{ background: '#D0E0EF' }} />
-            <div className="section-label" style={{ color: '#50667F' }}>Communication</div>
+            {!sidebarCollapsed && <div className="section-label" style={{ color: '#50667F' }}>Communication</div>}
             {commItems.map(i => <NavButton key={i.id} item={i} />)}
           </>
         )}
@@ -139,27 +247,27 @@ export const Sidebar: React.FC = () => {
         )}
       </nav>
 
-      {/* Footer */}
-      <div className="p-2.5" style={{ borderTop: '1px solid #D0E0EF', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div
-          className="px-3 py-2.5 rounded-lg"
-          style={{ background: 'linear-gradient(135deg, #F0F5FA 0%, #ECFDF5 100%)', border: '1px solid #D0E0EF' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, fontWeight: 750, color: '#0A2540' }}>Agency Pro</span>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00D05E' }} />
-          </div>
-          <div style={{ fontSize: 10, color: '#50667F', marginTop: 2 }}>{currentUser.email || 'Admin Workspace'}</div>
-        </div>
-
+      {/* Footer (Agency Pro badge removed as requested) */}
+      <div
+        style={{
+          borderTop: '1px solid #D0E0EF',
+          padding: sidebarCollapsed ? '8px 6px' : '8px 10px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+          flexShrink: 0,
+        }}
+      >
         <button
           onClick={logout}
+          title={sidebarCollapsed ? 'Log Out' : undefined}
           style={{
             width: '100%',
-            padding: '7px 10px',
+            padding: sidebarCollapsed ? '8px 0' : '7px 10px',
             borderRadius: 8,
             display: 'flex',
             alignItems: 'center',
+            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
             gap: 8,
             fontSize: 12,
             fontWeight: 600,
@@ -173,8 +281,8 @@ export const Sidebar: React.FC = () => {
           onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
-          <LogOut style={{ width: 14, height: 14 }} />
-          <span>Log Out</span>
+          <LogOut style={{ width: 14, height: 14, flexShrink: 0 }} />
+          {!sidebarCollapsed && <span>Log Out</span>}
         </button>
       </div>
     </aside>

@@ -103,6 +103,9 @@ interface AppContextType {
   updateTeamMember: (id: string, data: any) => Promise<any>;
   reloadAll: () => Promise<void>;
   logout: () => void;
+  sidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -128,6 +131,25 @@ export const AppProvider: React.FC<{
       window.location.reload();
     }
   }, [onLogout]);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('retentio_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('retentio_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   const [currentUser, setCurrentUser] = useState<User>(() => {
     if (initialUser) return initialUser;
     if (initialUserId) {
@@ -137,7 +159,10 @@ export const AppProvider: React.FC<{
     return INITIAL_USERS[0];
   });
 
-  const [allUsers, setAllUsers] = useState<User[]>(INITIAL_USERS);
+  const [allUsers, setAllUsers] = useState<User[]>(() => {
+    if (initialUser) return [initialUser];
+    return [];
+  });
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -642,7 +667,10 @@ export const AppProvider: React.FC<{
         addTeamMember,
         updateTeamMember,
         reloadAll,
-        logout
+        logout,
+        sidebarCollapsed,
+        toggleSidebar,
+        setSidebarCollapsed
       }}
     >
       {children}

@@ -8,11 +8,23 @@ router.get('/', async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
-    const { rows } = await pool.query(
-      'SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-      [limit, offset]
-    );
-    const total = await pool.query('SELECT COUNT(*) FROM audit_logs');
+    let query = 'SELECT * FROM audit_logs';
+    let countQuery = 'SELECT COUNT(*) FROM audit_logs';
+    const params = [];
+
+    if (req.user.id !== 'usr_admin') {
+      query += ' WHERE actor_name = $1';
+      countQuery += ' WHERE actor_name = $1';
+      params.push(req.user.name);
+    }
+
+    const pIdx = params.length + 1;
+    query += ` ORDER BY created_at DESC LIMIT $${pIdx} OFFSET $${pIdx + 1}`;
+    params.push(limit, offset);
+
+    const { rows } = await pool.query(query, params);
+    const countParams = req.user.id !== 'usr_admin' ? [req.user.name] : [];
+    const total = await pool.query(countQuery, countParams);
     res.json({
       data: rows.map(r => ({
         id: r.id, timestamp: r.timestamp, actorName: r.actor_name, actorRole: r.actor_role,

@@ -24,9 +24,22 @@ router.get('/', async (req, res) => {
   try {
     let query = 'SELECT * FROM users WHERE is_active = true';
     const params = [];
-    if (req.user.role !== 'admin') {
-      query += ' AND role != $1';
+    let idx = 1;
+
+    if (req.user && req.user.id !== 'usr_admin') {
+      if (req.user.role === 'brand') {
+        query += ` AND (id = $${idx} OR brand_id = $${idx + 1})`;
+        params.push(req.user.id, req.user.brandId || 'none');
+        idx += 2;
+      } else {
+        query += ` AND (id = $${idx} OR created_by = $${idx})`;
+        params.push(req.user.id);
+        idx++;
+      }
+    } else if (req.user && req.user.role !== 'admin') {
+      query += ` AND role != $${idx}`;
       params.push('brand');
+      idx++;
     }
     const { rows } = await pool.query(query, params);
     const users = await Promise.all(rows.map(async u => mapUser(u, await getAssignedBrandIds(u.id))));
@@ -58,9 +71,10 @@ router.post('/', async (req, res) => {
     if (!name || !email || !role) return res.status(400).json({ error: 'name, email, role required' });
     const hash = await bcrypt.hash(password || 'Change@1234', 10);
     const id = genId();
+    const createdBy = req.user.id;
     const { rows } = await pool.query(
-      `INSERT INTO users (id,name,email,phone,password_hash,role,designation,avatar,brand_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [id, name, email, phone, hash, role, designation, avatar, brandId]
+      `INSERT INTO users (id,name,email,phone,password_hash,role,designation,avatar,brand_id,created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [id, name, email, phone, hash, role, designation, avatar, brandId, createdBy]
     );
     res.status(201).json(mapUser(rows[0], []));
   } catch (err) {

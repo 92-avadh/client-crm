@@ -74,6 +74,15 @@ router.get('/', async (req, res) => {
     let query = 'SELECT * FROM payments WHERE 1=1';
     const params = [];
     let idx = 1;
+
+    if (req.user.role === 'brand') {
+      query += ` AND brand_id = $${idx}`;
+      params.push(req.user.brandId || ''); idx++;
+    } else if (req.user.role === 'admin' && req.user.id !== 'usr_admin') {
+      query += ` AND brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx})`;
+      params.push(req.user.id); idx++;
+    }
+
     if (req.query.brandId) { query += ` AND brand_id=$${idx}`; params.push(req.query.brandId); idx++; }
     if (req.query.invoiceId) { query += ` AND invoice_id=$${idx}`; params.push(req.query.invoiceId); idx++; }
     query += ' ORDER BY created_at DESC';
