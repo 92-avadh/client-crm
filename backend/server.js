@@ -56,7 +56,27 @@ connectWithRetry()
     } catch (err) {
       console.error('⚠️  Schema / Seed error:', err.message);
     }
-    app.listen(PORT, () => console.log(`🚀 Retentio backend running on port ${PORT}`));
+    app.listen(PORT, () => {
+      console.log(`🚀 Retentio backend running on port ${PORT}`);
+
+      // Keep-alive self-pinger for Render Free Tier (pings every 13 minutes to prevent 15-minute idle sleep)
+      const keepAliveUrl = process.env.RENDER_EXTERNAL_URL || 'https://client-crm-api-g9qz.onrender.com';
+      if (keepAliveUrl && !keepAliveUrl.includes('localhost')) {
+        const pingIntervalMs = 13 * 60 * 1000;
+        setInterval(() => {
+          const healthUrl = `${keepAliveUrl.replace(/\/+$/, '')}/api/health`;
+          const https = require('https');
+          const http = require('http');
+          const client = healthUrl.startsWith('https') ? https : http;
+          client.get(healthUrl, (res) => {
+            console.log(`💓 Keep-alive ping sent to ${healthUrl} (Status: ${res.statusCode})`);
+          }).on('error', (e) => {
+            console.log(`⚠️ Keep-alive ping failed: ${e.message}`);
+          });
+        }, pingIntervalMs);
+        console.log(`⏰ Keep-alive pinger scheduled for ${keepAliveUrl} every 13 minutes`);
+      }
+    });
   })
   .catch(err => {
     console.error('❌ Failed to connect to database:', err.message);

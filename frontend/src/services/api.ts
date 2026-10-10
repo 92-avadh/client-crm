@@ -1,4 +1,14 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://client-crm-api-g9qz.onrender.com/api';
+
+// Automatic wake-up ping for Render free tier & tab keep-alive
+if (typeof window !== 'undefined') {
+  // Wake-up immediately on page load
+  fetch(`${BASE_URL}/health`).catch(() => {});
+  // Ping every 10 minutes while active in browser to keep Render awake
+  setInterval(() => {
+    fetch(`${BASE_URL}/health`).catch(() => {});
+  }, 10 * 60 * 1000);
+}
 
 // Token management
 export const getToken = () => localStorage.getItem('retentio_token');
