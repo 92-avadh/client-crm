@@ -1,0 +1,70 @@
+services:
+
+  # ─── PostgreSQL Database ──────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: retentio-db
+    ports:
+      - "5433:5432"     # 5432 is used by local Postgres, map to 5433 instead
+    environment:
+      POSTGRES_USER: retentio
+      POSTGRES_PASSWORD: retentio123
+      POSTGRES_DB: retentio_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retentio -d retentio_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── Backend (Node.js / Express) ─────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: retentio-backend
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend:/app          # Mount source — nodemon watches for changes
+      - /app/node_modules       # Keep container's node_modules isolated
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://retentio:retentio123@db:5432/retentio_db
+      - JWT_SECRET=retentio_jwt_secret_2026
+      - PORT=4000
+      # ── SMTP settings for OTP emails ──────────────────────────────
+      # Leave blank to use dev-mode (OTP printed to console/logs)
+      # For Gmail: enable 2FA, create an App Password at myaccount.google.com/apppasswords
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Frontend (React + Vite) ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: retentio-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:4000/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:

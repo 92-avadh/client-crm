@@ -1,0 +1,55 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const { connectWithRetry } = require('./src/db');
+const pool = require('./src/db');
+const app = express();
+
+app.use(cors({ origin: '*' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+const auth = require('./src/middleware/auth');
+
+// Public routes
+app.use('/api/auth', require('./src/routes/auth'));
+
+// Protected routes
+app.use('/api/users', auth, require('./src/routes/users'));
+app.use('/api/brands', auth, require('./src/routes/brands'));
+app.use('/api/projects', auth, require('./src/routes/projects'));
+app.use('/api/tasks', auth, require('./src/routes/tasks'));
+app.use('/api/invoices', auth, require('./src/routes/invoices'));
+app.use('/api/payments', auth, require('./src/routes/payments'));
+app.use('/api/expenses', auth, require('./src/routes/expenses'));
+app.use('/api/meetings', auth, require('./src/routes/meetings'));
+app.use('/api/leads', auth, require('./src/routes/leads'));
+app.use('/api/notifications', auth, require('./src/routes/notifications'));
+app.use('/api/chat', auth, require('./src/routes/chat'));
+app.use('/api/settings', auth, require('./src/routes/settings'));
+app.use('/api/holidays', auth, require('./src/routes/holidays'));
+app.use('/api/audit-logs', auth, require('./src/routes/auditLogs'));
+
+app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+const PORT = process.env.PORT || 4000;
+
+// Connect to DB, auto-apply schema, then start server
+connectWithRetry()
+  .then(async () => {
+    // Auto-apply schema on every startup (CREATE TABLE IF NOT EXISTS is safe)
+    try {
+      const schema = fs.readFileSync(path.join(__dirname, 'src/db/schema.sql'), 'utf8');
+      await pool.query(schema);
+      console.log('✅ Schema applied');
+    } catch (err) {
+      console.error('⚠️  Schema apply error:', err.message);
+    }
+    app.listen(PORT, () => console.log(`🚀 Retentio backend running on port ${PORT}`));
+  })
+  .catch(err => {
+    console.error('❌ Failed to connect to database:', err.message);
+    process.exit(1);
+  });
