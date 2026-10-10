@@ -1,0 +1,14 @@
+{
+  "name": "client-crm",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=frontend && node -e \"fs.cpSync('frontend/dist', 'dist', {recursive: true})\"",
+    "dev": "npm run dev --workspace=frontend",
+    "start": "npm start --workspace=backend"
+  }
+}
