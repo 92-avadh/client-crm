@@ -1,17 +1,24 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const isProduction = process.env.NODE_ENV === 'production';
-const hasSslInUrl = process.env.DATABASE_URL && (process.env.DATABASE_URL.includes('sslmode=require') || process.env.DATABASE_URL.includes('render.com') || process.env.DATABASE_URL.includes('neon.tech') || process.env.DATABASE_URL.includes('supabase.co'));
+const dbUrl = process.env.DATABASE_URL || '';
+const isInternalRender = dbUrl.includes('dpg-') && !dbUrl.includes('.render.com');
+const requiresSsl = (dbUrl.includes('sslmode=require') || dbUrl.includes('.render.com') || dbUrl.includes('neon.tech') || dbUrl.includes('supabase.co')) && process.env.DATABASE_SSL !== 'false';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: (isProduction || hasSslInUrl) && process.env.DATABASE_SSL !== 'false'
+// Render internal network (dpg-... without .render.com) does not support SSL.
+// External cloud URLs (.render.com / neon / supabase) require SSL.
+const sslConfig = isInternalRender
+  ? false
+  : (requiresSsl || (process.env.NODE_ENV === 'production' && !isInternalRender && process.env.DATABASE_SSL !== 'false'))
     ? { rejectUnauthorized: false }
-    : false
+    : false;
+
+let pool = new Pool({
+  connectionString: dbUrl,
+  ssl: sslConfig
 });
 
-// Test connection with retry — handles slow DB startup in Docker
+// Test connection with retry — handles slow DB startup in Docker/Render
 async function connectWithRetry(retries = 10, delay = 3000) {
   for (let i = 1; i <= retries; i++) {
     try {
@@ -20,8 +27,21 @@ async function connectWithRetry(retries = 10, delay = 3000) {
       client.release();
       return;
     } catch (err) {
-      console.log(`⏳ DB not ready (attempt ${i}/${retries}), retrying in ${delay/1000}s...`);
-      if (i === retries) throw new Error('Could not connect to PostgreSQL after ' + retries + ' attempts');
+      console.log(`⏳ DB connection attempt ${i}/${retries} failed: ${err.message}`);
+
+      // If SSL caused the error, toggle SSL mode and retry
+      if (i === 1 && err.message && (err.message.includes('SSL') || err.message.includes('encryption'))) {
+        console.log('🔄 Toggling SSL configuration for PostgreSQL...');
+        try {
+          await pool.end().catch(() => {});
+          pool = new Pool({
+            connectionString: dbUrl,
+            ssl: sslConfig ? false : { rejectUnauthorized: false }
+          });
+        } catch (_) {}
+      }
+
+      if (i === retries) throw new Error('Could not connect to PostgreSQL after ' + retries + ' attempts: ' + err.message);
       await new Promise(res => setTimeout(res, delay));
     }
   }
