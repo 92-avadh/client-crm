@@ -44,8 +44,17 @@ connectWithRetry()
       const schema = fs.readFileSync(path.join(__dirname, 'src/db/schema.sql'), 'utf8');
       await pool.query(schema);
       console.log('✅ Schema applied');
+
+      // Check if users exist; if not, auto-seed initial demo data
+      const userCountRes = await pool.query('SELECT COUNT(*) FROM users');
+      if (parseInt(userCountRes.rows[0].count, 10) === 0) {
+        console.log('🌱 Database is empty. Auto-seeding demo data...');
+        const seed = require('./src/db/seed');
+        await seed(false);
+        console.log('✅ Auto-seed completed');
+      }
     } catch (err) {
-      console.error('⚠️  Schema apply error:', err.message);
+      console.error('⚠️  Schema / Seed error:', err.message);
     }
     app.listen(PORT, () => console.log(`🚀 Retentio backend running on port ${PORT}`));
   })

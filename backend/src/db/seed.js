@@ -12,6 +12,7 @@
  * All inserts use ON CONFLICT DO NOTHING, so re-running is safe without truncation.
  */
 
+require('dotenv').config();
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const fs = require('fs');
 const path = require('path');
@@ -24,7 +25,7 @@ async function runSchema() {
   console.log('Schema applied.');
 }
 
-async function seed() {
+async function seed(closePool = false) {
   await runSchema();
 
   const passwordHash = await bcrypt.hash('Admin@1234', 10);
@@ -288,10 +289,16 @@ async function seed() {
   console.log('Audit logs seeded.');
 
   console.log('\nAll seed data inserted successfully!');
-  await pool.end();
+  if (closePool) {
+    await pool.end();
+  }
 }
 
-seed().catch(err => {
-  console.error('Seed error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seed(true).catch(err => {
+    console.error('Seed error:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = seed;
