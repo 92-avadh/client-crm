@@ -9,6 +9,9 @@ const { connectWithRetry } = require('./src/db');
 const pool = require('./src/db');
 const app = express();
 
+// Render runs behind a reverse proxy/load balancer — enable trust proxy for accurate client IPs & rate limiting
+app.set('trust proxy', 1);
+
 /* ------------------------------------------------------------------ */
 /*  Security headers (helmet)                                          */
 /* ------------------------------------------------------------------ */
@@ -77,20 +80,23 @@ const generalLimiter = rateLimit({
   message: { error: 'Too many requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 30,
   message: { error: 'Too many attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 30,
   message: { error: 'Too many OTP requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 app.use('/api/', generalLimiter);
 app.use('/api/auth/login', authLimiter);

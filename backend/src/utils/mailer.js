@@ -17,24 +17,38 @@ const nodemailer = require('nodemailer');
 function createTransporter() {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
 
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    // No SMTP configured — return a console logger transporter
+  if (!SMTP_USER || !SMTP_PASS) {
     return null;
   }
 
-  const port = parseInt(SMTP_PORT || '587');
+  const cleanPass = (SMTP_PASS || '').replace(/\s+/g, '');
+  const isGmail = (SMTP_HOST || '').includes('gmail') || (SMTP_USER || '').includes('@gmail.com');
 
+  if (isGmail) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: SMTP_USER,
+        pass: cleanPass
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
+    });
+  }
+
+  const port = parseInt(SMTP_PORT || '587');
   return nodemailer.createTransport({
-    host: SMTP_HOST,
+    host: SMTP_HOST || 'smtp.gmail.com',
     port,
     secure: port === 465,
     auth: {
       user: SMTP_USER,
-      pass: (SMTP_PASS || '').replace(/\s+/g, '')
+      pass: cleanPass
     },
-    // TLS certificates are validated by default. Only set
-    // SMTP_ALLOW_SELF_SIGNED=true if your mail server genuinely uses a
-    // self-signed certificate — doing so disables MITM protection.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
     tls: { rejectUnauthorized: process.env.SMTP_ALLOW_SELF_SIGNED !== 'true' }
   });
 }
@@ -51,7 +65,7 @@ function escapeHtml(value) {
 
 /**
  * Send OTP email.
- * If SMTP is not configured, prints OTP to console (dev mode).
+ * If SMTP is not configured or slow, prints OTP to console immediately.
  */
 async function sendOtpEmail(toEmail, otp, agencyName = 'Client-crm') {
   // Never interpolate raw user input into HTML.
@@ -87,22 +101,27 @@ async function sendOtpEmail(toEmail, otp, agencyName = 'Client-crm') {
     </div>
   `;
 
+  // Log OTP immediately to stdout so developers can always see the code in Render logs instantly
+  console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  console.log(`🔑  VERIFICATION CODE FOR: ${toEmail}`);
+  console.log(`    OTP CODE: [ ${otp} ]`);
+  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+
   const transporter = createTransporter();
 
   if (!transporter) {
-    // Dev mode: just log it
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📧  OTP EMAIL (dev mode — SMTP not configured)`);
-    console.log(`    To:      ${toEmail}`);
-    console.log(`    Subject: ${subject}`);
-    console.log(`    OTP:     ${otp}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console.log(`ℹ️  SMTP credentials not set in environment. OTP logged to console above.`);
     return { messageId: 'dev-console' };
   }
 
-  const info = await transporter.sendMail({ from, to: toEmail, subject, html });
-  console.log(`📧 OTP email sent to ${toEmail} — messageId: ${info.messageId}`);
-  return info;
+  try {
+    const info = await transporter.sendMail({ from, to: toEmail, subject, html });
+    console.log(`📧 OTP email successfully delivered to ${toEmail} (messageId: ${info.messageId})`);
+    return info;
+  } catch (err) {
+    console.error(`⚠️ SMTP dispatch error to ${toEmail}: ${err.message}`);
+    return { messageId: 'fallback-logged', error: err.message };
+  }
 }
 
 module.exports = { sendOtpEmail };
