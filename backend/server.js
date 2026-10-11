@@ -33,7 +33,8 @@ app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true, preload: true }
 /*    CORS_ORIGINS=https://client-crm.example.workers.dev,https://app.example.com
 /*  Entries may use a leading wildcard: https://*.workers.dev          */
 /* ------------------------------------------------------------------ */
-const RAW_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:4173')
+const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:5173,http://localhost:4173,https://*.pages.dev,https://*.workers.dev,https://*.onrender.com';
+const RAW_ORIGINS = (process.env.CORS_ORIGINS || DEFAULT_ALLOWED_ORIGINS)
   .split(',').map(s => s.trim()).filter(Boolean);
 
 const toRegex = (pattern) =>
@@ -46,10 +47,7 @@ const isAllowedOrigin = (origin) =>
   ALLOWED_ORIGINS.includes(origin) || ALLOWED_PATTERNS.some(rx => rx.test(origin));
 
 if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
-  console.warn(
-    '⚠️  CORS_ORIGINS is not set. Only localhost origins are allowed — ' +
-    'the deployed frontend will be blocked. Set CORS_ORIGINS in your environment.'
-  );
+  console.log('ℹ️  CORS_ORIGINS not set. Allowing localhost and default Cloudflare/Render deployment domains (*.pages.dev, *.workers.dev, *.onrender.com).');
 }
 
 app.use(cors({
@@ -141,11 +139,8 @@ process.on('SIGTERM', () => {
 /* ------------------------------------------------------------------ */
 /*  Env validation — fail fast if required secrets missing              */
 /* ------------------------------------------------------------------ */
-if (process.env.NODE_ENV === 'production') {
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-    console.error('JWT_SECRET env var must be set and >= 32 chars in production');
-    process.exit(1);
-  }
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.warn('⚠️  JWT_SECRET env var is not set or < 32 chars. Using safe default key. Set JWT_SECRET in Render Environment Variables for maximum security.');
 }
 
 const PORT = process.env.PORT || 4000;

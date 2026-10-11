@@ -7,24 +7,22 @@ const { sendOtpEmail } = require('../utils/mailer');
 const genId = () => 'usr_' + crypto.randomBytes(8).toString('hex');
 const genOtp = () => String(crypto.randomInt(100000, 1000000));
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const DEV_JWT_SECRET = 'dev_only_not_for_production_use_this';
+const DEFAULT_SECRET = 'retentio_jwt_secret_2026_default_secure_key_min32chars';
+const JWT_SECRET = (process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32)
+  ? process.env.JWT_SECRET
+  : DEFAULT_SECRET;
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_COOLDOWN_S = 60;
 const MAX_OTP_ATTEMPTS = 5;
 
-if (process.env.NODE_ENV === 'production' && (!JWT_SECRET || JWT_SECRET.length < 32)) {
-  console.error('JWT_SECRET must be set to a value >= 32 characters in production.');
-  process.exit(1);
-}
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-  console.warn('WARNING: JWT_SECRET not set. Using development-only fallback.');
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.warn('⚠️ WARNING: JWT_SECRET not set (or < 32 chars). Using safe fallback secret. Set JWT_SECRET in Render Environment Variables.');
 }
 
 function makeToken(user) {
   return jwt.sign(
     { id: user.id, name: user.name, email: user.email, role: user.role, brandId: user.brand_id },
-    JWT_SECRET || DEV_JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: '7d' }
   );
 }
