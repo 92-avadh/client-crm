@@ -56,7 +56,10 @@ async function issueOtp(email, company) {
     [email.toLowerCase(), otp, expiresAt]
   );
 
-  await sendOtpEmail(email, otp, company || 'Client-crm');
+  // Dispatch email delivery in background so user registration response is instant (~50ms)
+  sendOtpEmail(email, otp, company || 'Client-crm').catch((err) => {
+    console.error(`⚠️ Background email dispatch failure for ${email}: ${err.message}`);
+  });
 }
 
 async function requestRegistrationOtp({ name, email, password, company }) {

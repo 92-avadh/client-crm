@@ -64,8 +64,65 @@ function escapeHtml(value) {
 }
 
 /**
+ * Send email via Resend HTTP API (Port 443 - HTTPS).
+ * Never blocked by cloud providers like Render Free Tier.
+ */
+async function sendViaResend({ toEmail, subject, html, agencyName }) {
+  const from = process.env.RESEND_FROM || process.env.SMTP_FROM || `${agencyName} <onboarding@resend.dev>`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from,
+      to: [toEmail],
+      subject,
+      html
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`Resend API error (${res.status}): ${data.message || JSON.stringify(data)}`);
+  }
+  return { messageId: data.id, provider: 'resend' };
+}
+
+/**
+ * Send email via Brevo HTTP API (Port 443 - HTTPS).
+ */
+async function sendViaBrevo({ toEmail, subject, html, agencyName }) {
+  const senderEmail = process.env.SMTP_USER || process.env.BREVO_FROM || 'noreply@client-crm.com';
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': process.env.BREVO_API_KEY,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { name: agencyName, email: senderEmail },
+      to: [{ email: toEmail }],
+      subject,
+      htmlContent: html
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`Brevo API error (${res.status}): ${data.message || JSON.stringify(data)}`);
+  }
+  return { messageId: data.messageId, provider: 'brevo' };
+}
+
+/**
  * Send OTP email.
- * If SMTP is not configured or slow, prints OTP to console immediately.
+ * 1. Prints OTP to server logs immediately (instant backup for testing).
+ * 2. If RESEND_API_KEY is present, delivers via Resend HTTPS (bypasses Render SMTP block).
+ * 3. If BREVO_API_KEY is present, delivers via Brevo HTTPS.
+ * 4. Otherwise falls back to SMTP (Nodemailer), which works locally or on paid Render tiers.
  */
 async function sendOtpEmail(toEmail, otp, agencyName = 'Client-crm') {
   // Never interpolate raw user input into HTML.
@@ -101,25 +158,53 @@ async function sendOtpEmail(toEmail, otp, agencyName = 'Client-crm') {
     </div>
   `;
 
-  // Log OTP immediately to stdout so developers can always see the code in Render logs instantly
+  // Always log OTP immediately to stdout so developers can always verify in Render logs instantly
   console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`🔑  VERIFICATION CODE FOR: ${toEmail}`);
   console.log(`    OTP CODE: [ ${otp} ]`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
-  const transporter = createTransporter();
+  // Priority 1: Resend HTTP API (HTTPS port 443, never blocked by Render)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const res = await sendViaResend({ toEmail, subject, html, agencyName });
+      console.log(`📧 OTP email delivered via Resend HTTP to ${toEmail} (id: ${res.messageId})`);
+      return res;
+    } catch (err) {
+      console.error(`⚠️ Resend HTTP delivery error: ${err.message}`);
+    }
+  }
 
+  // Priority 2: Brevo HTTP API (HTTPS port 443)
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const res = await sendViaBrevo({ toEmail, subject, html, agencyName });
+      console.log(`📧 OTP email delivered via Brevo HTTP to ${toEmail} (id: ${res.messageId})`);
+      return res;
+    } catch (err) {
+      console.error(`⚠️ Brevo HTTP delivery error: ${err.message}`);
+    }
+  }
+
+  // Priority 3: Nodemailer SMTP
+  const transporter = createTransporter();
   if (!transporter) {
-    console.log(`ℹ️  SMTP credentials not set in environment. OTP logged to console above.`);
+    console.log(`ℹ️  No external email service configured. OTP logged to console above.`);
     return { messageId: 'dev-console' };
   }
 
   try {
     const info = await transporter.sendMail({ from, to: toEmail, subject, html });
-    console.log(`📧 OTP email successfully delivered to ${toEmail} (messageId: ${info.messageId})`);
+    console.log(`📧 OTP email successfully delivered via SMTP to ${toEmail} (messageId: ${info.messageId})`);
     return info;
   } catch (err) {
-    console.error(`⚠️ SMTP dispatch error to ${toEmail}: ${err.message}`);
+    const isTimeout = err.code === 'ETIMEDOUT' || err.message?.includes('timeout');
+    if (isTimeout) {
+      console.error(`⚠️ SMTP dispatch error to ${toEmail}: Connection timeout.`);
+      console.error(`ℹ️ Notice: Render Free Tier blocks outbound SMTP ports 25, 465, & 587. To send emails on Render, add RESEND_API_KEY in Render Environment Variables or use the console OTP printed above.`);
+    } else {
+      console.error(`⚠️ SMTP dispatch error to ${toEmail}: ${err.message}`);
+    }
     return { messageId: 'fallback-logged', error: err.message };
   }
 }
