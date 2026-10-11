@@ -10,30 +10,31 @@ import {
 } from 'lucide-react';
 
 // ─── Retentio Brand Identity Palette (Derived Directly from Official Logo) ───────────
-// Logo wordmark: #0A2540 (Deep Midnight Navy Blue)
-// Logo 'R' ribbon: #034726 -> #059639 -> #00D05E (Vibrant Emerald Gradient)
-// Logo dot on 'i': #00D05E (Electric Emerald Accent)
+// Logo wordmark: var(--text-primary) (Deep Midnight Navy Blue)
+// Logo 'R' ribbon: var(--brand-green-dark) -> var(--brand-green) -> var(--brand-green-bright) (Vibrant Emerald Gradient)
+// Logo dot on 'i': var(--brand-green-bright) (Electric Emerald Accent)
 const BRAND = {
-  navy: '#0A2540',
-  navyHover: '#163C5E',
-  navyLight: '#1E4E7C',
-  navySubtle: '#F0F5FA',
-  navyBorder: '#D0E0EF',
-  navyMuted: '#50667F',
+  navy: 'var(--text-primary, #0A2540)',
+  navyHover: 'var(--brand-navy-hover, #163C5E)',
+  navyLight: 'var(--brand-navy, #1E4E7C)',
+  navySubtle: 'var(--brand-navy-subtle, #F0F5FA)',
+  navyBorder: 'var(--border, #D0E0EF)',
+  navyMuted: 'var(--text-secondary, #50667F)',
 
-  greenDark: '#034726',
-  green: '#059639',
-  greenBright: '#00D05E',
-  greenSubtle: '#ECFDF5',
-  greenBorder: '#86EFAC',
+  greenDark: 'var(--brand-green-dark, #034726)',
+  green: 'var(--brand-green, #059639)',
+  greenBright: 'var(--brand-green-bright, #00D05E)',
+  greenSubtle: 'var(--brand-green-subtle, #ECFDF5)',
+  greenBorder: 'var(--brand-green-border, #86EFAC)',
 
-  amber: '#B45309',
-  amberSubtle: '#FFFBEB',
-  amberBorder: '#FDE68A',
+  amber: 'var(--warn-text)',
+  amberSubtle: 'var(--bg-raised, #FFFBEB)',
+  amberBorder: 'var(--warn-border)',
 
-  border: '#D0E0EF',
-  cardBorder: '#DCE7F2',
-  cardBg: '#FFFFFF',
+  border: 'var(--border, #D0E0EF)',
+  cardBorder: 'var(--border, #DCE7F2)',
+  cardBg: 'var(--bg-card, #FFFFFF)',
+  cardNestedBg: 'var(--bg-raised, #F8FAFC)',
 };
 
 export const Dashboard: React.FC = () => {
@@ -145,7 +146,7 @@ export const Dashboard: React.FC = () => {
     : null;
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 28, background: '#FFFFFF' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 28, background: 'transparent' }}>
 
       {/* ── Page Header ────────────────────────────────────── */}
       <div
@@ -184,46 +185,46 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {(role === 'admin' || role === 'hr') && (
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button
               onClick={() => setActiveTab('clients')}
               style={{
-                padding: '9px 18px',
+                padding: '10px 20px',
                 background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyHover} 100%)`,
-                color: '#FFFFFF',
+                color: 'var(--solid-btn-text)',
                 border: `1px solid ${BRAND.navy}`,
                 borderRadius: 10,
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 700,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
                 boxShadow: '0 3px 12px rgba(10, 37, 64, 0.2)',
                 transition: 'all 0.15s ease',
               }}
             >
-              <Plus className="w-3.5 h-3.5" style={{ color: BRAND.greenBright }} /> Onboard Client
+              <Plus className="w-4 h-4" style={{ color: BRAND.greenBright }} /> Onboard Client
             </button>
             <button
               onClick={() => setActiveTab('invoices')}
               style={{
-                padding: '9px 18px',
-                background: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, #DCFCE7 100%)`,
+                padding: '10px 20px',
+                background: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, var(--grad-green-end) 100%)`,
                 color: BRAND.greenDark,
                 border: `1.5px solid ${BRAND.greenBorder}`,
                 borderRadius: 10,
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 700,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
                 boxShadow: '0 2px 8px rgba(0, 192, 88, 0.12)',
                 transition: 'all 0.15s ease',
               }}
             >
-              <Plus className="w-3.5 h-3.5" style={{ color: BRAND.green }} /> Create Invoice
+              <Plus className="w-4 h-4" style={{ color: BRAND.green }} /> Create Invoice
             </button>
           </div>
         )}
@@ -231,14 +232,14 @@ export const Dashboard: React.FC = () => {
 
       {/* ── Financial KPIs ──────────────────────────────────── */}
       {role === 'admin' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div className="rg-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
           {[
             {
               label: 'Total Collections',
               value: `₹${totalReceived.toLocaleString('en-IN')}`,
               sub: 'All payments received',
               color: BRAND.navy,
-              bg: '#FFFFFF',
+              bg: BRAND.cardBg,
               border: BRAND.greenBorder,
               accentDot: BRAND.greenBright,
               badgeBg: BRAND.greenSubtle,
@@ -251,7 +252,7 @@ export const Dashboard: React.FC = () => {
               value: `₹${totalPending.toLocaleString('en-IN')}`,
               sub: 'Awaiting clearance',
               color: totalPending > 0 ? BRAND.amber : BRAND.navy,
-              bg: totalPending > 0 ? `linear-gradient(135deg, ${BRAND.amberSubtle} 0%, #FFFFFF 100%)` : '#FFFFFF',
+              bg: BRAND.cardBg,
               border: totalPending > 0 ? BRAND.amberBorder : BRAND.cardBorder,
               accentDot: BRAND.amber,
               badgeBg: BRAND.amberSubtle,
@@ -264,7 +265,7 @@ export const Dashboard: React.FC = () => {
               value: `₹${totalExpenses.toLocaleString('en-IN')}`,
               sub: pendingExpensesTotal > 0 ? `₹${pendingExpensesTotal.toLocaleString('en-IN')} pending` : 'Salaries & tools',
               color: BRAND.navy,
-              bg: '#FFFFFF',
+              bg: BRAND.cardBg,
               border: BRAND.navyBorder,
               accentDot: BRAND.navyLight,
               badgeBg: BRAND.navySubtle,
@@ -278,10 +279,10 @@ export const Dashboard: React.FC = () => {
               sub: `${netMargin}% net margin`,
               strong: true,
               color: BRAND.greenDark,
-              bg: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, #FFFFFF 100%)`,
+              bg: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, ${BRAND.cardBg} 100%)`,
               border: BRAND.greenBright,
               accentDot: BRAND.greenBright,
-              badgeBg: '#DCFCE7',
+              badgeBg: BRAND.greenSubtle,
               badgeColor: BRAND.greenDark,
               badgeBorder: BRAND.greenBorder,
               shadow: '0 4px 20px rgba(0, 208, 94, 0.16)',
@@ -320,12 +321,12 @@ export const Dashboard: React.FC = () => {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 4,
-                    padding: '2px 8px',
+                    padding: '3px 9px',
                     borderRadius: 6,
                     background: c.badgeBg,
                     color: c.badgeColor,
                     border: `1px solid ${c.badgeBorder}`,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                   }}
                 >
@@ -338,12 +339,12 @@ export const Dashboard: React.FC = () => {
       )}
 
       {/* ── Operational KPIs ────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      <div className="rg-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {[
-          { label: 'Active Clients',     value: activeBrands.length,  icon: <Building2 className="w-4 h-4" />, color: BRAND.greenDark, bg: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, #DCFCE7 100%)`, border: BRAND.greenBorder },
-          { label: 'Total Tasks',        value: tasks.length,          icon: <CheckSquare className="w-4 h-4" />, color: BRAND.navy,      bg: `linear-gradient(135deg, ${BRAND.navySubtle} 0%, #E2EDF7 100%)`,  border: BRAND.navyBorder },
-          { label: 'Pending Tasks',      value: pendingTasks.length,   icon: <Clock className="w-4 h-4" />, color: BRAND.amber,     bg: `linear-gradient(135deg, ${BRAND.amberSubtle} 0%, #FEF3C7 100%)`, border: BRAND.amberBorder },
-          { label: 'Meetings Scheduled', value: myMeetings.length,     icon: <Calendar className="w-4 h-4" />, color: BRAND.green,     bg: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, #DCFCE7 100%)`, border: BRAND.greenBorder },
+          { label: 'Active Clients',     value: activeBrands.length,  icon: <Building2 className="w-4 h-4" />, color: BRAND.greenDark, bg: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, var(--grad-green-end) 100%)`, border: BRAND.greenBorder },
+          { label: 'Total Tasks',        value: tasks.length,          icon: <CheckSquare className="w-4 h-4" />, color: BRAND.navy,      bg: `linear-gradient(135deg, ${BRAND.navySubtle} 0%, var(--grad-navy-end) 100%)`,  border: BRAND.navyBorder },
+          { label: 'Pending Tasks',      value: pendingTasks.length,   icon: <Clock className="w-4 h-4" />, color: BRAND.amber,     bg: `linear-gradient(135deg, ${BRAND.amberSubtle} 0%, var(--grad-amber-end) 100%)`, border: BRAND.amberBorder },
+          { label: 'Meetings Scheduled', value: myMeetings.length,     icon: <Calendar className="w-4 h-4" />, color: BRAND.green,     bg: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, var(--grad-green-end) 100%)`, border: BRAND.greenBorder },
         ].map((k, i) => (
           <div
             key={i}
@@ -352,7 +353,7 @@ export const Dashboard: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: 16,
-              background: '#FFFFFF',
+              background: BRAND.cardBg,
               border: `1.5px solid ${k.border}`,
               borderRadius: 14,
               boxShadow: '0 2px 10px rgba(10, 37, 64, 0.04)',
@@ -377,10 +378,21 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ── Revenue Chart + Brand Share ─────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
+      <div className="rg-1-auto" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
 
         {/* Revenue bars */}
-        <div style={{ background: '#FFFFFF', border: `1.5px solid ${BRAND.navyBorder}`, borderRadius: 16, padding: '24px 28px', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 18px rgba(10, 37, 64, 0.05)' }}>
+        <div
+          className="card"
+          style={{
+            background: BRAND.cardBg,
+            border: `1.5px solid ${BRAND.navyBorder}`,
+            borderRadius: 16,
+            padding: '24px 28px',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: 'var(--shadow-sm)'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
             <div>
               <h3 style={{ fontSize: 15, fontWeight: 850, color: BRAND.navy, letterSpacing: '-0.01em' }}>Monthly Revenue (FY 2026–27)</h3>
@@ -417,15 +429,16 @@ export const Dashboard: React.FC = () => {
                 <button
                   onClick={() => setActiveTab('invoices')}
                   style={{
-                    padding: '8px 18px',
+                    padding: '10px 22px',
                     background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyHover} 100%)`,
-                    color: '#FFFFFF',
+                    color: 'var(--solid-btn-text)',
                     border: `1px solid ${BRAND.navy}`,
-                    borderRadius: 8,
-                    fontSize: 12,
+                    borderRadius: 9,
+                    fontSize: 13.5,
                     fontWeight: 700,
                     cursor: 'pointer',
                     boxShadow: '0 2px 8px rgba(10, 37, 64, 0.2)',
+                    transition: 'all 0.15s ease',
                   }}
                 >
                   Configure Invoices →
@@ -495,9 +508,9 @@ export const Dashboard: React.FC = () => {
                     fontWeight: 750,
                     padding: '3px 10px',
                     borderRadius: 20,
-                    background: growthRate >= 0 ? BRAND.greenSubtle : '#FEF2F2',
-                    color: growthRate >= 0 ? BRAND.greenDark : '#DC2626',
-                    border: growthRate >= 0 ? `1.5px solid ${BRAND.greenBorder}` : '1.5px solid #FECACA',
+                    background: growthRate >= 0 ? BRAND.greenSubtle : 'var(--danger-bg)',
+                    color: growthRate >= 0 ? BRAND.greenDark : 'var(--danger-text)',
+                    border: growthRate >= 0 ? `1.5px solid ${BRAND.greenBorder}` : '1.5px solid var(--danger-border)',
                     boxShadow: growthRate >= 0 ? '0 1px 4px rgba(0, 208, 94, 0.12)' : 'none',
                   }}
                 >
@@ -513,12 +526,23 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Brand Revenue Share */}
-        <div style={{ background: '#FFFFFF', border: `1.5px solid ${BRAND.navyBorder}`, borderRadius: 16, padding: '24px 24px', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 18px rgba(10, 37, 64, 0.05)' }}>
+        <div
+          className="card"
+          style={{
+            background: BRAND.cardBg,
+            border: `1.5px solid ${BRAND.navyBorder}`,
+            borderRadius: 16,
+            padding: '24px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: 'var(--shadow-sm)'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 850, color: BRAND.navy, letterSpacing: '-0.01em' }}>Revenue Share</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 850, color: BRAND.navy, letterSpacing: '-0.01em' }}>Revenue Share</h3>
             <button
               onClick={() => setActiveTab('clients')}
-              style={{ fontSize: 12, fontWeight: 750, color: BRAND.green, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+              style={{ fontSize: 13.5, fontWeight: 750, color: BRAND.green, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px' }}
             >
               View all →
             </button>
@@ -526,7 +550,7 @@ export const Dashboard: React.FC = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
             {brands.length === 0 ? (
-              <div style={{ padding: '30px 10px', textAlign: 'center', color: BRAND.navyMuted, fontSize: 12 }}>
+              <div style={{ padding: '30px 10px', textAlign: 'center', color: BRAND.navyMuted, fontSize: 13 }}>
                 No clients added yet.
               </div>
             ) : (
@@ -535,11 +559,11 @@ export const Dashboard: React.FC = () => {
                 const pct   = total > 0 ? Math.round(((b.monthlyFee || 0) / total) * 100) : 0;
                 return (
                   <div key={b.id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 12 }}>
-                      <span style={{ fontWeight: 700, color: BRAND.navy, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>{b.name}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 13.5 }}>
+                      <span style={{ fontWeight: 700, color: BRAND.navy, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{b.name}</span>
                       <span className="font-amount" style={{ color: BRAND.greenDark, fontWeight: 800 }}>{pct}%</span>
                     </div>
-                    <div className="progress-track" style={{ background: BRAND.navySubtle, border: `1px solid ${BRAND.navyBorder}`, height: 7 }}>
+                    <div className="progress-track" style={{ background: BRAND.navySubtle, border: `1px solid ${BRAND.navyBorder}`, height: 8 }}>
                       <div
                         className="progress-fill"
                         style={{
@@ -555,7 +579,7 @@ export const Dashboard: React.FC = () => {
             )}
           </div>
 
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${BRAND.navyBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${BRAND.navyBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
             <span style={{ color: BRAND.navyMuted }}>Retention health</span>
             <span
               style={{
@@ -565,7 +589,7 @@ export const Dashboard: React.FC = () => {
                 border: `1.5px solid ${BRAND.greenBorder}`,
                 padding: '3px 10px',
                 borderRadius: 20,
-                fontSize: 11,
+                fontSize: 12,
                 boxShadow: '0 1px 4px rgba(0, 208, 94, 0.1)',
               }}
             >
@@ -576,15 +600,24 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ── Pending Tasks + Meetings ────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, paddingBottom: 24 }}>
+      <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, paddingBottom: 24 }}>
 
         {/* Pending Tasks */}
-        <div style={{ background: '#FFFFFF', border: `1.5px solid ${BRAND.navyBorder}`, borderRadius: 16, padding: '24px 24px', boxShadow: '0 4px 18px rgba(10, 37, 64, 0.05)' }}>
+        <div
+          className="card"
+          style={{
+            background: BRAND.cardBg,
+            border: `1.5px solid ${BRAND.navyBorder}`,
+            borderRadius: 16,
+            padding: '24px 24px',
+            boxShadow: 'var(--shadow-sm)'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 850, color: BRAND.navy, letterSpacing: '-0.01em' }}>Pending Tasks</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 850, color: BRAND.navy, letterSpacing: '-0.01em' }}>Pending Tasks</h3>
             <button
               onClick={() => setActiveTab('tasks')}
-              style={{ fontSize: 12, fontWeight: 750, color: BRAND.green, background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ fontSize: 13.5, fontWeight: 750, color: BRAND.green, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
             >
               Full Board →
             </button>
@@ -597,7 +630,7 @@ export const Dashboard: React.FC = () => {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '12px 15px', borderRadius: 10,
-                  background: '#FFFFFF', border: `1.5px solid ${BRAND.cardBorder}`, gap: 12,
+                  background: BRAND.cardNestedBg, border: `1.5px solid ${BRAND.cardBorder}`, gap: 12,
                   boxShadow: '0 1px 4px rgba(10, 37, 64, 0.03)',
                   transition: 'all 0.15s ease',
                 }}
@@ -605,25 +638,25 @@ export const Dashboard: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minWidth: 0 }}>
                   <div
                     style={{
-                      width: 7, height: 7, borderRadius: 9999, marginTop: 4, flexShrink: 0,
-                      background: t.priority === 'Urgent' ? '#EF4444' : t.priority === 'High' ? '#F59E0B' : BRAND.greenBright,
-                      boxShadow: t.priority === 'Urgent' ? '0 0 6px #EF4444' : t.priority === 'High' ? '0 0 6px #F59E0B' : `0 0 6px ${BRAND.greenBright}`,
+                      width: 8, height: 8, borderRadius: 9999, marginTop: 5, flexShrink: 0,
+                      background: t.priority === 'Urgent' ? 'var(--danger-text)' : t.priority === 'High' ? 'var(--warn-text)' : BRAND.greenBright,
+                      boxShadow: t.priority === 'Urgent' ? '0 0 6px var(--danger-text)' : t.priority === 'High' ? '0 0 6px var(--warn-text)' : `0 0 6px ${BRAND.greenBright}`,
                     }}
                   />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: BRAND.navy, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: BRAND.navy, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.title}
                     </div>
-                    <div style={{ fontSize: 11, color: BRAND.navyMuted, marginTop: 2 }}>Due {t.dueDate} · {t.priority}</div>
+                    <div style={{ fontSize: 12, color: BRAND.navyMuted, marginTop: 2 }}>Due {t.dueDate} · {t.priority}</div>
                   </div>
                 </div>
                 <span
                   style={{
                     flexShrink: 0,
                     display: 'inline-flex',
-                    padding: '3px 10px',
+                    padding: '4px 11px',
                     borderRadius: 20,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 750,
                     background: BRAND.navySubtle,
                     color: BRAND.navy,
@@ -638,12 +671,21 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Upcoming Meetings */}
-        <div style={{ background: '#FFFFFF', border: `1.5px solid ${BRAND.navyBorder}`, borderRadius: 16, padding: '24px 24px', boxShadow: '0 4px 18px rgba(10, 37, 64, 0.05)' }}>
+        <div
+          className="card"
+          style={{
+            background: BRAND.cardBg,
+            border: `1.5px solid ${BRAND.navyBorder}`,
+            borderRadius: 16,
+            padding: '24px 24px',
+            boxShadow: 'var(--shadow-sm)'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 850, color: BRAND.navy, letterSpacing: '-0.01em' }}>Upcoming Meetings</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 850, color: BRAND.navy, letterSpacing: '-0.01em' }}>Upcoming Meetings</h3>
             <button
               onClick={() => setActiveTab('meetings')}
-              style={{ fontSize: 12, fontWeight: 750, color: BRAND.green, background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ fontSize: 13.5, fontWeight: 750, color: BRAND.green, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
             >
               Full Calendar →
             </button>
@@ -656,7 +698,7 @@ export const Dashboard: React.FC = () => {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '12px 15px', borderRadius: 10,
-                  background: '#FFFFFF', border: `1.5px solid ${BRAND.cardBorder}`, gap: 12,
+                  background: BRAND.cardNestedBg, border: `1.5px solid ${BRAND.cardBorder}`, gap: 12,
                   boxShadow: '0 1px 4px rgba(10, 37, 64, 0.03)',
                   transition: 'all 0.15s ease',
                 }}
@@ -664,9 +706,9 @@ export const Dashboard: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                   <div
                     style={{
-                      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                      width: 40, height: 40, borderRadius: 10, flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, #DCFCE7 100%)`,
+                      background: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, var(--grad-green-end) 100%)`,
                       border: `1.5px solid ${BRAND.greenBorder}`,
                       boxShadow: '0 1px 4px rgba(0, 192, 88, 0.1)',
                     }}
@@ -674,10 +716,10 @@ export const Dashboard: React.FC = () => {
                     <Calendar className="w-4 h-4" style={{ color: BRAND.greenDark }} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 750, color: BRAND.navy, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 750, color: BRAND.navy, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {m.title}
                     </div>
-                    <div style={{ fontSize: 11, color: BRAND.navyMuted, marginTop: 2 }}>{m.date} · {m.time}</div>
+                    <div style={{ fontSize: 12, color: BRAND.navyMuted, marginTop: 2 }}>{m.date} · {m.time}</div>
                   </div>
                 </div>
                 <a
@@ -685,8 +727,8 @@ export const Dashboard: React.FC = () => {
                   target="_blank"
                   rel="noreferrer"
                   style={{
-                    padding: '7px 15px', borderRadius: 8, fontSize: 11, fontWeight: 750,
-                    color: '#FFFFFF', textDecoration: 'none', flexShrink: 0,
+                    padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 750,
+                    color: 'var(--solid-btn-text)', textDecoration: 'none', flexShrink: 0,
                     background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyHover} 100%)`,
                     border: `1px solid ${BRAND.navy}`,
                     boxShadow: '0 2px 8px rgba(10, 37, 64, 0.2)',

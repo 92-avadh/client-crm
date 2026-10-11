@@ -34,31 +34,31 @@ function getNotificationIcon(type: AppNotification['type']) {
 
 function getIconBg(type: AppNotification['type']): string {
   switch (type) {
-    case 'payment':      return '#e8f5e9';
-    case 'invoice':      return '#e3f2fd';
-    case 'assignment':   return '#f3e5f5';
-    case 'retention':    return '#fff3e0';
-    case 'task':         return '#e8f5e9';
-    case 'meeting':      return '#e1f5fe';
-    case 'chat':         return '#e8eaf6';
-    case 'lead':         return '#fce4ec';
-    case 'subscription': return '#f9fbe7';
-    default:             return '#f5f5f5';
+    case 'payment':      return 'var(--success-bg)';
+    case 'invoice':      return 'var(--info-bg)';
+    case 'assignment':   return 'var(--accent-bg)';
+    case 'retention':    return 'var(--warn-bg)';
+    case 'task':         return 'var(--success-bg)';
+    case 'meeting':      return 'var(--info-bg)';
+    case 'chat':         return 'var(--accent-bg)';
+    case 'lead':         return 'var(--danger-bg)';
+    case 'subscription': return 'var(--success-bg)';
+    default:             return 'var(--bg-raised)';
   }
 }
 
 function getIconColor(type: AppNotification['type']): string {
   switch (type) {
-    case 'payment':      return '#388e3c';
-    case 'invoice':      return '#1976d2';
-    case 'assignment':   return '#7b1fa2';
-    case 'retention':    return '#e65100';
-    case 'task':         return '#2e7d32';
-    case 'meeting':      return '#0277bd';
-    case 'chat':         return '#3949ab';
-    case 'lead':         return '#c62828';
-    case 'subscription': return '#558b2f';
-    default:             return '#616161';
+    case 'payment':      return 'var(--success-text)';
+    case 'invoice':      return 'var(--info-text)';
+    case 'assignment':   return 'var(--accent-text)';
+    case 'retention':    return 'var(--warn-text)';
+    case 'task':         return 'var(--success-text)';
+    case 'meeting':      return 'var(--info-text)';
+    case 'chat':         return 'var(--text-secondary)';
+    case 'lead':         return 'var(--danger-text)';
+    case 'subscription': return 'var(--success-text)';
+    default:             return 'var(--text-secondary)';
   }
 }
 
@@ -103,23 +103,23 @@ const EmptyState: React.FC<{ tab: FilterTab }> = ({ tab }) => (
         width: 72,
         height: 72,
         borderRadius: '50%',
-        background: '#f5f5f5',
+        background: 'var(--bg-raised)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
       {tab === 'chats' ? (
-        <MessageSquare style={{ width: 32, height: 32, color: '#bdbdbd' }} />
+        <MessageSquare style={{ width: 32, height: 32, color: 'var(--text-muted)' }} />
       ) : (
-        <Bell style={{ width: 32, height: 32, color: '#bdbdbd' }} />
+        <Bell style={{ width: 32, height: 32, color: 'var(--text-muted)' }} />
       )}
     </div>
     <div style={{ textAlign: 'center' }}>
-      <p style={{ fontSize: 16, fontWeight: 700, color: '#0a0a0a', margin: 0 }}>
+      <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
         {tab === 'chats' ? 'No unread chats' : 'All caught up!'}
       </p>
-      <p style={{ fontSize: 13, color: '#909090', marginTop: 6, margin: '6px 0 0' }}>
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6, margin: '6px 0 0' }}>
         {tab === 'chats'
           ? 'No conversations with unread messages right now.'
           : 'You have no notifications in this category.'}
@@ -197,8 +197,8 @@ export const InboxManager: React.FC = () => {
     cursor: 'pointer',
     fontSize: 13,
     fontWeight: activeFilter === tab ? 700 : 500,
-    background: activeFilter === tab ? '#0a0a0a' : 'transparent',
-    color: activeFilter === tab ? '#fff' : '#616161',
+    background: activeFilter === tab ? 'var(--solid-btn-bg)' : 'transparent',
+    color: activeFilter === tab ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
     transition: 'all 0.15s ease',
   });
 
@@ -212,8 +212,8 @@ export const InboxManager: React.FC = () => {
     fontSize: 10,
     fontWeight: 700,
     padding: '0 5px',
-    background: active ? 'rgba(255,255,255,0.25)' : '#0a0a0a',
-    color: active ? '#fff' : '#fff',
+    background: active ? 'rgba(255,255,255,0.25)' : 'var(--solid-btn-bg)',
+    color: active ? 'var(--solid-btn-text)' : 'var(--solid-btn-text)',
   });
 
   const cardStyle = (isRead: boolean, hovered: boolean): React.CSSProperties => ({
@@ -221,8 +221,8 @@ export const InboxManager: React.FC = () => {
     gap: 14,
     padding: '14px 16px',
     borderRadius: 10,
-    background: hovered ? '#fafafa' : isRead ? '#fff' : '#fafbff',
-    border: `1px solid ${hovered ? '#e0e0e0' : isRead ? '#f0f0f0' : '#e8eaf6'}`,
+    background: hovered ? 'var(--bg-subtle)' : isRead ? 'var(--bg-card)' : 'var(--bg-subtle)',
+    border: `1px solid ${hovered ? 'var(--border)' : isRead ? 'var(--border)' : 'var(--accent-bg)'}`,
     cursor: 'pointer',
     transition: 'all 0.15s ease',
     position: 'relative',
@@ -233,8 +233,8 @@ export const InboxManager: React.FC = () => {
     gap: 14,
     padding: '14px 16px',
     borderRadius: 10,
-    background: hovered ? '#fafafa' : '#fff',
-    border: `1px solid ${hovered ? '#e0e0e0' : '#f0f0f0'}`,
+    background: hovered ? 'var(--bg-subtle)' : 'var(--bg-card)',
+    border: `1px solid ${hovered ? 'var(--border)' : 'var(--border)'}`,
     cursor: 'pointer',
     transition: 'all 0.15s ease',
   });
@@ -249,7 +249,7 @@ export const InboxManager: React.FC = () => {
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           paddingBottom: 20,
-          borderBottom: '1px solid #e2e2e2',
+          borderBottom: '1px solid var(--border)',
         }}
       >
         <div>
@@ -257,7 +257,7 @@ export const InboxManager: React.FC = () => {
             style={{
               fontSize: 26,
               fontWeight: 900,
-              color: '#0a0a0a',
+              color: 'var(--text-primary)',
               letterSpacing: '-0.02em',
               lineHeight: 1.2,
               margin: 0,
@@ -265,7 +265,7 @@ export const InboxManager: React.FC = () => {
           >
             Inbox
           </h1>
-          <p style={{ fontSize: 13, color: '#909090', marginTop: 4 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             All your messages and alerts in one place
           </p>
         </div>
@@ -274,9 +274,9 @@ export const InboxManager: React.FC = () => {
           style={{
             padding: '8px 16px',
             borderRadius: 8,
-            border: '1px solid #e0e0e0',
-            background: '#fff',
-            color: '#0a0a0a',
+            border: '1px solid var(--border)',
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)',
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
@@ -286,10 +286,10 @@ export const InboxManager: React.FC = () => {
             transition: 'all 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = '#f5f5f5';
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-raised)';
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = '#fff';
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-card)';
           }}
         >
           <CheckSquare style={{ width: 14, height: 14 }} />
@@ -298,11 +298,11 @@ export const InboxManager: React.FC = () => {
       </div>
 
       {/* ── Stats Bar ────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      <div className="rg-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {[
-          { label: 'Unread Alerts', value: unreadAlerts, icon: <Bell style={{ width: 16, height: 16, color: '#e65100' }} />, accent: '#fff3e0' },
-          { label: 'Unread Chats', value: unreadChats, icon: <MessageSquare style={{ width: 16, height: 16, color: '#3949ab' }} />, accent: '#e8eaf6' },
-          { label: "Today's Notifications", value: totalToday, icon: <Calendar style={{ width: 16, height: 16, color: '#0277bd' }} />, accent: '#e1f5fe' },
+          { label: 'Unread Alerts', value: unreadAlerts, icon: <Bell style={{ width: 16, height: 16, color: 'var(--warn-text)' }} />, accent: 'var(--warn-bg)' },
+          { label: 'Unread Chats', value: unreadChats, icon: <MessageSquare style={{ width: 16, height: 16, color: 'var(--text-secondary)' }} />, accent: 'var(--accent-bg)' },
+          { label: "Today's Notifications", value: totalToday, icon: <Calendar style={{ width: 16, height: 16, color: 'var(--info-text)' }} />, accent: 'var(--info-bg)' },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -320,7 +320,7 @@ export const InboxManager: React.FC = () => {
                 width: 34,
                 height: 34,
                 borderRadius: 8,
-                background: '#fff',
+                background: 'var(--bg-card)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -329,10 +329,10 @@ export const InboxManager: React.FC = () => {
               {stat.icon}
             </div>
             <div>
-              <p style={{ fontSize: 20, fontWeight: 800, color: '#0a0a0a', margin: 0, lineHeight: 1 }}>
+              <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', margin: 0, lineHeight: 1 }}>
                 {stat.value}
               </p>
-              <p style={{ fontSize: 11, color: '#757575', margin: '2px 0 0', fontWeight: 500 }}>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 0', fontWeight: 500 }}>
                 {stat.label}
               </p>
             </div>
@@ -346,7 +346,7 @@ export const InboxManager: React.FC = () => {
           display: 'flex',
           gap: 4,
           padding: '4px',
-          background: '#f5f5f5',
+          background: 'var(--bg-raised)',
           borderRadius: 10,
           width: 'fit-content',
         }}
@@ -387,7 +387,7 @@ export const InboxManager: React.FC = () => {
                   style={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: '#909090',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     margin: '0 0 10px',
@@ -430,7 +430,7 @@ export const InboxManager: React.FC = () => {
                           style={{
                             fontSize: 13,
                             fontWeight: notif.isRead ? 500 : 700,
-                            color: '#0a0a0a',
+                            color: 'var(--text-primary)',
                             margin: 0,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
@@ -445,7 +445,7 @@ export const InboxManager: React.FC = () => {
                               width: 8,
                               height: 8,
                               borderRadius: '50%',
-                              background: '#1976d2',
+                              background: 'var(--info-text)',
                               flexShrink: 0,
                             }}
                           />
@@ -454,7 +454,7 @@ export const InboxManager: React.FC = () => {
                       <p
                         style={{
                           fontSize: 12,
-                          color: '#757575',
+                          color: 'var(--text-muted)',
                           margin: 0,
                           overflow: 'hidden',
                           display: '-webkit-box',
@@ -476,7 +476,7 @@ export const InboxManager: React.FC = () => {
                         flexShrink: 0,
                       }}
                     >
-                      <span style={{ fontSize: 11, color: '#bdbdbd', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {formatTime(notif.timestamp)}
                       </span>
                       {hoveredNotifId === notif.id && !notif.isRead && (
@@ -488,9 +488,9 @@ export const InboxManager: React.FC = () => {
                           style={{
                             padding: '3px 8px',
                             borderRadius: 5,
-                            border: '1px solid #e0e0e0',
-                            background: '#fff',
-                            color: '#616161',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-card)',
+                            color: 'var(--text-secondary)',
                             fontSize: 11,
                             fontWeight: 600,
                             cursor: 'pointer',
@@ -515,7 +515,7 @@ export const InboxManager: React.FC = () => {
                   style={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: '#909090',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     margin: '0 0 10px',
@@ -555,7 +555,7 @@ export const InboxManager: React.FC = () => {
                           style={{
                             fontSize: 13,
                             fontWeight: notif.isRead ? 500 : 700,
-                            color: '#0a0a0a',
+                            color: 'var(--text-primary)',
                             margin: 0,
                           }}
                         >
@@ -567,13 +567,13 @@ export const InboxManager: React.FC = () => {
                               width: 8,
                               height: 8,
                               borderRadius: '50%',
-                              background: '#1976d2',
+                              background: 'var(--info-text)',
                               flexShrink: 0,
                             }}
                           />
                         )}
                       </div>
-                      <p style={{ fontSize: 12, color: '#757575', margin: 0 }}>{notif.message}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>{notif.message}</p>
                     </div>
                     <div
                       style={{
@@ -584,7 +584,7 @@ export const InboxManager: React.FC = () => {
                         flexShrink: 0,
                       }}
                     >
-                      <span style={{ fontSize: 11, color: '#bdbdbd', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {formatTime(notif.timestamp)}
                       </span>
                       {hoveredNotifId === `cn-${notif.id}` && !notif.isRead && (
@@ -596,9 +596,9 @@ export const InboxManager: React.FC = () => {
                           style={{
                             padding: '3px 8px',
                             borderRadius: 5,
-                            border: '1px solid #e0e0e0',
-                            background: '#fff',
-                            color: '#616161',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-card)',
+                            color: 'var(--text-secondary)',
                             fontSize: 11,
                             fontWeight: 600,
                             cursor: 'pointer',
@@ -621,7 +621,7 @@ export const InboxManager: React.FC = () => {
                 style={{
                   fontSize: 12,
                   fontWeight: 700,
-                  color: '#909090',
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                   margin: '0 0 10px',
@@ -644,8 +644,8 @@ export const InboxManager: React.FC = () => {
                         width: 38,
                         height: 38,
                         borderRadius: '50%',
-                        background: '#e8eaf6',
-                        color: '#3949ab',
+                        background: 'var(--accent-bg)',
+                        color: 'var(--text-secondary)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -663,7 +663,7 @@ export const InboxManager: React.FC = () => {
                         style={{
                           fontSize: 13,
                           fontWeight: 700,
-                          color: '#0a0a0a',
+                          color: 'var(--text-primary)',
                           margin: 0,
                           marginBottom: 2,
                           whiteSpace: 'nowrap',
@@ -677,7 +677,7 @@ export const InboxManager: React.FC = () => {
                         <p
                           style={{
                             fontSize: 12,
-                            color: '#757575',
+                            color: 'var(--text-muted)',
                             margin: 0,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
@@ -700,7 +700,7 @@ export const InboxManager: React.FC = () => {
                       }}
                     >
                       {conv.lastMessageTime && (
-                        <span style={{ fontSize: 11, color: '#bdbdbd', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                           {formatTime(conv.lastMessageTime)}
                         </span>
                       )}
@@ -713,8 +713,8 @@ export const InboxManager: React.FC = () => {
                             minWidth: 20,
                             height: 20,
                             borderRadius: 10,
-                            background: '#0a0a0a',
-                            color: '#fff',
+                            background: 'var(--solid-btn-bg)',
+                            color: 'var(--solid-btn-text)',
                             fontSize: 10,
                             fontWeight: 700,
                             padding: '0 5px',

@@ -1,22 +1,112 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
 const { connectWithRetry } = require('./src/db');
 const pool = require('./src/db');
 const app = express();
 
-app.use(cors({ origin: '*' }));
+/* ------------------------------------------------------------------ */
+/*  Security headers (helmet)                                          */
+/* ------------------------------------------------------------------ */
+app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:", "https:"],
+    connectSrc: ["'self'", "https://client-crm-api-g9qz.onrender.com"],
+    fontSrc: ["'self'", "https:"],
+    objectSrc: ["'none'"],
+    frameAncestors: ["'none'"],
+  },
+}));
+app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true, preload: true }));
+
+/* ------------------------------------------------------------------ */
+/*  CORS — restrict to known origins (no wildcard)                     */
+/*  Set CORS_ORIGINS as a comma-separated list, e.g.                   */
+/*    CORS_ORIGINS=https://client-crm.example.workers.dev,https://app.example.com
+/*  Entries may use a leading wildcard: https://*.workers.dev          */
+/* ------------------------------------------------------------------ */
+const RAW_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:4173')
+  .split(',').map(s => s.trim()).filter(Boolean);
+
+const toRegex = (pattern) =>
+  new RegExp('^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+
+const ALLOWED_ORIGINS = RAW_ORIGINS.filter(o => !o.includes('*'));
+const ALLOWED_PATTERNS = RAW_ORIGINS.filter(o => o.includes('*')).map(toRegex);
+
+const isAllowedOrigin = (origin) =>
+  ALLOWED_ORIGINS.includes(origin) || ALLOWED_PATTERNS.some(rx => rx.test(origin));
+
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
+  console.warn(
+    '⚠️  CORS_ORIGINS is not set. Only localhost origins are allowed — ' +
+    'the deployed frontend will be blocked. Set CORS_ORIGINS in your environment.'
+  );
+}
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // Requests with no Origin (server-to-server, curl, health checks) pass through.
+    if (!origin || isAllowedOrigin(origin)) return cb(null, true);
+    console.warn(`CORS blocked request from origin: ${origin}`);
+    return cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+}));
+
+/* ------------------------------------------------------------------ */
+/*  Body parsing                                                       */
+/* ------------------------------------------------------------------ */
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+/* ------------------------------------------------------------------ */
+/*  Rate limiting                                                      */
+/* ------------------------------------------------------------------ */
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  message: { error: 'Too many requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many OTP requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', generalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/send-otp', otpLimiter);
+app.use('/api/auth/resend-otp', otpLimiter);
+app.use('/api/auth/verify-otp', otpLimiter);
+
 const auth = require('./src/middleware/auth');
 
-// Public routes
+/* ------------------------------------------------------------------ */
+/*  Routes                                                             */
+/* ------------------------------------------------------------------ */
 app.use('/api/auth', require('./src/routes/auth'));
 
-// Protected routes
 app.use('/api/users', auth, require('./src/routes/users'));
 app.use('/api/brands', auth, require('./src/routes/brands'));
 app.use('/api/projects', auth, require('./src/routes/projects'));
@@ -34,18 +124,39 @@ app.use('/api/audit-logs', auth, require('./src/routes/auditLogs'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
+/* ------------------------------------------------------------------ */
+/*  Global error handler                                               */
+/*  Controllers throw; this converts the throw into a safe response.   */
+/* ------------------------------------------------------------------ */
+app.use(require('./src/middleware/errorHandler'));
+
+/* ------------------------------------------------------------------ */
+/*  Graceful shutdown                                                  */
+/* ------------------------------------------------------------------ */
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  process.exit(0);
+});
+
+/* ------------------------------------------------------------------ */
+/*  Env validation — fail fast if required secrets missing              */
+/* ------------------------------------------------------------------ */
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    console.error('JWT_SECRET env var must be set and >= 32 chars in production');
+    process.exit(1);
+  }
+}
+
 const PORT = process.env.PORT || 4000;
 
-// Connect to DB, auto-apply schema, then start server
 connectWithRetry()
   .then(async () => {
-    // Auto-apply schema on every startup (CREATE TABLE IF NOT EXISTS is safe)
     try {
       const schema = fs.readFileSync(path.join(__dirname, 'src/db/schema.sql'), 'utf8');
       await pool.query(schema);
       console.log('✅ Schema applied');
 
-      // Auto-migrate tables for user/customer isolation
       await pool.query(`
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
@@ -56,6 +167,7 @@ connectWithRetry()
         ALTER TABLE meetings ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
         ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
         ALTER TABLE users ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+        ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS attempts INTEGER DEFAULT 0;
         UPDATE brands SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE tasks SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE projects SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
@@ -66,7 +178,6 @@ connectWithRetry()
         UPDATE leads SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
       `).catch(e => console.warn('Migration warning:', e.message));
 
-      // Check if users exist; if not, auto-seed initial demo data
       const userCountRes = await pool.query('SELECT COUNT(*) FROM users');
       if (parseInt(userCountRes.rows[0].count, 10) === 0) {
         console.log('🌱 Database is empty. Auto-seeding demo data...');
@@ -80,7 +191,6 @@ connectWithRetry()
     app.listen(PORT, () => {
       console.log(`🚀 Retentio backend running on port ${PORT}`);
 
-      // Keep-alive self-pinger for Render Free Tier (pings every 13 minutes to prevent 15-minute idle sleep)
       const keepAliveUrl = process.env.RENDER_EXTERNAL_URL || 'https://client-crm-api-g9qz.onrender.com';
       if (keepAliveUrl && !keepAliveUrl.includes('localhost')) {
         const pingIntervalMs = 13 * 60 * 1000;

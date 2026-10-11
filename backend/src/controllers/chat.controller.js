@@ -1,0 +1,43 @@
+const asyncHandler = require('../utils/asyncHandler');
+const { makeValidator } = require('../utils/validate');
+const chat = require('../services/chat.service');
+
+const listConversations = asyncHandler(async (req, res) => {
+  res.json(await chat.listConversations(req.user.id));
+});
+
+const listMessages = asyncHandler(async (req, res) => {
+  res.json(await chat.listMessages(req.params.id));
+});
+
+const sendMessage = asyncHandler(async (req, res) => {
+  const body = makeValidator(req.body)
+    .optionalString('text', { max: 10000, label: 'Message' })
+    .array('attachments', { max: 10, label: 'Attachments' })
+    .check(
+      (req.body?.text && String(req.body.text).trim()) ||
+      (Array.isArray(req.body?.attachments) && req.body.attachments.length > 0),
+      'A message needs text or at least one attachment.'
+    )
+    .validate();
+
+  res.status(201).json(
+    await chat.sendMessage(req.params.id, req.user, {
+      text: body.text || '',
+      attachments: body.attachments || [],
+    })
+  );
+});
+
+const createConversation = asyncHandler(async (req, res) => {
+  const body = makeValidator(req.body)
+    .oneOf('type', chat.CONVERSATION_TYPES, { label: 'Conversation type' })
+    .optionalString('title', { max: 200, label: 'Title' })
+    .optionalString('brandId', { max: 80, label: 'Client' })
+    .array('participantIds', { ofStrings: true, max: 100, label: 'Participants' })
+    .validate();
+
+  res.status(201).json(await chat.createConversation(req.user, body));
+});
+
+module.exports = { listConversations, listMessages, sendMessage, createConversation };

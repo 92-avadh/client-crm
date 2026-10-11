@@ -22,29 +22,29 @@ import {
 } from 'lucide-react';
 
 const inputFieldStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 14px', border: '1px solid #e2e2e2',
-  borderRadius: 10, fontSize: 14, color: '#0a0a0a', background: '#fafafa',
+  width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
+  borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', background: 'var(--bg-subtle)',
   outline: 'none', boxSizing: 'border-box',
 };
 const btnPrimary: React.CSSProperties = {
-  padding: '9px 16px', background: '#0a0a0a', color: '#fff', border: 'none',
+  padding: '9px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none',
   borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
   display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 const btnSecondary: React.CSSProperties = {
-  padding: '9px 16px', background: '#f5f5f5', color: '#0a0a0a',
-  border: '1px solid #e2e2e2', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+  padding: '9px 16px', background: 'var(--bg-raised)', color: 'var(--text-primary)',
+  border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
   display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 const modalOverlay: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
+  position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 1000,
   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
 };
-const badgeActive: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#f0fdf4', color: '#15803d' };
-const badgeInfo: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8' };
-const badgeWarning: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fef3c7', color: '#92400e' };
-const badgeDanger: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fef2f2', color: '#dc2626' };
-const badgeNeutral: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#f5f5f5', color: '#525252' };
+const badgeActive: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--success-bg)', color: 'var(--success-text)' };
+const badgeInfo: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--info-bg)', color: 'var(--info-text)' };
+const badgeWarning: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--warn-bg)', color: 'var(--warn-text)' };
+const badgeDanger: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--danger-bg)', color: 'var(--danger-text)' };
+const badgeNeutral: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--bg-raised)', color: 'var(--text-secondary)' };
 
 function getMarginBadgeStyle(margin: number): React.CSSProperties {
   if (margin >= 60) return badgeActive;
@@ -179,13 +179,13 @@ export const FinanceManager: React.FC = () => {
       {/* ── Page Header */}
       <div
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-        style={{ paddingBottom: 24, borderBottom: '1px solid #e2e2e2' }}
+        style={{ paddingBottom: 24, borderBottom: '1px solid var(--border)' }}
       >
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#0a0a0a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             {isAdmin ? 'Financial Hub & Profitability' : 'Client Payments Ledger'}
           </h1>
-          <p style={{ fontSize: 13, color: '#909090', marginTop: 4 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             {isAdmin
               ? 'Complete cashflow control: client collections, agency expenses, and client-level margin analysis.'
               : 'View client payments and Razorpay settlement statuses.'}
@@ -195,14 +195,14 @@ export const FinanceManager: React.FC = () => {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             onClick={exportToCSV}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#ffffff', color: '#0a0a0a', border: '1px solid #d4d4d4' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-strong)' }}
           >
             <Download style={{ width: 13, height: 13 }} />
             <span>Export CSV</span>
           </button>
           <button
             onClick={exportToPDF}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#ffffff', color: '#0a0a0a', border: '1px solid #d4d4d4' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-strong)' }}
           >
             <Download style={{ width: 13, height: 13 }} />
             <span>Export PDF</span>
@@ -218,14 +218,14 @@ export const FinanceManager: React.FC = () => {
 
       {/* KPI Cards — EXACTLY Matching Dashboard Totals */}
       <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: 16 }}>
-        <div className="stat-card" style={{ background: '#ffffff', border: '1px solid #D4E0EB', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
-          <div className="metric-label" style={{ marginBottom: 12, color: '#0F2A42', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#058D32' }} />
+        <div className="stat-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
+          <div className="metric-label" style={{ marginBottom: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success-text)' }} />
             Total Collections Received
           </div>
-          <div className="metric-value" style={{ color: '#0F2A42' }}>₹{totalCollections.toLocaleString('en-IN')}</div>
-          <div style={{ fontSize: 11, color: '#64748B', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <CheckCircle style={{ width: 14, height: 14, color: '#058D32' }} />
+          <div className="metric-value" style={{ color: 'var(--text-primary)' }}>₹{totalCollections.toLocaleString('en-IN')}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <CheckCircle style={{ width: 14, height: 14, color: 'var(--success-text)' }} />
             <span>{receivedPayments.length} verified received payments</span>
           </div>
         </div>
@@ -234,28 +234,28 @@ export const FinanceManager: React.FC = () => {
           <div
             className="stat-card"
             style={{
-              background: totalPending > 0 ? 'linear-gradient(135deg, #FFFBEB 0%, #FFFFFF 100%)' : '#FFFFFF',
-              border: totalPending > 0 ? '1px solid #FDE68A' : '1px solid #E2E8F0',
+              background: totalPending > 0 ? 'linear-gradient(135deg, var(--warn-bg) 0%, var(--grad-amber-end) 100%)' : 'var(--bg-card)',
+              border: totalPending > 0 ? '1px solid var(--warn-border)' : '1px solid var(--border)',
               borderRadius: 14,
               padding: '1.4rem 1.5rem',
             }}
           >
-            <div className="metric-label" style={{ marginBottom: 12, color: totalPending > 0 ? '#B45309' : '#64748B', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Clock style={{ width: 14, height: 14, color: '#B45309' }} />
+            <div className="metric-label" style={{ marginBottom: 12, color: totalPending > 0 ? 'var(--warn-text)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Clock style={{ width: 14, height: 14, color: 'var(--warn-text)' }} />
               Pending Collections
             </div>
-            <div className="metric-value" style={{ color: totalPending > 0 ? '#B45309' : '#0F2A42' }}>₹{totalPending.toLocaleString('en-IN')}</div>
-            <div style={{ fontSize: 11, color: '#B45309', marginTop: 8 }}>
+            <div className="metric-value" style={{ color: totalPending > 0 ? 'var(--warn-text)' : 'var(--text-primary)' }}>₹{totalPending.toLocaleString('en-IN')}</div>
+            <div style={{ fontSize: 11, color: 'var(--warn-text)', marginTop: 8 }}>
               {pendingPaymentsList.length} client payments awaiting clearance
             </div>
           </div>
         )}
 
         {isAdmin && (
-          <div className="stat-card" style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
-            <div className="metric-label" style={{ marginBottom: 12, color: '#64748B' }}>Total Expenses</div>
-            <div className="metric-value font-amount" style={{ color: '#334155' }}>₹{totalExpenses.toLocaleString('en-IN')}</div>
-            <div style={{ fontSize: 11, color: pendingExpensesTotal > 0 ? '#B45309' : '#64748B', marginTop: 8 }}>
+          <div className="stat-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
+            <div className="metric-label" style={{ marginBottom: 12, color: 'var(--text-secondary)' }}>Total Expenses</div>
+            <div className="metric-value font-amount" style={{ color: 'var(--text-primary)' }}>₹{totalExpenses.toLocaleString('en-IN')}</div>
+            <div style={{ fontSize: 11, color: pendingExpensesTotal > 0 ? 'var(--warn-text)' : 'var(--text-secondary)', marginTop: 8 }}>
               {pendingExpensesTotal > 0
                 ? `₹${pendingExpensesTotal.toLocaleString('en-IN')} pending payouts (${pendingExpenses.length})`
                 : 'Salaries, SaaS & operational spend'}
@@ -267,15 +267,15 @@ export const FinanceManager: React.FC = () => {
           <div
             className="stat-card"
             style={{
-              background: totalCollections > 0 ? 'linear-gradient(135deg, #ECFDF5 0%, #FFFFFF 100%)' : '#FFFFFF',
-              border: totalCollections > 0 ? '1.5px solid #058D32' : '1px solid #E2E8F0',
+              background: totalCollections > 0 ? 'linear-gradient(135deg, var(--brand-green-subtle) 0%, var(--grad-green-end) 100%)' : 'var(--bg-card)',
+              border: totalCollections > 0 ? '1.5px solid var(--success-border)' : '1px solid var(--border)',
               borderRadius: 14,
               padding: '1.4rem 1.5rem',
             }}
           >
-            <div className="metric-label" style={{ marginBottom: 12, color: totalCollections > 0 ? '#04592B' : '#64748B' }}>Net Agency Profit</div>
-            <div className="metric-value" style={{ color: netAgencyProfit >= 0 ? '#04592B' : '#DC2626' }}>₹{netAgencyProfit.toLocaleString('en-IN')}</div>
-            <div style={{ fontSize: 11, color: totalCollections > 0 ? '#04592B' : '#64748B', fontWeight: 600, marginTop: 8 }}>
+            <div className="metric-label" style={{ marginBottom: 12, color: totalCollections > 0 ? 'var(--success-text)' : 'var(--text-secondary)' }}>Net Agency Profit</div>
+            <div className="metric-value" style={{ color: netAgencyProfit >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>₹{netAgencyProfit.toLocaleString('en-IN')}</div>
+            <div style={{ fontSize: 11, color: totalCollections > 0 ? 'var(--success-text)' : 'var(--text-secondary)', fontWeight: 600, marginTop: 8 }}>
               {netMargin}% Agency Margin
             </div>
           </div>
@@ -283,10 +283,10 @@ export const FinanceManager: React.FC = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div style={{ display: 'flex', gap: 4, background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 12, padding: '4px 12px' }}>
+      <div style={{ display: 'flex', gap: 4, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '4px 12px' }}>
         <button
           onClick={() => setActiveTab('payments')}
-          style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'payments' ? '#0a0a0a' : 'transparent', color: activeTab === 'payments' ? '#ffffff' : '#666666' }}
+          style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'payments' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'payments' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
         >
           Client Payments Ledger ({payments.length})
         </button>
@@ -295,13 +295,13 @@ export const FinanceManager: React.FC = () => {
           <>
             <button
               onClick={() => setActiveTab('expenses')}
-              style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'expenses' ? '#0a0a0a' : 'transparent', color: activeTab === 'expenses' ? '#ffffff' : '#666666' }}
+              style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'expenses' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'expenses' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
             >
               Agency Expenses ({expenses.length})
             </button>
             <button
               onClick={() => setActiveTab('profitability')}
-              style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'profitability' ? '#0a0a0a' : 'transparent', color: activeTab === 'profitability' ? '#ffffff' : '#666666' }}
+              style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'profitability' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'profitability' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
             >
               Client-Wise Profitability Matrix
             </button>
@@ -320,8 +320,8 @@ export const FinanceManager: React.FC = () => {
               justifyContent: 'space-between',
               gap: 12,
               flexWrap: 'wrap',
-              background: '#ffffff',
-              border: '1px solid #e2e2e2',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: 12,
               padding: '10px 16px',
             }}
@@ -336,8 +336,8 @@ export const FinanceManager: React.FC = () => {
                   fontWeight: 700,
                   cursor: 'pointer',
                   border: 'none',
-                  background: paymentFilterStatus === 'all' ? '#0a0a0a' : '#f5f5f5',
-                  color: paymentFilterStatus === 'all' ? '#ffffff' : '#525252',
+                  background: paymentFilterStatus === 'all' ? 'var(--solid-btn-bg)' : 'var(--bg-raised)',
+                  color: paymentFilterStatus === 'all' ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
                 }}
               >
                 All Payments ({payments.length})
@@ -350,9 +350,9 @@ export const FinanceManager: React.FC = () => {
                   fontSize: 12,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  border: '1px solid #bbf7d0',
-                  background: paymentFilterStatus === 'Success' ? '#15803d' : '#f0fdf4',
-                  color: paymentFilterStatus === 'Success' ? '#ffffff' : '#15803d',
+                  border: '1px solid var(--success-border)',
+                  background: paymentFilterStatus === 'Success' ? 'var(--success-text)' : 'var(--success-bg)',
+                  color: paymentFilterStatus === 'Success' ? 'var(--solid-btn-text)' : 'var(--success-text)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 5,
@@ -369,9 +369,9 @@ export const FinanceManager: React.FC = () => {
                   fontSize: 12,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  border: '1px solid #fde68a',
-                  background: paymentFilterStatus === 'Pending' ? '#b45309' : '#fffbeb',
-                  color: paymentFilterStatus === 'Pending' ? '#ffffff' : '#b45309',
+                  border: '1px solid var(--warn-border)',
+                  background: paymentFilterStatus === 'Pending' ? 'var(--warn-text)' : 'var(--warn-bg)',
+                  color: paymentFilterStatus === 'Pending' ? 'var(--solid-btn-text)' : 'var(--warn-text)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 5,
@@ -383,7 +383,7 @@ export const FinanceManager: React.FC = () => {
             </div>
 
             <div style={{ position: 'relative', width: 240, maxWidth: '100%' }}>
-              <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 13, height: 13, color: '#888' }} />
+              <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 13, height: 13, color: 'var(--text-muted)' }} />
               <input
                 type="text"
                 placeholder="Search client or reference..."
@@ -393,17 +393,17 @@ export const FinanceManager: React.FC = () => {
                   width: '100%',
                   padding: '7px 10px 7px 30px',
                   borderRadius: 8,
-                  border: '1px solid #e2e2e2',
+                  border: '1px solid var(--border)',
                   fontSize: 12,
                   outline: 'none',
-                  background: '#fafafa',
+                  background: 'var(--bg-subtle)',
                   boxSizing: 'border-box',
                 }}
               />
             </div>
           </div>
 
-          <div style={{ background: '#fff', border: '1px solid #e2e2e2', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -419,7 +419,7 @@ export const FinanceManager: React.FC = () => {
               <tbody>
                 {filteredPayments.length === 0 ? (
                   <tr>
-                    <td colSpan={isAdmin ? 7 : 6} style={{ textAlign: 'center', padding: '36px 16px', color: '#909090' }}>
+                    <td colSpan={isAdmin ? 7 : 6} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
                       No payments found matching the selected filter.
                     </td>
                   </tr>
@@ -430,19 +430,19 @@ export const FinanceManager: React.FC = () => {
 
                     return (
                       <tr key={p.id}>
-                        <td style={{ color: '#525252', fontSize: 12 }}>{p.paymentDate}</td>
+                        <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{p.paymentDate}</td>
                         <td>
-                          <div style={{ fontWeight: 700, color: '#0a0a0a', fontSize: 12 }}>{p.brandName}</div>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12 }}>{p.brandName}</div>
                         </td>
                         <td>
-                          <div className="font-amount" style={{ fontWeight: 800, color: isSuccess ? '#058D32' : '#B45309', fontSize: 13 }}>
+                          <div className="font-amount" style={{ fontWeight: 800, color: isSuccess ? 'var(--success-text)' : 'var(--warn-text)', fontSize: 13 }}>
                             ₹{p.amount.toLocaleString('en-IN')}
                           </div>
                         </td>
                         <td>
                           <span style={{ ...badgeInfo, fontFamily: 'monospace', fontSize: 11 }}>{p.mode}</span>
                         </td>
-                        <td style={{ fontFamily: 'monospace', color: '#525252', fontSize: 12 }}>{p.referenceNo}</td>
+                        <td style={{ fontFamily: 'monospace', color: 'var(--text-secondary)', fontSize: 12 }}>{p.referenceNo}</td>
                         <td>
                           {isSuccess ? (
                             <span style={{ ...badgeActive, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
@@ -462,8 +462,8 @@ export const FinanceManager: React.FC = () => {
                                 style={{
                                   padding: '5px 12px',
                                   borderRadius: 8,
-                                  background: '#04592B',
-                                  color: '#ffffff',
+                                  background: 'var(--success-text)',
+                                  color: 'var(--solid-btn-text)',
                                   border: 'none',
                                   fontSize: 11,
                                   fontWeight: 700,
@@ -483,9 +483,9 @@ export const FinanceManager: React.FC = () => {
                                 style={{
                                   padding: '4px 10px',
                                   borderRadius: 8,
-                                  background: '#f5f5f5',
-                                  color: '#737373',
-                                  border: '1px solid #e2e2e2',
+                                  background: 'var(--bg-raised)',
+                                  color: 'var(--text-muted)',
+                                  border: '1px solid var(--border)',
                                   fontSize: 11,
                                   fontWeight: 600,
                                   cursor: 'pointer',
@@ -515,16 +515,16 @@ export const FinanceManager: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '12px 18px',
-              background: '#f9f9f9',
+              background: 'var(--bg-subtle)',
               borderRadius: 12,
-              border: '1px solid #e2e2e2',
+              border: '1px solid var(--border)',
               flexWrap: 'wrap',
               gap: 10,
             }}
           >
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0a0a0a' }}>Full Business Expenses Workspace Available</div>
-              <div style={{ fontSize: 12, color: '#737373' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Full Business Expenses Workspace Available</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Filter by category or client, attach receipt proofs, edit and delete records in the dedicated Expenses section.
               </div>
             </div>
@@ -538,8 +538,8 @@ export const FinanceManager: React.FC = () => {
                 borderRadius: 8,
                 fontSize: 12,
                 fontWeight: 700,
-                background: '#0a0a0a',
-                color: '#fff',
+                background: 'var(--solid-btn-bg)',
+                color: 'var(--solid-btn-text)',
                 border: 'none',
                 cursor: 'pointer',
               }}
@@ -548,7 +548,7 @@ export const FinanceManager: React.FC = () => {
             </button>
           </div>
 
-          <div style={{ background: '#fff', border: '1px solid #e2e2e2', borderRadius: 14, overflow: 'hidden' }}>
+          <div className="table-scroll" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
               <tr>
@@ -566,29 +566,29 @@ export const FinanceManager: React.FC = () => {
                 const linkedBrand = brands.find((b) => b.id === e.brandId);
                 return (
                   <tr key={e.id}>
-                    <td style={{ color: '#525252', fontSize: 12 }}>{e.date}</td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{e.date}</td>
                     <td>
                       <span style={badgeNeutral}>{e.category}</span>
                     </td>
                     <td>
-                      <div className="font-amount" style={{ fontWeight: 800, color: '#dc2626', fontSize: 13 }}>
+                      <div className="font-amount" style={{ fontWeight: 800, color: 'var(--danger-text)', fontSize: 13 }}>
                         ₹{e.amount.toLocaleString('en-IN')}
                       </div>
                     </td>
-                    <td style={{ color: '#0a0a0a', fontSize: 12 }}>{e.paymentMode}</td>
-                    <td style={{ color: '#0a0a0a', fontSize: 12, maxWidth: 240 }}>{e.note}</td>
+                    <td style={{ color: 'var(--text-primary)', fontSize: 12 }}>{e.paymentMode}</td>
+                    <td style={{ color: 'var(--text-primary)', fontSize: 12, maxWidth: 240 }}>{e.note}</td>
                     <td style={{ fontSize: 12 }}>
                       {linkedBrand ? (
-                        <span style={{ color: '#4f46e5', fontWeight: 600 }}>{linkedBrand.name}</span>
+                        <span style={{ color: 'var(--accent-text)', fontWeight: 600 }}>{linkedBrand.name}</span>
                       ) : (
-                        <span style={{ color: '#909090' }}>General Overhead</span>
+                        <span style={{ color: 'var(--text-muted)' }}>General Overhead</span>
                       )}
                     </td>
                     <td>
                       {e.isRecurring ? (
                         <span style={{ ...badgeInfo, fontSize: 10 }}>Monthly Recurring</span>
                       ) : (
-                        <span style={{ color: '#909090', fontSize: 10 }}>One-time</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>One-time</span>
                       )}
                     </td>
                   </tr>
@@ -602,10 +602,10 @@ export const FinanceManager: React.FC = () => {
 
       {/* Tab: Client-Wise Profitability Matrix (Admin Only) */}
       {activeTab === 'profitability' && isAdmin && (
-        <div style={{ background: '#fff', border: '1px solid #e2e2e2', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e2e2', background: '#f7f7f7' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0a0a0a', margin: 0 }}>Client Margin &amp; Profitability Breakdown</h3>
-            <p style={{ fontSize: 12, color: '#525252', margin: '4px 0 0' }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Client Margin &amp; Profitability Breakdown</h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '4px 0 0' }}>
               Realized profitability per client account based on revenues actually collected vs client-linked contractor/ad costs.
             </p>
           </div>
@@ -625,13 +625,13 @@ export const FinanceManager: React.FC = () => {
               {brandProfitability.map((bp) => (
                 <tr key={bp.brand.id}>
                   <td>
-                    <div style={{ fontWeight: 700, color: '#0a0a0a', fontSize: 12 }}>{bp.brand.name}</div>
-                    <div style={{ fontSize: 11, color: '#525252' }}>{bp.brand.ownerName}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12 }}>{bp.brand.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{bp.brand.ownerName}</div>
                   </td>
-                  <td className="font-amount" style={{ color: '#0F2A42', fontSize: 13, fontWeight: 650 }}>
+                  <td className="font-amount" style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 650 }}>
                     ₹{bp.brand.monthlyFee.toLocaleString('en-IN')}
                   </td>
-                  <td className="font-amount" style={{ fontWeight: 800, color: bp.revenue > 0 ? '#058D32' : '#64748B', fontSize: 13 }}>
+                  <td className="font-amount" style={{ fontWeight: 800, color: bp.revenue > 0 ? 'var(--success-text)' : 'var(--text-secondary)', fontSize: 13 }}>
                     ₹{bp.revenue.toLocaleString('en-IN')}
                   </td>
                   <td>
@@ -640,13 +640,13 @@ export const FinanceManager: React.FC = () => {
                         ₹{bp.pendingRevenue.toLocaleString('en-IN')} (Pending)
                       </span>
                     ) : (
-                      <span className="font-amount" style={{ color: '#909090', fontSize: 12 }}>₹0</span>
+                      <span className="font-amount" style={{ color: 'var(--text-muted)', fontSize: 12 }}>₹0</span>
                     )}
                   </td>
-                  <td className="font-amount" style={{ color: '#dc2626', fontSize: 13, fontWeight: 700 }}>
+                  <td className="font-amount" style={{ color: 'var(--danger-text)', fontSize: 13, fontWeight: 700 }}>
                     ₹{bp.directExpenses.toLocaleString('en-IN')}
                   </td>
-                  <td className="font-amount" style={{ fontWeight: 800, color: bp.profit >= 0 ? '#058D32' : '#dc2626', fontSize: 13 }}>
+                  <td className="font-amount" style={{ fontWeight: 800, color: bp.profit >= 0 ? 'var(--success-text)' : 'var(--danger-text)', fontSize: 13 }}>
                     ₹{bp.profit.toLocaleString('en-IN')}
                   </td>
                   <td>
@@ -665,17 +665,17 @@ export const FinanceManager: React.FC = () => {
       {showAddExpenseModal && isAdmin && (
         <div style={modalOverlay} onClick={() => setShowAddExpenseModal(false)}>
           <div
-            style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 448, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
+            style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 448, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ padding: 20, borderBottom: '1px solid #e2e2e2', background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: 20, borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <h3 style={{ fontWeight: 700, color: '#0a0a0a', fontSize: 14, margin: 0 }}>Record Agency Expense</h3>
-                <p style={{ fontSize: 11, color: '#525252', margin: '4px 0 0' }}>Add operational or client-specific cost</p>
+                <h3 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14, margin: 0 }}>Record Agency Expense</h3>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '4px 0 0' }}>Add operational or client-specific cost</p>
               </div>
               <button
                 onClick={() => setShowAddExpenseModal(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#525252', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
               >
                 <X style={{ width: 16, height: 16 }} />
               </button>
@@ -683,7 +683,7 @@ export const FinanceManager: React.FC = () => {
 
             <form onSubmit={handleAddExpenseSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, fontSize: 12 }}>
               <div>
-                <label style={{ display: 'block', color: '#0a0a0a', fontWeight: 600, marginBottom: 4 }}>Expense Category</label>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Expense Category</label>
                 <select
                   value={expenseForm.category}
                   onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value as any })}
@@ -700,7 +700,7 @@ export const FinanceManager: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#0a0a0a', fontWeight: 600, marginBottom: 4 }}>Amount (INR)</label>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Amount (INR)</label>
                 <input
                   type="number"
                   required
@@ -712,7 +712,7 @@ export const FinanceManager: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#0a0a0a', fontWeight: 600, marginBottom: 4 }}>Payment Date</label>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Payment Date</label>
                 <input
                   type="date"
                   required
@@ -723,7 +723,7 @@ export const FinanceManager: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#0a0a0a', fontWeight: 600, marginBottom: 4 }}>Payment Mode</label>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Payment Mode</label>
                 <input
                   type="text"
                   placeholder="Corporate Card, Bank NEFT, UPI..."
@@ -734,7 +734,7 @@ export const FinanceManager: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#0a0a0a', fontWeight: 600, marginBottom: 4 }}>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>
                   Link to Client (Optional for client profitability)
                 </label>
                 <select
@@ -750,7 +750,7 @@ export const FinanceManager: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#0a0a0a', fontWeight: 600, marginBottom: 4 }}>Note / Description</label>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Note / Description</label>
                 <input
                   type="text"
                   placeholder="Details of expense..."
@@ -765,12 +765,12 @@ export const FinanceManager: React.FC = () => {
                   type="checkbox"
                   checked={expenseForm.isRecurring}
                   onChange={(e) => setExpenseForm({ ...expenseForm, isRecurring: e.target.checked })}
-                  style={{ width: 16, height: 16, accentColor: '#4f46e5' }}
+                  style={{ width: 16, height: 16, accentColor: 'var(--accent-text)' }}
                 />
-                <span style={{ color: '#0a0a0a' }}>Recurring Monthly Expense</span>
+                <span style={{ color: 'var(--text-primary)' }}>Recurring Monthly Expense</span>
               </label>
 
-              <div style={{ paddingTop: 12, borderTop: '1px solid #e2e2e2', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button type="button" onClick={() => setShowAddExpenseModal(false)} style={{ ...btnSecondary, fontSize: 12 }}>
                   Cancel
                 </button>

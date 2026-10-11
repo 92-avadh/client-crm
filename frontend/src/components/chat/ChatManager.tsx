@@ -63,27 +63,27 @@ export const ChatManager: React.FC = () => {
       {/* ── Page Header ────────────────────────────────────── */}
       <div
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-        style={{ paddingBottom: 20, borderBottom: '1px solid #e2e2e2', flexShrink: 0 }}
+        style={{ paddingBottom: 20, borderBottom: '1px solid var(--border)', flexShrink: 0 }}
       >
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#0a0a0a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Agency & Client Messaging
           </h1>
-          <p style={{ fontSize: 13, color: '#909090', marginTop: 4 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             Real-time chat channels, direct team communications, and client updates.
           </p>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden" style={{ minHeight: 0, border: '1px solid #e2e2e2', borderRadius: 12, background: '#fff' }}>
+      <div className="flex-1 flex overflow-hidden" style={{ minHeight: 0, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg-card)' }}>
         <div className="grid grid-cols-12 h-full w-full">
           {/* Left Conversation List */}
-          <div className="col-span-12 sm:col-span-4 flex flex-col h-full" style={{ background: '#fafafa', borderRight: '1px solid #e2e2e2' }}>
+          <div className="col-span-12 sm:col-span-4 flex flex-col h-full" style={{ background: 'var(--bg-subtle)', borderRight: '1px solid var(--border)' }}>
             {/* Header & Search */}
-            <div style={{ padding: 16, borderBottom: '1px solid #e2e2e2', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h2 style={{ fontSize: 13, fontWeight: 800, color: '#0a0a0a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <MessageSquare style={{ width: 15, height: 15, color: '#0a0a0a' }} />
+                <h2 style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <MessageSquare style={{ width: 15, height: 15, color: 'var(--text-primary)' }} />
                   <span>Channels & Direct Messages</span>
                 </h2>
                 <span
@@ -92,8 +92,8 @@ export const ChatManager: React.FC = () => {
                     fontWeight: 700,
                     padding: '2px 6px',
                     borderRadius: 4,
-                    background: '#f0f0f0',
-                    color: '#333333',
+                    background: 'var(--bg-raised)',
+                    color: 'var(--text-primary)',
                   }}
                 >
                   Real-time
@@ -101,7 +101,7 @@ export const ChatManager: React.FC = () => {
               </div>
 
               <div style={{ position: 'relative' }}>
-                <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#888888' }} />
+                <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text-muted)' }} />
                 <input
                   type="text"
                   placeholder="Search conversations..."
@@ -113,11 +113,11 @@ export const ChatManager: React.FC = () => {
                     paddingLeft: 30,
                     paddingRight: 10,
                     fontSize: 12,
-                    background: '#ffffff',
-                    border: '1px solid #e2e2e2',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 8,
                     outline: 'none',
-                    color: '#0a0a0a',
+                    color: 'var(--text-primary)',
                   }}
                 />
               </div>
@@ -140,9 +140,9 @@ export const ChatManager: React.FC = () => {
                       gap: 12,
                       cursor: 'pointer',
                       border: 'none',
-                      borderBottom: '1px solid #f0f0f0',
-                      borderLeft: isActive ? '3px solid #0a0a0a' : '3px solid transparent',
-                      background: isActive ? '#f0f0f0' : 'transparent',
+                      borderBottom: '1px solid var(--border)',
+                      borderLeft: isActive ? '3px solid var(--border-focus)' : '3px solid transparent',
+                      background: isActive ? 'var(--bg-raised)' : 'transparent',
                       transition: 'background 0.15s ease',
                     }}
                   >
@@ -151,8 +151,8 @@ export const ChatManager: React.FC = () => {
                         width: 32,
                         height: 32,
                         borderRadius: 8,
-                        background: '#e8e8e8',
-                        color: '#0a0a0a',
+                        background: 'var(--bg-raised)',
+                        color: 'var(--text-primary)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -166,14 +166,14 @@ export const ChatManager: React.FC = () => {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#0a0a0a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {conv.title}
                         </span>
-                        <span style={{ fontSize: 10, color: '#888888', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                           {conv.lastMessageTime || 'Today'}
                         </span>
                       </div>
-                      <p style={{ fontSize: 11, color: '#666666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                      <p style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
                         {conv.lastMessage || 'No messages yet'}
                       </p>
                     </div>
@@ -182,8 +182,8 @@ export const ChatManager: React.FC = () => {
                         style={{
                           width: 16,
                           height: 16,
-                          background: '#0a0a0a',
-                          color: '#ffffff',
+                          background: 'var(--solid-btn-bg)',
+                          color: 'var(--solid-btn-text)',
                           borderRadius: '50%',
                           fontSize: 9,
                           fontWeight: 800,
@@ -203,18 +203,18 @@ export const ChatManager: React.FC = () => {
           </div>
 
           {/* Right Active Chat Pane */}
-          <div className="col-span-12 sm:col-span-8 flex flex-col h-full" style={{ background: '#ffffff' }}>
+          <div className="col-span-12 sm:col-span-8 flex flex-col h-full" style={{ background: 'var(--bg-card)' }}>
             {activeConv ? (
               <>
                 {/* Chat Header */}
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e2e2', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-card)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: '#f0f0f0', color: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-raised)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>
                       #
                     </div>
                     <div>
-                      <h3 style={{ fontSize: 14, fontWeight: 800, color: '#0a0a0a' }}>{activeConv.title}</h3>
-                      <div style={{ fontSize: 11, color: '#888888' }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{activeConv.title}</h3>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                         End-to-end audit trail • Linked to Client Profile
                       </div>
                     </div>
@@ -223,7 +223,7 @@ export const ChatManager: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button
                       onClick={handleSimulateAttachment}
-                      style={{ padding:'0 10px', background:'#f5f5f5', color:'#0a0a0a', border:'1px solid #e2e2e2', borderRadius:10, fontSize:11, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, height:30 }}
+                      style={{ padding:'0 10px', background: 'var(--bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius:10, fontSize:11, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, height:30 }}
                       title="Simulate sending PDF Statement"
                     >
                       <Paperclip style={{ width: 12, height: 12 }} />
@@ -246,10 +246,10 @@ export const ChatManager: React.FC = () => {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: '#888888' }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>
                             {isMe ? 'You' : msg.senderName} ({msg.senderRole.toUpperCase()})
                           </span>
-                          <span style={{ fontSize: 10, color: '#aaaaaa' }}>{msg.timestamp}</span>
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{msg.timestamp}</span>
                         </div>
 
                         <div
@@ -259,9 +259,9 @@ export const ChatManager: React.FC = () => {
                             borderRadius: 12,
                             fontSize: 12,
                             lineHeight: 1.5,
-                            background: isMe ? '#0a0a0a' : '#f7f7f7',
-                            color: isMe ? '#ffffff' : '#0a0a0a',
-                            border: isMe ? '1px solid #0a0a0a' : '1px solid #e2e2e2',
+                            background: isMe ? 'var(--solid-btn-bg)' : 'var(--bg-subtle)',
+                            color: isMe ? 'var(--solid-btn-text)' : 'var(--text-primary)',
+                            border: isMe ? '1px solid var(--border-focus)' : '1px solid var(--border)',
                             borderTopRightRadius: isMe ? 2 : 12,
                             borderTopLeftRadius: !isMe ? 2 : 12,
                           }}
@@ -277,15 +277,15 @@ export const ChatManager: React.FC = () => {
                                   style={{
                                     padding: '6px 10px',
                                     borderRadius: 6,
-                                    background: isMe ? 'rgba(255,255,255,0.1)' : '#ffffff',
-                                    border: isMe ? 'none' : '1px solid #e2e2e2',
+                                    background: isMe ? 'rgba(255,255,255,0.1)' : 'var(--bg-card)',
+                                    border: isMe ? 'none' : '1px solid var(--border)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: 6,
                                     fontSize: 11,
                                   }}
                                 >
-                                  <FileText style={{ width: 13, height: 13, color: isMe ? '#ffffff' : '#0a0a0a' }} />
+                                  <FileText style={{ width: 13, height: 13, color: isMe ? 'var(--solid-btn-text)' : 'var(--text-primary)' }} />
                                   <span style={{ fontWeight: 600, textDecoration: 'underline' }}>{att.name}</span>
                                   <span style={{ fontSize: 10, opacity: 0.8 }}>({att.size})</span>
                                 </div>
@@ -295,7 +295,7 @@ export const ChatManager: React.FC = () => {
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                          {isMe && <CheckCheck style={{ width: 12, height: 12, color: '#888888' }} />}
+                          {isMe && <CheckCheck style={{ width: 12, height: 12, color: 'var(--text-muted)' }} />}
                         </div>
                       </div>
                     );
@@ -307,8 +307,8 @@ export const ChatManager: React.FC = () => {
                   onSubmit={handleSend}
                   style={{
                     padding: 12,
-                    borderTop: '1px solid #e2e2e2',
-                    background: '#ffffff',
+                    borderTop: '1px solid var(--border)',
+                    background: 'var(--bg-card)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
@@ -325,21 +325,21 @@ export const ChatManager: React.FC = () => {
                       paddingLeft: 14,
                       paddingRight: 14,
                       fontSize: 12,
-                      background: '#f7f7f7',
-                      border: '1px solid #e2e2e2',
+                      background: 'var(--bg-subtle)',
+                      border: '1px solid var(--border)',
                       borderRadius: 8,
                       outline: 'none',
-                      color: '#0a0a0a',
+                      color: 'var(--text-primary)',
                     }}
                   />
-                  <button type="submit" style={{ padding:'0 14px', background:'#0a0a0a', color:'#fff', border:'none', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, height:38 }}>
+                  <button type="submit" style={{ padding:'0 14px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border:'none', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, height:38 }}>
                     <Send style={{ width: 14, height: 14 }} />
                     <span>Send</span>
                   </button>
                 </form>
               </>
             ) : (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888888', fontSize: 12 }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
                 Select a conversation to start chatting.
               </div>
             )}

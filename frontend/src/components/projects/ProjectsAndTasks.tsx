@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { ROUTES } from '../../routes';
 import type { TaskPriority, TaskStatus } from '../../types';
 import {
   CheckSquare,
@@ -9,22 +11,22 @@ import {
 } from 'lucide-react';
 
 const inputFieldStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 14px', border: '1px solid #e2e2e2',
-  borderRadius: 10, fontSize: 14, color: '#0a0a0a', background: '#fafafa',
+  width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
+  borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', background: 'var(--bg-subtle)',
   outline: 'none', boxSizing: 'border-box',
 };
 const btnPrimary: React.CSSProperties = {
-  padding: '9px 16px', background: '#0a0a0a', color: '#fff', border: 'none',
+  padding: '9px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none',
   borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
   display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 const btnSecondary: React.CSSProperties = {
-  padding: '9px 16px', background: '#f5f5f5', color: '#0a0a0a',
-  border: '1px solid #e2e2e2', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+  padding: '9px 16px', background: 'var(--bg-raised)', color: 'var(--text-primary)',
+  border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
   display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 const modalOverlay: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
+  position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 1000,
   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
 };
 
@@ -37,12 +39,17 @@ export const ProjectsAndTasks: React.FC = () => {
     allUsers,
     addTask,
     updateTaskStatus,
-    addProject
+    addProject,
+    setActiveTab: setNavTab
   } = useApp();
 
   const role = currentUser.role;
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'projects'>('tasks');
+  // Derive the pane from the URL so /tasks and /projects are real, linkable,
+  // refresh-safe routes instead of both defaulting to the Tasks pane.
+  const { pathname } = useLocation();
+  const activeTab: 'tasks' | 'projects' = pathname === ROUTES.projects ? 'projects' : 'tasks';
+  const setActiveTab = (tab: 'tasks' | 'projects') => setNavTab(tab);
   const [taskView, setTaskView] = useState<'kanban' | 'list'>('kanban');
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
@@ -95,13 +102,13 @@ export const ProjectsAndTasks: React.FC = () => {
       {/* ── Page Header */}
       <div
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-        style={{ paddingBottom: 24, borderBottom: '1px solid #e2e2e2' }}
+        style={{ paddingBottom: 24, borderBottom: '1px solid var(--border)' }}
       >
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#0a0a0a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Projects &amp; Task Deliverables
           </h1>
-          <p style={{ fontSize: 13, color: '#909090', marginTop: 4 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             Track client milestones, statutory deadlines, CA audits, and retention activities.
           </p>
         </div>
@@ -124,19 +131,19 @@ export const ProjectsAndTasks: React.FC = () => {
       <div
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: '#ffffff', borderRadius: 12, padding: '4px 12px', border: '1px solid #e2e2e2',
+          background: 'var(--bg-card)', borderRadius: 12, padding: '4px 12px', border: '1px solid var(--border)',
         }}
       >
         <div style={{ display: 'flex', gap: 4 }}>
           <button
             onClick={() => setActiveTab('tasks')}
-            style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'tasks' ? '#0a0a0a' : 'transparent', color: activeTab === 'tasks' ? '#ffffff' : '#666666' }}
+            style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'tasks' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'tasks' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
           >
             Tasks &amp; Deliverables ({relevantTasks.length})
           </button>
           <button
             onClick={() => setActiveTab('projects')}
-            style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'projects' ? '#0a0a0a' : 'transparent', color: activeTab === 'projects' ? '#ffffff' : '#666666' }}
+            style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'projects' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'projects' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
           >
             Active Projects ({projects.length})
           </button>
@@ -146,13 +153,13 @@ export const ProjectsAndTasks: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
               onClick={() => setTaskView('kanban')}
-              style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: taskView === 'kanban' ? '#f0f0f0' : 'transparent', color: taskView === 'kanban' ? '#0a0a0a' : '#888888' }}
+              style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: taskView === 'kanban' ? 'var(--bg-raised)' : 'transparent', color: taskView === 'kanban' ? 'var(--text-primary)' : 'var(--text-muted)' }}
             >
               Kanban Board
             </button>
             <button
               onClick={() => setTaskView('list')}
-              style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: taskView === 'list' ? '#f0f0f0' : 'transparent', color: taskView === 'list' ? '#0a0a0a' : '#888888' }}
+              style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: taskView === 'list' ? 'var(--bg-raised)' : 'transparent', color: taskView === 'list' ? 'var(--text-primary)' : 'var(--text-muted)' }}
             >
               List View
             </button>
@@ -169,12 +176,12 @@ export const ProjectsAndTasks: React.FC = () => {
             return (
               <div
                 key={column}
-                style={{ background: '#fcfcfc', border: '1px solid #e2e2e2', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', minHeight: 560 }}
+                style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', minHeight: 560 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #e2e2e2', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0a0a0a' }}>{column}</span>
-                    <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#f0f0f0', color: '#0a0a0a', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>{column}</span>
+                    <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--bg-raised)', color: 'var(--text-primary)', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {colTasks.length}
                     </span>
                   </div>
@@ -188,38 +195,38 @@ export const ProjectsAndTasks: React.FC = () => {
                     return (
                       <div
                         key={task.id}
-                        style={{ background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, transition: 'border-color 0.15s, box-shadow 0.15s' }}
+                        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, transition: 'border-color 0.15s, box-shadow 0.15s' }}
                         onMouseEnter={e => {
-                          e.currentTarget.style.borderColor = '#0a0a0a';
+                          e.currentTarget.style.borderColor = 'var(--text-primary)';
                           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
                         }}
                         onMouseLeave={e => {
-                          e.currentTarget.style.borderColor = '#e2e2e2';
+                          e.currentTarget.style.borderColor = 'var(--border)';
                           e.currentTarget.style.boxShadow = 'none';
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: task.priority === 'Urgent' ? '#0a0a0a' : '#f0f0f0', color: task.priority === 'Urgent' ? '#ffffff' : '#333333' }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: task.priority === 'Urgent' ? 'var(--solid-btn-bg)' : 'var(--bg-raised)', color: task.priority === 'Urgent' ? 'var(--solid-btn-text)' : 'var(--text-primary)' }}>
                             {task.priority}
                           </span>
-                          <span style={{ fontSize: 11, color: '#777777', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
                             {brand?.name}
                           </span>
                         </div>
 
-                        <h4 style={{ fontSize: 13, fontWeight: 700, color: '#0a0a0a', lineHeight: 1.4, margin: 0 }}>
+                        <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4, margin: 0 }}>
                           {task.title}
                         </h4>
 
                         {task.description && (
-                          <p style={{ fontSize: 11, color: '#666666', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0 }}>
+                          <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0 }}>
                             {task.description}
                           </p>
                         )}
 
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #f0f0f0', fontSize: 11, color: '#777777' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--text-muted)' }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Clock style={{ width: 12, height: 12, color: '#888888' }} />
+                            <Clock style={{ width: 12, height: 12, color: 'var(--text-muted)' }} />
                             {task.dueDate}
                           </span>
 
@@ -229,14 +236,14 @@ export const ProjectsAndTasks: React.FC = () => {
                                 src={assignee.avatar}
                                 alt={assignee.name}
                                 title={assignee.name}
-                                style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e2e2' }}
+                                style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }}
                               />
                             )}
 
                             <select
                               value={task.status}
                               onChange={(e) => updateTaskStatus(task.id, e.target.value as TaskStatus)}
-                              style={{ fontSize: 10, background: '#f7f7f7', color: '#0a0a0a', borderRadius: 4, border: '1px solid #e2e2e2', padding: '2px 4px', outline: 'none', cursor: 'pointer' }}
+                              style={{ fontSize: 10, background: 'var(--bg-subtle)', color: 'var(--text-primary)', borderRadius: 4, border: '1px solid var(--border)', padding: '2px 4px', outline: 'none', cursor: 'pointer' }}
                             >
                               {kanbanColumns.map((st) => (
                                 <option key={st} value={st}>{st}</option>
@@ -256,7 +263,7 @@ export const ProjectsAndTasks: React.FC = () => {
 
       {/* List View */}
       {activeTab === 'tasks' && taskView === 'list' && (
-        <div style={{ background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
               <tr>
@@ -275,16 +282,16 @@ export const ProjectsAndTasks: React.FC = () => {
                 return (
                   <tr key={t.id}>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#0a0a0a', fontSize: 13 }}>{t.title}</div>
-                      <div style={{ fontSize: 11, color: '#777777', marginTop: 2 }}>{t.description}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 13 }}>{t.title}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t.description}</div>
                     </td>
-                    <td style={{ color: '#0a0a0a', fontSize: 12, fontWeight: 500 }}>{brand?.name}</td>
+                    <td style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 500 }}>{brand?.name}</td>
                     <td>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: t.priority === 'Urgent' ? '#0a0a0a' : '#f0f0f0', color: t.priority === 'Urgent' ? '#ffffff' : '#333333' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: t.priority === 'Urgent' ? 'var(--solid-btn-bg)' : 'var(--bg-raised)', color: t.priority === 'Urgent' ? 'var(--solid-btn-text)' : 'var(--text-primary)' }}>
                         {t.priority}
                       </span>
                     </td>
-                    <td style={{ color: '#666666', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{t.dueDate}</td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{t.dueDate}</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {assignee && (
@@ -294,14 +301,14 @@ export const ProjectsAndTasks: React.FC = () => {
                             style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
                           />
                         )}
-                        <span style={{ fontSize: 12, color: '#0a0a0a' }}>{assignee?.name}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{assignee?.name}</span>
                       </div>
                     </td>
                     <td>
                       <select
                         value={t.status}
                         onChange={(e) => updateTaskStatus(t.id, e.target.value as TaskStatus)}
-                        style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e2e2', background: '#f7f7f7', color: '#0a0a0a', outline: 'none', cursor: 'pointer' }}
+                        style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
                       >
                         {kanbanColumns.map((st) => (
                           <option key={st} value={st}>{st}</option>
@@ -324,46 +331,46 @@ export const ProjectsAndTasks: React.FC = () => {
             return (
               <div
                 key={proj.id}
-                style={{ background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 16, transition: 'border-color 0.15s, box-shadow 0.15s' }}
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 16, transition: 'border-color 0.15s, box-shadow 0.15s' }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = '#0a0a0a';
+                  e.currentTarget.style.borderColor = 'var(--text-primary)';
                   e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = '#e2e2e2';
+                  e.currentTarget.style.borderColor = 'var(--border)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                   <div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#888888', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
                       {brand?.name}
                     </span>
-                    <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0a0a0a', marginTop: 2, marginBottom: 0 }}>{proj.name}</h3>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2, marginBottom: 0 }}>{proj.name}</h3>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: '#f0f0f0', color: '#0a0a0a' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'var(--bg-raised)', color: 'var(--text-primary)' }}>
                     {proj.status}
                   </span>
                 </div>
 
-                <p style={{ fontSize: 12, color: '#525252', background: '#f7f7f7', padding: '10px 12px', borderRadius: 8, border: '1px solid #eeeeee', lineHeight: 1.5, margin: 0 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', lineHeight: 1.5, margin: 0 }}>
                   {proj.scope}
                 </p>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#777777', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                     <span>Deliverable Progress</span>
-                    <span style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#0a0a0a' }}>{proj.progress}%</span>
+                    <span style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{proj.progress}%</span>
                   </div>
-                  <div style={{ width: '100%', height: 6, background: '#f0f0f0', borderRadius: 9999, overflow: 'hidden' }}>
-                    <div style={{ width: `${proj.progress}%`, height: '100%', background: '#0a0a0a', borderRadius: 9999, transition: 'width 0.4s ease' }} />
+                  <div style={{ width: '100%', height: 6, background: 'var(--bg-raised)', borderRadius: 9999, overflow: 'hidden' }}>
+                    <div style={{ width: `${proj.progress}%`, height: '100%', background: 'var(--solid-btn-bg)', borderRadius: 9999, transition: 'width 0.4s ease' }} />
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: '#777777', paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                   <span>Timeline: {proj.startDate} → {proj.endDate}</span>
                   {role !== 'team' && proj.billingAmount && (
-                    <span className="font-amount" style={{ fontWeight: 800, color: '#0a0a0a', fontSize: 13 }}>
+                    <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>
                       ₹{proj.billingAmount.toLocaleString('en-IN')}
                     </span>
                   )}
@@ -378,17 +385,17 @@ export const ProjectsAndTasks: React.FC = () => {
       {showAddTaskModal && (
         <div style={modalOverlay} onClick={() => setShowAddTaskModal(false)}>
           <div
-            style={{ background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 18, width: '100%', maxWidth: 480, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, width: '100%', maxWidth: 480, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e2e2', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0a0a0a', margin: 0 }}>Add New Client Task</h3>
-                <p style={{ fontSize: 11, color: '#666666', marginTop: 2, marginBottom: 0 }}>Activity will be logged to client timeline</p>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Add New Client Task</h3>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, marginBottom: 0 }}>Activity will be logged to client timeline</p>
               </div>
               <button
                 onClick={() => setShowAddTaskModal(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666666', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
               >
                 <X style={{ width: 16, height: 16 }} />
               </button>
@@ -396,7 +403,7 @@ export const ProjectsAndTasks: React.FC = () => {
 
             <form onSubmit={handleAddTaskSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12 }}>
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Client *</label>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Client *</label>
                 <select
                   value={taskForm.brandId}
                   onChange={(e) => setTaskForm({ ...taskForm, brandId: e.target.value })}
@@ -409,7 +416,7 @@ export const ProjectsAndTasks: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Task Title *</label>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Task Title *</label>
                 <input
                   type="text"
                   required
@@ -421,7 +428,7 @@ export const ProjectsAndTasks: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Details / Scope</label>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Details / Scope</label>
                 <textarea
                   rows={2}
                   placeholder="Specific requirements..."
@@ -431,9 +438,9 @@ export const ProjectsAndTasks: React.FC = () => {
                 ></textarea>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Priority</label>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Priority</label>
                   <select
                     value={taskForm.priority}
                     onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
@@ -447,7 +454,7 @@ export const ProjectsAndTasks: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Due Date</label>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Due Date</label>
                   <input
                     type="date"
                     required
@@ -459,7 +466,7 @@ export const ProjectsAndTasks: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Assignee</label>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Assignee</label>
                 <select
                   value={taskForm.assigneeId}
                   onChange={(e) => setTaskForm({ ...taskForm, assigneeId: e.target.value })}
@@ -475,7 +482,7 @@ export const ProjectsAndTasks: React.FC = () => {
                 </select>
               </div>
 
-              <div style={{ paddingTop: 14, borderTop: '1px solid #e2e2e2', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <div style={{ paddingTop: 14, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button
                   type="button"
                   onClick={() => setShowAddTaskModal(false)}
@@ -496,17 +503,17 @@ export const ProjectsAndTasks: React.FC = () => {
       {showAddProjectModal && (
         <div style={modalOverlay} onClick={() => setShowAddProjectModal(false)}>
           <div
-            style={{ background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 18, width: '100%', maxWidth: 480, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, width: '100%', maxWidth: 480, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e2e2', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0a0a0a', margin: 0 }}>Add New Project</h3>
-                <p style={{ fontSize: 11, color: '#666666', marginTop: 2, marginBottom: 0 }}>Group client deliverables under a project</p>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Add New Project</h3>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, marginBottom: 0 }}>Group client deliverables under a project</p>
               </div>
               <button
                 onClick={() => setShowAddProjectModal(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666666', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
               >
                 <X style={{ width: 16, height: 16 }} />
               </button>
@@ -514,7 +521,7 @@ export const ProjectsAndTasks: React.FC = () => {
 
             <form onSubmit={handleAddProjectSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12 }}>
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Client *</label>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Client *</label>
                 <select
                   value={projectForm.brandId}
                   onChange={(e) => setProjectForm({ ...projectForm, brandId: e.target.value })}
@@ -527,7 +534,7 @@ export const ProjectsAndTasks: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Project Name *</label>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Project Name *</label>
                 <input
                   type="text"
                   required
@@ -539,7 +546,7 @@ export const ProjectsAndTasks: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Scope &amp; Objectives</label>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Scope &amp; Objectives</label>
                 <textarea
                   rows={2}
                   value={projectForm.scope}
@@ -548,9 +555,9 @@ export const ProjectsAndTasks: React.FC = () => {
                 ></textarea>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Start Date</label>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Start Date</label>
                   <input
                     type="date"
                     value={projectForm.startDate}
@@ -559,7 +566,7 @@ export const ProjectsAndTasks: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: '#0a0a0a', marginBottom: 6 }}>Target End Date</label>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Target End Date</label>
                   <input
                     type="date"
                     value={projectForm.endDate}
@@ -569,7 +576,7 @@ export const ProjectsAndTasks: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ paddingTop: 14, borderTop: '1px solid #e2e2e2', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <div style={{ paddingTop: 14, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button
                   type="button"
                   onClick={() => setShowAddProjectModal(false)}

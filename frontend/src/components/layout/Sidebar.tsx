@@ -17,7 +17,8 @@ import {
   Inbox,
   LogOut,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  X
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -31,8 +32,12 @@ export const Sidebar: React.FC = () => {
     tasks,
     conversations,
     sidebarCollapsed,
-    toggleSidebar
+    toggleSidebar,
+    mobileSidebarOpen,
+    setMobileSidebarOpen
   } = useApp();
+
+  const [hoverLogo, setHoverLogo] = React.useState(false);
 
   const role = currentUser.role;
 
@@ -80,12 +85,12 @@ export const Sidebar: React.FC = () => {
   const BadgePill = ({ item }: { item: NavItem }) => {
     if (!item.badge) return null;
     const style = item.badgeVariant === 'danger'
-      ? { background: '#fce8e6', color: '#d93025' }
+      ? { background: 'var(--danger-bg)', color: 'var(--danger-text)' }
       : item.badgeVariant === 'warn'
-      ? { background: '#fef3c7', color: '#92400e' }
-      : { background: '#f5f5f5', color: '#525252' };
+      ? { background: 'var(--warn-bg)', color: 'var(--warn-text)' }
+      : { background: 'var(--bg-raised, #f5f5f5)', color: 'var(--text-secondary, #525252)' };
     return (
-      <span style={{ display: 'inline-flex', padding: '1px 7px', borderRadius: 20, fontSize: 10, fontWeight: 700, ...style }}>
+      <span style={{ display: 'inline-flex', padding: '2px 8px', borderRadius: 20, fontSize: 11.5, fontWeight: 750, ...style }}>
         {item.badge}
       </span>
     );
@@ -96,38 +101,42 @@ export const Sidebar: React.FC = () => {
     const isActive = activeTab === item.id;
     return (
       <button
-        onClick={() => setActiveTab(item.id)}
+        onClick={() => {
+          setActiveTab(item.id);
+          setMobileSidebarOpen(false);
+        }}
         className={`nav-item ${isActive ? 'active' : ''}`}
         title={sidebarCollapsed ? item.label : undefined}
         style={{
           justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-          padding: sidebarCollapsed ? '9px 0' : '8px 10px',
+          padding: sidebarCollapsed ? '10px 0' : '9px 12px',
           width: '100%',
           position: 'relative',
+          borderRadius: 8,
         }}
       >
         <span
           className="flex items-center min-w-0"
           style={{
-            gap: sidebarCollapsed ? 0 : 10,
+            gap: sidebarCollapsed ? 0 : 12,
             justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
             width: sidebarCollapsed ? '100%' : 'auto',
           }}
         >
-          <Icon className="w-[15px] h-[15px] shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
-          {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+          <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
+          {!sidebarCollapsed && <span className="truncate" style={{ fontSize: '0.9375rem', fontWeight: isActive ? 700 : 550 }}>{item.label}</span>}
         </span>
         {!sidebarCollapsed && <BadgePill item={item} />}
         {sidebarCollapsed && item.badge && (
           <span
             style={{
               position: 'absolute',
-              top: 7,
+              top: 6,
               right: 12,
-              width: 6,
-              height: 6,
+              width: 7,
+              height: 7,
               borderRadius: '50%',
-              background: item.badgeVariant === 'danger' ? '#d93025' : '#f59e0b',
+              background: item.badgeVariant === 'danger' ? 'var(--danger-text)' : 'var(--warn-text)',
             }}
           />
         )}
@@ -136,122 +145,189 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside
-      className="shrink-0 flex flex-col h-screen sticky top-0 select-none"
-      style={{
-        width: sidebarCollapsed ? 68 : 220,
-        background: '#ffffff',
-        borderRight: '1px solid #D0E0EF',
-        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        zIndex: 40,
-      }}
-    >
-      {/* Header & Logo with 1-click collapse/expand */}
-      <div
-        className="flex items-center"
+    <>
+      {/* Mobile Drawer Backdrop — sits below the drawer (z-40 vs z-50) */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`
+          top-0 h-screen select-none flex flex-col shrink-0
+          transition-transform duration-200 ease-out
+          md:sticky md:translate-x-0 md:z-40
+          ${mobileSidebarOpen
+            ? 'fixed inset-y-0 left-0 z-50 translate-x-0 shadow-2xl'
+            : 'fixed inset-y-0 left-0 z-50 -translate-x-full md:flex'}
+        `}
         style={{
-          height: 56,
-          borderBottom: '1px solid #D0E0EF',
-          flexShrink: 0,
-          padding: sidebarCollapsed ? '0 10px' : '0 12px 0 16px',
-          justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+          width: sidebarCollapsed ? 70 : 245,
+          background: 'var(--bg, #ffffff)',
+          borderRight: '1px solid var(--border, #D0E0EF)',
         }}
       >
-        {sidebarCollapsed ? (
-          <button
-            onClick={toggleSidebar}
-            title="Expand sidebar (Ctrl+B)"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 4,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#F0F5FA')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-          >
-            <img
-              src="/retentio-icon.png"
-              alt="Expand sidebar"
-              style={{ height: 26, width: 26, objectFit: 'contain' }}
-            />
-          </button>
-        ) : (
-          <>
-            <img
-              src="/retentio-logo-horizontal.png"
-              alt="Retentio"
-              style={{ height: 26, width: 'auto', maxWidth: 136, objectFit: 'contain' }}
-            />
-            <button
-              onClick={toggleSidebar}
-              title="Collapse sidebar (Ctrl+B)"
+        {/* Header & Logo with hover-to-toggle when collapsed */}
+        <div
+          className="flex items-center"
+          style={{
+            height: 62,
+            borderBottom: '1px solid var(--border, #D0E0EF)',
+            flexShrink: 0,
+            padding: sidebarCollapsed ? '0 10px' : '0 14px 0 16px',
+            justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+          }}
+        >
+          {sidebarCollapsed ? (
+            <div
+              onMouseEnter={() => setHoverLogo(true)}
+              onMouseLeave={() => setHoverLogo(false)}
               style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '6px',
-                borderRadius: 6,
-                color: '#50667F',
+                position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = '#F0F5FA';
-                e.currentTarget.style.color = '#0A2540';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'none';
-                e.currentTarget.style.color = '#50667F';
+                width: '100%',
+                height: 44,
               }}
             >
-              <PanelLeftClose size={16} />
-            </button>
-          </>
-        )}
-      </div>
+              {hoverLogo ? (
+                <button
+                  onClick={toggleSidebar}
+                  title="Expand sidebar (Ctrl+B)"
+                  style={{
+                    background: 'var(--brand-navy-subtle, #F0F5FA)',
+                    border: '1px solid var(--border, #D0E0EF)',
+                    cursor: 'pointer',
+                    padding: 7,
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--brand-navy, #0A2540)',
+                    transition: 'all 0.15s ease',
+                    boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06))',
+                  }}
+                >
+                  <PanelLeft size={20} />
+                </button>
+              ) : (
+                <button
+                  onClick={toggleSidebar}
+                  title="Hover to show expand button (Ctrl+B)"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 4,
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'opacity 0.15s ease',
+                  }}
+                >
+                  <img
+                    src="/retentio-icon.png"
+                    alt="Client-crm"
+                    style={{ height: 28, width: 28, objectFit: 'contain' }}
+                  />
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <img
+                src="/retentio-logo-horizontal.png"
+                alt="Client-crm"
+                style={{ height: 28, width: 'auto', maxWidth: 148, objectFit: 'contain' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button
+                  onClick={toggleSidebar}
+                  title="Collapse sidebar (Ctrl+B)"
+                  className="hidden md:flex"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '7px',
+                    borderRadius: 8,
+                    color: 'var(--text-secondary, #50667F)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'var(--bg-raised, #F0F5FA)';
+                    e.currentTarget.style.color = 'var(--text-primary, #0A2540)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.color = 'var(--text-secondary, #50667F)';
+                  }}
+                >
+                  <PanelLeftClose size={18} />
+                </button>
+                <button
+                  onClick={() => setMobileSidebarOpen(false)}
+                  title="Close sidebar"
+                  className="flex md:hidden"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '7px',
+                    borderRadius: 8,
+                    color: 'var(--text-secondary, #50667F)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
       {/* Navigation list */}
       <nav
         className="flex-1 overflow-y-auto"
         style={{
-          padding: sidebarCollapsed ? '8px 6px' : '8px 8px',
+          padding: sidebarCollapsed ? '10px 6px' : '10px 10px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 2,
+          gap: 3,
         }}
       >
-        {!sidebarCollapsed && <div className="section-label" style={{ color: '#50667F' }}>Workspace</div>}
+        {!sidebarCollapsed && <div className="section-label" style={{ color: 'var(--text-muted, #50667F)' }}>Workspace</div>}
         {coreItems.map(i => <NavButton key={i.id} item={i} />)}
 
         {commItems.length > 0 && (
           <>
-            <div className="divider mx-1 my-1.5" style={{ background: '#D0E0EF' }} />
-            {!sidebarCollapsed && <div className="section-label" style={{ color: '#50667F' }}>Communication</div>}
+            <div className="divider mx-1 my-1.5" style={{ background: 'var(--border, #D0E0EF)' }} />
+            {!sidebarCollapsed && <div className="section-label" style={{ color: 'var(--text-muted, #50667F)' }}>Communication</div>}
             {commItems.map(i => <NavButton key={i.id} item={i} />)}
           </>
         )}
 
         {sysItems.length > 0 && (
           <>
-            <div className="divider mx-1 my-1.5" style={{ background: '#D0E0EF' }} />
+            <div className="divider mx-1 my-1.5" style={{ background: 'var(--border, #D0E0EF)' }} />
             {sysItems.map(i => <NavButton key={i.id} item={i} />)}
           </>
         )}
       </nav>
 
-      {/* Footer (Agency Pro badge removed as requested) */}
+      {/* Footer */}
       <div
         style={{
-          borderTop: '1px solid #D0E0EF',
-          padding: sidebarCollapsed ? '8px 6px' : '8px 10px',
+          borderTop: '1px solid var(--border, #D0E0EF)',
+          padding: sidebarCollapsed ? '10px 6px' : '10px 10px',
           display: 'flex',
           flexDirection: 'column',
           gap: 4,
@@ -263,28 +339,29 @@ export const Sidebar: React.FC = () => {
           title={sidebarCollapsed ? 'Log Out' : undefined}
           style={{
             width: '100%',
-            padding: sidebarCollapsed ? '8px 0' : '7px 10px',
+            padding: sidebarCollapsed ? '10px 0' : '9px 12px',
             borderRadius: 8,
             display: 'flex',
             alignItems: 'center',
             justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-            gap: 8,
-            fontSize: 12,
-            fontWeight: 600,
-            color: '#dc2626',
+            gap: 10,
+            fontSize: 13.5,
+            fontWeight: 650,
+            color: 'var(--danger-text)',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
             transition: 'background 0.15s',
             fontFamily: 'inherit',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
-          <LogOut style={{ width: 14, height: 14, flexShrink: 0 }} />
+          <LogOut style={{ width: 16, height: 16, flexShrink: 0 }} />
           {!sidebarCollapsed && <span>Log Out</span>}
         </button>
       </div>
     </aside>
-  );
+  </>
+);
 };

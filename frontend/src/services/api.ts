@@ -1,3 +1,5 @@
+import { getNaturalErrorMessage } from './errors';
+
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://client-crm-api-g9qz.onrender.com/api';
 
 // Automatic wake-up ping for Render free tier & tab keep-alive
@@ -18,18 +20,31 @@ export const clearToken = () => localStorage.removeItem('retentio_token');
 // Core fetch wrapper
 async function req<T>(method: string, path: string, body?: any): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || 'Request failed');
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+  } catch (networkErr) {
+    // fetch() only rejects on network/CORS failure — never on HTTP status.
+    throw new Error(getNaturalErrorMessage(networkErr));
   }
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({} as any));
+    // Prefer the server's message, but normalise it to something user-friendly.
+    throw new Error(
+      getNaturalErrorMessage(payload?.error || payload?.message || `HTTP ${res.status}`)
+    );
+  }
+
+  // 204 / empty bodies
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 

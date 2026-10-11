@@ -19,25 +19,25 @@ import {
 } from 'lucide-react';
 
 const inputFieldStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 14px', border: '1px solid #e2e2e2',
-  borderRadius: 10, fontSize: 14, color: '#0a0a0a', background: '#fafafa',
+  width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
+  borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', background: 'var(--bg-subtle)',
   outline: 'none', boxSizing: 'border-box',
 };
 const btnPrimary: React.CSSProperties = {
-  padding: '9px 16px', background: '#0a0a0a', color: '#fff', border: 'none',
+  padding: '9px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none',
   borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
   display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 const btnSecondary: React.CSSProperties = {
-  padding: '9px 16px', background: '#f5f5f5', color: '#0a0a0a',
-  border: '1px solid #e2e2e2', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+  padding: '9px 16px', background: 'var(--bg-raised)', color: 'var(--text-primary)',
+  border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
   display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 const modalOverlay: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
+  position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 1000,
   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
 };
-const badgeDanger: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fef2f2', color: '#dc2626' };
+const badgeDanger: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--danger-bg)', color: 'var(--danger-text)' };
 
 export const RetentionEngine: React.FC = () => {
   const {
@@ -85,26 +85,26 @@ export const RetentionEngine: React.FC = () => {
       {/* ── Page Header */}
       <div
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-        style={{ paddingBottom: 24, borderBottom: '1px solid #e2e2e2' }}
+        style={{ paddingBottom: 24, borderBottom: '1px solid var(--border)' }}
       >
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#0a0a0a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Automated Retention &amp; Anti-Churn Engine
           </h1>
-          <p style={{ fontSize: 13, color: '#909090', marginTop: 4 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             Detects client inactivity across chats, meetings, tasks, and payments to alert account leads before churn occurs.
           </p>
         </div>
 
         {role === 'admin' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 8, padding: '4px 8px' }}>
-            <Sliders style={{ width: 14, height: 14, color: '#888888', marginLeft: 4 }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#666666' }}>Trigger Threshold:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 8px' }}>
+            <Sliders style={{ width: 14, height: 14, color: 'var(--text-muted)', marginLeft: 4 }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Trigger Threshold:</span>
             {[7, 15, 30].map((days) => (
               <button
                 key={days}
                 onClick={() => handleUpdateThreshold(days)}
-                style={{ padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', background: settings.retentionThresholdDays === days ? '#0a0a0a' : 'transparent', color: settings.retentionThresholdDays === days ? '#ffffff' : '#666666' }}
+                style={{ padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', background: settings.retentionThresholdDays === days ? 'var(--solid-btn-bg)' : 'transparent', color: settings.retentionThresholdDays === days ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
               >
                 {days}d
               </button>
@@ -115,13 +115,13 @@ export const RetentionEngine: React.FC = () => {
 
       {/* Retention Health Overview Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-        <div className="stat-card" style={retentionAlerts.length > 0 ? { border: '1.5px solid #0a0a0a' } : {}}>
+        <div className="stat-card" style={retentionAlerts.length > 0 ? { border: '1.5px solid var(--border-focus)' } : {}}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span className="metric-label">Urgent Churn Risks</span>
-            <AlertTriangle style={{ width: 16, height: 16, color: '#0a0a0a' }} />
+            <AlertTriangle style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
           </div>
           <div className="metric-value">{retentionAlerts.length}</div>
-          <div style={{ fontSize: 11, color: '#909090', marginTop: 6 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             Clients inactive for &gt;{settings.retentionThresholdDays} days
           </div>
         </div>
@@ -129,41 +129,41 @@ export const RetentionEngine: React.FC = () => {
         <div className="stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span className="metric-label">Active Client Retainers</span>
-            <CheckCircle style={{ width: 16, height: 16, color: '#0a0a0a' }} />
+            <CheckCircle style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
           </div>
           <div className="metric-value">{brands.filter((b) => b.status === 'Active').length}</div>
-          <div style={{ fontSize: 11, color: '#909090', marginTop: 6 }}>Healthy touchpoints logged recently</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Healthy touchpoints logged recently</div>
         </div>
 
         <div className="stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span className="metric-label">Total Churned Accounts</span>
-            <XCircle style={{ width: 16, height: 16, color: '#0a0a0a' }} />
+            <XCircle style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
           </div>
           <div className="metric-value">{brands.filter((b) => b.status === 'Churned').length}</div>
-          <div style={{ fontSize: 11, color: '#909090', marginTop: 6 }}>Historical retained records</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Historical retained records</div>
         </div>
       </div>
 
       {/* Churn Risk Command Center */}
-      <div style={{ background: '#fff', border: '1px solid #e2e2e2', borderRadius: 14, padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0a0a0a', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <span>Clients Requiring Immediate Reconnection</span>
               <span style={badgeDanger}>{retentionAlerts.length} Alerts</span>
             </h2>
-            <p style={{ fontSize: 12, color: '#525252', marginTop: 4, marginBottom: 0 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, marginBottom: 0 }}>
               Automated trigger: "No activity with [Client Name] for {settings.retentionThresholdDays} days. Reconnect now."
             </p>
           </div>
         </div>
 
         {retentionAlerts.length === 0 ? (
-          <div style={{ padding: 32, borderRadius: 12, background: '#f7f7f7', textAlign: 'center', color: '#525252' }}>
-            <ShieldCheck style={{ width: 48, height: 48, color: '#15803d', margin: '0 auto 8px' }} />
-            <h3 style={{ fontWeight: 700, color: '#0a0a0a', margin: '0 0 4px' }}>All Client Retainers Are Healthy!</h3>
-            <p style={{ fontSize: 12, color: '#525252', margin: 0 }}>
+          <div style={{ padding: 32, borderRadius: 12, background: 'var(--bg-subtle)', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <ShieldCheck style={{ width: 48, height: 48, color: 'var(--success-text)', margin: '0 auto 8px' }} />
+            <h3 style={{ fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px' }}>All Client Retainers Are Healthy!</h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
               No clients have crossed the {settings.retentionThresholdDays}-day inactivity threshold.
             </p>
           </div>
@@ -172,19 +172,19 @@ export const RetentionEngine: React.FC = () => {
             {retentionAlerts.map(({ brand, daysInactive }) => (
               <div
                 key={brand.id}
-                style={{ padding: 16, borderRadius: 12, background: '#fff9f9', border: '1px solid #fecaca', display: 'flex', flexDirection: 'column', gap: 12 }}
+                style={{ padding: 16, borderRadius: 12, background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', display: 'flex', flexDirection: 'column', gap: 12 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 700, color: '#0a0a0a', fontSize: 14 }}>{brand.name}</span>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14 }}>{brand.name}</span>
                     <span style={badgeDanger}>{daysInactive} Days Inactive</span>
                     {role !== 'team' && (
-                      <span className="font-amount" style={{ fontSize: 13, fontWeight: 800, color: '#4f46e5' }}>
+                      <span className="font-amount" style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent-text)' }}>
                         ₹{brand.monthlyFee.toLocaleString('en-IN')}/mo Retainer at risk
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 12, color: '#525252', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     <span>Contact: {brand.ownerName} ({brand.mobile})</span>
                     <span>•</span>
                     <span>Last touchpoint: {brand.lastActivityDate}</span>
@@ -194,7 +194,7 @@ export const RetentionEngine: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <button
                     onClick={() => openWhatsAppRetentionShare(brand, daysInactive)}
-                    style={{ padding: '6px 12px', borderRadius: 8, background: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                    style={{ padding: '6px 12px', borderRadius: 8, background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
                   >
                     <Share2 style={{ width: 14, height: 14 }} />
                     <span>WhatsApp Reconnect</span>
@@ -218,7 +218,7 @@ export const RetentionEngine: React.FC = () => {
 
                   <button
                     onClick={() => snoozeBrandRetention(brand.id)}
-                    style={{ padding: '6px 10px', borderRadius: 8, background: '#f5f5f5', color: '#525252', border: '1px solid #e2e2e2', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    style={{ padding: '6px 10px', borderRadius: 8, background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     title="Snooze alert by 7 days"
                   >
                     <Clock style={{ width: 14, height: 14 }} />
@@ -227,7 +227,7 @@ export const RetentionEngine: React.FC = () => {
                   {(role === 'admin' || role === 'hr') && (
                     <button
                       onClick={() => markBrandChurned(brand.id)}
-                      style={{ padding: '6px 10px', borderRadius: 8, background: '#fff1f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                      style={{ padding: '6px 10px', borderRadius: 8, background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                       title="Mark Client as Churned"
                     >
                       Churn
@@ -244,21 +244,21 @@ export const RetentionEngine: React.FC = () => {
       {selectedBrandForLog && (
         <div style={modalOverlay} onClick={() => setSelectedBrandForLog(null)}>
           <div
-            style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 448, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
+            style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 448, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ padding: 20, borderBottom: '1px solid #e2e2e2', background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: 20, borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <h3 style={{ fontWeight: 700, color: '#0a0a0a', fontSize: 14, margin: 0 }}>
+                <h3 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14, margin: 0 }}>
                   Log Reconnect Call: {selectedBrandForLog.name}
                 </h3>
-                <p style={{ fontSize: 11, color: '#525252', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '4px 0 0' }}>
                   Reset the retention inactivity timer by recording client engagement
                 </p>
               </div>
               <button
                 onClick={() => setSelectedBrandForLog(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#525252', fontSize: 16 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16 }}
               >
                 ✕
               </button>
@@ -266,7 +266,7 @@ export const RetentionEngine: React.FC = () => {
 
             <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, fontSize: 12 }}>
               <div>
-                <label style={{ display: 'block', color: '#0a0a0a', fontWeight: 600, marginBottom: 4 }}>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>
                   Call Notes / Agreed Next Steps
                 </label>
                 <textarea
@@ -278,7 +278,7 @@ export const RetentionEngine: React.FC = () => {
                 ></textarea>
               </div>
 
-              <div style={{ paddingTop: 12, borderTop: '1px solid #e2e2e2', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button onClick={() => setSelectedBrandForLog(null)} style={{ ...btnSecondary, fontSize: 12 }}>
                   Cancel
                 </button>

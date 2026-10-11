@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api, getToken } from '../services/api';
+import { getNaturalErrorMessage } from '../services/errors';
 import type {
   User,
   Brand,
@@ -17,7 +20,8 @@ import type {
   Holiday,
   AuditLogItem
 } from '../types';
-import { INITIAL_USERS, DEFAULT_SETTINGS } from '../data/mockData';
+import { DEFAULT_SETTINGS } from '../data/defaults';
+import { ROUTES, PATH_TO_TAB, DEFAULT_ROUTE } from '../routes';
 
 interface Toast {
   id: string;
@@ -102,10 +106,17 @@ interface AppContextType {
   addTeamMember: (data: any) => Promise<void>;
   updateTeamMember: (id: string, data: any) => Promise<any>;
   reloadAll: () => Promise<void>;
+  loadDomain: (domain: string) => Promise<void>;
   logout: () => void;
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  mobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (open: boolean) => void;
+  toggleMobileSidebar: () => void;
+  theme: 'light' | 'dark';
+  toggleTheme: (eventOrTarget?: React.MouseEvent | MouseEvent | { clientX: number; clientY: number } | HTMLElement) => void;
+  setTheme: (theme: 'light' | 'dark') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -127,7 +138,6 @@ export const AppProvider: React.FC<{
     } else {
       localStorage.removeItem('retentio_token');
       localStorage.removeItem('retentio_user');
-      localStorage.removeItem('retentio_custom_demo_user');
       window.location.reload();
     }
   }, [onLogout]);
@@ -150,20 +160,228 @@ export const AppProvider: React.FC<{
     });
   }, []);
 
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const toggleMobileSidebar = useCallback(() => {
+    setMobileSidebarOpen(prev => !prev);
+  }, []);
+
+  const isThemeTransitioningRef = useRef(false);
+
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('retentio_theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    } catch {}
+    return 'light';
+  });
+
+  // Listen for OS system theme changes when no manual preference is saved
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+        const saved = localStorage.getItem('retentio_theme');
+        if (!saved) {
+          const sysTheme = e.matches ? 'dark' : 'light';
+          setThemeState(sysTheme);
+          if (sysTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        }
+      };
+      mq.addEventListener('change', handleSystemThemeChange);
+      return () => mq.removeEventListener('change', handleSystemThemeChange);
+    } catch {}
+  }, []);
+
+  // Synchronize documentElement class whenever theme changes
+  useEffect(() => {
+    try {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch {}
+  }, [theme]);
+
+  const toggleTheme = useCallback((targetOrEvent?: React.MouseEvent | MouseEvent | { clientX: number; clientY: number } | HTMLElement) => {
+    if (isThemeTransitioningRef.current) return;
+    const nextTheme: 'light' | 'dark' = theme === 'light' ? 'dark' : 'light';
+
+    // Calculate origin (x, y) coordinates from click event or theme toggle button
+    let x = window.innerWidth - 80;
+    let y = 30;
+
+    if (targetOrEvent) {
+      if ('clientX' in targetOrEvent && typeof targetOrEvent.clientX === 'number') {
+        x = targetOrEvent.clientX;
+        y = targetOrEvent.clientY;
+      } else if ('getBoundingClientRect' in targetOrEvent) {
+        const rect = (targetOrEvent as HTMLElement).getBoundingClientRect();
+        x = rect.left + rect.width / 2;
+        y = rect.top + rect.height / 2;
+      }
+    } else {
+      const toggleEl = document.querySelector('[data-theme-toggle]');
+      if (toggleEl) {
+        const rect = toggleEl.getBoundingClientRect();
+        x = rect.left + rect.width / 2;
+        y = rect.top + rect.height / 2;
+      }
+    }
+
+    // Radius to cover the entire viewport from (x, y)
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // @ts-ignore
+    const supportsViewTransition = typeof document.startViewTransition === 'function' && !prefersReducedMotion;
+
+    if (!supportsViewTransition) {
+      if (prefersReducedMotion) {
+        setThemeState(nextTheme);
+        try {
+          localStorage.setItem('retentio_theme', nextTheme);
+        } catch {}
+        return;
+      }
+
+      // Smooth circular reveal fallback for browsers without View Transition API
+      isThemeTransitioningRef.current = true;
+      const overlay = document.createElement('div');
+      overlay.className = 'theme-circular-reveal-fallback';
+      overlay.style.position = 'fixed';
+      overlay.style.inset = '0';
+      overlay.style.zIndex = '999999';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.background = nextTheme === 'dark' ? 'var(--solid-btn-bg)' : 'var(--bg-card)';
+      overlay.style.clipPath = `circle(0px at ${x}px ${y}px)`;
+      overlay.style.transition = 'clip-path 950ms cubic-bezier(0.4, 0, 0.2, 1)';
+      document.body.appendChild(overlay);
+
+      requestAnimationFrame(() => {
+        overlay.style.clipPath = `circle(${endRadius}px at ${x}px ${y}px)`;
+      });
+
+      setTimeout(() => {
+        setThemeState(nextTheme);
+        try {
+          localStorage.setItem('retentio_theme', nextTheme);
+        } catch {}
+      }, 350);
+
+      setTimeout(() => {
+        overlay.style.transition = 'opacity 200ms ease';
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          overlay.remove();
+          isThemeTransitioningRef.current = false;
+        }, 220);
+      }, 950);
+      return;
+    }
+
+    // Modern View Transition API with CSS clip-path: circle()
+    isThemeTransitioningRef.current = true;
+    document.documentElement.style.setProperty('--reveal-x', `${x}px`);
+    document.documentElement.style.setProperty('--reveal-y', `${y}px`);
+    document.documentElement.style.setProperty('--reveal-radius', `${endRadius}px`);
+
+    // @ts-ignore
+    const transition = document.startViewTransition(() => {
+      flushSync(() => {
+        setThemeState(nextTheme);
+        if (nextTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        try {
+          localStorage.setItem('retentio_theme', nextTheme);
+        } catch {}
+      });
+    });
+
+    transition.ready.then(() => {
+      const anim = document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 950,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          pseudoElement: '::view-transition-new(root)',
+        }
+      );
+
+      anim.onfinish = () => {
+        isThemeTransitioningRef.current = false;
+      };
+    }).catch(() => {
+      isThemeTransitioningRef.current = false;
+    });
+  }, [theme]);
+
+  const setTheme = useCallback((t: 'light' | 'dark') => {
+    setThemeState(t);
+    try {
+      localStorage.setItem('retentio_theme', t);
+    } catch {}
+  }, []);
+
   const [currentUser, setCurrentUser] = useState<User>(() => {
     if (initialUser) return initialUser;
-    if (initialUserId) {
-      const found = INITIAL_USERS.find(u => u.id === initialUserId);
-      if (found) return found;
-    }
-    return INITIAL_USERS[0];
+    // AppProvider is only mounted behind the auth gate with a resolved user.
+    // Reaching this point means the session was torn down mid-render; fail
+    // loudly rather than falling back to a hardcoded privileged account.
+    throw new Error('AppProvider mounted without an authenticated user.');
   });
 
   const [allUsers, setAllUsers] = useState<User[]>(() => {
     if (initialUser) return [initialUser];
     return [];
   });
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Initial tab from URL path
+  const getInitialTab = (): string => {
+    const path = window.location.pathname;
+    return PATH_TO_TAB[path] || 'dashboard';
+  };
+  const [activeTab, setActiveTabRaw] = useState<string>(getInitialTab);
+  const setActiveTab = useCallback((tab: string) => {
+    setActiveTabRaw(tab);
+    setMobileSidebarOpen(false);
+    const targetPath = ROUTES[tab as keyof typeof ROUTES] || DEFAULT_ROUTE;
+    if (window.location.pathname !== targetPath) {
+      navigate(targetPath);
+    }
+  }, [navigate]);
+
+  // Sync activeTab when URL changes (browser back/forward, direct URL visit)
+  useEffect(() => {
+    const pathTab = PATH_TO_TAB[location.pathname];
+    if (pathTab && pathTab !== activeTab) {
+      setActiveTabRaw(pathTab);
+    }
+    // Unknown paths are intentionally NOT redirected here — the router's
+    // catch-all renders the 404 page. Redirecting from this effect made
+    // <NotFound /> unreachable and masked broken links.
+  }, [location.pathname, activeTab]);
+
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
@@ -195,57 +413,181 @@ export const AppProvider: React.FC<{
 
   const today = new Date().toISOString().split('T')[0];
 
+  /* ------------------------------------------------------------------
+     Domain-scoped loading.
+
+     Previously a single `reloadAll()` fired 14 requests on every page
+     load, regardless of which page the user opened. Each domain now
+     loads only when the route that needs it is first visited, and the
+     result is cached (`loadedRef`) so revisiting a page is instant.
+     `reloadAll()` is kept for an explicit manual refresh.
+     ------------------------------------------------------------------ */
+
+  const loadedRef = useRef<Set<string>>(new Set());
+  const inflightRef = useRef<Map<string, Promise<void>>>(new Map());
+
+  const loadDomain = useCallback(async (domain: string) => {
+    if (!getToken()) return;
+    if (loadedRef.current.has(domain)) return;
+    const inflight = inflightRef.current.get(domain);
+    if (inflight) return inflight;
+
+    const task = (async () => {
+      try {
+        setApiError(null);
+        switch (domain) {
+          case 'clients': {
+            const [brandsData, usersData] = await Promise.all([
+              api.brands.list(),
+              api.users.list().catch(() => []),
+            ]);
+            if (brandsData) setBrands(brandsData);
+            if (usersData) setAllUsers(usersData);
+            break;
+          }
+          case 'projects': {
+            const [projectsData, tasksData] = await Promise.all([
+              api.projects.list(),
+              api.tasks.list(),
+            ]);
+            if (projectsData) setProjects(projectsData);
+            if (tasksData) setTasks(tasksData);
+            break;
+          }
+          case 'invoices': {
+            const [invoicesData, paymentsData] = await Promise.all([
+              api.invoices.list(),
+              api.payments.list(),
+            ]);
+            if (invoicesData) setInvoices(invoicesData);
+            if (paymentsData) setPayments(paymentsData);
+            break;
+          }
+          case 'finance': {
+            const [paymentsData, expensesData, invoicesData] = await Promise.all([
+              api.payments.list(),
+              api.expenses.list().catch(() => []),
+              api.invoices.list(),
+            ]);
+            if (paymentsData) setPayments(paymentsData);
+            if (expensesData) setExpenses(expensesData);
+            if (invoicesData) setInvoices(invoicesData);
+            break;
+          }
+          case 'expenses': {
+            const expensesData = await api.expenses.list();
+            if (expensesData) setExpenses(expensesData);
+            break;
+          }
+          case 'leads': {
+            const leadsData = await api.leads.list();
+            if (leadsData) setLeads(leadsData);
+            break;
+          }
+          case 'meetings': {
+            const meetingsData = await api.meetings.list();
+            if (meetingsData) setMeetings(meetingsData);
+            break;
+          }
+          case 'team': {
+            const usersData = await api.users.list();
+            if (usersData) setAllUsers(usersData);
+            break;
+          }
+          case 'inbox': {
+            const notifData = await api.notifications.list();
+            if (notifData) setNotifications(notifData);
+            break;
+          }
+          case 'chat': {
+            const convsData = await api.chat.conversations();
+            if (convsData) {
+              setConversations(convsData);
+              if (convsData.length > 0) setActiveConversationId((prev) => prev || convsData[0].id);
+            }
+            break;
+          }
+          case 'settings': {
+            const [settingsData, holidaysData] = await Promise.all([
+              api.settings.get().catch(() => null),
+              api.holidays.list().catch(() => []),
+            ]);
+            if (settingsData) setSettings(settingsData);
+            if (holidaysData) setHolidays(holidaysData);
+            break;
+          }
+          case 'audit': {
+            const auditData = await api.auditLogs.list().catch(() => []);
+            if (auditData) setAuditLogs(auditData);
+            break;
+          }
+          case 'dashboard': {
+            const [brandsData, invoicesData, tasksData, meetingsData] = await Promise.all([
+              api.brands.list(),
+              api.invoices.list(),
+              api.tasks.list(),
+              api.meetings.list(),
+            ]);
+            if (brandsData) setBrands(brandsData);
+            if (invoicesData) setInvoices(invoicesData);
+            if (tasksData) setTasks(tasksData);
+            if (meetingsData) setMeetings(meetingsData);
+            break;
+          }
+          default:
+            break;
+        }
+        loadedRef.current.add(domain);
+      } catch (e: any) {
+        const msg = getNaturalErrorMessage(e);
+        setApiError(msg);
+        showToast(msg, 'error');
+      } finally {
+        inflightRef.current.delete(domain);
+      }
+    })();
+
+    inflightRef.current.set(domain, task);
+    return task;
+  }, []);
+
+  /** Explicit full refresh — used by the manual "reload" affordance. */
   const reloadAll = useCallback(async () => {
     if (!getToken()) return;
+    loadedRef.current.clear();
+    inflightRef.current.clear();
     try {
       setIsLoading(true);
       setApiError(null);
-      const [
-        brandsData, projectsData, tasksData,
-        invoicesData, paymentsData, expensesData, meetingsData,
-        leadsData, notifData, convsData, settingsData, holidaysData, auditData, usersData
-      ] = await Promise.all([
-        api.brands.list(),
-        api.projects.list(),
-        api.tasks.list(),
-        api.invoices.list(),
-        api.payments.list(),
-        api.expenses.list(),
-        api.meetings.list(),
-        api.leads.list(),
-        api.notifications.list(),
-        api.chat.conversations(),
-        api.settings.get(),
-        api.holidays.list(),
-        api.auditLogs.list(),
-        api.users.list(),
-      ]);
-      if (brandsData) setBrands(brandsData);
-      if (projectsData) setProjects(projectsData);
-      if (tasksData) setTasks(tasksData);
-      if (invoicesData) setInvoices(invoicesData);
-      if (paymentsData) setPayments(paymentsData);
-      if (expensesData) setExpenses(expensesData);
-      if (meetingsData) setMeetings(meetingsData);
-      if (leadsData) setLeads(leadsData);
-      if (notifData) setNotifications(notifData);
-      if (convsData) {
-        setConversations(convsData);
-        if (convsData.length > 0) setActiveConversationId((prev) => prev || convsData[0].id);
-      }
-      if (settingsData) setSettings(settingsData);
-      if (holidaysData) setHolidays(holidaysData);
-      if (auditData) setAuditLogs(auditData);
-      if (usersData) setAllUsers(usersData);
-    } catch (e: any) {
-      setApiError(e.message);
-      showToast('Failed to load data: ' + e.message, 'error');
+      const domains = [
+        'clients', 'projects', 'invoices', 'expenses',
+        'leads', 'meetings', 'team', 'inbox', 'chat', 'settings',
+      ];
+      await Promise.all(domains.map((d) => loadDomain(d)));
     } finally {
       setIsLoading(false);
     }
+  }, [loadDomain]);
+
+  // Notifications are lightweight and drive the Topbar badge on every page,
+  // so they load once up-front; everything else waits for its route.
+  useEffect(() => {
+    if (!getToken()) return;
+    (async () => {
+      try {
+        const notifData = await api.notifications.list();
+        if (notifData) setNotifications(notifData);
+      } catch {
+        /* badge is non-critical — stay silent */
+      }
+    })();
   }, []);
 
-  useEffect(() => { reloadAll(); }, []);
+  // Load only the data the current route needs (see loadDomain).
+  useEffect(() => {
+    const pathTab = PATH_TO_TAB[location.pathname];
+    if (pathTab) loadDomain(pathTab);
+  }, [location.pathname, loadDomain]);
 
   const retentionAlerts = brands
     .map(brand => {
@@ -291,7 +633,7 @@ export const AppProvider: React.FC<{
       return created;
     } catch (apiErr: any) {
       console.error('Backend create brand failed:', apiErr);
-      showToast('Failed to create client in database: ' + apiErr.message, 'error');
+      showToast(getNaturalErrorMessage(apiErr), 'error');
       throw apiErr;
     }
   };
@@ -334,7 +676,7 @@ export const AppProvider: React.FC<{
       showToast('Client details and payment status updated successfully', 'success');
     } catch (err: any) {
       console.error('Update brand failed:', err);
-      showToast('Failed to update client in database: ' + err.message, 'error');
+      showToast(getNaturalErrorMessage(err), 'error');
       throw err;
     }
   };
@@ -477,7 +819,7 @@ export const AppProvider: React.FC<{
       showToast(toastMsg, 'success');
     } catch (err: any) {
       console.error('Update expense failed:', err);
-      showToast('Failed to update expense in database: ' + err.message, 'error');
+      showToast(getNaturalErrorMessage(err), 'error');
       throw err;
     }
   };
@@ -667,10 +1009,17 @@ export const AppProvider: React.FC<{
         addTeamMember,
         updateTeamMember,
         reloadAll,
+        loadDomain,
         logout,
         sidebarCollapsed,
         toggleSidebar,
-        setSidebarCollapsed
+        setSidebarCollapsed,
+        mobileSidebarOpen,
+        setMobileSidebarOpen,
+        toggleMobileSidebar,
+        theme,
+        toggleTheme,
+        setTheme
       }}
     >
       {children}
