@@ -93,8 +93,9 @@ async function sendViaResend({ toEmail, subject, html, agencyName }) {
 /**
  * Send email via Brevo HTTP API (Port 443 - HTTPS).
  */
-async function sendViaBrevo({ toEmail, subject, html, agencyName }) {
+async function sendViaBrevo({ toEmail, subject, html }) {
   const senderEmail = process.env.SMTP_USER || process.env.BREVO_FROM || 'noreply@client-crm.com';
+  const brandName = process.env.BRAND_NAME || process.env.APP_NAME || 'Retentio';
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -103,7 +104,7 @@ async function sendViaBrevo({ toEmail, subject, html, agencyName }) {
       'Accept': 'application/json'
     },
     body: JSON.stringify({
-      sender: { name: agencyName, email: senderEmail },
+      sender: { name: brandName, email: senderEmail },
       to: [{ email: toEmail }],
       subject,
       htmlContent: html
@@ -128,24 +129,25 @@ async function sendViaBrevo({ toEmail, subject, html, agencyName }) {
  * 3. If BREVO_API_KEY is present, delivers via Brevo HTTPS.
  * 4. Otherwise falls back to SMTP (Nodemailer), which works locally or on paid Render tiers.
  */
-async function sendOtpEmail(toEmail, otp, agencyName = 'Client-crm') {
-  // Never interpolate raw user input into HTML.
+async function sendOtpEmail(toEmail, otp, agencyName = '') {
+  const brandName = process.env.BRAND_NAME || process.env.APP_NAME || 'Retentio';
+  const safeBrand = escapeHtml(brandName);
   const safeAgency = escapeHtml(agencyName);
   const safeOtp = escapeHtml(otp);
-  const from = process.env.SMTP_FROM || `"${agencyName}" <${process.env.SMTP_USER || 'noreply@client-crm.com'}>`;
-  const subject = `Your ${agencyName} verification code: ${otp}`;
+  const from = process.env.SMTP_FROM || `"${brandName}" <${process.env.SMTP_USER || 'noreply@client-crm.com'}>`;
+  const subject = `Your ${brandName} verification code: ${otp}`;
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; background: #ffffff;">
       <div style="text-align: center; margin-bottom: 32px;">
         <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: #0a0a0a; border-radius: 12px; margin-bottom: 16px;">
           <span style="color: #fff; font-weight: 800; font-size: 22px;">R</span>
         </div>
-        <h1 style="font-size: 24px; font-weight: 800; color: #0a0a0a; margin: 0; letter-spacing: -0.5px;">${safeAgency}</h1>
+        <h1 style="font-size: 24px; font-weight: 800; color: #0a0a0a; margin: 0; letter-spacing: -0.5px;">${safeBrand}</h1>
       </div>
 
       <h2 style="font-size: 18px; font-weight: 700; color: #0a0a0a; margin: 0 0 8px;">Verify your email address</h2>
       <p style="font-size: 14px; color: #555; margin: 0 0 28px; line-height: 1.6;">
-        Use the code below to complete your registration. This code expires in <strong>5 minutes</strong>.
+        Use the code below to complete your registration${safeAgency && safeAgency !== brandName ? ` for <strong>${safeAgency}</strong>` : ''}. This code expires in <strong>5 minutes</strong>.
       </p>
 
       <div style="background: #f5f5f5; border-radius: 14px; padding: 28px; text-align: center; margin-bottom: 28px;">
@@ -158,7 +160,7 @@ async function sendOtpEmail(toEmail, otp, agencyName = 'Client-crm') {
       </p>
 
       <hr style="border: none; border-top: 1px solid #f0f0f0; margin: 28px 0;" />
-      <p style="font-size: 11px; color: #ccc; text-align: center; margin: 0;">${safeAgency} · Secure account verification</p>
+      <p style="font-size: 11px; color: #ccc; text-align: center; margin: 0;">${safeBrand} · Secure account verification</p>
     </div>
   `;
 
