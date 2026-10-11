@@ -112,6 +112,10 @@ async function sendViaBrevo({ toEmail, subject, html, agencyName }) {
 
   const data = await res.json();
   if (!res.ok) {
+    if (data.message?.includes('unrecognised IP') || data.code === 'unauthorized') {
+      console.error(`\n⚠️  BREVO IP RESTRICTION: Brevo requires you to deactivate IP blocking so Render/cloud servers can send emails.`);
+      console.error(`👉  Go to: https://app.brevo.com/security/authorised_ips and click 'Deactivate' under 'Blocking unauthorized IP addresses'.\n`);
+    }
     throw new Error(`Brevo API error (${res.status}): ${data.message || JSON.stringify(data)}`);
   }
   return { messageId: data.messageId, provider: 'brevo' };
