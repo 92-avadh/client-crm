@@ -37,11 +37,8 @@ function scopeForUser(user) {
       params: [user.id],
     };
   }
-  if (user.role === 'admin' && user.id !== 'usr_admin') {
-    return {
-      sql: ' AND brand_id IN (SELECT id FROM brands WHERE owner_id = $1)',
-      params: [user.id],
-    };
+  if (user.role === 'admin') {
+    return { sql: '', params: [] };
   }
   return { sql: '', params: [] };
 }

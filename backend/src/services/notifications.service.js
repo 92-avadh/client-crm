@@ -18,7 +18,7 @@ async function listNotifications(user, { unreadOnly } = {}) {
     query += ` AND brand_id = $${idx}`;
     params.push(user.brandId || 'none');
     idx += 1;
-  } else if (user.id !== 'usr_admin') {
+  } else if (user.role !== 'admin') {
     query += ` AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}) OR target_user_id = $${idx})`;
     params.push(user.id);
     idx += 1;

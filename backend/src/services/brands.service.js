@@ -56,8 +56,10 @@ async function listBrands(user, { status, search } = {}) {
     idx += 1;
   } else {
     alias = '';
-    if (user.id === 'usr_admin') {
-      query = `SELECT * FROM brands WHERE (owner_id = 'usr_admin' OR owner_id IS NULL)`;
+    if (user.role === 'admin' || user.id === 'usr_admin') {
+      query = `SELECT * FROM brands WHERE (owner_id = $${idx} OR owner_id IS NULL OR $${idx} = 'usr_admin')`;
+      params.push(user.id);
+      idx += 1;
     } else {
       query = `SELECT * FROM brands WHERE owner_id = $${idx}`;
       params.push(user.id);

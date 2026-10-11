@@ -27,7 +27,7 @@ async function listUsers(user) {
   const params = [];
   let idx = 1;
 
-  if (user && user.id !== 'usr_admin') {
+  if (user && user.role !== 'admin') {
     if (user.role === 'brand') {
       query += ` AND (id = $${idx} OR brand_id = $${idx + 1})`;
       params.push(user.id, user.brandId || 'none');
@@ -36,9 +36,6 @@ async function listUsers(user) {
       query += ` AND (id = $${idx} OR created_by = $${idx})`;
       params.push(user.id);
     }
-  } else if (user && user.role !== 'admin') {
-    query += ` AND role != $${idx}`;
-    params.push('brand');
   }
 
   const { rows } = await pool.query(query, params);

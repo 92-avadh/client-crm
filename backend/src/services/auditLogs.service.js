@@ -17,8 +17,8 @@ async function listAuditLogs(user, { limit, offset } = {}) {
   let countQuery = 'SELECT COUNT(*) FROM audit_logs';
   const params = [];
 
-  // Non-superadmins only see their own activity.
-  if (user.id !== 'usr_admin') {
+  // Non-admins only see their own activity.
+  if (user.role !== 'admin') {
     query += ' WHERE actor_name = $1';
     countQuery += ' WHERE actor_name = $1';
     params.push(user.name);
@@ -29,7 +29,7 @@ async function listAuditLogs(user, { limit, offset } = {}) {
   params.push(safeLimit, safeOffset);
 
   const { rows } = await pool.query(query, params);
-  const countParams = user.id !== 'usr_admin' ? [user.name] : [];
+  const countParams = user.role !== 'admin' ? [user.name] : [];
   const total = await pool.query(countQuery, countParams);
 
   return {

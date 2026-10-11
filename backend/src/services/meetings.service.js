@@ -35,7 +35,7 @@ async function listMeetings(user, { brandId, leadId } = {}) {
       query += ` AND brand_id = $${idx}`;
       params.push(user.brandId || 'none');
       idx += 1;
-    } else if (user.id !== 'usr_admin') {
+    } else if (user.role !== 'admin') {
       query += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
       params.push(user.id);
       idx += 1;

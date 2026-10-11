@@ -173,12 +173,57 @@ connectWithRetry()
         UPDATE leads SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
       `).catch(e => console.warn('Migration warning:', e.message));
 
-      const userCountRes = await pool.query('SELECT COUNT(*) FROM users');
-      if (parseInt(userCountRes.rows[0].count, 10) === 0) {
-        console.log('🌱 Database is empty. Auto-seeding demo data...');
-        const seed = require('./src/db/seed');
-        await seed(false);
-        console.log('✅ Auto-seed completed');
+      // One-time database reset for fresh account testing
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS _system_migrations (
+          name VARCHAR(100) PRIMARY KEY,
+          applied_at TIMESTAMP DEFAULT NOW()
+        );
+      `).catch(() => {});
+
+      const { rows: cleared } = await pool.query(
+        "SELECT 1 FROM _system_migrations WHERE name = 'clear_all_users_for_fresh_testing_v1'"
+      ).catch(() => ({ rows: [] }));
+
+      if (!cleared.length) {
+        console.log('🧹 One-time reset: Clearing all existing users and relational records from database for fresh account testing...');
+        await pool.query(`
+          DELETE FROM message_read_by;
+          DELETE FROM message_attachments;
+          DELETE FROM chat_messages;
+          DELETE FROM conversation_participants;
+          DELETE FROM conversations;
+          DELETE FROM meeting_attendees;
+          DELETE FROM meetings;
+          DELETE FROM notifications;
+          DELETE FROM audit_logs;
+          DELETE FROM otp_verifications;
+          DELETE FROM payments;
+          DELETE FROM invoice_items;
+          DELETE FROM recurring_invoices;
+          DELETE FROM invoices;
+          DELETE FROM expenses;
+          DELETE FROM leads;
+          DELETE FROM project_assignments;
+          DELETE FROM tasks;
+          DELETE FROM projects;
+          DELETE FROM brand_assignments;
+          DELETE FROM user_brand_assignments;
+          DELETE FROM brand_documents;
+          DELETE FROM brands;
+          DELETE FROM users;
+          INSERT INTO _system_migrations (name) VALUES ('clear_all_users_for_fresh_testing_v1')
+          ON CONFLICT DO NOTHING;
+        `).catch(e => console.warn('User reset warning:', e.message));
+        console.log('✅ All users removed. Database is now clean and ready for fresh account registration.');
+      } else if (process.env.AUTO_SEED === 'true') {
+        const userCountRes = await pool.query('SELECT COUNT(*) FROM users');
+        if (parseInt(userCountRes.rows[0].count, 10) === 0) {
+          console.log('🌱 Database is empty. Auto-seeding demo data...');
+          const seed = require('./src/db/seed');
+          await seed(false);
+          console.log('✅ Auto-seed completed');
+        }
       }
     } catch (err) {
       console.error('⚠️  Schema / Seed error:', err.message);
