@@ -508,11 +508,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     {canResend ? 'Resend code' : `Resend in ${resendTimer}s`}
                   </button>
                 </div>
-
-                {/* Dev hint */}
-                <div style={{ marginTop: 14, padding: '9px 12px', background: 'var(--warn-bg)', border: '1px solid var(--warn-border)', borderRadius: 8, fontSize: 12, color: 'var(--warn-text)' }}>
-                  <strong>Dev mode:</strong> OTP is printed in the backend console if SMTP is not configured.
-                </div>
               </div>
             )}
 

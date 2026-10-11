@@ -162,11 +162,11 @@ async function sendOtpEmail(toEmail, otp, agencyName = 'Client-crm') {
     </div>
   `;
 
-  // Always log OTP immediately to stdout so developers can always verify in Render logs instantly
-  console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  console.log(`🔑  VERIFICATION CODE FOR: ${toEmail}`);
-  console.log(`    OTP CODE: [ ${otp} ]`);
-  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+  // Log dispatch attempt without leaking the secret OTP code in production
+  console.log(`📤 Dispatching verification code to ${toEmail}...`);
+  if (process.env.DEV_LOG_OTP === 'true') {
+    console.log(`🔑 [DEV ONLY] OTP for ${toEmail}: [ ${otp} ]`);
+  }
 
   // Priority 1: Resend HTTP API (HTTPS port 443, never blocked by Render)
   if (process.env.RESEND_API_KEY) {
