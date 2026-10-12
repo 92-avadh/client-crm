@@ -115,6 +115,7 @@ export const api = {
     create: (data: any) => req<any>('POST', '/expenses', data),
     update: (id: string, data: any) => req<any>('PATCH', `/expenses/${id}`, data),
     delete: (id: string) => req<any>('DELETE', `/expenses/${id}`),
+    bulkDelete: (ids: string[]) => req<any>('POST', '/expenses/bulk-delete', { ids }),
   },
   meetings: {
     list: (params?: any) => req<any[]>('GET', '/meetings' + (params ? '?' + new URLSearchParams(params) : '')),

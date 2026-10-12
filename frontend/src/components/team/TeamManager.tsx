@@ -311,13 +311,13 @@ export const TeamManager: React.FC = () => {
       {/* Deactivate confirmation — animated alert dialog */}
       {memberToDeactivate && (
         <AlertDialog open onOpenChange={(o) => { if (!o) setMemberToDeactivate(null); }}>
-          <AlertDialogPopup from="bottom" className="sm:max-w-[440px]">
+          <AlertDialogPopup from="bottom">
             <AlertDialogHeader>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--danger-bg)', color: 'var(--danger-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <UserX style={{ width: 18, height: 18 }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--danger-bg)', color: 'var(--danger-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <UserX style={{ width: 19, height: 19 }} />
                 </div>
-                <div style={{ textAlign: 'left' }}>
+                <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                   <AlertDialogTitle>Deactivate {memberToDeactivate.name}?</AlertDialogTitle>
                   <AlertDialogDescription>
                     They will no longer be able to log in. Their historical records and

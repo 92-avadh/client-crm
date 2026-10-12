@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getNaturalErrorMessage } from '../../services/errors';
 import type { ExpenseCategory } from '../../types';
 import {
   Wallet,
@@ -18,9 +19,11 @@ import {
   CheckCircle,
   Clock,
   ArrowUpRight,
-  X
+  X,
+  Trash2,
 } from 'lucide-react';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { DeleteExpenseModal } from '../expenses/ExpenseFormModal';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -60,6 +63,8 @@ export const FinanceManager: React.FC = () => {
     expenses,
     brands,
     addExpense,
+    deleteExpense,
+    deleteExpenses,
     invoices,
     updatePaymentStatus,
     showToast,
@@ -68,6 +73,75 @@ export const FinanceManager: React.FC = () => {
 
   const role = currentUser.role;
   const isAdmin = role === 'admin';
+
+  /* ── Expense selection state ─────────────────────────────────── */
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<Set<string>>(new Set());
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<any>(null);
+  const [expensesToDelete, setExpensesToDelete] = useState<any[]>([]);
+
+  const headerCheckboxRef = React.useRef<HTMLInputElement>(null);
+  const allExpensesSelected = expenses.length > 0 && selectedExpenseIds.size > 0 && expenses.every(e => selectedExpenseIds.has(e.id));
+  const someExpensesSelected = selectedExpenseIds.size > 0 && expenses.some(e => selectedExpenseIds.has(e.id)) && !allExpensesSelected;
+
+  React.useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = someExpensesSelected;
+    }
+  }, [someExpensesSelected]);
+
+  const handleToggleSelectExpense = (id: string) => {
+    setSelectedExpenseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllExpenses = (checked: boolean) => {
+    if (checked) {
+      setSelectedExpenseIds(new Set(expenses.map((e) => e.id)));
+    } else {
+      setSelectedExpenseIds(new Set());
+    }
+  };
+
+  const handleOpenBulkDeleteExpenses = () => {
+    const selected = expenses.filter((e) => selectedExpenseIds.has(e.id));
+    if (selected.length === 0) return;
+    setExpensesToDelete(selected);
+    setExpenseToDelete(null);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteExpenses = async () => {
+    try {
+      if (expensesToDelete.length > 1) {
+        await deleteExpenses(expensesToDelete.map((e) => e.id));
+        setSelectedExpenseIds((prev) => {
+          const next = new Set(prev);
+          expensesToDelete.forEach((e) => next.delete(e.id));
+          return next;
+        });
+      } else if (expensesToDelete.length === 1 || expenseToDelete) {
+        const target = expensesToDelete[0] || expenseToDelete;
+        if (target) {
+          await deleteExpense(target.id);
+          setSelectedExpenseIds((prev) => {
+            const next = new Set(prev);
+            next.delete(target.id);
+            return next;
+          });
+        }
+      }
+      setDeleteModalOpen(false);
+      setExpenseToDelete(null);
+      setExpensesToDelete([]);
+    } catch (err: any) {
+      showToast(getNaturalErrorMessage(err), 'error');
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<'payments' | 'expenses' | 'profitability'>('payments');
   const [paymentFilterStatus, setPaymentFilterStatus] = useState<'all' | 'Success' | 'Pending'>('all');
@@ -549,10 +623,102 @@ export const FinanceManager: React.FC = () => {
             </button>
           </div>
 
+          {/* Bulk Action Toolbar for Expenses */}
+          {isAdmin && selectedExpenseIds.size > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 16px',
+                borderRadius: 12,
+                background: 'var(--bg-raised)',
+                border: '1px solid var(--border-strong)',
+                boxShadow: 'var(--shadow-sm)',
+                animation: 'fadeIn 0.2s ease',
+                flexWrap: 'wrap',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 7,
+                    background: 'var(--solid-btn-bg)',
+                    color: 'var(--solid-btn-text)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontWeight: 800,
+                  }}
+                >
+                  {selectedExpenseIds.size}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {selectedExpenseIds.size} expense record{selectedExpenseIds.size > 1 ? 's' : ''} selected
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  (₹{expenses
+                    .filter((e) => selectedExpenseIds.has(e.id))
+                    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+                    .toLocaleString('en-IN')})
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedExpenseIds(new Set())}
+                  className="btn-secondary"
+                  style={{ height: 32, padding: '0 12px', fontSize: 12, borderRadius: 8 }}
+                >
+                  Clear Selection
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenBulkDeleteExpenses}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    height: 32,
+                    padding: '0 14px',
+                    borderRadius: 8,
+                    background: 'var(--danger-bg)',
+                    color: 'var(--danger-text)',
+                    border: '1px solid var(--danger-border)',
+                    fontSize: 12,
+                    fontWeight: 750,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Trash2 style={{ width: 13, height: 13 }} />
+                  Delete Selected ({selectedExpenseIds.size})
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="table-scroll" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
               <tr>
+                {isAdmin && (
+                  <th style={{ width: 42, textAlign: 'center', padding: '0 8px' }}>
+                    <input
+                      ref={headerCheckboxRef}
+                      type="checkbox"
+                      checked={allExpensesSelected}
+                      onChange={(e) => handleSelectAllExpenses(e.target.checked)}
+                      title="Select all expenses"
+                      style={{ cursor: 'pointer', accentColor: 'var(--text-primary)', width: 16, height: 16 }}
+                    />
+                  </th>
+                )}
                 <th>Date</th>
                 <th>Category</th>
                 <th>Amount (INR)</th>
@@ -560,13 +726,31 @@ export const FinanceManager: React.FC = () => {
                 <th>Note / Purpose</th>
                 <th>Linked Client</th>
                 <th>Type</th>
+                {isAdmin && <th style={{ textAlign: 'right' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {expenses.map((e) => {
                 const linkedBrand = brands.find((b) => b.id === e.brandId);
+                const isSelected = selectedExpenseIds.has(e.id);
                 return (
-                  <tr key={e.id}>
+                  <tr
+                    key={e.id}
+                    style={{
+                      background: isSelected ? 'var(--bg-raised)' : undefined,
+                      transition: 'background 0.15s ease',
+                    }}
+                  >
+                    {isAdmin && (
+                      <td style={{ width: 42, textAlign: 'center', padding: '0 8px' }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelectExpense(e.id)}
+                          style={{ cursor: 'pointer', accentColor: 'var(--text-primary)', width: 16, height: 16 }}
+                        />
+                      </td>
+                    )}
                     <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{e.date}</td>
                     <td>
                       <span style={badgeNeutral}>{e.category}</span>
@@ -592,6 +776,34 @@ export const FinanceManager: React.FC = () => {
                         <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>One-time</span>
                       )}
                     </td>
+                    {isAdmin && (
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          onClick={() => {
+                            setExpenseToDelete(e);
+                            setExpensesToDelete([e]);
+                            setDeleteModalOpen(true);
+                          }}
+                          title="Delete expense record"
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--danger-border)',
+                            color: 'var(--danger-text)',
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <Trash2 style={{ width: 12, height: 12 }} />
+                          Delete
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -775,6 +987,18 @@ export const FinanceManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete confirmation modal */}
+      <DeleteExpenseModal
+        expense={deleteModalOpen ? expenseToDelete : null}
+        expenses={deleteModalOpen ? expensesToDelete : []}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setExpenseToDelete(null);
+          setExpensesToDelete([]);
+        }}
+        onConfirm={confirmDeleteExpenses}
+      />
     </div>
   );
 };

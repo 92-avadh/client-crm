@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getNaturalErrorMessage } from '../../services/errors';
 import type { Expense, ExpenseCategory } from '../../types';
@@ -34,10 +35,14 @@ const emptyForm = (): ExpenseFormData => ({
 export const ExpensesManager: React.FC = () => {
   const {
     currentUser, expenses, brands, allUsers,
-    addExpense, updateExpense, deleteExpense, showToast,
+    addExpense, updateExpense, deleteExpense, deleteExpenses, showToast,
   } = useApp();
 
   const canManage = currentUser.role === 'admin' || currentUser.role === 'hr';
+
+  /* ── Selection state ─────────────────────────────────────────── */
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<Set<string>>(new Set());
+  const [expensesToDelete, setExpensesToDelete] = useState<Expense[]>([]);
 
   /* ── Filters ─────────────────────────────────────────────────── */
   const [searchQuery, setSearchQuery] = useState('');
@@ -167,12 +172,54 @@ export const ExpensesManager: React.FC = () => {
     await updateExpense(expense.id, { paymentStatus: target });
   };
 
+  const handleToggleSelect = (id: string) => {
+    setSelectedExpenseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = (select: boolean) => {
+    if (select) {
+      setSelectedExpenseIds(new Set(filteredExpenses.map((e) => e.id)));
+    } else {
+      setSelectedExpenseIds(new Set());
+    }
+  };
+
+  const handleOpenBulkDelete = () => {
+    const selected = filteredExpenses.filter((e) => selectedExpenseIds.has(e.id));
+    if (selected.length === 0) return;
+    setExpensesToDelete(selected);
+    setExpenseToDelete(null);
+    setDeleteModalOpen(true);
+  };
+
   const confirmDelete = async () => {
-    if (!expenseToDelete) return;
     try {
-      await deleteExpense(expenseToDelete.id);
+      if (expensesToDelete.length > 1) {
+        await deleteExpenses(expensesToDelete.map((e) => e.id));
+        setSelectedExpenseIds((prev) => {
+          const next = new Set(prev);
+          expensesToDelete.forEach((e) => next.delete(e.id));
+          return next;
+        });
+      } else if (expensesToDelete.length === 1 || expenseToDelete) {
+        const target = expensesToDelete[0] || expenseToDelete;
+        if (target) {
+          await deleteExpense(target.id);
+          setSelectedExpenseIds((prev) => {
+            const next = new Set(prev);
+            next.delete(target.id);
+            return next;
+          });
+        }
+      }
       setDeleteModalOpen(false);
       setExpenseToDelete(null);
+      setExpensesToDelete([]);
     } catch (err: any) {
       showToast(getNaturalErrorMessage(err), 'error');
     }
@@ -333,6 +380,87 @@ export const ExpensesManager: React.FC = () => {
           </div>
         </div>
 
+        {/* Bulk Action Toolbar */}
+        {canManage && selectedExpenseIds.size > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 16px',
+              borderRadius: 12,
+              background: 'var(--bg-raised)',
+              border: '1px solid var(--border-strong)',
+              boxShadow: 'var(--shadow-sm)',
+              animation: 'fadeIn 0.2s ease',
+              flexWrap: 'wrap',
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 7,
+                  background: 'var(--solid-btn-bg)',
+                  color: 'var(--solid-btn-text)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
+              >
+                {selectedExpenseIds.size}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {selectedExpenseIds.size} expense record{selectedExpenseIds.size > 1 ? 's' : ''} selected
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                (₹{filteredExpenses
+                  .filter((e) => selectedExpenseIds.has(e.id))
+                  .reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+                  .toLocaleString('en-IN')})
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setSelectedExpenseIds(new Set())}
+                className="btn-secondary"
+                style={{ height: 32, padding: '0 12px', fontSize: 12, borderRadius: 8 }}
+              >
+                Clear Selection
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenBulkDelete}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 32,
+                  padding: '0 14px',
+                  borderRadius: 8,
+                  background: 'var(--danger-bg)',
+                  color: 'var(--danger-text)',
+                  border: '1px solid var(--danger-border)',
+                  fontSize: 12,
+                  fontWeight: 750,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Trash2 style={{ width: 13, height: 13 }} />
+                Delete Selected ({selectedExpenseIds.size})
+              </button>
+            </div>
+          </div>
+        )}
+
         {filteredExpenses.length === 0 ? (
           <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px' }}>
@@ -352,9 +480,16 @@ export const ExpensesManager: React.FC = () => {
             expenses={filteredExpenses}
             brands={brands}
             canManage={canManage}
+            selectedIds={selectedExpenseIds}
+            onToggleSelect={handleToggleSelect}
+            onSelectAll={handleSelectAll}
             onToggleStatus={handleToggleStatus}
             onEdit={handleOpenEdit}
-            onDelete={(exp) => { setExpenseToDelete(exp); setDeleteModalOpen(true); }}
+            onDelete={(exp) => {
+              setExpenseToDelete(exp);
+              setExpensesToDelete([exp]);
+              setDeleteModalOpen(true);
+            }}
             onBrandClick={(id) => setBrandFilter(id)}
             onEmployeeClick={(name) => setEmployeeFilter(name)}
           />
@@ -376,7 +511,8 @@ export const ExpensesManager: React.FC = () => {
 
       <DeleteExpenseModal
         expense={deleteModalOpen ? expenseToDelete : null}
-        onClose={() => { setDeleteModalOpen(false); setExpenseToDelete(null); }}
+        expenses={deleteModalOpen ? expensesToDelete : []}
+        onClose={() => { setDeleteModalOpen(false); setExpenseToDelete(null); setExpensesToDelete([]); }}
         onConfirm={confirmDelete}
       />
     </div>

@@ -61,4 +61,14 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Expense deleted successfully', id: req.params.id });
 });
 
-module.exports = { list, create, update, remove };
+const bulkRemove = asyncHandler(async (req, res) => {
+  if (!requireFinanceRole(req, res)) return;
+  const { ids } = req.body || {};
+  if (!Array.isArray(ids) || !ids.length) {
+    return res.status(400).json({ error: 'Please provide an array of expense IDs to delete.' });
+  }
+  const count = await expenses.deleteExpenses(req.user, ids);
+  res.json({ success: true, count, message: `${count} expense(s) deleted successfully` });
+});
+
+module.exports = { list, create, update, remove, bulkRemove };

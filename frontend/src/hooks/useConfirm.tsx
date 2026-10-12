@@ -59,30 +59,31 @@ export function useConfirm() {
 
   const element = options ? (
     <AlertDialog open onOpenChange={(o) => { if (!o) settle(false); }}>
-      <AlertDialogPopup from="bottom" className="sm:max-w-[440px]">
+      <AlertDialogPopup from="bottom">
         <AlertDialogHeader>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
             {(() => {
               const Icon = ICONS[options.icon ?? (options.destructive ? 'warning' : 'question')];
               return (
                 <div
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
                     flexShrink: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: options.destructive ? 'var(--danger-bg)' : 'var(--bg-raised)',
                     color: options.destructive ? 'var(--danger-text)' : 'var(--text-primary)',
+                    marginTop: 1,
                   }}
                 >
-                  <Icon style={{ width: 18, height: 18 }} />
+                  <Icon style={{ width: 19, height: 19 }} />
                 </div>
               );
             })()}
-            <div style={{ textAlign: 'left' }}>
+            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
               <AlertDialogTitle>{options.title}</AlertDialogTitle>
               {options.description && (
                 <AlertDialogDescription>{options.description}</AlertDialogDescription>

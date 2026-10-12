@@ -190,7 +190,17 @@ async function deleteExpense(user, id) {
   return true;
 }
 
+async function deleteExpenses(user, ids) {
+  if (!Array.isArray(ids) || !ids.length) return 0;
+  let deletedCount = 0;
+  for (const id of ids) {
+    const deleted = await deleteExpense(user, id);
+    if (deleted) deletedCount++;
+  }
+  return deletedCount;
+}
+
 module.exports = {
   EXPENSE_CATEGORIES, PAYMENT_MODES, PAYMENT_STATUSES,
-  mapExpense, listExpenses, createExpense, updateExpense, deleteExpense,
+  mapExpense, listExpenses, createExpense, updateExpense, deleteExpense, deleteExpenses,
 };

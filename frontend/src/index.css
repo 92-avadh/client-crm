@@ -684,35 +684,39 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.625rem 0.875rem;
-  border-radius: var(--radius);
-  font-size: 0.9375rem; /* 15px */
-  font-weight: 550;
-  color: var(--text-secondary);
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  color: var(--text-secondary, #525252);
   cursor: pointer;
-  transition: var(--transition);
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, transform 0.06s ease;
   border: 1px solid transparent;
   text-align: left;
   background: transparent;
   font-family: var(--font-sans);
   line-height: 1.4;
-  letter-spacing: var(--tracking-normal);
-  word-spacing: 0.01em;
+  letter-spacing: -0.01em;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .nav-item:hover {
-  color: #0A2540;
-  background: #F0F5FA;
+  color: var(--text-primary, #0A2540);
+  background: var(--bg-raised, #F1F5F9);
+}
+.nav-item:active {
+  transform: scale(0.985);
+  background: #DCFCE7 !important;
 }
 .nav-item.active {
-  color: #0A2540;
-  background: #ECFDF5;
-  border-color: #86EFAC;
-  font-weight: 700;
-  letter-spacing: var(--tracking-normal);
-  box-shadow: 0 1px 3px rgba(0, 208, 94, 0.12);
+  color: var(--brand-green-dark, #034726);
+  background: var(--brand-green-subtle, #F0FDF4);
+  border-color: var(--brand-green-border, #BBF7D0);
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.08);
 }
 .nav-item.active svg {
-  color: #059639;
+  color: var(--brand-green, #059639);
 }
 
 /* ─── Section Labels & Subtitles ─────────────────────────── */
@@ -842,6 +846,62 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
 
 /* Wide data tables that should stay tabular but scroll on mobile */
 .table-scroll { max-width: 100%; }
+
+/* ─── Premium Dashboard Grid System ──────────────────────── */
+.dashboard-grid-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 1100px) {
+  .dashboard-grid-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-grid-kpis {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.dashboard-grid-ops {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1100px) {
+  .dashboard-grid-ops {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-grid-ops {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.dashboard-grid-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1024px) {
+  .dashboard-grid-main {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.dashboard-grid-secondary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1024px) {
+  .dashboard-grid-secondary {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 
 /* Touch targets — WCAG minimum 44px for primary actions on mobile */
 @media (max-width: 768px) {
@@ -1135,15 +1195,19 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
 
 /* ─── Dark Mode Specific Component Accents ──────────────── */
 .dark .nav-item:hover {
-  color: #38BDF8 !important;
+  color: #F8FAFC !important;
   background: #1E293B !important;
+}
+.dark .nav-item:active {
+  transform: scale(0.985);
+  background: rgba(16, 185, 129, 0.2) !important;
 }
 
 .dark .nav-item.active {
   color: #34D399 !important;
-  background: rgba(6, 78, 59, 0.45) !important;
-  border-color: #047857 !important;
-  box-shadow: 0 1px 4px rgba(52, 211, 153, 0.15) !important;
+  background: rgba(6, 78, 59, 0.35) !important;
+  border-color: rgba(5, 150, 57, 0.35) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
 .dark .nav-item.active svg {
@@ -1435,7 +1499,7 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
 @keyframes toastSlideIn {
   from {
     opacity: 0;
-    transform: translateX(40px) scale(0.96);
+    transform: translateY(16px) scale(0.96);
   }
   to {
     opacity: 1;

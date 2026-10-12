@@ -64,6 +64,7 @@ interface AppContextType {
   addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<void>;
   updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  deleteExpenses: (ids: string[]) => Promise<void>;
 
   meetings: Meeting[];
   addMeeting: (meetingData: Omit<Meeting, 'id'>) => Promise<void>;
@@ -367,9 +368,7 @@ export const AppProvider: React.FC<{
     setActiveTabRaw(tab);
     setMobileSidebarOpen(false);
     const targetPath = ROUTES[tab as keyof typeof ROUTES] || DEFAULT_ROUTE;
-    if (window.location.pathname !== targetPath) {
-      navigate(targetPath);
-    }
+    navigate(targetPath);
   }, [navigate]);
 
   // Sync activeTab when URL changes (browser back/forward, direct URL visit)
@@ -429,13 +428,18 @@ export const AppProvider: React.FC<{
      ------------------------------------------------------------------ */
 
   const loadedRef = useRef<Set<string>>(new Set());
+  const failedRef = useRef<Set<string>>(new Set());
   const inflightRef = useRef<Map<string, Promise<void>>>(new Map());
 
   const loadDomain = useCallback(async (domain: string) => {
     if (!getToken()) return;
+    // Only skip if successfully loaded before; failed domains are retried on revisit
     if (loadedRef.current.has(domain)) return;
     const inflight = inflightRef.current.get(domain);
     if (inflight) return inflight;
+
+    // Clear any previous failure record for this domain before retrying
+    failedRef.current.delete(domain);
 
     const task = (async () => {
       try {
@@ -544,6 +548,7 @@ export const AppProvider: React.FC<{
         }
         loadedRef.current.add(domain);
       } catch (e: any) {
+        failedRef.current.add(domain);
         const msg = getNaturalErrorMessage(e);
         setApiError(msg);
         showToast(msg, 'error');
@@ -589,6 +594,8 @@ export const AppProvider: React.FC<{
   }, []);
 
   // Load only the data the current route needs (see loadDomain).
+  // Failed domains are retried on every revisit because loadDomain
+  // only short-circuits on success (loadedRef), not on failure.
   useEffect(() => {
     const pathTab = PATH_TO_TAB[location.pathname];
     if (pathTab) loadDomain(pathTab);
@@ -839,6 +846,24 @@ export const AppProvider: React.FC<{
     showToast('Expense deleted', 'info');
   };
 
+  const deleteExpenses = async (ids: string[]) => {
+    if (!['admin', 'hr'].includes(currentUser.role)) {
+      showToast('Unauthorized: Admin or HR access required to manage expenses', 'error');
+      return;
+    }
+    if (!ids || ids.length === 0) return;
+    try {
+      await api.expenses.bulkDelete(ids);
+      const idSet = new Set(ids);
+      setExpenses(prev => prev.filter(e => !idSet.has(e.id)));
+      showToast(`${ids.length} expense record${ids.length > 1 ? 's' : ''} deleted`, 'info');
+    } catch (err: any) {
+      console.error('Bulk delete expenses failed:', err);
+      showToast(getNaturalErrorMessage(err), 'error');
+      throw err;
+    }
+  };
+
   // ---- Meetings ----
   const addMeeting = async (meetingData: any) => {
     const created = await api.meetings.create(meetingData);
@@ -980,6 +1005,7 @@ export const AppProvider: React.FC<{
         addExpense,
         updateExpense,
         deleteExpense,
+        deleteExpenses,
         meetings,
         addMeeting,
         updateMeeting,

@@ -176,10 +176,21 @@ export const AlertDialogPopup = React.forwardRef<HTMLDivElement, AlertDialogPopu
               exit="exit"
               variants={popupVariants}
               className={cn(
-                "relative z-[101] w-full max-w-lg overflow-hidden rounded-3xl border p-6 shadow-2xl md:p-8",
-                "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)]",
+                "relative z-[101] w-full text-[var(--text-primary)]",
                 className
               )}
+              style={{
+                maxWidth: 'min(480px, calc(100vw - 32px))',
+                width: '100%',
+                background: 'var(--bg-card, #ffffff)',
+                border: '1px solid var(--border)',
+                borderRadius: 20,
+                padding: '24px 26px 22px 26px',
+                boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.22), 0 8px 24px -6px rgba(0, 0, 0, 0.1)',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+                ...(props.style || {}),
+              }}
               {...(props as any)}
             >
               {children}
@@ -196,24 +207,66 @@ AlertDialogPopup.displayName = "AlertDialogPopup";
 /* ------------------------------------------------------------------ */
 /*  Layout primitives                                                  */
 /* ------------------------------------------------------------------ */
-export const AlertDialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
+export const AlertDialogHeader = ({ className, style, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn("flex flex-col text-left", className)}
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 6,
+      width: '100%',
+      ...style,
+    }}
+    {...props}
+  />
 );
 AlertDialogHeader.displayName = "AlertDialogHeader";
 
-export const AlertDialogTitle = ({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-  <h2 className={cn("text-lg font-semibold text-[var(--text-primary)]", className)} {...props} />
+export const AlertDialogTitle = ({ className, style, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
+  <h2
+    className={cn("font-bold text-[var(--text-primary)]", className)}
+    style={{
+      fontSize: 18,
+      fontWeight: 800,
+      color: 'var(--text-primary)',
+      lineHeight: 1.3,
+      margin: 0,
+      letterSpacing: '-0.015em',
+      ...style,
+    }}
+    {...props}
+  />
 );
 AlertDialogTitle.displayName = "AlertDialogTitle";
 
-export const AlertDialogDescription = ({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className={cn("text-sm leading-relaxed text-[var(--text-secondary)]", className)} {...props} />
+export const AlertDialogDescription = ({ className, style, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
+  <p
+    className={cn("text-[var(--text-secondary)]", className)}
+    style={{
+      fontSize: 13.5,
+      color: 'var(--text-secondary)',
+      lineHeight: 1.55,
+      margin: '4px 0 0 0',
+      ...style,
+    }}
+    {...props}
+  />
 );
 AlertDialogDescription.displayName = "AlertDialogDescription";
 
-export const AlertDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+export const AlertDialogFooter = ({ className, style, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3", className)}
+    className={cn("flex items-center justify-end", className)}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: 10,
+      marginTop: 24,
+      width: '100%',
+      flexWrap: 'wrap',
+      ...style,
+    }}
     {...props}
   />
 );
@@ -224,6 +277,7 @@ AlertDialogFooter.displayName = "AlertDialogFooter";
 /* ------------------------------------------------------------------ */
 export const AlertDialogCancel = ({
   className,
+  style,
   children,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
@@ -233,11 +287,25 @@ export const AlertDialogCancel = ({
     <button
       type="button"
       className={cn(
-        "inline-flex h-10 cursor-pointer items-center justify-center rounded-xl px-4 text-[13px] font-semibold transition-colors",
-        "border border-[var(--border-strong)] bg-[var(--bg-card)] text-[var(--text-primary)]",
-        "hover:bg-[var(--bg-raised)] focus-visible:outline-none focus-visible:ring-2",
+        "cursor-pointer transition-colors",
         className
       )}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 38,
+        padding: '0 18px',
+        borderRadius: 10,
+        fontSize: 13,
+        fontWeight: 650,
+        border: '1px solid var(--border-strong)',
+        background: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+        ...style,
+      }}
       onClick={(e) => {
         props.onClick?.(e);
         setOpen(false);
@@ -255,6 +323,7 @@ AlertDialogCancel.displayName = "AlertDialogCancel";
 /* ------------------------------------------------------------------ */
 export const AlertDialogAction = ({
   className,
+  style,
   children,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
@@ -264,11 +333,27 @@ export const AlertDialogAction = ({
     <button
       type="button"
       className={cn(
-        "inline-flex h-10 cursor-pointer items-center justify-center rounded-xl px-4 text-[13px] font-semibold transition-colors",
-        "border border-transparent bg-[var(--solid-btn-bg)] text-[var(--solid-btn-text)]",
-        "hover:opacity-90 focus-visible:outline-none focus-visible:ring-2",
+        "cursor-pointer transition-colors",
         className
       )}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 38,
+        padding: '0 20px',
+        borderRadius: 10,
+        fontSize: 13,
+        fontWeight: 700,
+        border: 'none',
+        background: 'var(--solid-btn-bg)',
+        color: 'var(--solid-btn-text)',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        transition: 'all 0.15s ease',
+        ...style,
+      }}
       onClick={(e) => {
         props.onClick?.(e);
         setOpen(false);

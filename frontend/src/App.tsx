@@ -8,25 +8,59 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { OnboardingWizard } from './components/auth/OnboardingWizard';
 import { StarParticles } from './components/layout/StarParticles';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { Check, AlertCircle, Info, X } from 'lucide-react';
 import { ROUTES, DEFAULT_ROUTE } from './routes';
 
 /* ------------------------------------------------------------------ */
 /*  Lazy-loaded route components — code splitting for smaller bundle    */
 /* ------------------------------------------------------------------ */
-const Dashboard = lazy(() => import('./components/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
-const ClientsManager = lazy(() => import('./components/clients/ClientsManager').then(m => ({ default: m.ClientsManager })));
-const InvoicesManager = lazy(() => import('./components/invoices/InvoicesManager').then(m => ({ default: m.InvoicesManager })));
-const FinanceManager = lazy(() => import('./components/finance/FinanceManager').then(m => ({ default: m.FinanceManager })));
-const ExpensesManager = lazy(() => import('./components/expenses/ExpensesManager').then(m => ({ default: m.ExpensesManager })));
-const RetentionEngine = lazy(() => import('./components/retention/RetentionEngine').then(m => ({ default: m.RetentionEngine })));
-const ChatManager = lazy(() => import('./components/chat/ChatManager').then(m => ({ default: m.ChatManager })));
-const ProjectsAndTasks = lazy(() => import('./components/projects/ProjectsAndTasks').then(m => ({ default: m.ProjectsAndTasks })));
-const MeetingsCalendar = lazy(() => import('./components/calendar/MeetingsCalendar').then(m => ({ default: m.MeetingsCalendar })));
-const LeadsPipeline = lazy(() => import('./components/leads/LeadsPipeline').then(m => ({ default: m.LeadsPipeline })));
-const SettingsManager = lazy(() => import('./components/settings/SettingsManager').then(m => ({ default: m.SettingsManager })));
-const TeamManager = lazy(() => import('./components/team/TeamManager').then(m => ({ default: m.TeamManager })));
-const InboxManager = lazy(() => import('./components/inbox/InboxManager').then(m => ({ default: m.InboxManager })));
+const importDashboard = () => import('./components/dashboard/Dashboard').then(m => ({ default: m.Dashboard }));
+const importClients = () => import('./components/clients/ClientsManager').then(m => ({ default: m.ClientsManager }));
+const importInvoices = () => import('./components/invoices/InvoicesManager').then(m => ({ default: m.InvoicesManager }));
+const importFinance = () => import('./components/finance/FinanceManager').then(m => ({ default: m.FinanceManager }));
+const importExpenses = () => import('./components/expenses/ExpensesManager').then(m => ({ default: m.ExpensesManager }));
+const importRetention = () => import('./components/retention/RetentionEngine').then(m => ({ default: m.RetentionEngine }));
+const importChat = () => import('./components/chat/ChatManager').then(m => ({ default: m.ChatManager }));
+const importProjectsAndTasks = () => import('./components/projects/ProjectsAndTasks').then(m => ({ default: m.ProjectsAndTasks }));
+const importMeetings = () => import('./components/calendar/MeetingsCalendar').then(m => ({ default: m.MeetingsCalendar }));
+const importLeads = () => import('./components/leads/LeadsPipeline').then(m => ({ default: m.LeadsPipeline }));
+const importSettings = () => import('./components/settings/SettingsManager').then(m => ({ default: m.SettingsManager }));
+const importTeam = () => import('./components/team/TeamManager').then(m => ({ default: m.TeamManager }));
+const importInbox = () => import('./components/inbox/InboxManager').then(m => ({ default: m.InboxManager }));
+
+const Dashboard = lazy(importDashboard);
+const ClientsManager = lazy(importClients);
+const InvoicesManager = lazy(importInvoices);
+const FinanceManager = lazy(importFinance);
+const ExpensesManager = lazy(importExpenses);
+const RetentionEngine = lazy(importRetention);
+const ChatManager = lazy(importChat);
+const ProjectsAndTasks = lazy(importProjectsAndTasks);
+const MeetingsCalendar = lazy(importMeetings);
+const LeadsPipeline = lazy(importLeads);
+const SettingsManager = lazy(importSettings);
+const TeamManager = lazy(importTeam);
+const InboxManager = lazy(importInbox);
+
+export const prefetchRoute = (tab: string) => {
+  switch (tab) {
+    case 'dashboard': importDashboard(); break;
+    case 'clients': importClients(); break;
+    case 'invoices': importInvoices(); break;
+    case 'finance': importFinance(); break;
+    case 'expenses': importExpenses(); break;
+    case 'retention': importRetention(); break;
+    case 'chat': importChat(); break;
+    case 'projects':
+    case 'tasks': importProjectsAndTasks(); break;
+    case 'meetings': importMeetings(); break;
+    case 'leads': importLeads(); break;
+    case 'settings': importSettings(); break;
+    case 'team': importTeam(); break;
+    case 'inbox': importInbox(); break;
+    default: break;
+  }
+};
 
 /* ------------------------------------------------------------------ */
 /*  404 Not Found page                                                 */
@@ -152,6 +186,17 @@ const Splash: React.FC = () => (
 const MainLayout: React.FC = () => {
   const { toasts, apiError, dismissToast } = useApp();
 
+  // Background prefetch remaining routes during idle time so all tabs open instantly
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      [
+        'clients', 'projects', 'tasks', 'invoices', 'finance', 'expenses',
+        'retention', 'chat', 'meetings', 'leads', 'team', 'inbox', 'settings'
+      ].forEach(prefetchRoute);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div
       className="flex min-h-screen transition-colors duration-200 relative"
@@ -195,15 +240,14 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* Toast Notification Container */}
-      <div className="fixed bottom-6 right-6 z-[2000] flex flex-col gap-3 pointer-events-none items-end">
+      <div className="fixed bottom-6 right-6 z-[2000] flex flex-col gap-2.5 pointer-events-none items-end">
         {toasts.map((t) => {
           const isError = t.type === 'error';
           const isInfo = t.type === 'info';
-          const accentColor = isError ? '#EF4444' : isInfo ? '#6B7280' : '#059639';
-          const bgColor = isError ? 'rgba(254, 242, 242, 0.85)' : isInfo ? 'rgba(249, 250, 251, 0.85)' : 'rgba(236, 253, 245, 0.85)';
-          const borderColor = isError ? 'rgba(254, 202, 202, 0.5)' : isInfo ? 'rgba(229, 231, 235, 0.5)' : 'rgba(134, 239, 172, 0.5)';
-          const textColor = isError ? '#991B1B' : isInfo ? '#374151' : '#065F46';
-          const iconBg = isError ? 'rgba(239, 68, 68, 0.12)' : isInfo ? 'rgba(107, 114, 128, 0.12)' : 'rgba(5, 150, 57, 0.12)';
+          const borderColor = isError ? '#fecaca' : isInfo ? '#bfdbfe' : '#bbf7d0';
+          const textColor = isError ? '#991b1b' : isInfo ? '#1e40af' : '#065f46';
+          const iconBg = isError ? '#fef2f2' : isInfo ? '#eff6ff' : '#e6f7ef';
+          const iconColor = isError ? '#dc2626' : isInfo ? '#2563eb' : '#047857';
 
           return (
             <div
@@ -212,71 +256,50 @@ const MainLayout: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
-                padding: '12px 14px 14px 12px',
-                borderRadius: 14,
-                background: bgColor,
-                backdropFilter: 'blur(16px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                gap: 13,
+                padding: '11px 20px 11px 12px',
+                borderRadius: 22,
+                background: '#ffffff',
                 border: `1px solid ${borderColor}`,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-                maxWidth: 360,
-                minWidth: 280,
+                boxShadow: '0 10px 25px -4px rgba(0, 0, 0, 0.06), 0 4px 10px -2px rgba(0, 0, 0, 0.02)',
+                maxWidth: 420,
+                minWidth: 260,
                 position: 'relative',
-                overflow: 'hidden',
               }}
             >
-              {/* Accent bar */}
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 4,
-                background: accentColor,
-                borderRadius: '14px 0 0 14px',
-              }} />
-
-              {/* Progress bar */}
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                height: 3,
-                background: accentColor,
-                opacity: 0.4,
-                animation: 'toastProgress 4s linear forwards',
-                borderRadius: '0 0 14px 14px',
-              }} />
-
-              {/* Icon */}
-              <div style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: iconBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}>
+              {/* Circular Icon Container */}
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: iconBg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
                 {isError ? (
-                  <AlertCircle size={18} style={{ color: accentColor }} />
+                  <AlertCircle size={18} strokeWidth={2.4} style={{ color: iconColor }} />
                 ) : isInfo ? (
-                  <Info size={18} style={{ color: accentColor }} />
+                  <Info size={18} strokeWidth={2.4} style={{ color: iconColor }} />
                 ) : (
-                  <CheckCircle2 size={18} style={{ color: accentColor }} />
+                  <Check size={18} strokeWidth={2.5} style={{ color: iconColor }} />
                 )}
               </div>
 
               {/* Message */}
-              <span style={{
-                flex: 1,
-                fontSize: 13,
-                fontWeight: 600,
-                color: textColor,
-                lineHeight: 1.4,
-              }}>
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: 14.5,
+                  fontWeight: 500,
+                  color: textColor,
+                  lineHeight: 1.4,
+                  letterSpacing: '-0.01em',
+                }}
+              >
                 {t.message}
               </span>
 
@@ -288,19 +311,28 @@ const MainLayout: React.FC = () => {
                   border: 'none',
                   cursor: 'pointer',
                   color: textColor,
-                  opacity: 0.4,
+                  opacity: 0.35,
                   padding: 4,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderRadius: 6,
+                  borderRadius: '50%',
                   flexShrink: 0,
-                  transition: 'opacity 0.15s',
+                  marginLeft: 4,
+                  transition: 'all 0.15s ease',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')}
-                onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.9';
+                  e.currentTarget.style.backgroundColor = iconBg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '0.35';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title="Dismiss"
+                aria-label="Dismiss notification"
               >
-                <X size={14} />
+                <X size={14} strokeWidth={2.2} />
               </button>
             </div>
           );

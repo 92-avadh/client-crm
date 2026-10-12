@@ -7,6 +7,9 @@ interface Props {
   expenses: Expense[];
   brands: Brand[];
   canManage: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onSelectAll?: (select: boolean) => void;
   onToggleStatus: (e: Expense) => void;
   onEdit: (e: Expense) => void;
   onDelete: (e: Expense) => void;
@@ -18,16 +21,39 @@ const inr = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
 /** Expense ledger table (scrolls horizontally on mobile). */
 export const ExpenseTable: React.FC<Props> = ({
-  expenses, brands, canManage, onToggleStatus, onEdit, onDelete, onBrandClick, onEmployeeClick,
+  expenses, brands, canManage, selectedIds, onToggleSelect, onSelectAll,
+  onToggleStatus, onEdit, onDelete, onBrandClick, onEmployeeClick,
 }) => {
   const brandFor = (id: string | null | undefined) =>
     id && id !== 'other' ? brands.find((b: any) => b.id === id) : undefined;
+
+  const headerCheckboxRef = React.useRef<HTMLInputElement>(null);
+  const allSelected = expenses.length > 0 && Boolean(selectedIds) && expenses.every(e => selectedIds?.has(e.id));
+  const someSelected = Boolean(selectedIds && expenses.some(e => selectedIds.has(e.id)) && !allSelected);
+
+  React.useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = someSelected;
+    }
+  }, [someSelected]);
 
   return (
     <div className="table-scroll" style={{ overflowX: 'auto' }}>
       <table className="data-table" style={{ width: '100%' }}>
         <thead>
           <tr>
+            {canManage && onToggleSelect && (
+              <th style={{ width: 42, textAlign: 'center', padding: '0 8px' }}>
+                <input
+                  ref={headerCheckboxRef}
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(e) => onSelectAll?.(e.target.checked)}
+                  title="Select all"
+                  style={{ cursor: 'pointer', accentColor: 'var(--text-primary)', width: 16, height: 16 }}
+                />
+              </th>
+            )}
             <th>Date</th>
             <th>Expense</th>
             <th>Category</th>
@@ -41,13 +67,30 @@ export const ExpenseTable: React.FC<Props> = ({
         </thead>
         <tbody>
           {expenses.map((exp) => {
+            const isSelected = Boolean(selectedIds?.has(exp.id));
             const cfg = CATEGORY_CONFIG[exp.category] || CATEGORY_CONFIG['Other Expenses'];
             const CatIcon = cfg.icon;
             const linkedBrand = brandFor(exp.brandId);
             const isPaid = (exp.paymentStatus || 'Paid') === 'Paid';
 
             return (
-              <tr key={exp.id}>
+              <tr
+                key={exp.id}
+                style={{
+                  background: isSelected ? 'var(--bg-raised)' : undefined,
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                {canManage && onToggleSelect && (
+                  <td style={{ width: 42, textAlign: 'center', padding: '0 8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(exp.id)}
+                      style={{ cursor: 'pointer', accentColor: 'var(--text-primary)', width: 16, height: 16 }}
+                    />
+                  </td>
+                )}
                 <td style={{ whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-secondary)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Calendar style={{ width: 12, height: 12 }} />

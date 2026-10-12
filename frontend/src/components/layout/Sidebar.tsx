@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { prefetchRoute } from '../../App';
 import {
   LayoutDashboard,
   Building2,
@@ -94,15 +95,17 @@ export const Sidebar: React.FC = () => {
   const commItems = items.filter(i => ['chat','meetings','leads'].includes(i.id));
   const sysItems  = items.filter(i => i.id === 'settings');
 
-  const BadgePill = ({ item }: { item: NavItem }) => {
+  const BadgePill = ({ item, isSelected }: { item: NavItem; isSelected?: boolean }) => {
     if (!item.badge) return null;
     const style = item.badgeVariant === 'danger'
-      ? { background: 'var(--danger-bg)', color: 'var(--danger-text)' }
+      ? { background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }
       : item.badgeVariant === 'warn'
-      ? { background: 'var(--warn-bg)', color: 'var(--warn-text)' }
-      : { background: 'var(--bg-raised, #f5f5f5)', color: 'var(--text-secondary, #525252)' };
+      ? isSelected
+        ? { background: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0' }
+        : { background: 'var(--warn-bg)', color: 'var(--warn-text)', border: '1px solid var(--warn-border)' }
+      : { background: 'var(--bg-raised, #f5f5f5)', color: 'var(--text-secondary, #525252)', border: '1px solid var(--border)' };
     return (
-      <span style={{ display: 'inline-flex', padding: '2px 8px', borderRadius: 20, fontSize: 11.5, fontWeight: 750, ...style }}>
+      <span style={{ display: 'inline-flex', padding: '1.5px 7px', borderRadius: 20, fontSize: 11, fontWeight: 700, ...style }}>
         {item.badge}
       </span>
     );
@@ -110,14 +113,17 @@ export const Sidebar: React.FC = () => {
 
   const NavButton = ({ item }: { item: NavItem }) => {
     const Icon = item.icon;
-    const isActive = activeTab === item.id;
+    const isSelected = activeTab === item.id;
     return (
       <button
+        type="button"
+        onMouseEnter={() => prefetchRoute(item.id)}
+        onFocus={() => prefetchRoute(item.id)}
         onClick={() => {
           setActiveTab(item.id);
           setMobileSidebarOpen(false);
         }}
-        className={`nav-item ${isActive ? 'active' : ''}`}
+        className={`nav-item ${isSelected ? 'active' : ''}`}
         title={sidebarCollapsed ? item.label : undefined}
         style={{
           justifyContent: sidebarCollapsed ? 'center' : 'space-between',
@@ -125,6 +131,7 @@ export const Sidebar: React.FC = () => {
           width: '100%',
           position: 'relative',
           borderRadius: 8,
+          cursor: 'pointer',
         }}
       >
         <span
@@ -135,10 +142,10 @@ export const Sidebar: React.FC = () => {
             width: sidebarCollapsed ? '100%' : 'auto',
           }}
         >
-          <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
-          {!sidebarCollapsed && <span className="truncate" style={{ fontSize: '0.9375rem', fontWeight: isActive ? 700 : 550 }}>{item.label}</span>}
+          <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={isSelected ? 2.1 : 1.8} />
+          {!sidebarCollapsed && <span className="truncate" style={{ fontSize: '0.9375rem', fontWeight: isSelected ? 650 : 500 }}>{item.label}</span>}
         </span>
-        {!sidebarCollapsed && <BadgePill item={item} />}
+        {!sidebarCollapsed && <BadgePill item={item} isSelected={isSelected} />}
         {sidebarCollapsed && item.badge && (
           <span
             style={{

@@ -277,43 +277,97 @@ export const ExpenseFormModal: React.FC<Props> = ({
 /*  Delete confirmation                                                */
 /* ------------------------------------------------------------------ */
 interface DeleteProps {
-  expense: Expense | null;
+  expense?: Expense | null;
+  expenses?: Expense[];
   onClose: () => void;
   onConfirm: () => void;
 }
 
-export const DeleteExpenseModal: React.FC<DeleteProps> = ({ expense, onClose, onConfirm }) => {
-  // The animated dialog is mounted only while there is something to delete,
-  // so `open` is always true for the lifetime of this component.
-  if (!expense) return null;
+export const DeleteExpenseModal: React.FC<DeleteProps> = ({ expense, expenses, onClose, onConfirm }) => {
+  // Determine if this is a single item or multiple items deletion
+  const items: Expense[] = expenses && expenses.length > 0
+    ? expenses
+    : expense
+      ? [expense]
+      : [];
+
+  if (items.length === 0) return null;
+
+  const isMultiple = items.length > 1;
+  const single = items[0];
+  const totalAmount = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
   return (
     <AlertDialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <AlertDialogPopup from="bottom" className="sm:max-w-[460px]">
+      <AlertDialogPopup from="bottom">
         <AlertDialogHeader>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--danger-bg)', color: 'var(--danger-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <AlertTriangle style={{ width: 18, height: 18 }} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: 'var(--danger-bg)',
+                color: 'var(--danger-text)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            >
+              <AlertTriangle style={{ width: 19, height: 19 }} />
             </div>
-            <div style={{ textAlign: 'left' }}>
-              <AlertDialogTitle>Delete Expense Record?</AlertDialogTitle>
+            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+              <AlertDialogTitle>
+                {isMultiple ? `Delete ${items.length} Expense Records?` : 'Delete Expense Record?'}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This will remove the expense and immediately update your dashboard totals.
+                {isMultiple
+                  ? `This will permanently remove ${items.length} selected expense records and update your dashboard totals.`
+                  : 'This will remove the expense and immediately update your dashboard totals.'}
               </AlertDialogDescription>
             </div>
           </div>
         </AlertDialogHeader>
 
-        <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', marginTop: 20, textAlign: 'left' }}>
-          <div style={{ fontSize: 13, fontWeight: 750, color: 'var(--text-primary)' }}>
-            {expense.title || expense.note || expense.category}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
-            <span>{CATEGORY_CONFIG[expense.category]?.label || expense.category}</span>
-            <span className="font-amount" style={{ fontWeight: 800, color: 'var(--danger-text)', fontSize: 14 }}>
-              ₹{Number(expense.amount || 0).toLocaleString('en-IN')}
-            </span>
-          </div>
+        <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginTop: 18, textAlign: 'left' }}>
+          {!isMultiple ? (
+            <>
+              <div style={{ fontSize: 13.5, fontWeight: 750, color: 'var(--text-primary)', wordBreak: 'break-word' }}>
+                {single.title || single.note || single.category}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+                <span>{CATEGORY_CONFIG[single.category]?.label || single.category}</span>
+                <span className="font-amount" style={{ fontWeight: 800, color: 'var(--danger-text)', fontSize: 14 }}>
+                  ₹{Number(single.amount || 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Selected: {items.length} records
+                </span>
+                <span className="font-amount" style={{ fontSize: 14, fontWeight: 800, color: 'var(--danger-text)' }}>
+                  ₹{totalAmount.toLocaleString('en-IN')}
+                </span>
+              </div>
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 110, overflowY: 'auto', paddingRight: 4 }}>
+                {items.map((item) => (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5 }}>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 240 }}>
+                      {item.title || item.note || item.category}
+                    </span>
+                    <span className="font-amount" style={{ color: 'var(--text-secondary)', fontWeight: 650, flexShrink: 0, marginLeft: 8 }}>
+                      ₹{Number(item.amount || 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <AlertDialogFooter>
@@ -322,7 +376,7 @@ export const DeleteExpenseModal: React.FC<DeleteProps> = ({ expense, onClose, on
             onClick={onConfirm}
             style={{ background: 'var(--danger-text)', color: 'var(--solid-btn-text)' }}
           >
-            Yes, Delete Expense
+            {isMultiple ? `Yes, Delete ${items.length} Expenses` : 'Yes, Delete Expense'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogPopup>
