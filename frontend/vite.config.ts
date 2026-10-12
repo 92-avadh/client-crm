@@ -17,7 +17,8 @@ function spaHistoryFallback(): Plugin {
         if (req.url && !req.url.includes('.') && !req.url.startsWith('/@') && !req.url.startsWith('/node_modules')) {
           const indexPath = path.resolve(server.config.root, 'index.html')
           if (fs.existsSync(indexPath)) {
-            server.transformIndexHtml(req.url, indexPath).then(html => {
+            const rawHtml = fs.readFileSync(indexPath, 'utf-8')
+            server.transformIndexHtml(req.url, rawHtml).then(html => {
               res.statusCode = 200
               res.setHeader('Content-Type', 'text/html')
               res.end(html)

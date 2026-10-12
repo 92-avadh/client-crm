@@ -22,7 +22,7 @@ function createTransporter() {
   }
 
   const cleanPass = (SMTP_PASS || '').replace(/\s+/g, '');
-  const isGmail = (SMTP_HOST || '').includes('gmail') || (SMTP_USER || '').includes('@gmail.com');
+  const isGmail = (SMTP_HOST || '').toLowerCase().includes('gmail') || (!SMTP_HOST && (SMTP_USER || '').includes('@gmail.com'));
 
   if (isGmail) {
     return nodemailer.createTransport({

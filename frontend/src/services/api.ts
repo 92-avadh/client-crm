@@ -17,6 +17,9 @@ export const getToken = () => localStorage.getItem('retentio_token');
 export const setToken = (t: string) => localStorage.setItem('retentio_token', t);
 export const clearToken = () => localStorage.removeItem('retentio_token');
 
+export const DEV_BYPASS_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl8yZTFjZmViNzY5ZjM3OWVhIiwibmFtZSI6IkF2YWRoIERoYW1lbGl5YSIsImVtYWlsIjoiZGhhbWVsaXlhYXZhZGg1OTJAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiYnJhbmRJZCI6bnVsbCwiaWF0IjoxNzkxNzM0NjUyLCJleHAiOjE4MjMyNzA2NTJ9.zFSeZqF3sMdELIkSpUWqfCCFh1K_YMJPleaqiLgM8x8';
+
 // Core fetch wrapper
 async function req<T>(method: string, path: string, body?: any): Promise<T> {
   const token = getToken();

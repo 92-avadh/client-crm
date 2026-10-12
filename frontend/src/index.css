@@ -470,13 +470,117 @@ button {
   border-radius: var(--radius);
   color: var(--text-primary);
   padding: 0.6875rem 0.95rem;
-  font-size: 0.9375rem; /* 15px */
+  font-size: 1rem; /* 16px — prevents iOS Safari auto-zoom on focus */
   line-height: var(--leading-normal);
   letter-spacing: -0.004em;
   font-family: var(--font-sans);
   width: 100%;
   outline: none;
   transition: var(--transition);
+}
+
+/* iOS Safari zoom prevention — all inputs must be >= 16px */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="url"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--brand-green, #059639) !important;
+  outline-offset: 2px !important;
+  border-radius: var(--radius-sm);
+}
+
+/* Smooth scroll for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Better text rendering for form elements */
+input, select, textarea {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Number input spinners — hide for cleaner look */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Autofill styling for dark mode */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-card) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+}
+
+/* Autofill styling for light mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-card) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Selection color */
+::selection {
+  background: var(--brand-green, #059639);
+  color: #ffffff;
+}
+
+/* Placeholder styling */
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+/* Disabled state */
+:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Better tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: rgba(5, 150, 57, 0.1);
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
 }
 .input-field::placeholder {
   color: var(--text-muted);
@@ -1069,4 +1173,352 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   background: var(--bg-raised) !important;
   color: var(--text-secondary) !important;
   border-color: var(--border-strong) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PREMIUM ANIMATION SYSTEM
+   Glassmorphism, gradient mesh, micro-interactions, count-up
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Animated Gradient Mesh Background ─────────────────── */
+@keyframes gradientMesh {
+  0%   { background-position: 0% 50%; }
+  25%  { background-position: 50% 0%; }
+  50%  { background-position: 100% 50%; }
+  75%  { background-position: 50% 100%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-mesh {
+  background: linear-gradient(
+    135deg,
+    var(--brand-navy, #0A2540) 0%,
+    var(--brand-green-dark, #034726) 25%,
+    var(--brand-navy-subtle, #F0F5FA) 50%,
+    var(--brand-green, #059639) 75%,
+    var(--brand-navy, #0A2540) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientMesh 18s ease infinite;
+}
+
+.gradient-mesh-subtle {
+  background: linear-gradient(
+    135deg,
+    var(--bg-subtle) 0%,
+    var(--brand-green-subtle, #ECFDF5) 30%,
+    var(--bg-subtle) 50%,
+    var(--brand-navy-subtle, #F0F5FA) 70%,
+    var(--bg-subtle) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientMesh 22s ease infinite;
+}
+
+/* ─── Floating Orbs ──────────────────────────────────────── */
+@keyframes floatOrb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -20px) scale(1.05); }
+  66%      { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes floatOrbReverse {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-25px, 20px) scale(1.08); }
+  66%      { transform: translate(15px, -10px) scale(0.92); }
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+  pointer-events: none;
+  animation: floatOrb 12s ease-in-out infinite;
+}
+
+.orb-reverse {
+  animation: floatOrbReverse 14s ease-in-out infinite;
+}
+
+/* ─── Glassmorphism Card ────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 8px 32px rgba(10, 37, 64, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.dark .glass-card {
+  background: rgba(19, 28, 46, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Staggered Entrance Animations ──────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.stagger-item {
+  opacity: 0;
+  animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 0.05s; }
+.stagger-item:nth-child(2) { animation-delay: 0.1s; }
+.stagger-item:nth-child(3) { animation-delay: 0.15s; }
+.stagger-item:nth-child(4) { animation-delay: 0.2s; }
+.stagger-item:nth-child(5) { animation-delay: 0.25s; }
+.stagger-item:nth-child(6) { animation-delay: 0.3s; }
+.stagger-item:nth-child(7) { animation-delay: 0.35s; }
+.stagger-item:nth-child(8) { animation-delay: 0.4s; }
+
+/* ─── Count-Up Animation ─────────────────────────────────── */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.count-up {
+  display: inline-block;
+  animation: countUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Shimmer Effect ────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ─── Pulse Ring ────────────────────────────────────────── */
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 208, 94, 0.3); }
+  70%  { box-shadow: 0 0 0 10px rgba(0, 208, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 208, 94, 0); }
+}
+
+.pulse-ring {
+  animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ─── Progress Bar Shimmer ──────────────────────────────── */
+@keyframes progressShimmer {
+  0%   { opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.progress-animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ─── Card Hover Lift ───────────────────────────────────── */
+.card-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(10, 37, 64, 0.1);
+}
+
+/* ─── Input Focus Glow ──────────────────────────────────── */
+.input-glow {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-glow:focus {
+  border-color: var(--brand-green, #059639) !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 57, 0.12) !important;
+}
+
+/* ─── Button Press ──────────────────────────────────────── */
+.btn-press {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* ─── Slide Transition for Onboarding Steps ─────────────── */
+@keyframes stepForward {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes stepBackward {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.step-forward { animation: stepForward 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+.step-backward { animation: stepBackward 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* ─── Activity Feed Entrance ────────────────────────────── */
+@keyframes feedItemIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.feed-item {
+  animation: feedItemIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.feed-item:nth-child(1) { animation-delay: 0.05s; }
+.feed-item:nth-child(2) { animation-delay: 0.1s; }
+.feed-item:nth-child(3) { animation-delay: 0.15s; }
+.feed-item:nth-child(4) { animation-delay: 0.2s; }
+.feed-item:nth-child(5) { animation-delay: 0.25s; }
+.feed-item:nth-child(6) { animation-delay: 0.3s; }
+
+/* ─── Toast Animations ──────────────────────────────────── */
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toastProgress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+.toast-slide-in {
+  animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Widget Toggle ─────────────────────────────────────── */
+.widget-toggle {
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s;
+  max-height: 2000px;
+  opacity: 1;
+}
+
+.widget-toggle.collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ─── Gradient Text ─────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--brand-navy, #0A2540), var(--brand-green, #059639));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Skeleton Loader ───────────────────────────────────── */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+
+.skeleton {
+  background: var(--bg-raised);
+  border-radius: var(--radius);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+/* ─── Reduced Motion Support ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .stagger-item,
+  .feed-item,
+  .count-up,
+  .step-forward,
+  .step-backward,
+  .toast-in {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .orb,
+  .orb-reverse {
+    animation: none !important;
+  }
+
+  .gradient-mesh,
+  .gradient-mesh-subtle {
+    animation: none !important;
+  }
+
+  .shimmer,
+  .progress-animated::after {
+    animation: none !important;
+  }
+
+  .pulse-ring {
+    animation: none !important;
+  }
+
+  .card-lift:hover {
+    transform: none !important;
+  }
 }

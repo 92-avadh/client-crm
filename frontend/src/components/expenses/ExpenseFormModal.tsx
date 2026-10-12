@@ -14,6 +14,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 export interface ExpenseFormData {
   title: string;
@@ -199,21 +200,18 @@ export const ExpenseFormModal: React.FC<Props> = ({
           )}
 
           {/* Brand */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <label className="form-label" style={{ margin: 0 }}>Associated Brand / Client</label>
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Choose "Other" if not linked to a client</span>
-            </div>
-            <select value={formData.brandId} onChange={(e) => onFormChange({ brandId: e.target.value })}
-              className="input-field" style={{ cursor: 'pointer' }}>
-              <option value="">Other / General Business Overhead (Not linked to a brand)</option>
-              {brands.map((b: any) => (
-                <option key={b.id} value={b.id}>
-                  Client: {b.name} (Retainer: ₹{Number(b.monthlyFee || 0).toLocaleString('en-IN')}/mo)
-                </option>
-              ))}
-            </select>
-          </div>
+          <AnimatedSelect
+            label="Associated Brand / Client"
+            value={formData.brandId}
+            onChange={(val) => onFormChange({ brandId: val })}
+            options={[
+              { value: '', label: 'Other / General Business Overhead (Not linked to a brand)' },
+              ...brands.map((b: any) => ({
+                value: b.id,
+                label: `Client: ${b.name} (Retainer: ₹${Number(b.monthlyFee || 0).toLocaleString('en-IN')}/mo)`,
+              })),
+            ]}
+          />
 
           {/* Date + status */}
           <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -239,13 +237,12 @@ export const ExpenseFormModal: React.FC<Props> = ({
           </div>
 
           {/* Mode */}
-          <div>
-            <label className="form-label">Payment Mode</label>
-            <select value={formData.paymentMode} onChange={(e) => onFormChange({ paymentMode: e.target.value })}
-              className="input-field" style={{ cursor: 'pointer' }}>
-              {PAYMENT_MODES.map((mode) => (<option key={mode} value={mode}>{mode}</option>))}
-            </select>
-          </div>
+          <AnimatedSelect
+            label="Payment Mode"
+            value={formData.paymentMode}
+            onChange={(val) => onFormChange({ paymentMode: val })}
+            options={PAYMENT_MODES.map((mode) => ({ value: mode, label: mode }))}
+          />
 
           {/* Description */}
           <div>

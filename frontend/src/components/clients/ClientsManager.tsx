@@ -14,32 +14,59 @@ const emptyOnboard = (): ClientFormData => ({
   name: '',
   ownerName: '',
   mobile: '',
+  countryCode: 'IN',
   email: '',
   billingAddress: '',
-  state: 'Maharashtra',
+  state: '',
   pincode: '',
   gstNumber: '',
   pan: '',
-  serviceDetails: 'Monthly CA Compliance, Retainer & Advisory',
-  monthlyFee: '100000',
-  billingCycleDay: 1,
+  serviceDetails: '',
+  monthlyFee: '',
+  billingCycleDay: '' as any,
   paymentStatus: 'Paid',
   notes: '',
 });
 
+export const COUNTRY_PHONE_LENGTHS: Record<string, number[]> = {
+  IN: [10], US: [10], GB: [10], AE: [9], SG: [8], AU: [9], CA: [10],
+  DE: [10, 11], FR: [9], IT: [9, 10], ES: [9], NL: [9], CH: [9],
+  SE: [9], NO: [8], DK: [8], FI: [9, 10], IE: [9], NZ: [9, 10],
+  JP: [10], KR: [10], CN: [11], HK: [8], MY: [9, 10], TH: [9],
+  PH: [10], ID: [10, 11, 12], VN: [9], PK: [10], BD: [10], LK: [9],
+  NP: [10], SA: [9], QA: [8], KW: [8], BH: [8], OM: [8], ZA: [9],
+  NG: [10], KE: [9], EG: [10], BR: [10, 11], MX: [10], AR: [10],
+  CL: [9], CO: [10], RU: [10], TR: [10], IL: [9], PL: [9], PT: [9],
+  AT: [10, 11], BE: [9], CZ: [9], HU: [9], RO: [9], GR: [10],
+};
+
 /** Shared validation rules for onboard and edit. */
-function validateClientForm(f: ClientFormData): Record<string, string> {
+export function validateClientForm(f: ClientFormData, isEdit = false): Record<string, string> {
   const errs: Record<string, string> = {};
-  if (!String(f.name).trim()) errs.name = 'Client name is required';
-  if (!String(f.ownerName).trim()) errs.ownerName = 'Contact person is required';
-  if (!String(f.mobile).trim()) errs.mobile = 'Mobile number is required';
-  if (!String(f.email).trim()) {
+  if (!String(f.name || '').trim()) errs.name = 'Client name is required';
+  if (!String(f.ownerName || '').trim()) errs.ownerName = 'Contact person is required';
+  if (!String(f.mobile || '').trim()) {
+    errs.mobile = 'Mobile number is required';
+  } else {
+    const digits = String(f.mobile).replace(/\D/g, '');
+    const expectedLengths = COUNTRY_PHONE_LENGTHS[f.countryCode] || [10];
+    if (!expectedLengths.includes(digits.length)) {
+      const expected = expectedLengths.join(' or ');
+      errs.mobile = `Mobile number must be ${expected} digits for ${f.countryCode}`;
+    }
+  }
+  if (!String(f.email || '').trim()) {
     errs.email = 'Email address is required';
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(f.email).trim())) {
     errs.email = 'Please enter a valid email address';
   }
-  if (!String(f.billingAddress).trim()) errs.billingAddress = 'Billing address is required';
-  if (!String(f.pincode).trim()) errs.pincode = 'Pincode is required';
+  if (!isEdit) {
+    if (!String(f.billingAddress || '').trim()) errs.billingAddress = 'Billing address is required';
+    if (!String(f.state || '').trim()) errs.state = 'State is required';
+    if (!String(f.pincode || '').trim()) errs.pincode = 'Pincode is required';
+    if (!String(f.serviceDetails || '').trim()) errs.serviceDetails = 'Service details are required';
+    if (!String(f.monthlyFee || '').trim()) errs.monthlyFee = 'Monthly fee is required';
+  }
   return errs;
 }
 
@@ -143,15 +170,16 @@ export const ClientsManager: React.FC = () => {
       name: brand.name || '',
       ownerName: brand.ownerName || '',
       mobile: brand.mobile || '',
+      countryCode: (brand as any).countryCode || 'IN',
       email: brand.email || '',
       billingAddress: brand.billingAddress || '',
-      state: brand.state || 'Maharashtra',
+      state: brand.state || '',
       pincode: brand.pincode || '',
       gstNumber: brand.gstNumber || '',
       pan: brand.pan || '',
       serviceDetails: brand.serviceDetails || '',
-      monthlyFee: String(brand.monthlyFee ?? 0),
-      billingCycleDay: Number(brand.billingCycleDay) || 1,
+      monthlyFee: brand.monthlyFee != null ? String(brand.monthlyFee) : '',
+      billingCycleDay: brand.billingCycleDay || '',
       status: brand.status || 'Active',
       paymentStatus: brand.paymentStatus === 'Pending' ? 'Pending' : 'Paid',
       notes: brand.notes || '',
@@ -165,7 +193,7 @@ export const ClientsManager: React.FC = () => {
     e.preventDefault();
     if (!editingBrand) return;
 
-    const errs = validateClientForm(editFormData);
+    const errs = validateClientForm(editFormData, true);
     if (Object.keys(errs).length > 0) {
       setEditFormErrors(errs);
       setEditSubmitError('Please complete all required fields highlighted in red below.');

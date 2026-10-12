@@ -7,6 +7,7 @@ import { useFilteredExpenses, useExpenseMetrics, type ExpenseFilters } from './u
 import { exportExpensesToCsv } from './exportCsv';
 import { ExpenseTable } from './ExpenseTable';
 import { ExpenseFormModal, DeleteExpenseModal, type ExpenseFormData } from './ExpenseFormModal';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 const todayIso = () => new Date().toISOString().split('T')[0];
 
@@ -234,36 +235,52 @@ export const ExpensesManager: React.FC = () => {
           style={{ flex: '1 1 240px', height: 36, padding: '0 12px', fontSize: 13, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', outline: 'none' }}
         />
 
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
-          style={{ height: 36, padding: '0 10px', fontSize: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }}>
-          <option value="all">All Categories</option>
-          {Object.entries(CATEGORY_CONFIG)
-            .filter(([k, v]) => k === v.label)
-            .map(([k, v]) => (<option key={k} value={v.label}>{v.label}</option>))}
-        </select>
+        <AnimatedSelect
+          value={categoryFilter}
+          onChange={(v) => setCategoryFilter(v)}
+          buttonStyle={{ height: 36, padding: '0 10px', fontSize: 12, minWidth: 140 }}
+          options={[
+            { value: 'all', label: 'All Categories' },
+            ...Object.entries(CATEGORY_CONFIG)
+              .filter(([k, v]) => k === v.label)
+              .map(([k, v]) => ({ value: v.label, label: v.label })),
+          ]}
+        />
 
-        <select value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)}
-          style={{ height: 36, padding: '0 10px', fontSize: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }}>
-          <option value="all">All Clients</option>
-          <option value="other">Other / Overhead</option>
-          {brands.map((b: any) => (<option key={b.id} value={b.id}>{b.name}</option>))}
-        </select>
+        <AnimatedSelect
+          value={brandFilter}
+          onChange={(v) => setBrandFilter(v)}
+          buttonStyle={{ height: 36, padding: '0 10px', fontSize: 12, minWidth: 130 }}
+          options={[
+            { value: 'all', label: 'All Clients' },
+            { value: 'other', label: 'Other / Overhead' },
+            ...brands.map((b: any) => ({ value: b.id, label: b.name })),
+          ]}
+        />
 
-        <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)}
-          style={{ height: 36, padding: '0 10px', fontSize: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }}>
-          <option value="all">All Status</option>
-          <option value="Paid">Paid</option>
-          <option value="Pending">Pending</option>
-        </select>
+        <AnimatedSelect
+          value={paymentStatusFilter}
+          onChange={(v) => setPaymentStatusFilter(v)}
+          buttonStyle={{ height: 36, padding: '0 10px', fontSize: 12, minWidth: 110 }}
+          options={[
+            { value: 'all', label: 'All Status' },
+            { value: 'Paid', label: 'Paid' },
+            { value: 'Pending', label: 'Pending' },
+          ]}
+        />
 
-        <select value={dateRangePreset} onChange={(e) => setDateRangePreset(e.target.value as any)}
-          style={{ height: 36, padding: '0 10px', fontSize: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }}>
-          <option value="all">All Time</option>
-          <option value="this_month">This Month</option>
-          <option value="last_month">Last Month</option>
-          <option value="this_quarter">This Quarter</option>
-          <option value="custom">Custom Range</option>
-        </select>
+        <AnimatedSelect
+          value={dateRangePreset}
+          onChange={(v) => setDateRangePreset(v as any)}
+          buttonStyle={{ height: 36, padding: '0 10px', fontSize: 12, minWidth: 120 }}
+          options={[
+            { value: 'all', label: 'All Time' },
+            { value: 'this_month', label: 'This Month' },
+            { value: 'last_month', label: 'Last Month' },
+            { value: 'this_quarter', label: 'This Quarter' },
+            { value: 'custom', label: 'Custom Range' },
+          ]}
+        />
 
         {dateRangePreset === 'custom' && (
           <>

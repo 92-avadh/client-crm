@@ -100,6 +100,7 @@ interface AppContextType {
 
   toasts: Toast[];
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  dismissToast: (id: string) => void;
 
   isLoading: boolean;
   apiError: string | null;
@@ -410,6 +411,10 @@ export const AppProvider: React.FC<{
     setToasts(prev => [...prev, { id, type, message }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -1004,6 +1009,7 @@ export const AppProvider: React.FC<{
         logBrandActivity,
         toasts,
         showToast,
+        dismissToast,
         isLoading,
         apiError,
         addTeamMember,

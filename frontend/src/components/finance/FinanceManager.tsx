@@ -20,6 +20,7 @@ import {
   ArrowUpRight,
   X
 } from 'lucide-react';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -682,22 +683,20 @@ export const FinanceManager: React.FC = () => {
             </div>
 
             <form onSubmit={handleAddExpenseSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, fontSize: 12 }}>
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Expense Category</label>
-                <select
-                  value={expenseForm.category}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value as any })}
-                  style={inputFieldStyle}
-                >
-                  <option value="Salary">Staff & CA Payroll</option>
-                  <option value="Tools & Software">Software & Cloud Subscriptions</option>
-                  <option value="Ads & Marketing">Ads & Client Acquisition</option>
-                  <option value="Office & Rent">Studio Lease & Utilities</option>
-                  <option value="Freelancer Payout">Freelancer / Specialist Payout</option>
-                  <option value="Travel">Client Travel & Meetings</option>
-                  <option value="Other">Other Miscellaneous</option>
-                </select>
-              </div>
+              <AnimatedSelect
+                label="Expense Category"
+                value={expenseForm.category}
+                onChange={(val) => setExpenseForm({ ...expenseForm, category: val as any })}
+                options={[
+                  { value: 'Salary', label: 'Staff & CA Payroll' },
+                  { value: 'Tools & Software', label: 'Software & Cloud Subscriptions' },
+                  { value: 'Ads & Marketing', label: 'Ads & Client Acquisition' },
+                  { value: 'Office & Rent', label: 'Studio Lease & Utilities' },
+                  { value: 'Freelancer Payout', label: 'Freelancer / Specialist Payout' },
+                  { value: 'Travel', label: 'Client Travel & Meetings' },
+                  { value: 'Other', label: 'Other Miscellaneous' },
+                ]}
+              />
 
               <div>
                 <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Amount (INR)</label>
@@ -733,21 +732,15 @@ export const FinanceManager: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>
-                  Link to Client (Optional for client profitability)
-                </label>
-                <select
-                  value={expenseForm.brandId}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, brandId: e.target.value })}
-                  style={inputFieldStyle}
-                >
-                  <option value="">General Overhead (No client)</option>
-                  {brands.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+              <AnimatedSelect
+                label="Link to Client (Optional for client profitability)"
+                value={expenseForm.brandId}
+                onChange={(val) => setExpenseForm({ ...expenseForm, brandId: val })}
+                options={[
+                  { value: '', label: 'General Overhead (No client)' },
+                  ...brands.map((b) => ({ value: b.id, label: b.name })),
+                ]}
+              />
 
               <div>
                 <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Note / Description</label>

@@ -32,6 +32,7 @@ export const InvoicesManager: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [pageLoading, setPageLoading] = useState(true);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -52,6 +53,17 @@ export const InvoicesManager: React.FC = () => {
   });
 
   const builder = useInvoiceBuilder(brands, settings);
+
+  // Show loader until invoices data arrives from the API
+  React.useEffect(() => {
+    if (invoices.length > 0) {
+      setPageLoading(false);
+      return;
+    }
+    // Fallback: if no invoices exist, still show loader briefly then show empty state
+    const timer = setTimeout(() => setPageLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, [invoices]);
 
   const activeInvoice = invoices.find((i) => i.id === selectedInvoiceId) || null;
 
@@ -138,6 +150,25 @@ export const InvoicesManager: React.FC = () => {
       return next;
     });
   };
+
+  if (pageLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            border: '3px solid var(--border)',
+            borderTopColor: 'var(--accent-text, var(--text-primary))',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>Loading invoices…</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>

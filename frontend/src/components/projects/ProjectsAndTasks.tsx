@@ -9,6 +9,7 @@ import {
   Clock,
   X
 } from 'lucide-react';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -402,18 +403,13 @@ export const ProjectsAndTasks: React.FC = () => {
             </div>
 
             <form onSubmit={handleAddTaskSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Client *</label>
-                <select
-                  value={taskForm.brandId}
-                  onChange={(e) => setTaskForm({ ...taskForm, brandId: e.target.value })}
-                  style={inputFieldStyle}
-                >
-                  {brands.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+              <AnimatedSelect
+                label="Client"
+                required
+                value={taskForm.brandId}
+                onChange={(val) => setTaskForm({ ...taskForm, brandId: val })}
+                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+              />
 
               <div>
                 <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Task Title *</label>
@@ -439,22 +435,20 @@ export const ProjectsAndTasks: React.FC = () => {
               </div>
 
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Priority</label>
-                  <select
-                    value={taskForm.priority}
-                    onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
-                    style={inputFieldStyle}
-                  >
-                    <option value="Urgent">Urgent</option>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
-                </div>
+                <AnimatedSelect
+                  label="Priority"
+                  value={taskForm.priority}
+                  onChange={(val) => setTaskForm({ ...taskForm, priority: val as TaskPriority })}
+                  options={[
+                    { value: 'Urgent', label: 'Urgent' },
+                    { value: 'High', label: 'High' },
+                    { value: 'Medium', label: 'Medium' },
+                    { value: 'Low', label: 'Low' },
+                  ]}
+                />
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Due Date</label>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Due Date *</label>
                   <input
                     type="date"
                     required
@@ -465,22 +459,17 @@ export const ProjectsAndTasks: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Assignee</label>
-                <select
-                  value={taskForm.assigneeId}
-                  onChange={(e) => setTaskForm({ ...taskForm, assigneeId: e.target.value })}
-                  style={inputFieldStyle}
-                >
-                  {allUsers
-                    .filter((u) => u.role === 'team' || u.role === 'admin' || u.role === 'hr')
-                    .map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.role.toUpperCase()})
-                      </option>
-                    ))}
-                </select>
-              </div>
+              <AnimatedSelect
+                label="Assignee"
+                value={taskForm.assigneeId}
+                onChange={(val) => setTaskForm({ ...taskForm, assigneeId: val })}
+                options={allUsers
+                  .filter((u) => u.role === 'team' || u.role === 'admin' || u.role === 'hr')
+                  .map((u) => ({
+                    value: u.id,
+                    label: `${u.name} (${u.role.toUpperCase()})`,
+                  }))}
+              />
 
               <div style={{ paddingTop: 14, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button
@@ -520,18 +509,13 @@ export const ProjectsAndTasks: React.FC = () => {
             </div>
 
             <form onSubmit={handleAddProjectSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Client *</label>
-                <select
-                  value={projectForm.brandId}
-                  onChange={(e) => setProjectForm({ ...projectForm, brandId: e.target.value })}
-                  style={inputFieldStyle}
-                >
-                  {brands.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+              <AnimatedSelect
+                label="Client"
+                required
+                value={projectForm.brandId}
+                onChange={(val) => setProjectForm({ ...projectForm, brandId: val })}
+                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+              />
 
               <div>
                 <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Project Name *</label>

@@ -3,6 +3,7 @@ import { X, Camera, Copy, CheckCircle2, Sparkles } from 'lucide-react';
 import { AVATAR_PRESETS } from './teamUi';
 import { useConfirm } from '../../hooks/useConfirm';
 import { isDirty } from '../../hooks/isDirty';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 export interface AddMemberForm {
   name: string;
@@ -183,13 +184,16 @@ export const AddMemberModal: React.FC<Props> = ({
                   <label style={labelStyle}>Phone</label>
                   <input type="tel" value={form.phone} onChange={(e) => onFormChange({ phone: e.target.value })} style={inputStyle} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={labelStyle}>Role *</label>
-                  <select value={form.role} onChange={(e) => onFormChange({ role: e.target.value })} style={inputStyle}>
-                    <option value="team">Team Member</option>
-                    <option value="hr">HR Manager</option>
-                  </select>
-                </div>
+                <AnimatedSelect
+                  label="Role"
+                  required
+                  value={form.role}
+                  onChange={(v) => onFormChange({ role: v })}
+                  options={[
+                    { value: 'team', label: 'Team Member' },
+                    { value: 'hr', label: 'HR Manager' },
+                  ]}
+                />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={labelStyle}>Designation</label>

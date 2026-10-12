@@ -3,7 +3,7 @@ import { X, Sparkles } from 'lucide-react';
 import type { Brand, InvoiceItem } from '../../types';
 import { inputFieldStyle, btnPrimary, btnSecondary, modalOverlay, modalCard, modalHeader } from './invoiceStyles';
 import type { InvoiceTotals } from './useInvoiceBuilder';
-import { useConfirm } from '../../hooks/useConfirm';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 interface Props {
   open: boolean;
@@ -33,30 +33,11 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
   hasGst, onHasGstChange, isRecurring, onIsRecurringChange,
   selectedBrand, totals,
 }) => {
-  const { confirm, element: confirmDialog } = useConfirm();
-
-  // Any line item, brand or GST toggle counts as an unsaved invoice.
-  const isDirtyInvoice =
-    items.length > 0 || !!brandId || hasGst || isRecurring;
-
-  const requestClose = async () => {
-    if (isDirtyInvoice) {
-      const ok = await confirm({
-        title: 'Discard this invoice?',
-        description: 'The line items you added have not been generated yet.',
-        confirmText: 'Discard',
-        destructive: true,
-      });
-      if (!ok) return;
-    }
-    onClose();
-  };
-
   if (!open) return null;
 
   return (
     <>
-    <div style={modalOverlay} onClick={requestClose}>
+    <div style={modalOverlay} onClick={onClose}>
       <div style={{ ...modalCard, maxWidth: 768 }} onClick={(e) => e.stopPropagation()}>
         <div style={modalHeader}>
           <div>
@@ -68,7 +49,7 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               Select a client: address, GSTIN, and monthly fee will auto-fill instantly!
             </p>
           </div>
-          <button onClick={requestClose} style={{ background: 'var(--bg-raised)', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
+          <button onClick={onClose} style={{ background: 'var(--bg-raised)', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
             <X style={{ width: 20, height: 20 }} />
           </button>
         </div>
@@ -77,16 +58,16 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
           {/* Client auto-fill + due date */}
           <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
-                Select Client (1-Click Pre-fill) *
-              </label>
-              <select value={brandId} onChange={(e) => onSelectBrand(e.target.value)} style={{ ...inputFieldStyle, fontWeight: 600 }}>
-                {brands.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} (₹{b.monthlyFee.toLocaleString('en-IN')}/mo)
-                  </option>
-                ))}
-              </select>
+              <AnimatedSelect
+                label="Select Client (1-Click Pre-fill)"
+                required
+                value={brandId}
+                onChange={onSelectBrand}
+                options={brands.map((b) => ({
+                  value: b.id,
+                  label: `${b.name} (₹${b.monthlyFee.toLocaleString('en-IN')}/mo)`,
+                }))}
+              />
             </div>
             <div>
               <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Due Date *</label>
@@ -204,13 +185,12 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
           </div>
 
           <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-            <button type="button" onClick={requestClose} style={{ ...btnSecondary, fontSize: 12 }}>Cancel</button>
+            <button type="button" onClick={onClose} style={{ ...btnSecondary, fontSize: 12 }}>Cancel</button>
             <button type="submit" style={{ ...btnPrimary, fontSize: 12 }}>Generate &amp; Send Invoice</button>
           </div>
         </form>
       </div>
     </div>
-    {confirmDialog}
     </>
   );
 };

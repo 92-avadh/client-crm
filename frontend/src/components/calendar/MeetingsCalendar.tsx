@@ -16,6 +16,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 export const MeetingsCalendar: React.FC = () => {
   const { currentUser, meetings, brands, allUsers, addMeeting, deleteMeeting, holidays } = useApp() as any;
@@ -278,14 +279,15 @@ export const MeetingsCalendar: React.FC = () => {
                   style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)' }} />
               </div>
 
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Client (optional)</label>
-                <select value={meetingForm.brandId} onChange={e => setMeetingForm({ ...meetingForm, brandId: e.target.value })}
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)', cursor: 'pointer' }}>
-                  <option value="">— No specific client —</option>
-                  {brands.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
+              <AnimatedSelect
+                label="Client (optional)"
+                value={meetingForm.brandId}
+                onChange={(val) => setMeetingForm({ ...meetingForm, brandId: val })}
+                options={[
+                  { value: '', label: '— No specific client —' },
+                  ...brands.map((b: any) => ({ value: b.id, label: b.name })),
+                ]}
+              />
 
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>

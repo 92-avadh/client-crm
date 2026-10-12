@@ -8,6 +8,7 @@ interface FieldProps {
   label: string;
   value: string | number;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   error?: string;
   type?: string;
   placeholder?: string;
@@ -17,7 +18,7 @@ interface FieldProps {
 
 /** Labelled input that turns red and shows the message when invalid. */
 export const FormField: React.FC<FieldProps> = ({
-  label, value, onChange, error, type = 'text', placeholder, mono, required,
+  label, value, onChange, onBlur, error, type = 'text', placeholder, mono, required,
 }) => (
   <div>
     <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', fontSize: 12, marginBottom: 6 }}>
@@ -28,6 +29,12 @@ export const FormField: React.FC<FieldProps> = ({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+      onWheel={(e) => {
+        if (type === 'number') {
+          e.currentTarget.blur();
+        }
+      }}
       style={{
         width: '100%',
         padding: '10px 14px',
@@ -67,23 +74,23 @@ export const ErrorBanner: React.FC<{ message: string }> = ({ message }) => {
   );
 };
 
-/** Select field matching FormField's styling. */
+import { AnimatedSelect } from '../ui/AnimatedSelect';
+
+/** Select field powered by animated Radix DropdownMenu. */
 export const FormSelect: React.FC<{
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
-}> = ({ label, value, onChange, options }) => (
-  <div>
-    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', fontSize: 12, marginBottom: 6 }}>
-      {label}
-    </label>
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text-primary)', background: 'var(--bg-subtle)', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
-    >
-      {options.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
-    </select>
-  </div>
+  error?: string;
+  required?: boolean;
+}> = ({ label, value, onChange, options, error, required }) => (
+  <AnimatedSelect
+    label={label}
+    value={value}
+    onChange={onChange}
+    options={options}
+    error={error}
+    required={required}
+  />
 );

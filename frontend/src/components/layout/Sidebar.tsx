@@ -20,8 +20,10 @@ import {
   PanelLeft,
   X
 } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export const Sidebar: React.FC = () => {
+  const { confirm, element: confirmDialog } = useConfirm();
   const {
     currentUser,
     logout,
@@ -36,6 +38,16 @@ export const Sidebar: React.FC = () => {
     mobileSidebarOpen,
     setMobileSidebarOpen
   } = useApp();
+
+  const handleLogout = async () => {
+    const ok = await confirm({
+      title: 'Log out of Retentio?',
+      description: 'You will need to sign in again to access your clients and invoices.',
+      confirmText: 'Log Out',
+      icon: 'logout',
+    });
+    if (ok) logout();
+  };
 
   const [hoverLogo, setHoverLogo] = React.useState(false);
 
@@ -335,7 +347,7 @@ export const Sidebar: React.FC = () => {
         }}
       >
         <button
-          onClick={logout}
+          onClick={handleLogout}
           title={sidebarCollapsed ? 'Log Out' : undefined}
           style={{
             width: '100%',
@@ -362,6 +374,7 @@ export const Sidebar: React.FC = () => {
         </button>
       </div>
     </aside>
+    {confirmDialog}
   </>
 );
 };

@@ -3,6 +3,7 @@ import { X, Camera, Eye, EyeOff } from 'lucide-react';
 import type { User } from '../../types';
 import { useConfirm } from '../../hooks/useConfirm';
 import { isDirty } from '../../hooks/isDirty';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 export interface EditMemberForm {
   name: string;
@@ -133,14 +134,16 @@ export const EditMemberModal: React.FC<Props> = ({
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={labelStyle}>Role</label>
-              <select value={form.role} onChange={(e) => onFormChange({ role: e.target.value })} style={inputStyle}>
-                <option value="team">Team Member</option>
-                <option value="hr">HR Manager</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
+            <AnimatedSelect
+              label="Role"
+              value={form.role}
+              onChange={(v) => onFormChange({ role: v })}
+              options={[
+                { value: 'team', label: 'Team Member' },
+                { value: 'hr', label: 'HR Manager' },
+                { value: 'admin', label: 'Admin' },
+              ]}
+            />
 
             {/* Password reset */}
             <div style={{ padding: 16, borderRadius: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>

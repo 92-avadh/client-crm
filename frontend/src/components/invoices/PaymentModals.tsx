@@ -3,6 +3,7 @@ import { X, CreditCard } from 'lucide-react';
 import type { Invoice, AppSettings } from '../../types';
 import { inputFieldStyle, btnPrimary, btnSecondary, modalOverlay, modalCard } from './invoiceStyles';
 import { useConfirm } from '../../hooks/useConfirm';
+import { AnimatedSelect } from '../ui/AnimatedSelect';
 
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
@@ -144,14 +145,16 @@ export const OfflinePaymentModal: React.FC<OfflineProps> = ({
         </div>
 
         <form onSubmit={onSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, fontSize: 12 }}>
-          <div>
-            <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Payment Mode</label>
-            <select value={form.mode} onChange={(e) => onFormChange({ ...form, mode: e.target.value })} style={inputFieldStyle}>
-              <option value="Bank Transfer">Bank Transfer (NEFT / RTGS / IMPS)</option>
-              <option value="Cash">Cash</option>
-              <option value="Cheque">Cheque</option>
-            </select>
-          </div>
+          <AnimatedSelect
+            label="Payment Mode"
+            value={form.mode}
+            onChange={(val) => onFormChange({ ...form, mode: val })}
+            options={[
+              { value: 'Bank Transfer', label: 'Bank Transfer (NEFT / RTGS / IMPS)' },
+              { value: 'Cash', label: 'Cash' },
+              { value: 'Cheque', label: 'Cheque' },
+            ]}
+          />
 
           <div>
             <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>

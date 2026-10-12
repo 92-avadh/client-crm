@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Plus, Loader2, Save } from 'lucide-react';
 import { FormField, FormSelect, FieldRow, ErrorBanner, type FieldErrors } from './clientFormUi';
 import { useConfirm } from '../../hooks/useConfirm';
 import { isDirty } from '../../hooks/isDirty';
+import { CountryCodePicker, type Country } from '../ui/CountryCodePicker';
+import { COUNTRY_PHONE_LENGTHS } from './ClientsManager';
 
 export interface ClientFormData {
   name: string;
   ownerName: string;
   mobile: string;
+  countryCode: string; // ISO 3166-1 alpha-2, e.g. 'IN'
   email: string;
   billingAddress: string;
   state: string;
@@ -16,8 +19,8 @@ export interface ClientFormData {
   pan: string;
   serviceDetails: string;
   monthlyFee: string;
-  billingCycleDay: number;
-  paymentStatus: 'Paid' | 'Pending';
+  billingCycleDay: number | string;
+  paymentStatus: 'Paid' | 'Pending' | string;
   status?: string;
   notes?: string;
 }
@@ -65,14 +68,65 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
 }) => {
   const { confirm, element: confirmDialog } = useConfirm();
   const baseline = React.useRef<ClientFormData | null>(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Capture the pristine form the first time this modal opens, so we can tell
-  // whether the user has actually typed anything worth protecting.
+  // Capture the pristine form the first time this modal opens
   React.useEffect(() => {
-    if (open) baseline.current = formData;
-    else baseline.current = null;
+    if (open) {
+      baseline.current = formData;
+      setTouched({});
+    } else {
+      baseline.current = null;
+      setTouched({});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const handleBlur = (field: keyof ClientFormData) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const getFieldError = (field: keyof ClientFormData): string => {
+    // If parent passed an explicit error (e.g. from submit attempt), show it
+    if (errors[field]) return errors[field];
+    // If user hasn't left or touched the field yet, don't show error early
+    if (!touched[field]) return '';
+
+    switch (field) {
+      case 'name':
+        return !String(formData.name || '').trim() ? 'Client name is required' : '';
+      case 'ownerName':
+        return !String(formData.ownerName || '').trim() ? 'Contact person is required' : '';
+      case 'mobile': {
+        const val = String(formData.mobile || '').trim();
+        if (!val) return 'Mobile number is required';
+        const digits = val.replace(/\D/g, '');
+        const expectedLengths = COUNTRY_PHONE_LENGTHS[formData.countryCode] || [10];
+        if (!expectedLengths.includes(digits.length)) {
+          return `Mobile number must be ${expectedLengths.join(' or ')} digits for ${formData.countryCode}`;
+        }
+        return '';
+      }
+      case 'email': {
+        const val = String(formData.email || '').trim();
+        if (!val) return 'Email address is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Please enter a valid email address';
+        return '';
+      }
+      case 'billingAddress':
+        return !String(formData.billingAddress || '').trim() ? 'Billing address is required' : '';
+      case 'state':
+        return !String(formData.state || '').trim() ? 'State is required' : '';
+      case 'pincode':
+        return !String(formData.pincode || '').trim() ? 'Pincode is required' : '';
+      case 'serviceDetails':
+        return !String(formData.serviceDetails || '').trim() ? 'Service details are required' : '';
+      case 'monthlyFee':
+        return !String(formData.monthlyFee || '').trim() ? 'Monthly fee is required' : '';
+      default:
+        return '';
+    }
+  };
 
   const requestClose = async () => {
     if (submitting) return;
@@ -112,27 +166,40 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
             <ErrorBanner message={submitError} />
 
             <FieldRow>
-              <FormField label="Client Name" required value={formData.name} error={errors.name}
-                placeholder="e.g. Apex Media Pvt Ltd" onChange={(v) => onFormChange({ name: v })} />
-              <FormField label="Contact Person (Owner)" required value={formData.ownerName} error={errors.ownerName}
-                placeholder="e.g. Vikram Seth" onChange={(v) => onFormChange({ ownerName: v })} />
+              <FormField label="Client Name" required value={formData.name} error={getFieldError('name')}
+                onBlur={() => handleBlur('name')} placeholder="e.g. Apex Media Pvt Ltd" onChange={(v) => onFormChange({ name: v })} />
+              <FormField label="Contact Person (Owner)" required value={formData.ownerName} error={getFieldError('ownerName')}
+                onBlur={() => handleBlur('ownerName')} placeholder="e.g. Vikram Seth" onChange={(v) => onFormChange({ ownerName: v })} />
             </FieldRow>
 
             <FieldRow>
-              <FormField label="Mobile Number" required value={formData.mobile} error={errors.mobile}
-                type="tel" placeholder="e.g. +91 99880 11223" onChange={(v) => onFormChange({ mobile: v })} />
-              <FormField label="Email Address" required value={formData.email} error={errors.email}
-                type="email" placeholder="e.g. accounts@apexmedia.in" onChange={(v) => onFormChange({ email: v })} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Mobile Number <span style={{ color: 'var(--danger-text)' }}>*</span>
+                </label>
+                <CountryCodePicker
+                  countryCode={formData.countryCode}
+                  onCountryChange={(c: Country) => onFormChange({ countryCode: c.code })}
+                  phoneNumber={formData.mobile}
+                  onPhoneChange={(v) => onFormChange({ mobile: v })}
+                  onBlur={() => handleBlur('mobile')}
+                  placeholder="Phone number"
+                  error={getFieldError('mobile')}
+                  required
+                />
+              </div>
+              <FormField label="Email Address" required value={formData.email} error={getFieldError('email')}
+                onBlur={() => handleBlur('email')} type="email" placeholder="e.g. accounts@apexmedia.in" onChange={(v) => onFormChange({ email: v })} />
             </FieldRow>
 
-            <FormField label="Billing Address" required value={formData.billingAddress} error={errors.billingAddress}
-              placeholder="Street, area, city" onChange={(v) => onFormChange({ billingAddress: v })} />
+            <FormField label="Billing Address" required value={formData.billingAddress} error={getFieldError('billingAddress')}
+              onBlur={() => handleBlur('billingAddress')} placeholder="Street, area, city" onChange={(v) => onFormChange({ billingAddress: v })} />
 
             <FieldRow>
-              <FormField label="State" required value={formData.state} error={errors.state}
-                placeholder="e.g. Gujarat" onChange={(v) => onFormChange({ state: v })} />
-              <FormField label="Pincode" required value={formData.pincode} error={errors.pincode}
-                placeholder="e.g. 395006" onChange={(v) => onFormChange({ pincode: v })} />
+              <FormField label="State" required value={formData.state} error={getFieldError('state')}
+                onBlur={() => handleBlur('state')} placeholder="e.g. Gujarat" onChange={(v) => onFormChange({ state: v })} />
+              <FormField label="Pincode" required value={formData.pincode} error={getFieldError('pincode')}
+                onBlur={() => handleBlur('pincode')} placeholder="e.g. 395006" onChange={(v) => onFormChange({ pincode: v })} />
             </FieldRow>
 
             <FieldRow>
@@ -142,15 +209,15 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
                 placeholder="AAAAA0000A" onChange={(v) => onFormChange({ pan: v.toUpperCase() })} />
             </FieldRow>
 
-            <FormField label="Service Details" required value={formData.serviceDetails} error={errors.serviceDetails}
-              placeholder="e.g. Social media management, performance marketing"
+            <FormField label="Service Details" required value={formData.serviceDetails} error={getFieldError('serviceDetails')}
+              onBlur={() => handleBlur('serviceDetails')} placeholder="e.g. Social media management, performance marketing"
               onChange={(v) => onFormChange({ serviceDetails: v })} />
 
             <FieldRow>
-              <FormField label="Monthly Retainer (₹)" required value={formData.monthlyFee} error={errors.monthlyFee}
-                type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
-              <FormField label="Billing Cycle Day" value={formData.billingCycleDay}
-                type="number" placeholder="1-31" onChange={(v) => onFormChange({ billingCycleDay: Number(v) })} />
+              <FormField label="Monthly Retainer (₹)" required value={formData.monthlyFee} error={getFieldError('monthlyFee')}
+                onBlur={() => handleBlur('monthlyFee')} type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
+              <FormField label="Billing Cycle Day" value={formData.billingCycleDay ?? ''}
+                type="number" placeholder="1-31" onChange={(v) => onFormChange({ billingCycleDay: v === '' ? '' : Number(v) })} />
             </FieldRow>
 
             <FormSelect label="Initial Payment Status" value={formData.paymentStatus}
@@ -188,14 +255,53 @@ export const EditClientModal: React.FC<EditProps> = ({
 }) => {
   const { confirm, element: confirmDialog } = useConfirm();
   const baseline = React.useRef<ClientFormData | null>(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Snapshot the loaded client when the modal opens; anything diverging from
-  // this counts as an unsaved edit worth confirming.
+  // Snapshot the loaded client when the modal opens
   React.useEffect(() => {
-    if (open) baseline.current = formData;
-    else baseline.current = null;
+    if (open) {
+      baseline.current = formData;
+      setTouched({});
+    } else {
+      baseline.current = null;
+      setTouched({});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const handleBlur = (field: keyof ClientFormData) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const getFieldError = (field: keyof ClientFormData): string => {
+    if (errors[field]) return errors[field];
+    if (!touched[field]) return '';
+
+    switch (field) {
+      case 'name':
+        return !String(formData.name || '').trim() ? 'Client name is required' : '';
+      case 'ownerName':
+        return !String(formData.ownerName || '').trim() ? 'Contact person is required' : '';
+      case 'mobile': {
+        const val = String(formData.mobile || '').trim();
+        if (!val) return 'Mobile number is required';
+        const digits = val.replace(/\D/g, '');
+        const expectedLengths = COUNTRY_PHONE_LENGTHS[formData.countryCode] || [10];
+        if (!expectedLengths.includes(digits.length)) {
+          return `Mobile number must be ${expectedLengths.join(' or ')} digits for ${formData.countryCode}`;
+        }
+        return '';
+      }
+      case 'email': {
+        const val = String(formData.email || '').trim();
+        if (!val) return 'Email address is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Please enter a valid email address';
+        return '';
+      }
+      default:
+        return '';
+    }
+  };
 
   const requestClose = async () => {
     if (submitting) return;
@@ -235,17 +341,30 @@ export const EditClientModal: React.FC<EditProps> = ({
             <ErrorBanner message={submitError} />
 
             <FieldRow>
-              <FormField label="Client Name" required value={formData.name} error={errors.name}
-                onChange={(v) => onFormChange({ name: v })} />
-              <FormField label="Contact Person (Owner)" required value={formData.ownerName} error={errors.ownerName}
-                onChange={(v) => onFormChange({ ownerName: v })} />
+              <FormField label="Client Name" required value={formData.name} error={getFieldError('name')}
+                onBlur={() => handleBlur('name')} onChange={(v) => onFormChange({ name: v })} />
+              <FormField label="Contact Person (Owner)" required value={formData.ownerName} error={getFieldError('ownerName')}
+                onBlur={() => handleBlur('ownerName')} onChange={(v) => onFormChange({ ownerName: v })} />
             </FieldRow>
 
             <FieldRow>
-              <FormField label="Mobile Number" required value={formData.mobile} error={errors.mobile}
-                type="tel" onChange={(v) => onFormChange({ mobile: v })} />
-              <FormField label="Email Address" required value={formData.email} error={errors.email}
-                type="email" onChange={(v) => onFormChange({ email: v })} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Mobile Number <span style={{ color: 'var(--danger-text)' }}>*</span>
+                </label>
+                <CountryCodePicker
+                  countryCode={formData.countryCode}
+                  onCountryChange={(c: Country) => onFormChange({ countryCode: c.code })}
+                  phoneNumber={formData.mobile}
+                  onPhoneChange={(v) => onFormChange({ mobile: v })}
+                  onBlur={() => handleBlur('mobile')}
+                  placeholder="Phone number"
+                  error={getFieldError('mobile')}
+                  required
+                />
+              </div>
+              <FormField label="Email Address" required value={formData.email} error={getFieldError('email')}
+                onBlur={() => handleBlur('email')} type="email" onChange={(v) => onFormChange({ email: v })} />
             </FieldRow>
 
             <FormField label="Billing Address" value={formData.billingAddress} error={errors.billingAddress}
@@ -253,9 +372,9 @@ export const EditClientModal: React.FC<EditProps> = ({
 
             <FieldRow>
               <FormField label="State" value={formData.state} error={errors.state}
-                onChange={(v) => onFormChange({ state: v })} />
+                placeholder="e.g. Maharashtra" onChange={(v) => onFormChange({ state: v })} />
               <FormField label="Pincode" value={formData.pincode} error={errors.pincode}
-                onChange={(v) => onFormChange({ pincode: v })} />
+                placeholder="e.g. 400001" onChange={(v) => onFormChange({ pincode: v })} />
             </FieldRow>
 
             <FieldRow>
@@ -266,13 +385,13 @@ export const EditClientModal: React.FC<EditProps> = ({
             </FieldRow>
 
             <FormField label="Service Details" value={formData.serviceDetails}
-              onChange={(v) => onFormChange({ serviceDetails: v })} />
+              placeholder="e.g. Monthly CA Compliance" onChange={(v) => onFormChange({ serviceDetails: v })} />
 
             <FieldRow>
               <FormField label="Monthly Retainer (₹)" value={formData.monthlyFee}
-                type="number" onChange={(v) => onFormChange({ monthlyFee: v })} />
-              <FormField label="Billing Cycle Day" value={formData.billingCycleDay}
-                type="number" onChange={(v) => onFormChange({ billingCycleDay: Number(v) })} />
+                type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
+              <FormField label="Billing Cycle Day" value={formData.billingCycleDay ?? ''}
+                type="number" placeholder="1-31" onChange={(v) => onFormChange({ billingCycleDay: v === '' ? '' : Number(v) })} />
             </FieldRow>
 
             <FormField label="Internal Notes" value={formData.notes || ''}
