@@ -9,6 +9,7 @@ import { exportExpensesToCsv } from './exportCsv';
 import { ExpenseTable } from './ExpenseTable';
 import { ExpenseFormModal, DeleteExpenseModal, type ExpenseFormData } from './ExpenseFormModal';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { AnimatedNumber } from '../../hooks/useCountUp';
 
 const todayIso = () => new Date().toISOString().split('T')[0];
 
@@ -264,8 +265,8 @@ export const ExpensesManager: React.FC = () => {
         ].map((kpi) => (
           <div key={kpi.label} className="stat-card">
             <div className="metric-label">{kpi.label}</div>
-            <div className="metric-value" style={{ color: kpi.tone, marginTop: 6 }}>
-              ₹{kpi.value.toLocaleString('en-IN')}
+            <div className="metric-value font-amount count-up" style={{ color: kpi.tone, marginTop: 6 }}>
+              <AnimatedNumber value={kpi.value} prefix="₹" />
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{kpi.count} records</div>
           </div>

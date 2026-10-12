@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
 import { DeleteExpenseModal } from '../expenses/ExpenseFormModal';
+import { AnimatedNumber } from '../../hooks/useCountUp';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -298,7 +299,9 @@ export const FinanceManager: React.FC = () => {
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success-text)' }} />
             Total Collections Received
           </div>
-          <div className="metric-value" style={{ color: 'var(--text-primary)' }}>₹{totalCollections.toLocaleString('en-IN')}</div>
+          <div className="metric-value font-amount count-up" style={{ color: 'var(--text-primary)' }}>
+            <AnimatedNumber value={totalCollections} prefix="₹" />
+          </div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
             <CheckCircle style={{ width: 14, height: 14, color: 'var(--success-text)' }} />
             <span>{receivedPayments.length} verified received payments</span>
@@ -319,7 +322,9 @@ export const FinanceManager: React.FC = () => {
               <Clock style={{ width: 14, height: 14, color: 'var(--warn-text)' }} />
               Pending Collections
             </div>
-            <div className="metric-value" style={{ color: totalPending > 0 ? 'var(--warn-text)' : 'var(--text-primary)' }}>₹{totalPending.toLocaleString('en-IN')}</div>
+            <div className="metric-value font-amount count-up" style={{ color: totalPending > 0 ? 'var(--warn-text)' : 'var(--text-primary)' }}>
+              <AnimatedNumber value={totalPending} prefix="₹" />
+            </div>
             <div style={{ fontSize: 11, color: 'var(--warn-text)', marginTop: 8 }}>
               {pendingPaymentsList.length} client payments awaiting clearance
             </div>
@@ -329,7 +334,9 @@ export const FinanceManager: React.FC = () => {
         {isAdmin && (
           <div className="stat-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
             <div className="metric-label" style={{ marginBottom: 12, color: 'var(--text-secondary)' }}>Total Expenses</div>
-            <div className="metric-value font-amount" style={{ color: 'var(--text-primary)' }}>₹{totalExpenses.toLocaleString('en-IN')}</div>
+            <div className="metric-value font-amount count-up" style={{ color: 'var(--text-primary)' }}>
+              <AnimatedNumber value={totalExpenses} prefix="₹" />
+            </div>
             <div style={{ fontSize: 11, color: pendingExpensesTotal > 0 ? 'var(--warn-text)' : 'var(--text-secondary)', marginTop: 8 }}>
               {pendingExpensesTotal > 0
                 ? `₹${pendingExpensesTotal.toLocaleString('en-IN')} pending payouts (${pendingExpenses.length})`
@@ -349,7 +356,9 @@ export const FinanceManager: React.FC = () => {
             }}
           >
             <div className="metric-label" style={{ marginBottom: 12, color: totalCollections > 0 ? 'var(--success-text)' : 'var(--text-secondary)' }}>Net Agency Profit</div>
-            <div className="metric-value" style={{ color: netAgencyProfit >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>₹{netAgencyProfit.toLocaleString('en-IN')}</div>
+            <div className="metric-value font-amount count-up" style={{ color: netAgencyProfit >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
+              <AnimatedNumber value={netAgencyProfit} prefix="₹" />
+            </div>
             <div style={{ fontSize: 11, color: totalCollections > 0 ? 'var(--success-text)' : 'var(--text-secondary)', fontWeight: 600, marginTop: 8 }}>
               {netMargin}% Agency Margin
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   TrendingUp,
@@ -23,6 +23,7 @@ import {
   PieChart,
   BarChart3,
 } from 'lucide-react';
+import { useCountUp } from '../../hooks/useCountUp';
 
 // ─── Retentio Brand Identity Palette ──────────────────────────────────────────
 const BRAND = {
@@ -53,33 +54,6 @@ const BRAND = {
   cardNestedBg: 'var(--bg-raised, #F8FAFC)',
 };
 
-/* ─── Animated Counter Hook ─────────────────────────────────── */
-const useCountUp = (target: number, duration = 800): number => {
-  const [value, setValue] = useState(0);
-  const prevTarget = useRef(0);
-
-  useEffect(() => {
-    const from = prevTarget.current;
-    prevTarget.current = target;
-    if (from === target) return;
-
-    let frame: number;
-    const start = performance.now();
-
-    const tick = (now: number) => {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(from + (target - from) * eased));
-      if (progress < 1) frame = requestAnimationFrame(tick);
-    };
-
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [target, duration]);
-
-  return value;
-};
 
 /* ─── Widget Toggle Panel Component ─────────────────────────── */
 const WidgetTogglePanel: React.FC<{

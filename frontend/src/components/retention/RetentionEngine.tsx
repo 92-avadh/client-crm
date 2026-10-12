@@ -17,6 +17,7 @@ import {
   XCircle,
   Send
 } from 'lucide-react';
+import { AnimatedNumber } from '../../hooks/useCountUp';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -120,7 +121,9 @@ export const RetentionEngine: React.FC = () => {
             <span className="metric-label">Urgent Churn Risks</span>
             <AlertTriangle style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
           </div>
-          <div className="metric-value">{retentionAlerts.length}</div>
+          <div className="metric-value font-amount count-up">
+            <AnimatedNumber value={retentionAlerts.length} />
+          </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             Clients inactive for &gt;{settings.retentionThresholdDays} days
           </div>
@@ -131,7 +134,9 @@ export const RetentionEngine: React.FC = () => {
             <span className="metric-label">Active Client Retainers</span>
             <CheckCircle style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
           </div>
-          <div className="metric-value">{brands.filter((b) => b.status === 'Active').length}</div>
+          <div className="metric-value font-amount count-up">
+            <AnimatedNumber value={brands.filter((b) => b.status === 'Active').length} />
+          </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Healthy touchpoints logged recently</div>
         </div>
 
@@ -140,7 +145,9 @@ export const RetentionEngine: React.FC = () => {
             <span className="metric-label">Total Churned Accounts</span>
             <XCircle style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
           </div>
-          <div className="metric-value">{brands.filter((b) => b.status === 'Churned').length}</div>
+          <div className="metric-value font-amount count-up">
+            <AnimatedNumber value={brands.filter((b) => b.status === 'Churned').length} />
+          </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Historical retained records</div>
         </div>
       </div>
