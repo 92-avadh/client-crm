@@ -3,14 +3,13 @@ import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { getNaturalErrorMessage } from '../../services/errors';
 import type { User } from '../../types';
-import { Users, UserPlus, UserCheck, Shield, Briefcase, UserX } from 'lucide-react';
+import { Users, UserPlus, UserCheck, Shield, Briefcase, UserX, Loader2 } from 'lucide-react';
 import { StatCard } from './teamUi';
 import { TeamTable } from './TeamTable';
 import { MemberDrawer } from './MemberDrawer';
 import { AddMemberModal, type AddMemberForm } from './AddMemberModal';
 import { EditMemberModal, type EditMemberForm } from './EditMemberModal';
 import { processImageFile, generatePassword } from './imageUtils';
-import { useConfirm } from '../../hooks/useConfirm';
 import {
   AlertDialog,
   AlertDialogPopup,
@@ -37,7 +36,7 @@ const emptyEditForm = (): EditMemberForm => ({
  * modals are separate components.
  */
 export const TeamManager: React.FC = () => {
-  const { currentUser, allUsers, brands, showToast, reloadAll } = useApp() as any;
+  const { currentUser, allUsers, brands, showToast, loadDomain } = useApp() as any;
   const isAdmin = currentUser.role === 'admin';
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -84,7 +83,7 @@ export const TeamManager: React.FC = () => {
       try {
         setUpdatingAvatar(true);
         await api.users.update(selectedMember.id, { avatar: dataUrl });
-        await reloadAll();
+        await loadDomain('team');
         setSelectedMember((prev) => (prev ? { ...prev, avatar: dataUrl } : null));
         showToast('Profile photo updated successfully', 'success');
       } catch (err: any) {
@@ -100,7 +99,7 @@ export const TeamManager: React.FC = () => {
     try {
       setUpdatingAvatar(true);
       await api.users.update(selectedMember.id, { avatar: '' });
-      await reloadAll();
+      await loadDomain('team');
       setSelectedMember((prev) => (prev ? { ...prev, avatar: '' } : null));
       showToast('Profile photo removed', 'success');
     } catch (err: any) {
@@ -131,7 +130,7 @@ export const TeamManager: React.FC = () => {
         designation: form.designation, role: form.role, password: form.password,
         avatar: form.avatar || undefined,
       });
-      await reloadAll();
+      await loadDomain('team');
       setCreatedCreds({ name: form.name, email: form.email, password: form.password });
       showToast(`${form.name} added successfully`, 'success');
     } catch (err: any) {
@@ -178,7 +177,7 @@ export const TeamManager: React.FC = () => {
       if (editForm.password.trim().length > 0) payload.password = editForm.password.trim();
 
       await api.users.update(editingMember.id, payload);
-      await reloadAll();
+      await loadDomain('team');
 
       if (selectedMember?.id === editingMember.id) {
         setSelectedMember((prev) => (prev ? { ...prev, ...payload } : null));
@@ -201,8 +200,6 @@ export const TeamManager: React.FC = () => {
 
   /* ── Deactivate ──────────────────────────────────────────────── */
 
-  const { confirm, element: confirmDialog } = useConfirm();
-
   const handleDeactivate = (user: User) => {
     setMemberToDeactivate(user);
   };
@@ -210,27 +207,17 @@ export const TeamManager: React.FC = () => {
   const confirmDeactivate = async () => {
     const user = memberToDeactivate;
     if (!user) return;
-    const ok = await confirm({
-      title: `Deactivate ${user.name}?`,
-      description: 'They will no longer be able to log in. Their historical records and assigned clients are kept intact.',
-      confirmText: 'Deactivate',
-      destructive: true,
-    });
-    if (!ok) {
-      setMemberToDeactivate(null);
-      return;
-    }
     try {
       setDeactivating(user.id);
       await api.users.deactivate(user.id);
-      await reloadAll();
+      await loadDomain('team');
       showToast(`${user.name} has been deactivated`, 'success');
       if (selectedMember?.id === user.id) setSelectedMember(null);
+      setMemberToDeactivate(null);
     } catch (err: any) {
       showToast(getNaturalErrorMessage(err), 'error');
     } finally {
       setDeactivating(null);
-      setMemberToDeactivate(null);
     }
   };
 
@@ -310,7 +297,7 @@ export const TeamManager: React.FC = () => {
 
       {/* Deactivate confirmation — animated alert dialog */}
       {memberToDeactivate && (
-        <AlertDialog open onOpenChange={(o) => { if (!o) setMemberToDeactivate(null); }}>
+        <AlertDialog open onOpenChange={(o) => { if (!o && !deactivating) setMemberToDeactivate(null); }}>
           <AlertDialogPopup from="bottom">
             <AlertDialogHeader>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
@@ -327,19 +314,27 @@ export const TeamManager: React.FC = () => {
               </div>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={Boolean(deactivating)}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDeactivate}
-                style={{ background: 'var(--danger-text)', color: 'var(--solid-btn-text)' }}
+                disabled={Boolean(deactivating)}
+                style={{
+                  background: 'var(--danger-text)',
+                  color: 'var(--solid-btn-text)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  opacity: deactivating ? 0.7 : 1,
+                  cursor: deactivating ? 'not-allowed' : 'pointer',
+                }}
               >
+                {deactivating && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
                 Yes, Deactivate
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogPopup>
         </AlertDialog>
       )}
-
-      {confirmDialog}
     </div>
   );
 };

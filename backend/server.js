@@ -125,6 +125,7 @@ app.use('/api/chat', auth, require('./src/routes/chat'));
 app.use('/api/settings', auth, require('./src/routes/settings'));
 app.use('/api/holidays', auth, require('./src/routes/holidays'));
 app.use('/api/audit-logs', auth, require('./src/routes/auditLogs'));
+app.use('/api/recurring-invoices', auth, require('./src/routes/recurring-invoices'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
@@ -137,8 +138,14 @@ app.use(require('./src/middleware/errorHandler'));
 /* ------------------------------------------------------------------ */
 /*  Graceful shutdown                                                  */
 /* ------------------------------------------------------------------ */
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Shutting down gracefully...');
+  try {
+    await pool.end();
+    console.log('Database pool closed.');
+  } catch (err) {
+    console.error('Error closing database pool:', err.message);
+  }
   process.exit(0);
 });
 
@@ -146,7 +153,11 @@ process.on('SIGTERM', () => {
 /*  Env validation — fail fast if required secrets missing              */
 /* ------------------------------------------------------------------ */
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  console.warn('⚠️  JWT_SECRET env var is not set or < 32 chars. Using safe default key. Set JWT_SECRET in Render Environment Variables for maximum security.');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: JWT_SECRET environment variable is not set or is less than 32 characters in production. Server cannot start.');
+    process.exit(1);
+  }
+  console.warn('⚠️  JWT_SECRET env var is not set or < 32 chars. Set JWT_SECRET in production for security.');
 }
 
 const PORT = process.env.PORT || 4000;
@@ -157,6 +168,11 @@ connectWithRetry()
       const schema = fs.readFileSync(path.join(__dirname, 'src/db/schema.sql'), 'utf8');
       await pool.query(schema);
       console.log('✅ Schema applied');
+
+      // Run index migrations
+      const indexMigration = fs.readFileSync(path.join(__dirname, 'migrations/001_add_indexes.sql'), 'utf8');
+      await pool.query(indexMigration).catch(e => console.warn('Index migration warning:', e.message));
+      console.log('✅ Index migrations applied');
 
       await pool.query(`
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
@@ -179,7 +195,11 @@ connectWithRetry()
         UPDATE leads SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
       `).catch(e => console.warn('Migration warning:', e.message));
 
-      // One-time database reset for fresh account testing
+      await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (
+        id VARCHAR(50) PRIMARY KEY,
+        next_num INTEGER NOT NULL DEFAULT 42
+      )`).catch(() => {});
+      await pool.query(`INSERT INTO invoice_sequence (id, next_num) VALUES ('main', 42) ON CONFLICT DO NOTHING`).catch(() => {});
       await pool.query(`
         CREATE TABLE IF NOT EXISTS _system_migrations (
           name VARCHAR(100) PRIMARY KEY,
@@ -236,23 +256,6 @@ connectWithRetry()
     }
     app.listen(PORT, () => {
       console.log(`🚀 Retentio backend running on port ${PORT}`);
-
-      const keepAliveUrl = process.env.RENDER_EXTERNAL_URL || 'https://client-crm-api-g9qz.onrender.com';
-      if (keepAliveUrl && !keepAliveUrl.includes('localhost')) {
-        const pingIntervalMs = 13 * 60 * 1000;
-        setInterval(() => {
-          const healthUrl = `${keepAliveUrl.replace(/\/+$/, '')}/api/health`;
-          const https = require('https');
-          const http = require('http');
-          const client = healthUrl.startsWith('https') ? https : http;
-          client.get(healthUrl, (res) => {
-            console.log(`💓 Keep-alive ping sent to ${healthUrl} (Status: ${res.statusCode})`);
-          }).on('error', (e) => {
-            console.log(`⚠️ Keep-alive ping failed: ${e.message}`);
-          });
-        }, pingIntervalMs);
-        console.log(`⏰ Keep-alive pinger scheduled for ${keepAliveUrl} every 13 minutes`);
-      }
     });
   })
   .catch(err => {

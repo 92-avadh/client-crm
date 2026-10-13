@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   X,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
 import { DeleteExpenseModal } from '../expenses/ExpenseFormModal';
@@ -68,6 +69,7 @@ export const FinanceManager: React.FC = () => {
     deleteExpenses,
     invoices,
     updatePaymentStatus,
+    deletePayment,
     showToast,
     setActiveTab: setNavTab
   } = useApp();
@@ -80,6 +82,12 @@ export const FinanceManager: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<any>(null);
   const [expensesToDelete, setExpensesToDelete] = useState<any[]>([]);
+  const [isDeletingExpenses, setIsDeletingExpenses] = useState(false);
+
+  /* ── Payment action state ────────────────────────────────────── */
+  const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
+  const [isSubmittingExpense, setIsSubmittingExpense] = useState(false);
 
   const headerCheckboxRef = React.useRef<HTMLInputElement>(null);
   const allExpensesSelected = expenses.length > 0 && selectedExpenseIds.size > 0 && expenses.every(e => selectedExpenseIds.has(e.id));
@@ -117,6 +125,7 @@ export const FinanceManager: React.FC = () => {
   };
 
   const confirmDeleteExpenses = async () => {
+    setIsDeletingExpenses(true);
     try {
       if (expensesToDelete.length > 1) {
         await deleteExpenses(expensesToDelete.map((e) => e.id));
@@ -141,6 +150,8 @@ export const FinanceManager: React.FC = () => {
       setExpensesToDelete([]);
     } catch (err: any) {
       showToast(getNaturalErrorMessage(err), 'error');
+    } finally {
+      setIsDeletingExpenses(false);
     }
   };
 
@@ -149,15 +160,17 @@ export const FinanceManager: React.FC = () => {
   const [paymentSearch, setPaymentSearch] = useState('');
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
 
-  const [expenseForm, setExpenseForm] = useState({
-    category: 'Tools & Software' as ExpenseCategory,
-    amount: 15000,
-    date: '2026-10-04',
-    paymentMode: 'Corporate Card',
+  const emptyExpenseForm = () => ({
+    category: 'Brand Expenses' as ExpenseCategory,
+    amount: '' as any,
+    date: new Date().toISOString().split('T')[0],
+    paymentMode: 'Bank Transfer',
     note: '',
     brandId: '',
     isRecurring: false
   });
+
+  const [expenseForm, setExpenseForm] = useState(emptyExpenseForm);
 
   const exportToCSV = () => {
     const headers = ['Date', 'Client', 'Amount', 'Mode', 'Reference', 'Status'];
@@ -176,62 +189,97 @@ export const FinanceManager: React.FC = () => {
     window.print();
   };
 
-  const handleAddExpenseSubmit = (e: React.FormEvent) => {
+  const handleAddExpenseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addExpense({
-      ...expenseForm,
-      title: expenseForm.note || `${expenseForm.category} Expense`,
-      description: expenseForm.note,
-      paymentStatus: 'Paid',
-      amount: Number(expenseForm.amount),
-      brandId: expenseForm.brandId || undefined
-    });
-    setShowAddExpenseModal(false);
+    const parsedAmount = Number(expenseForm.amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      showToast('Please enter a valid expense amount greater than 0', 'error');
+      return;
+    }
+    setIsSubmittingExpense(true);
+    try {
+      await addExpense({
+        ...expenseForm,
+        title: expenseForm.note || `${expenseForm.category} Expense`,
+        description: expenseForm.note,
+        paymentStatus: 'Paid',
+        amount: parsedAmount,
+        brandId: expenseForm.brandId || undefined
+      });
+      setExpenseForm(emptyExpenseForm());
+      setShowAddExpenseModal(false);
+    } finally {
+      setIsSubmittingExpense(false);
+    }
+  };
+
+  const handleDeletePayment = async (p: any) => {
+    if (!isAdmin) return;
+    const ok = window.confirm(
+      `Delete payment record of ₹${Number(p.amount).toLocaleString('en-IN')} for ${p.brandName}? This action cannot be undone.`
+    );
+    if (!ok) return;
+
+    setDeletingPaymentId(p.id);
+    try {
+      await deletePayment(p.id);
+    } finally {
+      setDeletingPaymentId(null);
+    }
+  };
+
+  const handleUpdatePaymentStatus = async (id: string, status: 'Success' | 'Pending') => {
+    setUpdatingPaymentId(id);
+    try {
+      await updatePaymentStatus(id, status);
+    } finally {
+      setUpdatingPaymentId(null);
+    }
   };
 
   // ── STRICT CALCULATION LOGIC: Only payments actually received count as collected revenue ──
-  const receivedPayments = payments.filter(p => p.status === 'Success');
-  const pendingPaymentsList = payments.filter(p => p.status === 'Pending');
+  const receivedPayments = (payments || []).filter(p => p && p.status === 'Success');
+  const pendingPaymentsList = (payments || []).filter(p => p && p.status === 'Pending');
 
-  const paymentsTotal = receivedPayments.reduce((acc, p) => acc + p.amount, 0);
+  const paymentsTotal = receivedPayments.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
 
   // Unrecorded brand fees ONLY for active brands explicitly marked 'Paid' that don't have a payment row yet
-  const unrecordedBrandFees = brands
-    .filter(b => b.status === 'Active' && (b.monthlyFee || 0) > 0 && b.paymentStatus === 'Paid' && !payments.some(p => p.brandId === b.id && p.status === 'Success'))
-    .reduce((acc, b) => acc + (b.monthlyFee || 0), 0);
+  const unrecordedBrandFees = (brands || [])
+    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Paid' && !receivedPayments.some(p => p.brandId === b.id))
+    .reduce((acc, b) => acc + (Number(b.monthlyFee) || 0), 0);
 
   const totalCollections = paymentsTotal + unrecordedBrandFees;
 
   // Total expenses accounts ONLY for expenses actually paid (paymentStatus === 'Paid')
   // Pending expenses are excluded from Total Expenses and Net Profit until marked Paid
-  const paidExpenses = expenses.filter(e => (e.paymentStatus || 'Paid') === 'Paid');
-  const pendingExpenses = expenses.filter(e => e.paymentStatus === 'Pending');
-  const totalExpenses = paidExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
-  const pendingExpensesTotal = pendingExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+  const paidExpenses = (expenses || []).filter(e => e && (e.paymentStatus || 'Paid') === 'Paid');
+  const pendingExpenses = (expenses || []).filter(e => e && e.paymentStatus === 'Pending');
+  const totalExpenses = paidExpenses.reduce((acc, e) => acc + (Number(e?.amount) || 0), 0);
+  const pendingExpensesTotal = pendingExpenses.reduce((acc, e) => acc + (Number(e?.amount) || 0), 0);
   const netAgencyProfit = totalCollections - totalExpenses;
   const netMargin = totalCollections > 0 ? Math.round((netAgencyProfit / totalCollections) * 100) : 0;
 
   // Pending Collections / Unpaid client fees (NEVER counted in totalCollections)
-  const pendingPaymentsTotal = pendingPaymentsList.reduce((acc, p) => acc + p.amount, 0);
-  const pendingBrandFees = brands
-    .filter(b => b.status === 'Active' && (b.monthlyFee || 0) > 0 && b.paymentStatus === 'Pending' && !payments.some(p => p.brandId === b.id))
-    .reduce((acc, b) => acc + (b.monthlyFee || 0), 0);
-  const invoicePendingTotal = invoices
-    .filter(i => i.status === 'Sent' || i.status === 'Overdue')
-    .reduce((acc, i) => acc + (i.totalAmount - i.paidAmount), 0);
+  const pendingPaymentsTotal = pendingPaymentsList.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
+  const pendingBrandFees = (brands || [])
+    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Pending' && !(payments || []).some(p => p.brandId === b.id))
+    .reduce((acc, b) => acc + (Number(b.monthlyFee) || 0), 0);
+  const invoicePendingTotal = (invoices || [])
+    .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue'))
+    .reduce((acc, i) => acc + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0);
   const totalPending = invoicePendingTotal + pendingPaymentsTotal + pendingBrandFees;
 
-  const brandProfitability = brands.map((b) => {
+  const brandProfitability = (brands || []).map((b) => {
     // Only actual received payments for this brand count as collected revenue
-    const revenue = payments
-      .filter((p) => p.brandId === b.id && p.status === 'Success')
-      .reduce((acc, p) => acc + p.amount, 0) + (b.paymentStatus === 'Paid' && !payments.some(p => p.brandId === b.id && p.status === 'Success') ? (b.monthlyFee || 0) : 0);
-    const pendingRevenue = payments
-      .filter((p) => p.brandId === b.id && p.status === 'Pending')
-      .reduce((acc, p) => acc + p.amount, 0) + (b.paymentStatus === 'Pending' && !payments.some(p => p.brandId === b.id) ? (b.monthlyFee || 0) : 0);
-    const directExpenses = expenses
-      .filter((e) => e.brandId === b.id && (e.paymentStatus || 'Paid') === 'Paid')
-      .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const revenue = (payments || [])
+      .filter((p) => p && p.brandId === b.id && p.status === 'Success')
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.paymentStatus === 'Paid' && !(payments || []).some(p => p.brandId === b.id && p.status === 'Success') ? (Number(b.monthlyFee) || 0) : 0);
+    const pendingRevenue = (payments || [])
+      .filter((p) => p && p.brandId === b.id && p.status === 'Pending')
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.paymentStatus === 'Pending' && !(payments || []).some(p => p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
+    const directExpenses = (expenses || [])
+      .filter((e) => e && e.brandId === b.id && (e.paymentStatus || 'Paid') === 'Paid')
+      .reduce((acc, e) => acc + (Number(e?.amount) || 0), 0);
     const profit = revenue - directExpenses;
     const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
     return { brand: b, revenue, pendingRevenue, directExpenses, profit, margin };
@@ -281,10 +329,16 @@ export const FinanceManager: React.FC = () => {
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-strong)' }}
           >
             <Download style={{ width: 13, height: 13 }} />
-            <span>Export PDF</span>
+            <span>Print</span>
           </button>
           {isAdmin && (
-            <button onClick={() => setShowAddExpenseModal(true)} style={btnPrimary}>
+            <button
+              onClick={() => {
+                setExpenseForm(emptyExpenseForm());
+                setShowAddExpenseModal(true);
+              }}
+              style={btnPrimary}
+            >
               <Plus style={{ width: 14, height: 14 }} />
               <span>Record Expense</span>
             </button>
@@ -520,7 +574,7 @@ export const FinanceManager: React.FC = () => {
                         </td>
                         <td>
                           <div className="font-amount" style={{ fontWeight: 800, color: isSuccess ? 'var(--success-text)' : 'var(--warn-text)', fontSize: 13 }}>
-                            ₹{p.amount.toLocaleString('en-IN')}
+                            ₹{Number(p?.amount || 0).toLocaleString('en-IN')}
                           </div>
                         </td>
                         <td>
@@ -540,44 +594,84 @@ export const FinanceManager: React.FC = () => {
                         </td>
                         {isAdmin && (
                           <td style={{ textAlign: 'right' }}>
-                            {isPending ? (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              {isPending ? (
+                                <button
+                                  onClick={() => handleUpdatePaymentStatus(p.id, 'Success')}
+                                  disabled={updatingPaymentId === p.id || deletingPaymentId === p.id}
+                                  style={{
+                                    padding: '5px 12px',
+                                    borderRadius: 8,
+                                    background: 'var(--success-text)',
+                                    color: 'var(--solid-btn-text)',
+                                    border: 'none',
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    cursor: (updatingPaymentId === p.id || deletingPaymentId === p.id) ? 'not-allowed' : 'pointer',
+                                    opacity: updatingPaymentId === p.id ? 0.7 : 1,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    boxShadow: '0 1px 4px rgba(4, 89, 43, 0.2)',
+                                  }}
+                                >
+                                  {updatingPaymentId === p.id ? (
+                                    <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />
+                                  ) : (
+                                    <CheckCircle style={{ width: 12, height: 12 }} />
+                                  )}
+                                  <span>{updatingPaymentId === p.id ? 'Settling...' : 'Mark Received'}</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleUpdatePaymentStatus(p.id, 'Pending')}
+                                  disabled={updatingPaymentId === p.id || deletingPaymentId === p.id}
+                                  style={{
+                                    padding: '4px 10px',
+                                    borderRadius: 8,
+                                    background: 'var(--bg-raised)',
+                                    color: 'var(--text-muted)',
+                                    border: '1px solid var(--border)',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    cursor: (updatingPaymentId === p.id || deletingPaymentId === p.id) ? 'not-allowed' : 'pointer',
+                                    opacity: updatingPaymentId === p.id ? 0.7 : 1,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                  }}
+                                >
+                                  {updatingPaymentId === p.id ? (
+                                    <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />
+                                  ) : null}
+                                  <span>{updatingPaymentId === p.id ? 'Reverting...' : 'Revert to Pending'}</span>
+                                </button>
+                              )}
+
                               <button
-                                onClick={() => updatePaymentStatus(p.id, 'Success')}
+                                onClick={() => handleDeletePayment(p)}
+                                disabled={deletingPaymentId === p.id || updatingPaymentId === p.id}
+                                title="Delete payment record"
                                 style={{
-                                  padding: '5px 12px',
+                                  padding: '5px 8px',
                                   borderRadius: 8,
-                                  background: 'var(--success-text)',
-                                  color: 'var(--solid-btn-text)',
-                                  border: 'none',
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
+                                  background: 'var(--danger-bg, #fef2f2)',
+                                  color: 'var(--danger-text, #ef4444)',
+                                  border: '1px solid var(--danger-border, #fecaca)',
+                                  cursor: (deletingPaymentId === p.id || updatingPaymentId === p.id) ? 'not-allowed' : 'pointer',
+                                  opacity: deletingPaymentId === p.id ? 0.6 : 1,
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: 5,
-                                  boxShadow: '0 1px 4px rgba(4, 89, 43, 0.2)',
+                                  justifyContent: 'center',
                                 }}
                               >
-                                <CheckCircle style={{ width: 12, height: 12 }} />
-                                Mark Received
+                                {deletingPaymentId === p.id ? (
+                                  <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                  <Trash2 style={{ width: 12, height: 12 }} />
+                                )}
                               </button>
-                            ) : (
-                              <button
-                                onClick={() => updatePaymentStatus(p.id, 'Pending')}
-                                style={{
-                                  padding: '4px 10px',
-                                  borderRadius: 8,
-                                  background: 'var(--bg-raised)',
-                                  color: 'var(--text-muted)',
-                                  border: '1px solid var(--border)',
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                Revert to Pending
-                              </button>
-                            )}
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -766,7 +860,7 @@ export const FinanceManager: React.FC = () => {
                     </td>
                     <td>
                       <div className="font-amount" style={{ fontWeight: 800, color: 'var(--danger-text)', fontSize: 13 }}>
-                        ₹{e.amount.toLocaleString('en-IN')}
+                        ₹{Number(e?.amount || 0).toLocaleString('en-IN')}
                       </div>
                     </td>
                     <td style={{ color: 'var(--text-primary)', fontSize: 12 }}>{e.paymentMode}</td>
@@ -845,31 +939,31 @@ export const FinanceManager: React.FC = () => {
             </thead>
             <tbody>
               {brandProfitability.map((bp) => (
-                <tr key={bp.brand.id}>
+                <tr key={bp.brand?.id || Math.random()}>
                   <td>
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12 }}>{bp.brand.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{bp.brand.ownerName}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12 }}>{bp.brand?.name || 'Unnamed Client'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{bp.brand?.ownerName || '—'}</div>
                   </td>
                   <td className="font-amount" style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 650 }}>
-                    ₹{bp.brand.monthlyFee.toLocaleString('en-IN')}
+                    ₹{Number(bp.brand?.monthlyFee || 0).toLocaleString('en-IN')}
                   </td>
                   <td className="font-amount" style={{ fontWeight: 800, color: bp.revenue > 0 ? 'var(--success-text)' : 'var(--text-secondary)', fontSize: 13 }}>
-                    ₹{bp.revenue.toLocaleString('en-IN')}
+                    ₹{Number(bp.revenue || 0).toLocaleString('en-IN')}
                   </td>
                   <td>
                     {bp.pendingRevenue > 0 ? (
                       <span className="font-amount" style={{ ...badgeWarning, fontSize: 11, fontWeight: 700 }}>
-                        ₹{bp.pendingRevenue.toLocaleString('en-IN')} (Pending)
+                        ₹{Number(bp.pendingRevenue || 0).toLocaleString('en-IN')} (Pending)
                       </span>
                     ) : (
                       <span className="font-amount" style={{ color: 'var(--text-muted)', fontSize: 12 }}>₹0</span>
                     )}
                   </td>
                   <td className="font-amount" style={{ color: 'var(--danger-text)', fontSize: 13, fontWeight: 700 }}>
-                    ₹{bp.directExpenses.toLocaleString('en-IN')}
+                    ₹{Number(bp.directExpenses || 0).toLocaleString('en-IN')}
                   </td>
                   <td className="font-amount" style={{ fontWeight: 800, color: bp.profit >= 0 ? 'var(--success-text)' : 'var(--danger-text)', fontSize: 13 }}>
-                    ₹{bp.profit.toLocaleString('en-IN')}
+                    ₹{Number(bp.profit || 0).toLocaleString('en-IN')}
                   </td>
                   <td>
                     <span style={{ ...getMarginBadgeStyle(bp.margin), fontSize: 10 }}>
@@ -985,11 +1079,18 @@ export const FinanceManager: React.FC = () => {
               </label>
 
               <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button type="button" onClick={() => setShowAddExpenseModal(false)} style={{ ...btnSecondary, fontSize: 12 }}>
+                <button type="button" onClick={() => setShowAddExpenseModal(false)} disabled={isSubmittingExpense} style={{ ...btnSecondary, fontSize: 12, opacity: isSubmittingExpense ? 0.6 : 1, cursor: isSubmittingExpense ? 'not-allowed' : 'pointer' }}>
                   Cancel
                 </button>
-                <button type="submit" style={{ ...btnPrimary, fontSize: 12 }}>
-                  Save Expense
+                <button type="submit" disabled={isSubmittingExpense} style={{ ...btnPrimary, fontSize: 12, opacity: isSubmittingExpense ? 0.7 : 1, cursor: isSubmittingExpense ? 'not-allowed' : 'pointer' }}>
+                  {isSubmittingExpense ? (
+                    <>
+                      <Loader2 style={{ width: 13, height: 13, animation: 'spin 1s linear infinite' }} />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Expense</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -1007,6 +1108,7 @@ export const FinanceManager: React.FC = () => {
           setExpensesToDelete([]);
         }}
         onConfirm={confirmDeleteExpenses}
+        deleting={isDeletingExpenses}
       />
     </div>
   );

@@ -6,6 +6,8 @@ const list = asyncHandler(async (req, res) => {
   res.json(await meetings.listMeetings(req.user, {
     brandId: req.query.brandId,
     leadId: req.query.leadId,
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 50)),
   }));
 });
 

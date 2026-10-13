@@ -7,5 +7,6 @@ router.post('/', controller.record);
 router.post('/razorpay-initiate', controller.razorpayInitiate);
 router.post('/razorpay-verify', controller.razorpayVerify);
 router.patch('/:id', controller.update);
+router.delete('/:id', controller.remove);
 
 module.exports = router;

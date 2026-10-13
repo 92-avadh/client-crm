@@ -12,24 +12,20 @@ if (typeof window !== 'undefined') {
   }, 10 * 60 * 1000);
 }
 
-// Token management
-export const getToken = () => localStorage.getItem('retentio_token');
-export const setToken = (t: string) => localStorage.setItem('retentio_token', t);
-export const clearToken = () => localStorage.removeItem('retentio_token');
-
-export const DEV_BYPASS_TOKEN =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl8yZTFjZmViNzY5ZjM3OWVhIiwibmFtZSI6IkF2YWRoIERoYW1lbGl5YSIsImVtYWlsIjoiZGhhbWVsaXlhYXZhZGg1OTJAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiYnJhbmRJZCI6bnVsbCwiaWF0IjoxNzkxNzM0NjUyLCJleHAiOjE4MjMyNzA2NTJ9.zFSeZqF3sMdELIkSpUWqfCCFh1K_YMJPleaqiLgM8x8';
+// Token is stored in httpOnly cookie — no localStorage token management needed
+export const getToken = () => null; // kept for backwards compatibility
+export const setToken = (_t: string) => {}; // noop — cookie is set by server
+export const clearToken = () => {}; // noop — cookie cleared by logout endpoint
 
 // Core fetch wrapper
 async function req<T>(method: string, path: string, body?: any): Promise<T> {
-  const token = getToken();
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       method,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       body: body ? JSON.stringify(body) : undefined
     });
@@ -62,6 +58,11 @@ export const api = {
     resendOtp: (email: string, company: string) =>
       req<{ success: boolean; message: string }>('POST', '/auth/resend-otp', { email, company }),
     logout: () => req('POST', '/auth/logout'),
+    me: () => req<{ user: any }>('GET', '/auth/me'),
+    forgotPassword: (email: string) =>
+      req<{ message: string }>('POST', '/auth/forgot-password', { email }),
+    resetPassword: (data: { email: string; code: string; newPassword: string }) =>
+      req<{ message: string }>('POST', '/auth/reset-password', data),
   },
   users: {
     list: () => req<any[]>('GET', '/users'),
@@ -96,19 +97,22 @@ export const api = {
     get: (id: string) => req<any>('GET', `/invoices/${id}`),
     create: (data: any) => req<any>('POST', '/invoices', data),
     updateStatus: (id: string, status: string) => req<any>('PATCH', `/invoices/${id}/status`, { status }),
-  },
-  recurringInvoices: {
-    list: () => req<any[]>('GET', '/recurring-invoices'),
-    create: (data: any) => req<any>('POST', '/recurring-invoices', data),
-    update: (id: string, data: any) => req<any>('PATCH', `/recurring-invoices/${id}`, data),
-    delete: (id: string) => req<any>('DELETE', `/recurring-invoices/${id}`),
+    delete: (id: string) => req<any>('DELETE', `/invoices/${id}`),
   },
   payments: {
     list: (params?: any) => req<any[]>('GET', '/payments' + (params ? '?' + new URLSearchParams(params) : '')),
     record: (data: any) => req<any>('POST', '/payments', data),
     update: (id: string, data: any) => req<any>('PATCH', `/payments/${id}`, data),
+    delete: (id: string) => req<any>('DELETE', `/payments/${id}`),
     razorpayInitiate: (invoiceId: string) => req<any>('POST', '/payments/razorpay-initiate', { invoiceId }),
     razorpayVerify: (data: any) => req<any>('POST', '/payments/razorpay-verify', data),
+  },
+  recurringInvoices: {
+    list: () => req<any[]>('GET', '/recurring-invoices'),
+    get: (id: string) => req<any>('GET', `/recurring-invoices/${id}`),
+    create: (data: any) => req<any>('POST', '/recurring-invoices', data),
+    update: (id: string, data: any) => req<any>('PATCH', `/recurring-invoices/${id}`, data),
+    delete: (id: string) => req<any>('DELETE', `/recurring-invoices/${id}`),
   },
   expenses: {
     list: (params?: any) => req<any[]>('GET', '/expenses' + (params ? '?' + new URLSearchParams(params) : '')),

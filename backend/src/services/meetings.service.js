@@ -19,61 +19,105 @@ async function attachAttendees(meetingId, attendeeIds) {
   return att.rows.map(r => r.user_id);
 }
 
+/**
+ * Batch-fetch attendees for multiple meetings in a single query.
+ * Returns a Map of meeting_id -> user_id array.
+ */
+async function getAttendeesForMeetings(meetingIds) {
+  if (!meetingIds.length) return new Map();
+  const { rows } = await pool.query(
+    'SELECT meeting_id, user_id FROM meeting_attendees WHERE meeting_id = ANY($1)',
+    [meetingIds]
+  );
+  const map = new Map();
+  for (const row of rows) {
+    if (!map.has(row.meeting_id)) map.set(row.meeting_id, []);
+    map.get(row.meeting_id).push(row.user_id);
+  }
+  return map;
+}
+
 async function getMeeting(id) {
   const { rows } = await pool.query('SELECT * FROM meetings WHERE id=$1', [id]);
   if (!rows.length) return null;
   return mapMeeting(rows[0], await attachAttendees(id));
 }
 
-async function listMeetings(user, { brandId, leadId } = {}) {
-  let query = 'SELECT * FROM meetings WHERE 1=1';
+async function listMeetings(user, { brandId, leadId, page = 1, pageSize = 50 } = {}) {
+  let whereClause = 'WHERE 1=1';
   const params = [];
   let idx = 1;
 
   if (user) {
     if (user.role === 'brand') {
-      query += ` AND brand_id = $${idx}`;
+      whereClause += ` AND brand_id = $${idx}`;
       params.push(user.brandId || 'none');
       idx += 1;
     } else if (user.role !== 'admin') {
-      query += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
+      whereClause += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
       params.push(user.id);
       idx += 1;
     }
   }
   if (brandId) {
-    query += ` AND brand_id=$${idx}`;
+    whereClause += ` AND brand_id=$${idx}`;
     params.push(brandId);
     idx += 1;
   }
   if (leadId) {
-    query += ` AND lead_id=$${idx}`;
+    whereClause += ` AND lead_id=$${idx}`;
     params.push(leadId);
   }
-  query += ' ORDER BY date ASC, time ASC';
+
+  // Count total matching rows
+  const countQuery = `SELECT COUNT(*) FROM meetings ${whereClause}`;
+  const { rows: countRows } = await pool.query(countQuery, params);
+  const total = parseInt(countRows[0].count, 10);
+
+  // Paginated query
+  const offset = (page - 1) * pageSize;
+  const query = `SELECT * FROM meetings ${whereClause} ORDER BY date ASC, time ASC LIMIT $${idx} OFFSET $${idx + 1}`;
+  params.push(pageSize, offset);
 
   const { rows } = await pool.query(query, params);
-  return Promise.all(rows.map(async (m) => mapMeeting(m, await attachAttendees(m.id))));
+
+  // Batch fetch attendees — single query instead of N+1
+  const attendeesMap = await getAttendeesForMeetings(rows.map(m => m.id));
+  const data = rows.map(m => mapMeeting(m, attendeesMap.get(m.id) || []));
+
+  return { data, total, page, pageSize };
 }
 
 async function createMeeting(user, data) {
-  const id = genId();
-  await pool.query(
-    `INSERT INTO meetings (id,title,brand_id,lead_id,date,time,duration_minutes,link_or_location,notes,owner_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-    [
-      id, data.title, data.brandId || null, data.leadId || null,
-      data.date || null, data.time || null, data.durationMinutes || 60,
-      data.linkOrLocation || null, data.notes || null, user ? user.id : null,
-    ]
-  );
-  for (const uid of data.attendeeIds || []) {
-    await pool.query(
-      'INSERT INTO meeting_attendees (meeting_id,user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-      [id, uid]
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const id = genId();
+    await client.query(
+      `INSERT INTO meetings (id,title,brand_id,lead_id,date,time,duration_minutes,link_or_location,notes,owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        id, data.title, data.brandId || null, data.leadId || null,
+        data.date || null, data.time || null, data.durationMinutes || 60,
+        data.linkOrLocation || null, data.notes || null, user ? user.id : null,
+      ]
     );
+    for (const uid of data.attendeeIds || []) {
+      await client.query(
+        'INSERT INTO meeting_attendees (meeting_id,user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+        [id, uid]
+      );
+    }
+
+    await client.query('COMMIT');
+    return getMeeting(id);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
-  return getMeeting(id);
 }
 
 async function updateMeeting(id, data) {

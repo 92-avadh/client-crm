@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { X, Camera, Copy, CheckCircle2, Sparkles } from 'lucide-react';
+import { X, Camera, Copy, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import { AVATAR_PRESETS } from './teamUi';
 import { useConfirm } from '../../hooks/useConfirm';
 import { isDirty } from '../../hooks/isDirty';
@@ -217,7 +217,8 @@ export const AddMemberModal: React.FC<Props> = ({
                 Cancel
               </button>
               <button type="submit" disabled={submitting}
-                style={{ padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}>
+                style={{ padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {submitting && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
                 {submitting ? 'Adding…' : 'Add Member'}
               </button>
             </div>

@@ -23,49 +23,78 @@ async function getProject(id) {
   return mapProject(rows[0], members.rows.map(r => r.member_id));
 }
 
-async function listProjects(user, { brandId } = {}) {
-  let query = 'SELECT * FROM projects WHERE 1=1';
+async function listProjects(user, { brandId, page = 1, pageSize = 50 } = {}) {
+  let where = 'WHERE 1=1';
   const params = [];
   let idx = 1;
 
   if (user.role === 'brand') {
-    query += ` AND brand_id = $${idx}`;
+    where += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
   }
   if (brandId) {
-    query += ` AND brand_id=$${idx}`;
+    where += ` AND brand_id=$${idx}`;
     params.push(brandId);
   }
 
-  const { rows } = await pool.query(query, params);
-  return Promise.all(rows.map(async (p) => {
-    const members = await pool.query(
-      'SELECT member_id FROM project_assignments WHERE project_id=$1', [p.id]
-    );
-    return mapProject(p, members.rows.map(r => r.member_id));
-  }));
+  // Count total
+  const countResult = await pool.query(`SELECT COUNT(*) AS total FROM projects ${where}`, params);
+  const total = parseInt(countResult.rows[0].total, 10);
+
+  // Paginated query with member IDs via LEFT JOIN + json_agg
+  const offset = (page - 1) * pageSize;
+  const dataParams = [...params, pageSize, offset];
+  const dataQuery = `
+    SELECT p.*,
+      COALESCE(
+        (SELECT json_agg(DISTINCT pa.member_id) FROM project_assignments pa WHERE pa.project_id = p.id),
+        '[]'
+      ) AS assigned_member_ids
+    FROM projects p
+    ${where}
+    ORDER BY p.created_at DESC, p.id
+    LIMIT $${idx} OFFSET $${idx + 1}
+  `;
+
+  const { rows } = await pool.query(dataQuery, dataParams);
+
+  const data = rows.map(p => mapProject(p, p.assigned_member_ids || []));
+
+  return { data, total, page, pageSize };
 }
 
 async function createProject(user, data) {
-  const id = genId();
-  await pool.query(
-    `INSERT INTO projects (id,brand_id,name,scope,start_date,end_date,status,billing_amount,progress,owner_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-    [
-      id, data.brandId, data.name, data.scope || null,
-      data.startDate || null, data.endDate || null,
-      data.status || 'Not started', data.billingAmount || 0,
-      data.progress || 0, user.id,
-    ]
-  );
-  for (const mid of data.memberIds || []) {
-    await pool.query(
-      'INSERT INTO project_assignments (project_id,member_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-      [id, mid]
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const id = genId();
+    await client.query(
+      `INSERT INTO projects (id,brand_id,name,scope,start_date,end_date,status,billing_amount,progress,owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        id, data.brandId, data.name, data.scope || null,
+        data.startDate || null, data.endDate || null,
+        data.status || 'Not started', data.billingAmount || 0,
+        data.progress || 0, user.id,
+      ]
     );
+    for (const mid of data.memberIds || []) {
+      await client.query(
+        'INSERT INTO project_assignments (project_id,member_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+        [id, mid]
+      );
+    }
+
+    await client.query('COMMIT');
+    return getProject(id);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
-  return getProject(id);
 }
 
 async function updateProject(id, data) {

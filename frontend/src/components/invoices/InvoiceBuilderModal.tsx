@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Loader2 } from 'lucide-react';
 import type { Brand, InvoiceItem } from '../../types';
 import { inputFieldStyle, btnPrimary, btnSecondary, modalOverlay, modalCard, modalHeader } from './invoiceStyles';
 import type { InvoiceTotals } from './useInvoiceBuilder';
@@ -9,6 +9,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  submitting?: boolean;
   brands: Brand[];
   brandId: string;
   onSelectBrand: (id: string) => void;
@@ -28,7 +29,7 @@ const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 /** One-click GST invoice generator modal. */
 export const InvoiceBuilderModal: React.FC<Props> = ({
-  open, onClose, onSubmit, brands, brandId, onSelectBrand,
+  open, onClose, onSubmit, submitting = false, brands, brandId, onSelectBrand,
   dueDate, onDueDateChange, items, onUpdateItem,
   hasGst, onHasGstChange, isRecurring, onIsRecurringChange,
   selectedBrand, totals,
@@ -185,8 +186,17 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
           </div>
 
           <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-            <button type="button" onClick={onClose} style={{ ...btnSecondary, fontSize: 12 }}>Cancel</button>
-            <button type="submit" style={{ ...btnPrimary, fontSize: 12 }}>Generate &amp; Send Invoice</button>
+            <button type="button" onClick={onClose} disabled={submitting} style={{ ...btnSecondary, fontSize: 12, opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}>Cancel</button>
+            <button type="submit" disabled={submitting} style={{ ...btnPrimary, fontSize: 12, opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}>
+              {submitting ? (
+                <>
+                  <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                  <span>Generating &amp; Sending...</span>
+                </>
+              ) : (
+                <span>Generate &amp; Send Invoice</span>
+              )}
+            </button>
           </div>
         </form>
       </div>

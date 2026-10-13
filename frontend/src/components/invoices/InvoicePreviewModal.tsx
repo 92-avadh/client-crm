@@ -47,8 +47,10 @@ export const InvoicePreviewModal: React.FC<Props> = ({ invoice, settings, onClos
           {/* Agency branding */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 24 }}>
             <div>
-              <img src="/retentio-logo-horizontal.png" alt={settings.companyName}
-                style={{ height: 28, width: 'auto', marginBottom: 10, objectFit: 'contain' }} />
+              <div style={{ background: '#ffffff', padding: '4px 10px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', marginBottom: 10, width: 'fit-content' }}>
+                <img src="/retentio-logo-horizontal.png" alt={settings.companyName}
+                  style={{ height: 26, width: 'auto', objectFit: 'contain' }} />
+              </div>
               <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>{settings.companyName}</div>
               <p style={{ color: 'var(--text-secondary)', marginTop: 4, maxWidth: 320, lineHeight: 1.6 }}>{settings.companyAddress}</p>
               <div style={{ marginTop: 8, color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 11 }}>

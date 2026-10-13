@@ -3,7 +3,11 @@ const { makeValidator } = require('../utils/validate');
 const projects = require('../services/projects.service');
 
 const list = asyncHandler(async (req, res) => {
-  res.json(await projects.listProjects(req.user, { brandId: req.query.brandId }));
+  res.json(await projects.listProjects(req.user, {
+    brandId: req.query.brandId,
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 50)),
+  }));
 });
 
 const create = asyncHandler(async (req, res) => {

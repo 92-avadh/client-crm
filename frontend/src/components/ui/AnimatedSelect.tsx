@@ -127,7 +127,14 @@ export const AnimatedSelect: React.FC<AnimatedSelectProps> = ({
             return (
               <DropdownMenuItem
                 key={opt.value}
-                onSelect={() => onChange(opt.value)}
+                onSelect={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

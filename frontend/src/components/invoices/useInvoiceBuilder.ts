@@ -13,14 +13,20 @@ export interface InvoiceTotals {
   isInterstate: boolean;
 }
 
-const initialItem = (brand?: Brand): InvoiceItem => ({
-  id: 'item_init',
-  description: 'Monthly Retainer & Compliance Advisory (October 2026)',
-  hsnSac: '998231',
+const emptyItem = (): InvoiceItem => ({
+  id: 'item_' + Date.now(),
+  description: '',
+  hsnSac: '',
   quantity: 1,
-  unitPrice: brand?.monthlyFee || 100000,
-  amount: brand?.monthlyFee || 100000,
+  unitPrice: 0,
+  amount: 0,
 });
+
+const getDefaultDueDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return d.toISOString().split('T')[0];
+};
 
 /**
  * Owns all invoice-builder state and the GST calculation.
@@ -29,13 +35,13 @@ const initialItem = (brand?: Brand): InvoiceItem => ({
  * and the modal component stays presentational.
  */
 export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
-  const [brandId, setBrandId] = useState(brands[0]?.id || '');
-  const [dueDate, setDueDate] = useState('2026-10-18');
+  const [brandId, setBrandId] = useState('');
+  const [dueDate, setDueDate] = useState(getDefaultDueDate);
   const [hasGst, setHasGst] = useState(true);
   const [notes, setNotes] = useState(
-    'Thank you for your business. Payment due via Razorpay online link.'
+    'Thank you for your business. Payment due via online payment link.'
   );
-  const [items, setItems] = useState<InvoiceItem[]>(() => [initialItem(brands[0])]);
+  const [items, setItems] = useState<InvoiceItem[]>([emptyItem()]);
 
   const selectedBrand = useMemo(
     () => brands.find((b) => b.id === brandId),
@@ -94,10 +100,12 @@ export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
   }, [items, hasGst, selectedBrand, settings.companyState]);
 
   const reset = useCallback(() => {
+    setBrandId('');
+    setDueDate(getDefaultDueDate());
     setHasGst(true);
-    setNotes('Thank you for your business. Payment due via Razorpay online link.');
-    setItems([initialItem(brands[0])]);
-  }, [brands]);
+    setNotes('Thank you for your business. Payment due via online payment link.');
+    setItems([emptyItem()]);
+  }, []);
 
   return {
     brandId, selectBrand,

@@ -8,7 +8,8 @@ import {
   CheckCheck,
   Building2,
   Users,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
 
 export const ChatManager: React.FC = () => {
@@ -22,15 +23,17 @@ export const ChatManager: React.FC = () => {
     loadMessages
   } = useApp();
 
+  const [inputText, setInputText] = useState('');
+  const [searchConv, setSearchConv] = useState('');
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
   // Load messages whenever active conversation changes
   useEffect(() => {
     if (activeConversationId) {
-      loadMessages(activeConversationId);
+      setIsLoadingMessages(true);
+      loadMessages(activeConversationId).finally(() => setIsLoadingMessages(false));
     }
   }, [activeConversationId]);
-
-  const [inputText, setInputText] = useState('');
-  const [searchConv, setSearchConv] = useState('');
 
   const activeConv = conversations.find((c) => c.id === activeConversationId) || conversations[0];
   const currentMessages = activeConv ? messages[activeConv.id] || [] : [];
@@ -59,7 +62,7 @@ export const ChatManager: React.FC = () => {
   };
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24, height: 'calc(100vh - 120px)' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24, flex: 1, minHeight: 0 }}>
       {/* ── Page Header ────────────────────────────────────── */}
       <div
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
@@ -233,7 +236,20 @@ export const ChatManager: React.FC = () => {
                 </div>
 
                 {/* Messages Scroll Area */}
-                <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div
+                  aria-live="polite"
+                  aria-busy={isLoadingMessages}
+                  style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}
+                >
+                  {isLoadingMessages && (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+                      <Loader2
+                        size={22}
+                        className="animate-spin"
+                        style={{ color: 'var(--text-muted, #888888)' }}
+                      />
+                    </div>
+                  )}
                   {currentMessages.map((msg) => {
                     const isMe = msg.senderId === currentUser.id;
                     return (

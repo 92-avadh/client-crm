@@ -7,6 +7,8 @@ const list = asyncHandler(async (req, res) => {
     brandId: req.query.brandId,
     status: req.query.status,
     search: req.query.search,
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 50)),
   }));
 });
 
@@ -50,4 +52,11 @@ const pdfData = asyncHandler(async (req, res) => {
   res.json({ invoice });
 });
 
-module.exports = { list, get, create, updateStatus, pdfData };
+/** DELETE /api/invoices/:id */
+const remove = asyncHandler(async (req, res) => {
+  const deleted = await invoices.deleteInvoice(req.user, req.params.id);
+  if (!deleted) return res.status(404).json({ error: 'We could not find that invoice.' });
+  res.json({ success: true, message: 'Invoice deleted successfully', invoice: deleted });
+});
+
+module.exports = { list, get, create, updateStatus, pdfData, remove };

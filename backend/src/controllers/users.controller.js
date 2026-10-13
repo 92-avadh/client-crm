@@ -3,7 +3,10 @@ const { makeValidator } = require('../utils/validate');
 const users = require('../services/users.service');
 
 const list = asyncHandler(async (req, res) => {
-  res.json(await users.listUsers(req.user));
+  res.json(await users.listUsers(req.user, {
+    page: req.query.page,
+    pageSize: req.query.pageSize,
+  }));
 });
 
 const get = asyncHandler(async (req, res) => {

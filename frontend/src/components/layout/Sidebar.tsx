@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { prefetchRoute } from '../../App';
 import {
@@ -54,11 +54,20 @@ export const Sidebar: React.FC = () => {
 
   const role = currentUser.role;
 
-  const unpaidCount = invoices.filter(i => i.status === 'Sent' || i.status === 'Overdue').length;
-  const pendingTaskCount = tasks.filter(
-    t => (role === 'admin' || role === 'hr' || t.assigneeId === currentUser.id) && t.status !== 'Completed'
-  ).length;
-  const unreadChat = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const unpaidCount = useMemo(
+    () => invoices.filter(i => i.status === 'Sent' || i.status === 'Overdue').length,
+    [invoices]
+  );
+  const pendingTaskCount = useMemo(
+    () => tasks.filter(
+      t => (role === 'admin' || role === 'hr' || t.assigneeId === currentUser.id) && t.status !== 'Completed'
+    ).length,
+    [tasks, role, currentUser.id]
+  );
+  const unreadChat = useMemo(
+    () => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0),
+    [conversations]
+  );
 
   interface NavItem {
     id: string;
@@ -259,11 +268,25 @@ export const Sidebar: React.FC = () => {
             </div>
           ) : (
             <>
-              <img
-                src="/retentio-logo-horizontal.png"
-                alt="Client-crm"
-                style={{ height: 28, width: 'auto', maxWidth: 148, objectFit: 'contain' }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <img
+                  src="/retentio-icon.png"
+                  alt="Retentio"
+                  style={{ height: 28, width: 28, objectFit: 'contain', flexShrink: 0 }}
+                />
+                <span
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 900,
+                    letterSpacing: '-0.03em',
+                    color: 'var(--text-primary)',
+                    lineHeight: 1,
+                    userSelect: 'none',
+                  }}
+                >
+                  Retentio
+                </span>
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <button
                   onClick={toggleSidebar}

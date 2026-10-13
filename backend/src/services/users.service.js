@@ -22,24 +22,46 @@ function mapUser(u, brandIds) {
   };
 }
 
-async function listUsers(user) {
-  let query = 'SELECT * FROM users WHERE is_active = true';
+async function listUsers(user, { page = 1, pageSize = 50 } = {}) {
+  let where = 'WHERE is_active = true';
   const params = [];
   let idx = 1;
 
   if (user && user.role !== 'admin') {
     if (user.role === 'brand') {
-      query += ` AND (id = $${idx} OR brand_id = $${idx + 1})`;
+      where += ` AND (id = $${idx} OR brand_id = $${idx + 1})`;
       params.push(user.id, user.brandId || 'none');
       idx += 2;
     } else {
-      query += ` AND (id = $${idx} OR created_by = $${idx})`;
+      where += ` AND (id = $${idx} OR created_by = $${idx})`;
       params.push(user.id);
     }
   }
 
-  const { rows } = await pool.query(query, params);
-  return Promise.all(rows.map(async (u) => mapUser(u, await getAssignedBrandIds(u.id))));
+  // Count total
+  const countResult = await pool.query(`SELECT COUNT(*) AS total FROM users ${where}`, params);
+  const total = parseInt(countResult.rows[0].total, 10);
+
+  // Paginated query with brand assignments via LEFT JOIN + json_agg
+  const offset = (page - 1) * pageSize;
+  const dataParams = [...params, pageSize, offset];
+  const dataQuery = `
+    SELECT u.*,
+      COALESCE(
+        (SELECT json_agg(DISTINCT ba.brand_id) FROM brand_assignments ba WHERE ba.member_id = u.id),
+        '[]'
+      ) AS assigned_brand_ids
+    FROM users u
+    ${where}
+    ORDER BY u.created_at DESC, u.id
+    LIMIT $${idx} OFFSET $${idx + 1}
+  `;
+
+  const { rows } = await pool.query(dataQuery, dataParams);
+
+  const data = rows.map(u => mapUser(u, u.assigned_brand_ids || []));
+
+  return { data, total, page, pageSize };
 }
 
 async function getUser(id) {

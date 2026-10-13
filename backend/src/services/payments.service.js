@@ -175,7 +175,61 @@ async function initiateRazorpay(invoiceId) {
   };
 }
 
+async function deletePayment(user, id) {
+  if (user && !['admin', 'hr'].includes(user.role)) {
+    const err = new Error('Only admin or manager can delete payments');
+    err.status = 403;
+    throw err;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const prev = await client.query('SELECT * FROM payments WHERE id=$1', [id]);
+    if (!prev.rows.length) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+    const pay = prev.rows[0];
+
+    // Revert invoice paid amount if payment was Success
+    if (pay.invoice_id && pay.status === 'Success') {
+      const invRes = await client.query('SELECT * FROM invoices WHERE id=$1', [pay.invoice_id]);
+      if (invRes.rows.length) {
+        const inv = invRes.rows[0];
+        const newPaid = Math.max(0, parseFloat(inv.paid_amount || 0) - parseFloat(pay.amount || 0));
+        const newStatus = newPaid <= 0 ? 'Sent' : newPaid < parseFloat(inv.total_amount || 0) ? 'Partially Paid' : 'Paid';
+        await client.query(
+          'UPDATE invoices SET paid_amount=$1, status=$2 WHERE id=$3',
+          [newPaid, newStatus, pay.invoice_id]
+        );
+      }
+    }
+
+    await client.query('DELETE FROM payments WHERE id=$1', [id]);
+
+    await client.query(
+      `INSERT INTO audit_logs (id,timestamp,actor_name,actor_role,action,details,ip_address)
+       VALUES ($1,$2,$3,$4,'PAYMENT_DELETED',$5,'unknown')`,
+      [
+        auditId(),
+        new Date().toISOString(),
+        user?.name || 'System',
+        user?.role || 'system',
+        `Deleted payment record ${pay.reference_no || pay.id} of ₹${pay.amount} for ${pay.brand_name}.`,
+      ]
+    );
+
+    await client.query('COMMIT');
+    return { id, referenceNo: pay.reference_no, amount: pay.amount };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   PAYMENT_MODES, PAYMENT_STATUSES,
-  mapPayment, recordPayment, listPayments, updatePayment, initiateRazorpay,
+  mapPayment, recordPayment, listPayments, updatePayment, initiateRazorpay, deletePayment,
 };

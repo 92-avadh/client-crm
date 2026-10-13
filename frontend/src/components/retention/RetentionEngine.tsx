@@ -52,6 +52,7 @@ export const RetentionEngine: React.FC = () => {
     logBrandActivity,
     setActiveTab,
     setSelectedBrandId,
+    setActiveConversationId,
     showToast
   } = useApp();
 
@@ -208,7 +209,10 @@ export const RetentionEngine: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => { setActiveTab('chat'); }}
+                    onClick={() => {
+                      setActiveTab('chat');
+                      setActiveConversationId('');
+                    }}
                     style={{ ...btnSecondary, fontSize: 12 }}
                   >
                     <MessageSquare style={{ width: 14, height: 14 }} />

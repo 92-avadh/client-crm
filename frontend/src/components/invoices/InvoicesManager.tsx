@@ -20,15 +20,19 @@ import { RecurringPanel } from './RecurringPanel';
  */
 export const InvoicesManager: React.FC = () => {
   const {
+    currentUser,
     invoices,
     brands,
     createInvoice,
+    deleteInvoice,
     recordPayment,
     simulateRazorpayPayment,
     selectedInvoiceId,
     setSelectedInvoiceId,
     settings,
   } = useApp();
+
+  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'hr';
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -41,16 +45,18 @@ export const InvoicesManager: React.FC = () => {
 
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInvoiceIds, setRecurringInvoiceIds] = useState<Set<string>>(
     () => new Set(invoices.slice(0, 2).map((i) => i.id))
   );
   const [pausedRecurringIds, setPausedRecurringIds] = useState<Set<string>>(new Set());
-  const [offlineForm, setOfflineForm] = useState<OfflineForm>({
+  const [offlineForm, setOfflineForm] = useState<OfflineForm>(() => ({
     mode: 'Bank Transfer',
     referenceNo: '',
-    date: '2026-10-04',
-  });
+    date: new Date().toISOString().split('T')[0],
+  }));
 
   const builder = useInvoiceBuilder(brands, settings);
 
@@ -84,27 +90,49 @@ export const InvoicesManager: React.FC = () => {
     e.preventDefault();
     if (!builder.selectedBrand) return;
 
-    const newInvoice = await createInvoice({
-      brandId: builder.selectedBrand.id,
-      brandName: builder.selectedBrand.name,
-      issueDate: '2026-10-04',
-      dueDate: builder.dueDate,
-      items: builder.items,
-      subtotal: builder.totals.subtotal,
-      hasGst: builder.hasGst,
-      gstType: builder.totals.gstType,
-      cgstAmount: builder.totals.cgst,
-      sgstAmount: builder.totals.sgst,
-      igstAmount: builder.totals.igst,
-      totalAmount: builder.totals.totalAmount,
-      notes: builder.notes,
-    });
+    setIsCreatingInvoice(true);
+    try {
+      const todayIso = new Date().toISOString().split('T')[0];
+      const newInvoice = await createInvoice({
+        brandId: builder.selectedBrand.id,
+        brandName: builder.selectedBrand.name,
+        issueDate: todayIso,
+        dueDate: builder.dueDate,
+        items: builder.items,
+        subtotal: builder.totals.subtotal,
+        hasGst: builder.hasGst,
+        gstType: builder.totals.gstType,
+        cgstAmount: builder.totals.cgst,
+        sgstAmount: builder.totals.sgst,
+        igstAmount: builder.totals.igst,
+        totalAmount: builder.totals.totalAmount,
+        notes: builder.notes,
+      });
 
-    if (isRecurring && newInvoice?.id) {
-      setRecurringInvoiceIds((prev) => new Set([...prev, newInvoice.id]));
+      if (isRecurring && newInvoice?.id) {
+        setRecurringInvoiceIds((prev) => new Set([...prev, newInvoice.id]));
+      }
+      setIsRecurring(false);
+      builder.reset();
+      setShowCreateModal(false);
+    } finally {
+      setIsCreatingInvoice(false);
     }
-    setIsRecurring(false);
-    setShowCreateModal(false);
+  };
+
+  const handleDeleteInvoice = async (inv: Invoice) => {
+    if (!canManage) return;
+    const ok = window.confirm(
+      `Are you sure you want to delete invoice "${inv.invoiceNumber}" for ${inv.brandName}? This action cannot be undone.`
+    );
+    if (!ok) return;
+
+    setDeletingInvoiceId(inv.id);
+    try {
+      await deleteInvoice(inv.id);
+    } finally {
+      setDeletingInvoiceId(null);
+    }
   };
 
   const handlePayOnline = async (inv: Invoice) => {
@@ -190,7 +218,13 @@ export const InvoicesManager: React.FC = () => {
           <button onClick={() => setShowRecurringPanel(true)} style={btnSecondary}>
             <span>🔄 Recurring Schedules</span>
           </button>
-          <button onClick={() => setShowCreateModal(true)} style={btnPrimary}>
+          <button
+            onClick={() => {
+              builder.reset();
+              setShowCreateModal(true);
+            }}
+            style={btnPrimary}
+          >
             <Plus style={{ width: 14, height: 14 }} />
             <span>Generate 1-Click Invoice</span>
           </button>
@@ -238,6 +272,9 @@ export const InvoicesManager: React.FC = () => {
         onView={setSelectedInvoiceId}
         onPay={(inv) => { setPayingInvoice(inv); setShowPayModal(true); }}
         onWhatsApp={openWhatsAppShare}
+        onDelete={handleDeleteInvoice}
+        deletingId={deletingInvoiceId}
+        canDelete={canManage}
       />
 
       {/* ── Modals ──────────────────────────────────────────────── */}
@@ -245,6 +282,7 @@ export const InvoicesManager: React.FC = () => {
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleGenerateInvoice}
+        submitting={isCreatingInvoice}
         brands={brands}
         brandId={builder.brandId}
         onSelectBrand={builder.selectBrand}

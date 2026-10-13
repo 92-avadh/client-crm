@@ -56,8 +56,10 @@ interface AppContextType {
   setSelectedInvoiceId: (id: string | null) => void;
   createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'status'>) => Promise<Invoice>;
   updateInvoiceStatus: (id: string, status: Invoice['status']) => Promise<void>;
+  deleteInvoice: (id: string) => Promise<void>;
   recordPayment: (paymentData: Omit<Payment, 'id' | 'status'>) => Promise<void>;
   updatePaymentStatus: (id: string, status: 'Success' | 'Pending') => Promise<void>;
+  deletePayment: (id: string) => Promise<void>;
   simulateRazorpayPayment: (invoiceId: string) => Promise<boolean>;
 
   expenses: Expense[];
@@ -447,73 +449,117 @@ export const AppProvider: React.FC<{
         switch (domain) {
           case 'clients': {
             const [brandsData, usersData] = await Promise.all([
-              api.brands.list(),
+              api.brands.list().catch(() => []),
               api.users.list().catch(() => []),
             ]);
             if (brandsData) setBrands(brandsData);
             if (usersData) setAllUsers(usersData);
             break;
           }
-          case 'projects': {
-            const [projectsData, tasksData] = await Promise.all([
-              api.projects.list(),
-              api.tasks.list(),
+          case 'projects':
+          case 'tasks': {
+            const [projectsData, tasksData, brandsData, usersData] = await Promise.all([
+              api.projects.list().catch(() => []),
+              api.tasks.list().catch(() => []),
+              api.brands.list().catch(() => []),
+              api.users.list().catch(() => []),
             ]);
             if (projectsData) setProjects(projectsData);
             if (tasksData) setTasks(tasksData);
-            break;
-          }
-          case 'invoices': {
-            const [invoicesData, paymentsData] = await Promise.all([
-              api.invoices.list(),
-              api.payments.list(),
-            ]);
-            if (invoicesData) setInvoices(invoicesData);
-            if (paymentsData) setPayments(paymentsData);
-            break;
-          }
-          case 'finance': {
-            const [paymentsData, expensesData, invoicesData] = await Promise.all([
-              api.payments.list(),
-              api.expenses.list().catch(() => []),
-              api.invoices.list(),
-            ]);
-            if (paymentsData) setPayments(paymentsData);
-            if (expensesData) setExpenses(expensesData);
-            if (invoicesData) setInvoices(invoicesData);
-            break;
-          }
-          case 'expenses': {
-            const expensesData = await api.expenses.list();
-            if (expensesData) setExpenses(expensesData);
-            break;
-          }
-          case 'leads': {
-            const leadsData = await api.leads.list();
-            if (leadsData) setLeads(leadsData);
-            break;
-          }
-          case 'meetings': {
-            const meetingsData = await api.meetings.list();
-            if (meetingsData) setMeetings(meetingsData);
-            break;
-          }
-          case 'team': {
-            const usersData = await api.users.list();
+            if (brandsData) setBrands(brandsData);
             if (usersData) setAllUsers(usersData);
             break;
           }
+          case 'invoices': {
+            const [invoicesData, paymentsData, brandsData] = await Promise.all([
+              api.invoices.list().catch(() => []),
+              api.payments.list().catch(() => []),
+              api.brands.list().catch(() => []),
+            ]);
+            if (invoicesData) setInvoices(invoicesData);
+            if (paymentsData) setPayments(paymentsData);
+            if (brandsData) setBrands(brandsData);
+            break;
+          }
+          case 'finance': {
+            const [paymentsData, expensesData, invoicesData, brandsData] = await Promise.all([
+              api.payments.list().catch(() => []),
+              api.expenses.list().catch(() => []),
+              api.invoices.list().catch(() => []),
+              api.brands.list().catch(() => []),
+            ]);
+            if (paymentsData) setPayments(paymentsData);
+            if (expensesData) setExpenses(expensesData);
+            if (invoicesData) setInvoices(invoicesData);
+            if (brandsData) setBrands(brandsData);
+            break;
+          }
+          case 'expenses': {
+            const [expensesData, brandsData, usersData] = await Promise.all([
+              api.expenses.list().catch(() => []),
+              api.brands.list().catch(() => []),
+              api.users.list().catch(() => []),
+            ]);
+            if (expensesData) setExpenses(expensesData);
+            if (brandsData) setBrands(brandsData);
+            if (usersData) setAllUsers(usersData);
+            break;
+          }
+          case 'retention': {
+            const [brandsData, settingsData] = await Promise.all([
+              api.brands.list().catch(() => []),
+              api.settings.get().catch(() => null),
+            ]);
+            if (brandsData) setBrands(brandsData);
+            if (settingsData) setSettings(settingsData);
+            break;
+          }
+          case 'leads': {
+            const [leadsData, brandsData] = await Promise.all([
+              api.leads.list().catch(() => []),
+              api.brands.list().catch(() => []),
+            ]);
+            if (leadsData) setLeads(leadsData);
+            if (brandsData) setBrands(brandsData);
+            break;
+          }
+          case 'meetings': {
+            const [meetingsData, brandsData, usersData, holidaysData] = await Promise.all([
+              api.meetings.list().catch(() => []),
+              api.brands.list().catch(() => []),
+              api.users.list().catch(() => []),
+              api.holidays.list().catch(() => []),
+            ]);
+            if (meetingsData) setMeetings(meetingsData);
+            if (brandsData) setBrands(brandsData);
+            if (usersData) setAllUsers(usersData);
+            if (holidaysData) setHolidays(holidaysData);
+            break;
+          }
+          case 'team': {
+            const [usersData, brandsData] = await Promise.all([
+              api.users.list().catch(() => []),
+              api.brands.list().catch(() => []),
+            ]);
+            if (usersData) setAllUsers(usersData);
+            if (brandsData) setBrands(brandsData);
+            break;
+          }
           case 'inbox': {
-            const notifData = await api.notifications.list();
+            const notifData = await api.notifications.list().catch(() => []);
             if (notifData) setNotifications(notifData);
             break;
           }
           case 'chat': {
-            const convsData = await api.chat.conversations();
+            const [convsData, usersData] = await Promise.all([
+              api.chat.conversations().catch(() => []),
+              api.users.list().catch(() => []),
+            ]);
             if (convsData) {
               setConversations(convsData);
               if (convsData.length > 0) setActiveConversationId((prev) => prev || convsData[0].id);
             }
+            if (usersData) setAllUsers(usersData);
             break;
           }
           case 'settings': {
@@ -531,16 +577,20 @@ export const AppProvider: React.FC<{
             break;
           }
           case 'dashboard': {
-            const [brandsData, invoicesData, tasksData, meetingsData] = await Promise.all([
-              api.brands.list(),
-              api.invoices.list(),
-              api.tasks.list(),
-              api.meetings.list(),
+            const [brandsData, invoicesData, tasksData, meetingsData, paymentsData, expensesData] = await Promise.all([
+              api.brands.list().catch(() => []),
+              api.invoices.list().catch(() => []),
+              api.tasks.list().catch(() => []),
+              api.meetings.list().catch(() => []),
+              api.payments.list().catch(() => []),
+              api.expenses.list().catch(() => []),
             ]);
             if (brandsData) setBrands(brandsData);
             if (invoicesData) setInvoices(invoicesData);
             if (tasksData) setTasks(tasksData);
             if (meetingsData) setMeetings(meetingsData);
+            if (paymentsData) setPayments(paymentsData);
+            if (expensesData) setExpenses(expensesData);
             break;
           }
           default:
@@ -570,8 +620,8 @@ export const AppProvider: React.FC<{
       setIsLoading(true);
       setApiError(null);
       const domains = [
-        'clients', 'projects', 'invoices', 'expenses',
-        'leads', 'meetings', 'team', 'inbox', 'chat', 'settings',
+        'dashboard', 'clients', 'projects', 'tasks', 'invoices', 'finance', 'expenses',
+        'retention', 'leads', 'meetings', 'team', 'inbox', 'chat', 'settings',
       ];
       await Promise.all(domains.map((d) => loadDomain(d)));
     } finally {
@@ -749,11 +799,30 @@ export const AppProvider: React.FC<{
     setInvoices(prev => prev.map(inv => (inv.id === id ? { ...inv, status } : inv)));
   };
 
+  const deleteInvoice = async (id: string) => {
+    if (!['admin', 'hr'].includes(currentUser.role)) {
+      showToast('Unauthorized: Admin or Manager access required to delete invoices', 'error');
+      return;
+    }
+    try {
+      await api.invoices.delete(id);
+      setInvoices(prev => prev.filter(inv => inv.id !== id));
+      showToast('Invoice deleted successfully', 'success');
+    } catch (err: any) {
+      console.error('Failed to delete invoice:', err);
+      showToast(getNaturalErrorMessage(err), 'error');
+      throw err;
+    }
+  };
+
   const recordPayment = async (paymentData: Omit<Payment, 'id' | 'status'>) => {
     const created = await api.payments.record(paymentData);
     setPayments(prev => [created, ...prev]);
-    const updatedInvoices = await api.invoices.list();
-    if (updatedInvoices) setInvoices(updatedInvoices);
+    // Only reload invoices and clients domains (not all domains)
+    await Promise.all([
+      api.invoices.list().then(d => d && setInvoices(d)).catch(() => {}),
+      api.brands.list().then(d => d && setBrands(d)).catch(() => {}),
+    ]);
     setBrands(prev =>
       prev.map(b =>
         b.id === paymentData.brandId
@@ -783,6 +852,25 @@ export const AppProvider: React.FC<{
       console.error('Failed to update payment status:', err);
       setPayments(prev => prev.map(p => (p.id === id ? { ...p, status } : p)));
       showToast('Payment status updated', 'info');
+    }
+  };
+
+  const deletePayment = async (id: string) => {
+    if (!['admin', 'hr'].includes(currentUser.role)) {
+      showToast('Unauthorized: Admin or Manager access required to delete payments', 'error');
+      return;
+    }
+    try {
+      await api.payments.delete(id);
+      setPayments(prev => prev.filter(p => p.id !== id));
+      // Only reload invoices domain (not all domains)
+      const updatedInvoices = await api.invoices.list().catch(() => null);
+      if (updatedInvoices) setInvoices(updatedInvoices);
+      showToast('Payment record deleted', 'success');
+    } catch (err: any) {
+      console.error('Failed to delete payment:', err);
+      showToast(getNaturalErrorMessage(err), 'error');
+      throw err;
     }
   };
 
@@ -898,7 +986,11 @@ export const AppProvider: React.FC<{
 
   const convertLeadToBrand = async (leadId: string) => {
     const result = await api.leads.convert(leadId);
-    const [newBrands, newLeads] = await Promise.all([api.brands.list(), api.leads.list()]);
+    // Only reload clients and leads domains (not all domains)
+    const [newBrands, newLeads] = await Promise.all([
+      api.brands.list().catch(() => null),
+      api.leads.list().catch(() => null),
+    ]);
     if (newBrands) setBrands(newBrands);
     if (newLeads) setLeads(newLeads);
     if (result?.brand?.id) setSelectedBrandId(result.brand.id);
@@ -998,8 +1090,10 @@ export const AppProvider: React.FC<{
         setSelectedInvoiceId,
         createInvoice,
         updateInvoiceStatus,
+        deleteInvoice,
         recordPayment,
         updatePaymentStatus,
+        deletePayment,
         simulateRazorpayPayment,
         expenses,
         addExpense,

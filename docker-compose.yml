@@ -33,7 +33,7 @@ services:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://retentio:retentio123@db:5432/retentio_db
-      - JWT_SECRET=retentio_jwt_secret_2026
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
       - PORT=4000
       # ── SMTP settings for OTP emails ──────────────────────────────
       # Leave blank to use dev-mode (OTP printed to console/logs)

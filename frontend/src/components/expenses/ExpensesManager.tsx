@@ -63,6 +63,7 @@ export const ExpensesManager: React.FC = () => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [formData, setFormData] = useState<ExpenseFormData>(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
 
@@ -199,6 +200,7 @@ export const ExpensesManager: React.FC = () => {
   };
 
   const confirmDelete = async () => {
+    setIsDeleting(true);
     try {
       if (expensesToDelete.length > 1) {
         await deleteExpenses(expensesToDelete.map((e) => e.id));
@@ -223,6 +225,8 @@ export const ExpensesManager: React.FC = () => {
       setExpensesToDelete([]);
     } catch (err: any) {
       showToast(getNaturalErrorMessage(err), 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -515,6 +519,7 @@ export const ExpensesManager: React.FC = () => {
         expenses={deleteModalOpen ? expensesToDelete : []}
         onClose={() => { setDeleteModalOpen(false); setExpenseToDelete(null); setExpensesToDelete([]); }}
         onConfirm={confirmDelete}
+        deleting={isDeleting}
       />
     </div>
   );

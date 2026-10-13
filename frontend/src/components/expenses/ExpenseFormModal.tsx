@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Users, Check, Clock, AlertTriangle } from 'lucide-react';
+import { X, Users, Check, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import type { Expense, Brand, ExpenseCategory, User } from '../../types';
 import { CATEGORY_CONFIG, STANDARD_CATEGORIES, PAYMENT_MODES } from './expenseConfig';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -261,7 +261,8 @@ export const ExpenseFormModal: React.FC<Props> = ({
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
             <button type="button" onClick={requestClose} disabled={submitting} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={submitting}
-              style={{ padding: '9px 22px', borderRadius: 8, fontSize: 13, fontWeight: 700, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}>
+              style={{ padding: '9px 22px', borderRadius: 8, fontSize: 13, fontWeight: 700, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {submitting && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
               {submitting ? 'Saving...' : editing ? 'Save Changes' : 'Record Expense'}
             </button>
           </div>
@@ -281,9 +282,10 @@ interface DeleteProps {
   expenses?: Expense[];
   onClose: () => void;
   onConfirm: () => void;
+  deleting?: boolean;
 }
 
-export const DeleteExpenseModal: React.FC<DeleteProps> = ({ expense, expenses, onClose, onConfirm }) => {
+export const DeleteExpenseModal: React.FC<DeleteProps> = ({ expense, expenses, onClose, onConfirm, deleting }) => {
   // Determine if this is a single item or multiple items deletion
   const items: Expense[] = expenses && expenses.length > 0
     ? expenses
@@ -298,7 +300,7 @@ export const DeleteExpenseModal: React.FC<DeleteProps> = ({ expense, expenses, o
   const totalAmount = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
   return (
-    <AlertDialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+    <AlertDialog open onOpenChange={(o) => { if (!o && !deleting) onClose(); }}>
       <AlertDialogPopup from="bottom">
         <AlertDialogHeader>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
@@ -371,11 +373,21 @@ export const DeleteExpenseModal: React.FC<DeleteProps> = ({ expense, expenses, o
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            style={{ background: 'var(--danger-text)', color: 'var(--solid-btn-text)' }}
+            disabled={deleting}
+            style={{
+              background: 'var(--danger-text)',
+              color: 'var(--solid-btn-text)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              opacity: deleting ? 0.7 : 1,
+              cursor: deleting ? 'not-allowed' : 'pointer',
+            }}
           >
+            {deleting && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
             {isMultiple ? `Yes, Delete ${items.length} Expenses` : 'Yes, Delete Expense'}
           </AlertDialogAction>
         </AlertDialogFooter>

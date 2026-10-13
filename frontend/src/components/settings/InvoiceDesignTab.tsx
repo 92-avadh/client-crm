@@ -34,7 +34,7 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
       <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Company Logo</label>
       <div style={{ border: '1.5px solid var(--border)', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-subtle)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ padding: '6px 12px', borderRadius: 8, background: '#ffffff', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/retentio-logo-horizontal.png" alt="Retentio Logo" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />
           </div>
           <div>
@@ -129,8 +129,8 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
           <div>
             <div style={{ fontSize: 14, fontWeight: 900, color: design.primaryColor }}>{settings.companyName || 'Your Agency'}</div>
             {design.showLogo && (
-              <div style={{ marginTop: 6 }}>
-                <img src="/retentio-logo-horizontal.png" alt="Logo" style={{ height: 22, width: 'auto', objectFit: 'contain' }} />
+              <div style={{ marginTop: 6, display: 'inline-flex', padding: '3px 8px', borderRadius: 6, background: '#ffffff', border: '1px solid var(--border)' }}>
+                <img src="/retentio-logo-horizontal.png" alt="Logo" style={{ height: 20, width: 'auto', objectFit: 'contain' }} />
               </div>
             )}
           </div>

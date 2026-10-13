@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { api, getToken, setToken, clearToken, DEV_BYPASS_TOKEN } from './services/api';
+import { api, clearToken } from './services/api';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
@@ -186,7 +186,6 @@ const Splash: React.FC = () => (
 const MainLayout: React.FC = () => {
   const { toasts, apiError, dismissToast } = useApp();
 
-  // Background prefetch remaining routes during idle time so all tabs open instantly
   React.useEffect(() => {
     const timer = setTimeout(() => {
       [
@@ -202,7 +201,8 @@ const MainLayout: React.FC = () => {
       className="flex min-h-screen transition-colors duration-200 relative"
       style={{
         background: 'var(--bg, #ffffff)',
-        color: 'var(--text-primary, #0a0a0a)'
+        color: 'var(--text-primary, #0a0a0a)',
+        gap: 16,
       }}
     >
       <StarParticles />
@@ -267,7 +267,6 @@ const MainLayout: React.FC = () => {
                 position: 'relative',
               }}
             >
-              {/* Circular Icon Container */}
               <div
                 style={{
                   width: 36,
@@ -288,8 +287,6 @@ const MainLayout: React.FC = () => {
                   <Check size={18} strokeWidth={2.5} style={{ color: iconColor }} />
                 )}
               </div>
-
-              {/* Message */}
               <span
                 style={{
                   flex: 1,
@@ -302,8 +299,6 @@ const MainLayout: React.FC = () => {
               >
                 {t.message}
               </span>
-
-              {/* Close button */}
               <button
                 onClick={() => dismissToast(t.id)}
                 style={{
@@ -359,14 +354,10 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   isLoggedIn, loginUser, loginError, loginLoading, onLogin, onLogout,
 }) => {
   const location = useLocation();
-
-  // Where the user was headed before being bounced to /login, so a deep
-  // link survives the login round-trip.
   const intendedPath = (location.state as any)?.from?.pathname || DEFAULT_ROUTE;
 
   return (
     <Routes>
-      {/* Public route */}
       <Route
         path="/login"
         element={
@@ -377,8 +368,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           )
         }
       />
-
-      {/* Protected routes — wrapped in AppProvider */}
       <Route
         path="/"
         element={
@@ -405,69 +394,33 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path={ROUTES.team} element={<TeamManager />} />
         <Route path={ROUTES.inbox} element={<InboxManager />} />
         <Route path={ROUTES.settings} element={<SettingsManager />} />
-        {/* 404 — proper Not Found page */}
         <Route path="*" element={<NotFound />} />
       </Route>
-
-      {/* Fallback for any other top-level path */}
       <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
     </Routes>
   );
-};
-
-// ── DEV LOGIN BYPASS FLAG ──────────────────────────────────────────
-// Set to true to skip the login screen during development & testing.
-// Flip to false before pushing to production to re-enable login.
-const DEV_BYPASS_AUTH = false;
-
-const DEV_BYPASS_USER = {
-  id: 'usr_2e1cfeb769f379ea',
-  name: 'Avadh Dhameliya',
-  email: 'dhameliyaavadh592@gmail.com',
-  phone: '+91 9999999999',
-  role: 'admin' as const,
-  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80',
-  designation: 'Founder, korav',
-  assignedBrandIds: [],
 };
 
 /* ------------------------------------------------------------------ */
 /*  App — root with auth gate + React Router                           */
 /* ------------------------------------------------------------------ */
 export const App: React.FC = () => {
-  // authChecked guards against redirecting before we know whether a saved
-  // session exists. Without it, a refresh on any deep link renders the
-  // logged-out branch for one frame, gets bounced to /login, and then the
-  // restore effect flips isLoggedIn — sending the user to /dashboard and
-  // losing the URL they actually opened.
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginUser, setLoginUser] = useState<any>(null);
   const [loginError, setLoginError] = useState<string>('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // ── Onboarding state ──────────────────────────────────────
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Restore authenticated session from token & saved user on mount
+  // Restore authenticated session from saved user on mount
   React.useEffect(() => {
-    if (DEV_BYPASS_AUTH) {
-      setToken(DEV_BYPASS_TOKEN);
-      localStorage.setItem('retentio_user', JSON.stringify(DEV_BYPASS_USER));
-      setLoginUser(DEV_BYPASS_USER);
-      setIsLoggedIn(true);
-      setAuthChecked(true);
-      return;
-    }
-
-    const token = getToken();
     const savedUser = localStorage.getItem('retentio_user');
-    if (token && savedUser) {
+    if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
         setLoginUser(user);
         setIsLoggedIn(true);
-        // Show onboarding if not completed
         const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
         if (!onboardingDone) {
           setShowOnboarding(true);
@@ -484,7 +437,6 @@ export const App: React.FC = () => {
     localStorage.setItem('retentio_onboarding_completed', 'true');
     localStorage.setItem('retentio_onboarding_data', JSON.stringify(data));
 
-    // 1. Synchronize Theme
     if (data.theme === 'dark') {
       document.documentElement.classList.add('dark');
       localStorage.setItem('retentio_theme', 'dark');
@@ -497,7 +449,6 @@ export const App: React.FC = () => {
       localStorage.removeItem('retentio_theme');
     }
 
-    // 2. Synchronize Dashboard Layout & Focus
     if (data.dashboardLayout) {
       localStorage.setItem('retentio_dashboard_layout', data.dashboardLayout);
     }
@@ -505,7 +456,6 @@ export const App: React.FC = () => {
       localStorage.setItem('retentio_dashboard_focus', data.dashboardFocus);
     }
 
-    // 3. Synchronize User Role & Company/Industry in User State
     if (data.role || data.industry) {
       setLoginUser((prev: any) => {
         if (!prev) return prev;
@@ -520,7 +470,6 @@ export const App: React.FC = () => {
       });
     }
 
-    // 4. Dispatch site-wide event so all components adapt immediately
     window.dispatchEvent(new CustomEvent('retentio_preferences_updated', { detail: data }));
     setShowOnboarding(false);
   }, []);
@@ -534,52 +483,29 @@ export const App: React.FC = () => {
     setLoginError('');
     setLoginLoading(true);
 
-    const enteredEmail = (email || 'aryanhirapara@gmail.com').trim().toLowerCase();
-    const rawName = enteredEmail.includes('@') ? enteredEmail.split('@')[0] : 'Aryan Hirapara';
-    const cleanName = rawName
-      .replace(/[._-]+/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
-
-    const activeUser = {
-      ...DEV_BYPASS_USER,
-      name: cleanName || DEV_BYPASS_USER.name,
-      email: enteredEmail,
-      designation: 'Agency Founder',
-    };
-
     try {
-      if (email && password) {
-        const res = await api.auth.login(enteredEmail, password);
-        setToken(res.token);
-        const resolvedUser = res.user || activeUser;
-        localStorage.setItem('retentio_user', JSON.stringify(resolvedUser));
-        setLoginUser(resolvedUser);
-        setIsLoggedIn(true);
-        return;
-      }
-    } catch (_err) {
-      // DEV BYPASS: Allow any email and password to log in without displaying errors
-      console.log('⚡ Auth bypass triggered for entered credentials:', enteredEmail);
+      const res = await api.auth.login(email.trim().toLowerCase(), password);
+      const resolvedUser = res.user;
+      localStorage.setItem('retentio_user', JSON.stringify(resolvedUser));
+      setLoginUser(resolvedUser);
+      setIsLoggedIn(true);
+      return;
+    } catch (err: any) {
+      setLoginError(err.message || 'Login failed. Please try again.');
+      return;
     } finally {
       setLoginLoading(false);
     }
-
-    // Dev bypass: authenticate with the persistent session so any email/password works!
-    setToken(DEV_BYPASS_TOKEN);
-    localStorage.setItem('retentio_user', JSON.stringify(activeUser));
-    setLoginUser(activeUser);
-    setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
+    api.auth.logout().catch(() => {});
     clearToken();
     localStorage.removeItem('retentio_user');
     setLoginUser(null);
     setIsLoggedIn(false);
   };
 
-  // Hold the splash until the saved session has been read. No routes are
-  // mounted here, so the URL the user opened cannot be replaced by a redirect.
   if (!authChecked) return <Splash />;
 
   return (
@@ -596,7 +522,6 @@ export const App: React.FC = () => {
         />
       </ErrorBoundary>
 
-      {/* Onboarding Wizard — shown after first login */}
       {showOnboarding && loginUser && (
         <OnboardingWizard
           userName={loginUser.name || 'there'}

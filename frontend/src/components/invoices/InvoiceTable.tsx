@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, CreditCard, MessageCircle } from 'lucide-react';
+import { Eye, CreditCard, MessageCircle, Trash2, Loader2 } from 'lucide-react';
 import type { Invoice } from '../../types';
 import { getStatusBadgeStyle } from './invoiceStyles';
 
@@ -9,12 +9,16 @@ interface Props {
   onView: (id: string) => void;
   onPay: (inv: Invoice) => void;
   onWhatsApp: (inv: Invoice) => void;
+  onDelete?: (inv: Invoice) => void;
+  deletingId?: string | null;
+  canDelete?: boolean;
 }
 
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
-/** Invoice list table. */
-export const InvoiceTable: React.FC<Props> = ({ invoices, recurringIds, onView, onPay, onWhatsApp }) => {
+export const InvoiceTable: React.FC<Props> = ({
+  invoices, recurringIds, onView, onPay, onWhatsApp, onDelete, deletingId, canDelete = true,
+}) => {
   return (
     <div className="table-scroll" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflowX: 'auto' }}>
       <table className="data-table">
@@ -88,6 +92,32 @@ export const InvoiceTable: React.FC<Props> = ({ invoices, recurringIds, onView, 
                       <MessageCircle style={{ width: 13, height: 13 }} />
                       <span>WhatsApp</span>
                     </button>
+
+                    {canDelete && onDelete && (
+                      <button
+                        onClick={() => onDelete(inv)}
+                        disabled={deletingId === inv.id}
+                        title="Delete Invoice"
+                        style={{
+                          padding: '5px',
+                          borderRadius: 8,
+                          background: 'var(--danger-bg, #fef2f2)',
+                          color: 'var(--danger-text, #ef4444)',
+                          border: '1px solid var(--danger-border, #fecaca)',
+                          cursor: deletingId === inv.id ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: deletingId === inv.id ? 0.6 : 1,
+                        }}
+                      >
+                        {deletingId === inv.id ? (
+                          <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                        ) : (
+                          <Trash2 style={{ width: 14, height: 14 }} />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

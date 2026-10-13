@@ -1,5 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { makeValidator } = require('../utils/validate');
+const crypto = require('crypto');
 const payments = require('../services/payments.service');
 
 const list = asyncHandler(async (req, res) => {
@@ -38,19 +39,39 @@ const razorpayVerify = asyncHandler(async (req, res) => {
     .requiredString('brandId', { max: 80, label: 'Client' })
     .requiredString('brandName', { max: 200, label: 'Client name' })
     .number('amount', { min: 0.01, required: true, label: 'Amount' })
-    .optionalString('razorpayPaymentId', { max: 120, label: 'Payment reference' })
+    .requiredString('razorpayOrderId', { max: 120, label: 'Razorpay order ID' })
+    .requiredString('razorpayPaymentId', { max: 120, label: 'Payment reference' })
+    .requiredString('razorpaySignature', { max: 200, label: 'Razorpay signature' })
     .validate();
 
-  if (body.razorpayPaymentId) {
-    await require('../db').query(
-      'UPDATE invoices SET razorpay_payment_id=$1 WHERE id=$2',
-      [body.razorpayPaymentId, body.invoiceId]
+  // Verify Razorpay signature using HMAC-SHA256
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keySecret) {
+    return res.status(503).json({ error: 'Online payments are not set up yet. Please contact support.' });
+  }
+
+  const expectedSignature = crypto
+    .createHmac('sha256', keySecret)
+    .update(`${body.razorpayOrderId}|${body.razorpayPaymentId}`)
+    .digest('hex');
+
+  let isValid = false;
+  try {
+    isValid = crypto.timingSafeEqual(
+      Buffer.from(expectedSignature),
+      Buffer.from(body.razorpaySignature)
     );
+  } catch {
+    isValid = false;
+  }
+
+  if (!isValid) {
+    return res.status(400).json({ error: 'Payment verification failed. The signature is not valid.' });
   }
 
   res.status(201).json(await payments.recordPayment({
     ...body,
-    mode: body.mode || 'Razorpay',
+    mode: 'Razorpay',
     referenceNo: body.razorpayPaymentId,
     actor: req.user,
   }));
@@ -72,4 +93,13 @@ const update = asyncHandler(async (req, res) => {
   res.json(updated);
 });
 
-module.exports = { list, record, razorpayInitiate, razorpayVerify, update };
+const remove = asyncHandler(async (req, res) => {
+  if (!['admin', 'hr'].includes(req.user.role)) {
+    return res.status(403).json({ error: "You don't have permission to delete payments." });
+  }
+  const deleted = await payments.deletePayment(req.user, req.params.id);
+  if (!deleted) return res.status(404).json({ error: 'We could not find that payment.' });
+  res.json({ success: true, message: 'Payment record deleted', payment: deleted });
+});
+
+module.exports = { list, record, razorpayInitiate, razorpayVerify, update, remove };

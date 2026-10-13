@@ -3,9 +3,8 @@ import { useApp } from '../../context/AppContext';
 import type { Meeting } from '../../types';
 import {
   CalendarDays, Plus, Video, Clock, MapPin, Users,
-  Building2, Calendar, X, Trash2
+  Building2, Calendar, X, Trash2, Loader2
 } from 'lucide-react';
-import { useConfirm } from '../../hooks/useConfirm';
 import {
   AlertDialog,
   AlertDialogPopup,
@@ -26,19 +25,18 @@ export const MeetingsCalendar: React.FC = () => {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [meetingToDelete, setMeetingToDelete] = useState<Meeting | null>(null);
-  const { confirm, element: confirmDialog } = useConfirm();
+  const [isDeletingMeeting, setIsDeletingMeeting] = useState(false);
 
   const confirmDeleteMeeting = async () => {
     const m = meetingToDelete;
     if (!m) return;
-    const ok = await confirm({
-      title: 'Delete this meeting?',
-      description: `“${m.title}” will be removed from the calendar for all attendees.`,
-      confirmText: 'Delete Meeting',
-      destructive: true,
-    });
-    if (ok) deleteMeeting(m.id);
-    setMeetingToDelete(null);
+    try {
+      setIsDeletingMeeting(true);
+      await deleteMeeting(m.id);
+      setMeetingToDelete(null);
+    } finally {
+      setIsDeletingMeeting(false);
+    }
   };
   const [meetingForm, setMeetingForm] = useState({
     title: '',
@@ -71,7 +69,7 @@ export const MeetingsCalendar: React.FC = () => {
 
   const getBrandName = (brandId?: string) => brands.find((b: any) => b.id === brandId)?.name || '';
 
-  const MeetingCard: React.FC<{ m: Meeting; isPast?: boolean }> = ({ m, isPast }) => {
+  const MeetingCardInner = React.memo<{ m: Meeting; isPast?: boolean }>(({ m, isPast }) => {
     const brand = brands.find((b: any) => b.id === m.brandId);
     const attendees = (allUsers as any[]).filter(u => m.attendeeIds?.includes(u.id));
     const isJoinable = !!m.linkOrLocation?.startsWith('http');
@@ -150,7 +148,8 @@ export const MeetingsCalendar: React.FC = () => {
         )}
       </div>
     );
-  };
+  });
+  const MeetingCard = MeetingCardInner;
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -337,7 +336,7 @@ export const MeetingsCalendar: React.FC = () => {
 
       {/* Delete meeting confirmation — animated alert dialog */}
       {meetingToDelete && (
-        <AlertDialog open onOpenChange={(o) => { if (!o) setMeetingToDelete(null); }}>
+        <AlertDialog open onOpenChange={(o) => { if (!o && !isDeletingMeeting) setMeetingToDelete(null); }}>
           <AlertDialogPopup from="bottom" className="sm:max-w-[440px]">
             <AlertDialogHeader>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -353,19 +352,27 @@ export const MeetingsCalendar: React.FC = () => {
               </div>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={isDeletingMeeting}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDeleteMeeting}
-                style={{ background: 'var(--danger-text)', color: 'var(--solid-btn-text)' }}
+                disabled={isDeletingMeeting}
+                style={{
+                  background: 'var(--danger-text)',
+                  color: 'var(--solid-btn-text)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  opacity: isDeletingMeeting ? 0.7 : 1,
+                  cursor: isDeletingMeeting ? 'not-allowed' : 'pointer',
+                }}
               >
+                {isDeletingMeeting && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
                 Yes, Delete Meeting
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogPopup>
         </AlertDialog>
       )}
-
-      {confirmDialog}
     </div>
   );
 };

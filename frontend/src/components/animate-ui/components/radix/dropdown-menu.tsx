@@ -9,86 +9,17 @@ import { cn } from "@/lib/utils";
 /* ------------------------------------------------------------------ */
 /*  Context — tracks open state so AnimatePresence can animate exits   */
 /* ------------------------------------------------------------------ */
-const DropdownMenuContext = React.createContext<{ open: boolean }>({ open: false });
-
 export const DropdownMenu = ({
-  open: openProp,
-  onOpenChange,
+  modal = false,
   ...props
 }: DropdownMenuPrimitive.DropdownMenuProps) => {
-  const [open, setOpen] = React.useState(openProp ?? false);
-  const isControlled = openProp !== undefined;
-
-  React.useEffect(() => {
-    if (openProp !== undefined) setOpen(openProp);
-  }, [openProp]);
-
-  const handleOpenChange = React.useCallback(
-    (val: boolean) => {
-      if (!isControlled) setOpen(val);
-      onOpenChange?.(val);
-    },
-    [isControlled, onOpenChange]
-  );
-
-  return (
-    <DropdownMenuContext.Provider value={{ open }}>
-      <DropdownMenuPrimitive.Root open={open} onOpenChange={handleOpenChange} {...props} />
-    </DropdownMenuContext.Provider>
-  );
+  return <DropdownMenuPrimitive.Root modal={modal} {...props} />;
 };
 
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 export const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
-
-const DropdownMenuSubContext = React.createContext<{ open: boolean }>({ open: false });
-
-export const DropdownMenuSub = ({
-  open: openProp,
-  onOpenChange,
-  ...props
-}: DropdownMenuPrimitive.DropdownMenuSubProps) => {
-  const [open, setOpen] = React.useState(openProp ?? false);
-  const isControlled = openProp !== undefined;
-
-  React.useEffect(() => {
-    if (openProp !== undefined) setOpen(openProp);
-  }, [openProp]);
-
-  const handleOpenChange = React.useCallback(
-    (val: boolean) => {
-      if (!isControlled) setOpen(val);
-      onOpenChange?.(val);
-    },
-    [isControlled, onOpenChange]
-  );
-
-  return (
-    <DropdownMenuSubContext.Provider value={{ open }}>
-      <DropdownMenuPrimitive.Sub open={open} onOpenChange={handleOpenChange} {...props} />
-    </DropdownMenuSubContext.Provider>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  Shared spring animation                                            */
-/* ------------------------------------------------------------------ */
-const contentVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.95, y: -8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { type: "spring", duration: 0.25, bounce: 0.12 },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.95,
-    y: -8,
-    transition: { duration: 0.12, ease: "easeOut" },
-  },
-};
+export const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 
 /* ------------------------------------------------------------------ */
 /*  Content — portaled, spring-animated                                */
@@ -96,36 +27,33 @@ const contentVariants: Variants = {
 export const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, children, sideOffset = 6, ...props }, ref) => {
-  const { open } = React.useContext(DropdownMenuContext);
-
+>(({ className, children, sideOffset = 6, style, ...props }, ref) => {
   return (
     <DropdownMenuPrimitive.Portal>
-      <AnimatePresence>
-        {open && (
-          <DropdownMenuPrimitive.Content
-            ref={ref}
-            forceMount
-            sideOffset={sideOffset}
-            asChild
-            {...props}
-          >
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              variants={contentVariants}
-              className={cn(
-                "z-50 min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl p-1.5 shadow-xl",
-                "border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)]",
-                className
-              )}
-            >
-              {children}
-            </motion.div>
-          </DropdownMenuPrimitive.Content>
+      <DropdownMenuPrimitive.Content
+        ref={ref}
+        sideOffset={sideOffset}
+        style={{
+          zIndex: 99999,
+          ...style,
+        }}
+        className={cn(
+          "z-[99999] min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl p-1.5 shadow-xl",
+          "border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)]",
+          className
         )}
-      </AnimatePresence>
+        {...props}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: -4 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: -4 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          style={{ width: '100%' }}
+        >
+          {children}
+        </motion.div>
+      </DropdownMenuPrimitive.Content>
     </DropdownMenuPrimitive.Portal>
   );
 });
@@ -134,31 +62,34 @@ DropdownMenuContent.displayName = "DropdownMenuContent";
 export const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, children, ...props }, ref) => {
-  const { open } = React.useContext(DropdownMenuSubContext);
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <DropdownMenuPrimitive.SubContent ref={ref} forceMount asChild {...props}>
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            variants={contentVariants}
-            className={cn(
-              "z-50 min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl p-1.5 shadow-lg",
-              "border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)]",
-              className
-            )}
-          >
-            {children}
-          </motion.div>
-        </DropdownMenuPrimitive.SubContent>
+>(({ className, children, sideOffset = 4, style, ...props }, ref) => (
+  <DropdownMenuPrimitive.Portal>
+    <DropdownMenuPrimitive.SubContent
+      ref={ref}
+      sideOffset={sideOffset}
+      style={{
+        zIndex: 99999,
+        ...style,
+      }}
+      className={cn(
+        "z-[99999] min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl p-1.5 shadow-lg",
+        "border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)]",
+        className
       )}
-    </AnimatePresence>
-  );
-});
+      {...props}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: -4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: -4 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        style={{ width: '100%' }}
+      >
+        {children}
+      </motion.div>
+    </DropdownMenuPrimitive.SubContent>
+  </DropdownMenuPrimitive.Portal>
+));
 DropdownMenuSubContent.displayName = "DropdownMenuSubContent";
 
 /* ------------------------------------------------------------------ */

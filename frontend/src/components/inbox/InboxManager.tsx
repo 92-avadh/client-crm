@@ -377,7 +377,7 @@ export const InboxManager: React.FC = () => {
       {!hasContent ? (
         <EmptyState tab={activeFilter} />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} aria-live="polite">
 
           {/* Alert Notifications */}
           {visibleAlerts.length > 0 && (

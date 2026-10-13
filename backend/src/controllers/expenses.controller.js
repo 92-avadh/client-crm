@@ -20,6 +20,8 @@ const list = asyncHandler(async (req, res) => {
     employeeName: req.query.employeeName,
     search: req.query.search,
     isRecurring: req.query.isRecurring,
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 50)),
   }));
 });
 

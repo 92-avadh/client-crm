@@ -53,86 +53,110 @@ async function writeAudit(user, action, details) {
 const formatAmount = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
 async function listExpenses(user, filters = {}) {
-  let query = 'SELECT * FROM expenses WHERE 1=1';
+  let whereClause = 'WHERE 1=1';
   const params = [];
   let idx = 1;
 
   if (user && user.role !== 'admin') {
-    query += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
+    whereClause += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
     params.push(user.id);
     idx += 1;
   }
 
   if (filters.brandId) {
     if (filters.brandId === 'other') {
-      query += ` AND (brand_id IS NULL OR brand_id = '' OR brand_id = 'other')`;
+      whereClause += ` AND (brand_id IS NULL OR brand_id = '' OR brand_id = 'other')`;
     } else {
-      query += ` AND brand_id=$${idx}`;
+      whereClause += ` AND brand_id=$${idx}`;
       params.push(filters.brandId);
       idx += 1;
     }
   }
   if (filters.category && filters.category !== 'all') {
-    query += ` AND category=$${idx}`;
+    whereClause += ` AND category=$${idx}`;
     params.push(filters.category);
     idx += 1;
   }
   if (filters.paymentStatus && filters.paymentStatus !== 'all') {
-    query += ` AND payment_status=$${idx}`;
+    whereClause += ` AND payment_status=$${idx}`;
     params.push(filters.paymentStatus);
     idx += 1;
   }
   if (filters.employeeName) {
-    query += ` AND employee_name ILIKE $${idx}`;
+    whereClause += ` AND employee_name ILIKE $${idx}`;
     params.push(`%${filters.employeeName}%`);
     idx += 1;
   }
   if (filters.search) {
-    query += ` AND (title ILIKE $${idx} OR description ILIKE $${idx} OR note ILIKE $${idx} OR employee_name ILIKE $${idx} OR category ILIKE $${idx})`;
+    whereClause += ` AND (title ILIKE $${idx} OR description ILIKE $${idx} OR note ILIKE $${idx} OR employee_name ILIKE $${idx} OR category ILIKE $${idx})`;
     params.push(`%${filters.search}%`);
     idx += 1;
   }
   if (filters.isRecurring !== undefined && filters.isRecurring !== '') {
-    query += ` AND is_recurring=$${idx}`;
+    whereClause += ` AND is_recurring=$${idx}`;
     params.push(filters.isRecurring === 'true');
   }
 
-  query += ' ORDER BY date DESC NULLS LAST, created_at DESC';
+  // Count total matching rows
+  const countQuery = `SELECT COUNT(*) FROM expenses ${whereClause}`;
+  const { rows: countRows } = await pool.query(countQuery, params);
+  const total = parseInt(countRows[0].count, 10);
+
+  // Paginated query
+  const page = filters.page || 1;
+  const pageSize = filters.pageSize || 50;
+  const offset = (page - 1) * pageSize;
+  const query = `SELECT * FROM expenses ${whereClause} ORDER BY date DESC NULLS LAST, created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`;
+  params.push(pageSize, offset);
+
   const { rows } = await pool.query(query, params);
-  return rows.map(mapExpense);
+  const data = rows.map(mapExpense);
+
+  return { data, total, page, pageSize };
 }
 
 async function createExpense(user, data) {
-  const id = genId();
-  const cleanAmount = parseFloat(data.amount) || 0;
-  const cleanTitle = (data.title && data.title.trim()) || (data.note && data.note.trim()) || data.category || 'Expense';
-  const cleanDesc = data.description !== undefined ? data.description : (data.note || '');
-  const cleanDate = data.date || new Date().toISOString().split('T')[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  const { rows } = await pool.query(
-    `INSERT INTO expenses (
-      id, title, description, category, amount, date,
-      payment_mode, payment_status, employee_name, employee_id,
-      note, receipt_url, brand_id, is_recurring, owner_id
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
-    [
-      id, cleanTitle, cleanDesc, data.category, cleanAmount, cleanDate,
-      data.paymentMode || 'Corporate Card',
-      data.paymentStatus === 'Pending' ? 'Pending' : 'Paid',
-      data.employeeName ? data.employeeName.trim() : '',
-      data.employeeId || null,
-      data.note || cleanDesc || '',
-      data.receiptUrl || null,
-      (data.brandId && data.brandId !== 'other') ? data.brandId : null,
-      Boolean(data.isRecurring),
-      user ? user.id : null,
-    ]
-  );
+    const id = genId();
+    const cleanAmount = parseFloat(data.amount) || 0;
+    const cleanTitle = (data.title && data.title.trim()) || (data.note && data.note.trim()) || data.category || 'Expense';
+    const cleanDesc = data.description !== undefined ? data.description : (data.note || '');
+    const cleanDate = data.date || new Date().toISOString().split('T')[0];
 
-  await writeAudit(user, 'EXPENSE_ADDED',
-    `Added expense: ${cleanTitle} (${data.category}) - ${formatAmount(cleanAmount)}`);
+    const { rows } = await client.query(
+      `INSERT INTO expenses (
+        id, title, description, category, amount, date,
+        payment_mode, payment_status, employee_name, employee_id,
+        note, receipt_url, brand_id, is_recurring, owner_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+      [
+        id, cleanTitle, cleanDesc, data.category, cleanAmount, cleanDate,
+        data.paymentMode || 'Corporate Card',
+        data.paymentStatus === 'Pending' ? 'Pending' : 'Paid',
+        data.employeeName ? data.employeeName.trim() : '',
+        data.employeeId || null,
+        data.note || cleanDesc || '',
+        data.receiptUrl || null,
+        (data.brandId && data.brandId !== 'other') ? data.brandId : null,
+        Boolean(data.isRecurring),
+        user ? user.id : null,
+      ]
+    );
 
-  return mapExpense(rows[0]);
+    await writeAudit(user, 'EXPENSE_ADDED',
+      `Added expense: ${cleanTitle} (${data.category}) - ${formatAmount(cleanAmount)}`);
+
+    await client.query('COMMIT');
+    return mapExpense(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function updateExpense(user, id, data) {

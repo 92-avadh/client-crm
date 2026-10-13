@@ -3,7 +3,10 @@ const { makeValidator } = require('../utils/validate');
 const holidays = require('../services/holidays.service');
 
 const list = asyncHandler(async (req, res) => {
-  res.json(await holidays.listHolidays());
+  res.json(await holidays.listHolidays({
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 50)),
+  }));
 });
 
 const create = asyncHandler(async (req, res) => {

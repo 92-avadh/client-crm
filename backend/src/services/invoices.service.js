@@ -31,34 +31,66 @@ async function getItems(invoiceId) {
   return rows;
 }
 
-async function listInvoices(user, { brandId, status, search } = {}) {
-  let query = 'SELECT * FROM invoices WHERE 1=1';
+/**
+ * Batch-fetch items for multiple invoices in a single query.
+ * Returns a Map of invoice_id -> items array.
+ */
+async function getItemsForInvoices(invoiceIds) {
+  if (!invoiceIds.length) return new Map();
+  const { rows } = await pool.query(
+    'SELECT * FROM invoice_items WHERE invoice_id = ANY($1)',
+    [invoiceIds]
+  );
+  const map = new Map();
+  for (const item of rows) {
+    if (!map.has(item.invoice_id)) map.set(item.invoice_id, []);
+    map.get(item.invoice_id).push(item);
+  }
+  return map;
+}
+
+async function listInvoices(user, { brandId, status, search, page = 1, pageSize = 50 } = {}) {
+  let whereClause = 'WHERE 1=1';
   const params = [];
   let idx = 1;
 
   if (user.role === 'brand') {
-    query += ` AND brand_id = $${idx}`;
+    whereClause += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
   }
   if (brandId) {
-    query += ` AND brand_id=$${idx}`;
+    whereClause += ` AND brand_id=$${idx}`;
     params.push(brandId);
     idx += 1;
   }
   if (status) {
-    query += ` AND status=$${idx}`;
+    whereClause += ` AND status=$${idx}`;
     params.push(status);
     idx += 1;
   }
   if (search) {
-    query += ` AND (invoice_number ILIKE $${idx} OR brand_name ILIKE $${idx})`;
+    whereClause += ` AND (invoice_number ILIKE $${idx} OR brand_name ILIKE $${idx})`;
     params.push('%' + search + '%');
   }
-  query += ' ORDER BY created_at DESC';
+
+  // Count total matching rows
+  const countQuery = `SELECT COUNT(*) FROM invoices ${whereClause}`;
+  const { rows: countRows } = await pool.query(countQuery, params);
+  const total = parseInt(countRows[0].count, 10);
+
+  // Paginated query
+  const offset = (page - 1) * pageSize;
+  const query = `SELECT * FROM invoices ${whereClause} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`;
+  params.push(pageSize, offset);
 
   const { rows } = await pool.query(query, params);
-  return Promise.all(rows.map(async (r) => mapInvoice(r, await getItems(r.id))));
+
+  // Batch fetch items — single query instead of N+1
+  const itemsMap = await getItemsForInvoices(rows.map(r => r.id));
+  const data = rows.map(r => mapInvoice(r, itemsMap.get(r.id) || []));
+
+  return { data, total, page, pageSize };
 }
 
 async function getInvoice(id) {
@@ -74,8 +106,28 @@ async function getInvoice(id) {
 async function nextInvoiceNumber() {
   const settings = await pool.query("SELECT invoice_prefix FROM settings WHERE id='main'");
   const prefix = settings.rows[0]?.invoice_prefix || 'INV-2026-';
-  const countRes = await pool.query('SELECT COUNT(*) FROM invoices');
-  const nextNum = parseInt(countRes.rows[0].count, 10) + 42;
+  // Use a row lock on a counter row to avoid race conditions under concurrent creates.
+  // Fall back to COUNT(*) + 42 if the sequence row doesn't exist yet.
+  const counterRes = await pool.query(
+    `INSERT INTO invoice_sequence (id, next_num) VALUES ('main', 43)
+     ON CONFLICT (id) DO UPDATE SET next_num = invoice_sequence.next_num + 1
+     RETURNING next_num`
+  ).catch(async (e) => {
+    if (e.code === '42P01' || e.code === '42703') {
+      // Table doesn't exist yet — create it and retry
+      await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (
+        id VARCHAR(50) PRIMARY KEY,
+        next_num INTEGER NOT NULL DEFAULT 42
+      )`);
+      return pool.query(
+        `INSERT INTO invoice_sequence (id, next_num) VALUES ('main', 43)
+         ON CONFLICT (id) DO UPDATE SET next_num = invoice_sequence.next_num + 1
+         RETURNING next_num`
+      );
+    }
+    throw e;
+  });
+  const nextNum = counterRes.rows[0].next_num;
   return prefix + String(nextNum).padStart(4, '0');
 }
 
@@ -132,7 +184,59 @@ async function updateInvoiceStatus(id, status) {
   return mapInvoice(rows[0], await getItems(id));
 }
 
+const auditId = () => 'audit_' + crypto.randomBytes(6).toString('hex');
+
+async function writeAudit(user, action, details) {
+  try {
+    await pool.query(
+      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6, 'unknown')`,
+      [auditId(), new Date().toISOString(), user?.name || 'System', user?.role || 'system', action, details]
+    );
+  } catch (err) {
+    console.error('Audit log write failed:', err.message);
+  }
+}
+
+async function deleteInvoice(user, id) {
+  if (user && !['admin', 'hr'].includes(user.role)) {
+    const err = new Error('Only admin or manager can delete invoices');
+    err.status = 403;
+    throw err;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const prev = await client.query('SELECT * FROM invoices WHERE id=$1', [id]);
+    if (!prev.rows.length) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+    const inv = prev.rows[0];
+
+    // Clean up relations
+    await client.query('DELETE FROM recurring_invoices WHERE invoice_id=$1', [id]);
+    await client.query('UPDATE payments SET invoice_id=NULL WHERE invoice_id=$1', [id]);
+    await client.query('DELETE FROM invoice_items WHERE invoice_id=$1', [id]);
+    await client.query('DELETE FROM invoices WHERE id=$1', [id]);
+
+    await writeAudit(
+      user,
+      'INVOICE_DELETED',
+      `Deleted invoice ${inv.invoice_number} (${inv.brand_name}) total amount ₹${inv.total_amount}`
+    );
+
+    await client.query('COMMIT');
+    return { id, invoiceNumber: inv.invoice_number };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   INVOICE_STATUSES, GST_TYPES,
-  mapInvoice, listInvoices, getInvoice, createInvoice, updateInvoiceStatus,
+  mapInvoice, listInvoices, getInvoice, createInvoice, updateInvoiceStatus, deleteInvoice,
 };

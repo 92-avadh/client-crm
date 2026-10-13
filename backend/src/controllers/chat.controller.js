@@ -3,11 +3,17 @@ const { makeValidator } = require('../utils/validate');
 const chat = require('../services/chat.service');
 
 const listConversations = asyncHandler(async (req, res) => {
-  res.json(await chat.listConversations(req.user.id));
+  res.json(await chat.listConversations(req.user.id, {
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 50)),
+  }));
 });
 
 const listMessages = asyncHandler(async (req, res) => {
-  res.json(await chat.listMessages(req.params.id));
+  res.json(await chat.listMessages(req.params.id, {
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 50)),
+  }));
 });
 
 const sendMessage = asyncHandler(async (req, res) => {

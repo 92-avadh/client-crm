@@ -152,7 +152,7 @@ export const AlertDialogPopup = React.forwardRef<HTMLDivElement, AlertDialogPopu
     return createPortal(
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
             {/* Backdrop */}
             <motion.div
               initial="hidden"
@@ -176,7 +176,7 @@ export const AlertDialogPopup = React.forwardRef<HTMLDivElement, AlertDialogPopu
               exit="exit"
               variants={popupVariants}
               className={cn(
-                "relative z-[101] w-full text-[var(--text-primary)]",
+                "relative z-[10001] w-full text-[var(--text-primary)]",
                 className
               )}
               style={{

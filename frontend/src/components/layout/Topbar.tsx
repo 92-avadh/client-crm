@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Bell,
@@ -101,68 +101,117 @@ export const Topbar: React.FC = () => {
     };
   }, []);
 
-  const unread = notifications.filter(n => !n.isRead);
+  const unread = useMemo(() => notifications.filter(n => !n.isRead), [notifications]);
 
-  const roleLabel: Record<string, string> = {
+  const roleLabel: Record<string, string> = useMemo(() => ({
     admin: 'Admin',
     hr: 'Manager',
     team: 'Team',
     brand: 'Client',
-  };
+  }), []);
 
   // Search query calculations
   const query = search.trim().toLowerCase();
   const showResults = isSearchFocused && query.length > 0;
 
-  const matchedBrands = query
-    ? brands.filter(
-        b =>
-          b.name.toLowerCase().includes(query) ||
-          b.ownerName.toLowerCase().includes(query) ||
-          (b.gstNumber && b.gstNumber.toLowerCase().includes(query))
-      ).slice(0, 3)
-    : [];
+  const matchedBrands = useMemo(() => {
+    if (!query) return [];
+    return brands.filter(
+      b =>
+        b.name.toLowerCase().includes(query) ||
+        b.ownerName.toLowerCase().includes(query) ||
+        (b.gstNumber && b.gstNumber.toLowerCase().includes(query))
+    ).slice(0, 3);
+  }, [query, brands]);
 
-  const matchedInvoices = query
-    ? invoices.filter(
-        inv =>
-          inv.invoiceNumber.toLowerCase().includes(query) ||
-          inv.brandName.toLowerCase().includes(query) ||
-          inv.totalAmount.toString().includes(query)
-      ).slice(0, 3)
-    : [];
+  const matchedInvoices = useMemo(() => {
+    if (!query) return [];
+    return invoices.filter(
+      inv =>
+        inv.invoiceNumber.toLowerCase().includes(query) ||
+        inv.brandName.toLowerCase().includes(query) ||
+        inv.totalAmount.toString().includes(query)
+    ).slice(0, 3);
+  }, [query, invoices]);
 
-  const matchedTasks = query
-    ? tasks.filter(
-        t =>
-          t.title.toLowerCase().includes(query) ||
-          (t.description && t.description.toLowerCase().includes(query))
-      ).slice(0, 3)
-    : [];
+  const matchedTasks = useMemo(() => {
+    if (!query) return [];
+    return tasks.filter(
+      t =>
+        t.title.toLowerCase().includes(query) ||
+        (t.description && t.description.toLowerCase().includes(query))
+    ).slice(0, 3);
+  }, [query, tasks]);
 
-  const matchedProjects = query
-    ? projects.filter(
-        p =>
-          p.name.toLowerCase().includes(query) ||
-          (p.scope && p.scope.toLowerCase().includes(query))
-      ).slice(0, 3)
-    : [];
+  const matchedProjects = useMemo(() => {
+    if (!query) return [];
+    return projects.filter(
+      p =>
+        p.name.toLowerCase().includes(query) ||
+        (p.scope && p.scope.toLowerCase().includes(query))
+    ).slice(0, 3);
+  }, [query, projects]);
 
-  const matchedLeads = query
-    ? leads.filter(
-        l =>
-          (l.name && l.name.toLowerCase().includes(query)) ||
-          (l.company && l.company.toLowerCase().includes(query)) ||
-          (l.contact && l.contact.toLowerCase().includes(query))
-      ).slice(0, 3)
-    : [];
+  const matchedLeads = useMemo(() => {
+    if (!query) return [];
+    return leads.filter(
+      l =>
+        (l.name && l.name.toLowerCase().includes(query)) ||
+        (l.company && l.company.toLowerCase().includes(query)) ||
+        (l.contact && l.contact.toLowerCase().includes(query))
+    ).slice(0, 3);
+  }, [query, leads]);
 
-  const totalResults =
+  const totalResults = useMemo(() =>
     matchedBrands.length +
     matchedInvoices.length +
     matchedTasks.length +
     matchedProjects.length +
-    matchedLeads.length;
+    matchedLeads.length,
+    [matchedBrands, matchedInvoices, matchedTasks, matchedProjects, matchedLeads]
+  );
+
+  // Memoized search result items to prevent unnecessary re-renders
+  const SearchResultItem = React.memo(({ item, icon, title, subtitle, meta, onClick, amount, status }: {
+    item: any;
+    icon: React.ReactNode;
+    title: string;
+    subtitle?: string;
+    meta?: string;
+    onClick: () => void;
+    amount?: string;
+    status?: string;
+  }) => (
+    <div
+      onClick={onClick}
+      style={{
+        padding: '8px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        cursor: 'pointer',
+        borderBottom: '1px solid var(--border)',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-raised)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-card)')}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {icon}
+        <div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</span>
+          {subtitle && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>{subtitle}</span>}
+        </div>
+      </div>
+      {amount ? (
+        <div style={{ textAlign: 'right' }}>
+          <div className="font-amount" style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>{amount}</div>
+          {status && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{status}</div>}
+        </div>
+      ) : meta ? (
+        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4, background: 'var(--bg-raised)', color: 'var(--text-primary)' }}>{meta}</span>
+      ) : null}
+    </div>
+  ));
 
   return (
     <header
@@ -324,49 +373,20 @@ export const Topbar: React.FC = () => {
                       Clients ({matchedBrands.length})
                     </div>
                     {matchedBrands.map(b => (
-                      <div
+                      <SearchResultItem
                         key={b.id}
+                        item={b}
+                        icon={<Building2 style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />}
+                        title={b.name}
+                        subtitle={b.ownerName}
+                        meta={b.status}
                         onClick={() => {
                           setSelectedBrandId(b.id);
                           setActiveTab('clients');
                           setIsSearchFocused(false);
                           setSearch('');
                         }}
-                        style={{
-                          padding: '8px 14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid var(--border)',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-raised)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-card)')}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Building2 style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />
-                          <div>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
-                              {b.name}
-                            </span>
-                            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>
-                              {b.ownerName}
-                            </span>
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 600,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: 'var(--bg-raised)',
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {b.status}
-                        </span>
-                      </div>
+                      />
                     ))}
                   </div>
                 )}
@@ -389,57 +409,21 @@ export const Topbar: React.FC = () => {
                       Invoices ({matchedInvoices.length})
                     </div>
                     {matchedInvoices.map(inv => (
-                      <div
+                      <SearchResultItem
                         key={inv.id}
+                        item={inv}
+                        icon={<Receipt style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />}
+                        title={inv.invoiceNumber}
+                        subtitle={inv.brandName}
                         onClick={() => {
                           setSelectedInvoiceId(inv.id);
                           setActiveTab('invoices');
                           setIsSearchFocused(false);
                           setSearch('');
                         }}
-                        style={{
-                          padding: '8px 14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid var(--border)',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-raised)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-card)')}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Receipt style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />
-                          <div>
-                            <span
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 700,
-                                color: 'var(--text-primary)',
-                                fontFamily: 'var(--font-mono)',
-                              }}
-                            >
-                              {inv.invoiceNumber}
-                            </span>
-                            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>
-                              {inv.brandName}
-                            </span>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div
-                            className="font-amount"
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 800,
-                              color: 'var(--text-primary)',
-                            }}
-                          >
-                            ₹{inv.totalAmount.toLocaleString('en-IN')}
-                          </div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{inv.status}</div>
-                        </div>
-                      </div>
+                        amount={`₹${inv.totalAmount.toLocaleString('en-IN')}`}
+                        status={inv.status}
+                      />
                     ))}
                   </div>
                 )}
@@ -462,43 +446,18 @@ export const Topbar: React.FC = () => {
                       Tasks & Deliverables ({matchedTasks.length})
                     </div>
                     {matchedTasks.map(t => (
-                      <div
+                      <SearchResultItem
                         key={t.id}
+                        item={t}
+                        icon={<CheckSquare style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />}
+                        title={t.title}
+                        meta={t.status}
                         onClick={() => {
                           setActiveTab('tasks');
                           setIsSearchFocused(false);
                           setSearch('');
                         }}
-                        style={{
-                          padding: '8px 14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid var(--border)',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-raised)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-card)')}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <CheckSquare style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {t.title}
-                          </span>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 600,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: 'var(--bg-raised)',
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {t.status}
-                        </span>
-                      </div>
+                      />
                     ))}
                   </div>
                 )}
@@ -521,32 +480,17 @@ export const Topbar: React.FC = () => {
                       Projects ({matchedProjects.length})
                     </div>
                     {matchedProjects.map(p => (
-                      <div
+                      <SearchResultItem
                         key={p.id}
+                        item={p}
+                        icon={<FolderKanban style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />}
+                        title={p.name}
                         onClick={() => {
                           setActiveTab('projects');
                           setIsSearchFocused(false);
                           setSearch('');
                         }}
-                        style={{
-                          padding: '8px 14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid var(--border)',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-raised)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-card)')}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <FolderKanban style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {p.name}
-                          </span>
-                        </div>
-                        <ArrowRight style={{ width: 12, height: 12, color: 'var(--text-muted)' }} />
-                      </div>
+                      />
                     ))}
                   </div>
                 )}
@@ -569,48 +513,19 @@ export const Topbar: React.FC = () => {
                       Leads Pipeline ({matchedLeads.length})
                     </div>
                     {matchedLeads.map(l => (
-                      <div
+                      <SearchResultItem
                         key={l.id}
+                        item={l}
+                        icon={<UserCheck style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />}
+                        title={l.company || l.name}
+                        subtitle={l.name}
+                        meta={l.stage}
                         onClick={() => {
                           setActiveTab('leads');
                           setIsSearchFocused(false);
                           setSearch('');
                         }}
-                        style={{
-                          padding: '8px 14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid var(--border)',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-raised)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-card)')}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <UserCheck style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />
-                          <div>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-                              {l.company || l.name}
-                            </span>
-                            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>
-                              {l.name}
-                            </span>
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 600,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: 'var(--bg-raised)',
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {l.stage}
-                        </span>
-                      </div>
+                      />
                     ))}
                   </div>
                 )}

@@ -159,6 +159,17 @@ const WidgetTogglePanel: React.FC<{
   );
 };
 
+const formatDateDisplay = (dateStr?: string | null): string => {
+  if (!dateStr) return 'No date';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+};
+
 export const Dashboard: React.FC = () => {
   const {
     currentUser,
@@ -171,22 +182,22 @@ export const Dashboard: React.FC = () => {
     setActiveTab,
   } = useApp();
 
-  const role = currentUser.role;
+  const role = currentUser?.role;
 
   // ── Financial Calculations ─────────────────────────────────
   const paymentsTotal = payments
     .filter(p => p.status === 'Success')
-    .reduce((a, p) => a + p.amount, 0);
+    .reduce((a, p) => a + (Number(p.amount) || 0), 0);
 
   const unrecordedBrandFees = brands
     .filter(
       b =>
         b.status === 'Active' &&
-        (b.monthlyFee || 0) > 0 &&
+        (Number(b.monthlyFee) || 0) > 0 &&
         b.paymentStatus === 'Paid' &&
         !payments.some(p => p.brandId === b.id && p.status === 'Success')
     )
-    .reduce((a, b) => a + (b.monthlyFee || 0), 0);
+    .reduce((a, b) => a + (Number(b.monthlyFee) || 0), 0);
 
   const totalReceived = paymentsTotal + unrecordedBrandFees;
 
@@ -199,37 +210,37 @@ export const Dashboard: React.FC = () => {
 
   const pendingPayments = payments
     .filter(p => p.status === 'Pending')
-    .reduce((a, p) => a + p.amount, 0);
+    .reduce((a, p) => a + (Number(p.amount) || 0), 0);
 
   const pendingBrandFees = brands
     .filter(
       b =>
         b.status === 'Active' &&
-        (b.monthlyFee || 0) > 0 &&
+        (Number(b.monthlyFee) || 0) > 0 &&
         b.paymentStatus === 'Pending' &&
         !payments.some(p => p.brandId === b.id)
     )
-    .reduce((a, b) => a + (b.monthlyFee || 0), 0);
+    .reduce((a, b) => a + (Number(b.monthlyFee) || 0), 0);
 
   const overdueInvoices = invoices.filter(i => i.status === 'Overdue');
   const totalPending =
     invoices
       .filter(i => i.status === 'Sent' || i.status === 'Overdue')
-      .reduce((a, i) => a + (i.totalAmount - i.paidAmount), 0) +
+      .reduce((a, i) => a + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0) +
     pendingPayments +
     pendingBrandFees;
 
   const activeBrands = brands.filter(b => b.status === 'Active');
-  const relevantTasks = role === 'team' ? tasks.filter(t => t.assigneeId === currentUser.id) : tasks;
+  const relevantTasks = role === 'team' ? tasks.filter(t => t.assigneeId === currentUser?.id) : tasks;
   const pendingTasks = relevantTasks.filter(t => t.status !== 'Completed');
-  const myMeetings = meetings.filter(m => (role === 'team' ? m.attendeeIds.includes(currentUser.id) : true));
+  const myMeetings = meetings.filter(m => (role === 'team' ? (m.attendeeIds || []).includes(currentUser?.id) : true));
 
   // ── Monthly Revenue / Expense Maps ─────────────────────────
   const monthlyIncomeMap: Record<string, number> = {};
   payments.forEach(p => {
     if (p.paymentDate && p.status === 'Success') {
       const key = p.paymentDate.slice(0, 7);
-      monthlyIncomeMap[key] = (monthlyIncomeMap[key] || 0) + Number(p.amount);
+      monthlyIncomeMap[key] = (monthlyIncomeMap[key] || 0) + (Number(p.amount) || 0);
     }
   });
 
@@ -361,8 +372,8 @@ export const Dashboard: React.FC = () => {
         items.push({
           id: `pay_${p.id}`,
           icon: <DollarSign size={14} />,
-          text: `Payment received: ₹${Number(p.amount).toLocaleString('en-IN')} from ${p.brandName}`,
-          time: p.paymentDate || 'Recent',
+          text: `Payment received: ₹${Number(p.amount || 0).toLocaleString('en-IN')} from ${p.brandName || 'Client'}`,
+          time: p.paymentDate ? formatDateDisplay(p.paymentDate) : 'Recent',
           color: BRAND.green,
         });
       });
@@ -371,8 +382,8 @@ export const Dashboard: React.FC = () => {
       items.push({
         id: `inv_${inv.id}`,
         icon: <Receipt size={14} />,
-        text: `Invoice #${inv.invoiceNumber} (${inv.status}) for ${inv.brandName}`,
-        time: inv.issueDate || 'Recent',
+        text: `Invoice #${inv.invoiceNumber} (${inv.status}) for ${inv.brandName || 'Client'}`,
+        time: inv.issueDate ? formatDateDisplay(inv.issueDate) : 'Recent',
         color: inv.status === 'Paid' ? BRAND.green : BRAND.navy,
       });
     });
@@ -382,7 +393,7 @@ export const Dashboard: React.FC = () => {
         id: `brand_${b.id}`,
         icon: <Building2 size={14} />,
         text: `Client onboarded: ${b.name}`,
-        time: b.onboardingDate || 'Recent',
+        time: b.onboardingDate ? formatDateDisplay(b.onboardingDate) : 'Recent',
         color: BRAND.navy,
       });
     });
@@ -392,7 +403,7 @@ export const Dashboard: React.FC = () => {
         id: `task_${t.id}`,
         icon: <CheckSquare size={14} />,
         text: `Task pending: ${t.title}`,
-        time: t.dueDate || 'No due date',
+        time: t.dueDate ? formatDateDisplay(t.dueDate) : 'No due date',
         color: BRAND.amber,
       });
     });
@@ -402,7 +413,7 @@ export const Dashboard: React.FC = () => {
         id: `meet_${m.id}`,
         icon: <Calendar size={14} />,
         text: `Meeting scheduled: ${m.title}`,
-        time: `${m.date} · ${m.time}`,
+        time: m.date ? (m.time ? `${formatDateDisplay(m.date)} · ${m.time}` : formatDateDisplay(m.date)) : 'Scheduled',
         color: BRAND.green,
       });
     });
@@ -796,7 +807,7 @@ export const Dashboard: React.FC = () => {
             {
               label: 'Upcoming Meetings',
               value: animatedMeetings,
-              sub: myMeetings.length > 0 ? `Next: ${myMeetings[0].date}` : 'Scheduled calls',
+              sub: myMeetings.length > 0 ? `Next: ${formatDateDisplay(myMeetings[0].date)}` : 'Scheduled calls',
               icon: <Calendar className="w-4 h-4" />,
               color: BRAND.green,
               bg: BRAND.greenSubtle,
@@ -1190,8 +1201,9 @@ export const Dashboard: React.FC = () => {
                   </div>
                 ) : (
                   brands.slice(0, 5).map(b => {
-                    const total = brands.reduce((a, x) => a + (x.monthlyFee || 0), 0);
-                    const pct = total > 0 ? Math.round(((b.monthlyFee || 0) / total) * 100) : 0;
+                    const total = brands.reduce((a, x) => a + (Number(x.monthlyFee) || 0), 0);
+                    const fee = Number(b.monthlyFee) || 0;
+                    const pct = total > 0 ? Math.round((fee / total) * 100) : 0;
                     return (
                       <div key={b.id}>
                         <div
@@ -1215,7 +1227,7 @@ export const Dashboard: React.FC = () => {
                             {b.name}
                           </span>
                           <span className="font-amount" style={{ color: BRAND.greenDark, fontWeight: 750 }}>
-                            {pct}% ({`₹${(b.monthlyFee || 0).toLocaleString('en-IN')}/mo`})
+                            {pct}% ({`₹${fee.toLocaleString('en-IN')}/mo`})
                           </span>
                         </div>
                         <div
@@ -1447,7 +1459,7 @@ export const Dashboard: React.FC = () => {
                           {t.title}
                         </div>
                         <div style={{ fontSize: 11.5, color: BRAND.navyMuted, marginTop: 2 }}>
-                          {brands.find(b => b.id === t.brandId)?.name ? `${brands.find(b => b.id === t.brandId)?.name} · ` : ''}Due {t.dueDate || 'No date'} · {t.priority}
+                          {brands.find(b => b.id === t.brandId)?.name ? `${brands.find(b => b.id === t.brandId)?.name} · ` : ''}Due {formatDateDisplay(t.dueDate)} · {t.priority}
                         </div>
                       </div>
                     </div>
@@ -1672,7 +1684,7 @@ export const Dashboard: React.FC = () => {
                           </span>
                         </div>
                         <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                          Due {inv.dueDate || 'No date'}
+                          Due {formatDateDisplay(inv.dueDate)}
                         </div>
                       </div>
 
@@ -1685,7 +1697,7 @@ export const Dashboard: React.FC = () => {
                             color: BRAND.navy,
                           }}
                         >
-                          ₹{inv.totalAmount.toLocaleString('en-IN')}
+                          ₹{Number(inv.totalAmount || 0).toLocaleString('en-IN')}
                         </span>
                         <span
                           style={{

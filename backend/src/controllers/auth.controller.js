@@ -2,6 +2,13 @@ const asyncHandler = require('../utils/asyncHandler');
 const { makeValidator } = require('../utils/validate');
 const auth = require('../services/auth.service');
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 const sendOtp = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .requiredString('name', { max: 150, label: 'Name' })
@@ -43,7 +50,8 @@ const verifyOtp = asyncHandler(async (req, res) => {
     .validate();
 
   const result = await auth.verifyOtpAndRegister(body);
-  res.status(201).json({ success: true, ...result });
+  res.cookie('token', result.token, COOKIE_OPTIONS);
+  res.status(201).json({ success: true, user: result.user });
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -52,17 +60,42 @@ const login = asyncHandler(async (req, res) => {
     .requiredString('password', { max: 200, label: 'Password' })
     .validate();
 
-  res.json(await auth.login(body));
+  const result = await auth.login(body);
+  res.cookie('token', result.token, COOKIE_OPTIONS);
+  res.json({ user: result.user });
 });
 
 const logout = asyncHandler(async (req, res) => {
-  // Stateless JWT: the client discards the token. Endpoint kept for symmetry.
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
   res.json({ success: true });
 });
 
-const forgotPassword = asyncHandler(async (req, res) => {
-  // Always the same response so the endpoint cannot enumerate accounts.
-  res.json({ message: 'If that email exists, a reset link has been sent.' });
+const me = asyncHandler(async (req, res) => {
+  res.json({ user: req.user });
 });
 
-module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, forgotPassword };
+const forgotPassword = asyncHandler(async (req, res) => {
+  const body = makeValidator(req.body)
+    .email('email', { required: true, label: 'Email' })
+    .validate();
+
+  const result = await auth.forgotPassword(body);
+  res.json(result);
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const body = makeValidator(req.body)
+    .email('email', { required: true, label: 'Email' })
+    .requiredString('code', { max: 10, label: 'Reset code' })
+    .requiredString('newPassword', { max: 200, label: 'New password' })
+    .validate();
+
+  const result = await auth.resetPassword(body);
+  res.json(result);
+});
+
+module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword };

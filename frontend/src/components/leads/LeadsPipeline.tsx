@@ -52,20 +52,20 @@ export const LeadsPipeline: React.FC = () => {
     phone: '',
     source: 'Website Inbound',
     stage: 'New' as LeadStage,
-    value: 120000,
-    followUpDate: '2026-10-12',
+    value: 0,
+    followUpDate: new Date().toISOString().split('T')[0],
     notes: ''
   });
 
   const handleAddLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadForm.company || !leadForm.name) return;
-    addLead({ ...leadForm, value: Number(leadForm.value) });
+    addLead({ ...leadForm, value: Number(leadForm.value) || 0 });
     setShowAddLeadModal(false);
     setLeadForm({
       name: '', company: '', contact: '', email: '', phone: '',
-      source: 'Website Inbound', stage: 'New', value: 120000,
-      followUpDate: '2026-10-12', notes: ''
+      source: 'Website Inbound', stage: 'New', value: 0,
+      followUpDate: new Date().toISOString().split('T')[0], notes: ''
     });
   };
 

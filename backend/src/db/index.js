@@ -15,7 +15,10 @@ const sslConfig = isInternalRender
 
 let pool = new Pool({
   connectionString: dbUrl,
-  ssl: sslConfig
+  ssl: sslConfig,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
 });
 
 // Test connection with retry — handles slow DB startup in Docker/Render

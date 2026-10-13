@@ -9,9 +9,20 @@ function mapHoliday(h) {
   return { id: h.id, title: h.title, date: h.date, type: h.type };
 }
 
-async function listHolidays() {
-  const { rows } = await pool.query('SELECT * FROM holidays ORDER BY date ASC');
-  return rows.map(mapHoliday);
+async function listHolidays({ page = 1, pageSize = 50 } = {}) {
+  // Count total
+  const { rows: countRows } = await pool.query('SELECT COUNT(*) FROM holidays');
+  const total = parseInt(countRows[0].count, 10);
+
+  // Paginated query
+  const offset = (page - 1) * pageSize;
+  const { rows } = await pool.query(
+    'SELECT * FROM holidays ORDER BY date ASC LIMIT $1 OFFSET $2',
+    [pageSize, offset]
+  );
+  const data = rows.map(mapHoliday);
+
+  return { data, total, page, pageSize };
 }
 
 async function createHoliday(data) {

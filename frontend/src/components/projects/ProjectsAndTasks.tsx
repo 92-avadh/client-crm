@@ -7,9 +7,13 @@ import {
   CheckSquare,
   Plus,
   Clock,
-  X
+  X,
+  Loader2,
 } from 'lucide-react';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+
+const getDefaultDueDate = () => new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+const getTodayDate = () => new Date().toISOString().split('T')[0];
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -60,7 +64,7 @@ export const ProjectsAndTasks: React.FC = () => {
     title: '',
     description: '',
     assigneeId: allUsers.find((u) => u.role === 'team')?.id || currentUser.id,
-    dueDate: '2026-10-10',
+    dueDate: getDefaultDueDate(),
     priority: 'High' as TaskPriority,
     status: 'To Do' as TaskStatus
   });
@@ -69,26 +73,57 @@ export const ProjectsAndTasks: React.FC = () => {
     brandId: brands[0]?.id || '',
     name: '',
     scope: '',
-    startDate: '2026-10-04',
-    endDate: '2026-11-30',
+    startDate: getTodayDate(),
+    endDate: '',
     status: 'In progress' as any,
     assignedMemberIds: [] as string[],
-    billingAmount: 125000
+    billingAmount: 0
   });
 
-  const handleAddTaskSubmit = (e: React.FormEvent) => {
+  const [isSubmittingTask, setIsSubmittingTask] = useState(false);
+  const [isSubmittingProject, setIsSubmittingProject] = useState(false);
+
+  const handleAddTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskForm.title) return;
-    addTask(taskForm);
-    setShowAddTaskModal(false);
-    setTaskForm({ ...taskForm, title: '', description: '' });
+    try {
+      setIsSubmittingTask(true);
+      await addTask(taskForm);
+      setShowAddTaskModal(false);
+      setTaskForm({
+        brandId: brands[0]?.id || '',
+        title: '',
+        description: '',
+        assigneeId: allUsers.find((u) => u.role === 'team')?.id || currentUser.id,
+        dueDate: getDefaultDueDate(),
+        priority: 'High' as TaskPriority,
+        status: 'To Do' as TaskStatus
+      });
+    } finally {
+      setIsSubmittingTask(false);
+    }
   };
 
-  const handleAddProjectSubmit = (e: React.FormEvent) => {
+  const handleAddProjectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.name) return;
-    addProject({ ...projectForm, billingAmount: Number(projectForm.billingAmount) });
-    setShowAddProjectModal(false);
+    try {
+      setIsSubmittingProject(true);
+      await addProject({ ...projectForm, billingAmount: Number(projectForm.billingAmount) || 0 });
+      setShowAddProjectModal(false);
+      setProjectForm({
+        brandId: brands[0]?.id || '',
+        name: '',
+        scope: '',
+        startDate: getTodayDate(),
+        endDate: '',
+        status: 'In progress' as any,
+        assignedMemberIds: [] as string[],
+        billingAmount: 0
+      });
+    } finally {
+      setIsSubmittingProject(false);
+    }
   };
 
   const relevantTasks =
@@ -479,8 +514,13 @@ export const ProjectsAndTasks: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" style={{ ...btnPrimary, height: 32, fontSize: 12 }}>
-                  Create Task
+                <button
+                  type="submit"
+                  disabled={isSubmittingTask}
+                  style={{ ...btnPrimary, height: 32, fontSize: 12, opacity: isSubmittingTask ? 0.7 : 1, cursor: isSubmittingTask ? 'not-allowed' : 'pointer' }}
+                >
+                  {isSubmittingTask && <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} />}
+                  {isSubmittingTask ? 'Creating...' : 'Create Task'}
                 </button>
               </div>
             </form>
@@ -568,8 +608,13 @@ export const ProjectsAndTasks: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" style={{ ...btnPrimary, height: 32, fontSize: 12 }}>
-                  Create Project
+                <button
+                  type="submit"
+                  disabled={isSubmittingProject}
+                  style={{ ...btnPrimary, height: 32, fontSize: 12, opacity: isSubmittingProject ? 0.7 : 1, cursor: isSubmittingProject ? 'not-allowed' : 'pointer' }}
+                >
+                  {isSubmittingProject && <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} />}
+                  {isSubmittingProject ? 'Creating...' : 'Create Project'}
                 </button>
               </div>
             </form>

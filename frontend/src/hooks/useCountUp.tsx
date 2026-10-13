@@ -9,17 +9,18 @@ import React, { useState, useEffect, useRef } from 'react';
  * @returns Animated current number value
  */
 export const useCountUp = (target: number, duration = 1100): number => {
-  const [value, setValue] = useState(0);
-  const prevTargetRef = useRef(0);
+  const safeTarget = Number.isFinite(target) ? target : 0;
+  const [value, setValue] = useState(safeTarget);
+  const prevTargetRef = useRef(safeTarget);
   const isFirstRender = useRef(true);
 
   useEffect(() => {
     const from = isFirstRender.current ? 0 : prevTargetRef.current;
     isFirstRender.current = false;
-    prevTargetRef.current = target;
+    prevTargetRef.current = safeTarget;
 
-    if (from === target) {
-      setValue(target);
+    if (from === safeTarget) {
+      setValue(safeTarget);
       return;
     }
 
@@ -31,19 +32,19 @@ export const useCountUp = (target: number, duration = 1100): number => {
       const progress = Math.min(elapsed / duration, 1);
       // Smooth cubic ease-out
       const eased = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(from + (target - from) * eased);
+      const current = Math.round(from + (safeTarget - from) * eased);
       setValue(current);
 
       if (progress < 1) {
         frameId = requestAnimationFrame(tick);
       } else {
-        setValue(target);
+        setValue(safeTarget);
       }
     };
 
     frameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameId);
-  }, [target, duration]);
+  }, [safeTarget, duration]);
 
   return value;
 };

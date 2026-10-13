@@ -9,6 +9,9 @@ const get = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: "You don't have permission to update settings." });
+  }
   const body = makeValidator(req.body)
     .optionalString('companyName', { max: 200, label: 'Company name' })
     .email('companyEmail', { label: 'Company email' })

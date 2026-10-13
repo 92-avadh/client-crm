@@ -38,57 +38,81 @@ async function getBrandWithDetails(id) {
   };
 }
 
-async function listBrands(user, { status, search } = {}) {
+async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}) {
   const params = [];
   let idx = 1;
-  let query;
+  let baseWhere;
   let alias;
 
   if (user.role === 'team') {
     alias = 'b';
-    query = `SELECT b.* FROM brands b INNER JOIN brand_assignments ba ON b.id = ba.brand_id WHERE ba.member_id = $${idx}`;
+    baseWhere = `b.id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx})`;
     params.push(user.id);
     idx += 1;
   } else if (user.role === 'brand') {
     alias = '';
-    query = `SELECT * FROM brands WHERE id = $${idx}`;
+    baseWhere = `id = $${idx}`;
     params.push(user.brandId || '');
+    idx += 1;
+  } else if (user.role === 'admin' || user.id === 'usr_admin') {
+    alias = '';
+    baseWhere = `(owner_id = $${idx} OR owner_id IS NULL OR $${idx} = 'usr_admin')`;
+    params.push(user.id);
     idx += 1;
   } else {
     alias = '';
-    if (user.role === 'admin' || user.id === 'usr_admin') {
-      query = `SELECT * FROM brands WHERE (owner_id = $${idx} OR owner_id IS NULL OR $${idx} = 'usr_admin')`;
-      params.push(user.id);
-      idx += 1;
-    } else {
-      query = `SELECT * FROM brands WHERE owner_id = $${idx}`;
-      params.push(user.id);
-      idx += 1;
-    }
+    baseWhere = `owner_id = $${idx}`;
+    params.push(user.id);
+    idx += 1;
   }
 
   const col = (name) => (alias ? `${alias}.${name}` : name);
 
   if (status) {
-    query += ` AND ${col('status')} = $${idx}`;
+    baseWhere += ` AND ${col('status')} = $${idx}`;
     params.push(status);
     idx += 1;
   }
   if (search) {
-    query += ` AND (${col('name')} ILIKE $${idx} OR ${col('owner_name')} ILIKE $${idx})`;
+    baseWhere += ` AND (${col('name')} ILIKE $${idx} OR ${col('owner_name')} ILIKE $${idx})`;
     params.push('%' + search + '%');
   }
 
-  const { rows } = await pool.query(query, params);
-  return Promise.all(rows.map(async (b) => {
-    const members = await pool.query('SELECT member_id FROM brand_assignments WHERE brand_id=$1', [b.id]);
-    const docs = await pool.query('SELECT * FROM brand_documents WHERE brand_id=$1', [b.id]);
-    return {
-      ...mapBrand(b),
-      assignedMemberIds: members.rows.map(r => r.member_id),
-      documents: docs.rows.map(mapDoc),
-    };
+  // Count total
+  const countQuery = `SELECT COUNT(*) AS total FROM brands ${alias || ''} WHERE ${baseWhere}`;
+  const countResult = await pool.query(countQuery, params);
+  const total = parseInt(countResult.rows[0].total, 10);
+
+  // Paginated query with JOINs
+  const offset = (page - 1) * pageSize;
+  const dataParams = [...params, pageSize, offset];
+  const dataQuery = `
+    SELECT b.*,
+      COALESCE(
+        (SELECT json_agg(DISTINCT ba.member_id) FROM brand_assignments ba WHERE ba.brand_id = b.id),
+        '[]'
+      ) AS assigned_member_ids,
+      COALESCE(
+        (SELECT json_agg(row_to_json(d)) FROM (
+          SELECT id, brand_id, name, size, upload_date, type FROM brand_documents WHERE brand_id = b.id
+        ) d),
+        '[]'
+      ) AS documents
+    FROM brands b
+    WHERE ${baseWhere}
+    ORDER BY b.created_at DESC, b.id
+    LIMIT $${idx} OFFSET $${idx + 1}
+  `;
+
+  const { rows } = await pool.query(dataQuery, dataParams);
+
+  const data = rows.map(b => ({
+    ...mapBrand(b),
+    assignedMemberIds: b.assigned_member_ids || [],
+    documents: (b.documents || []).map(mapDoc),
   }));
+
+  return { data, total, page, pageSize };
 }
 
 async function createBrand(user, data) {

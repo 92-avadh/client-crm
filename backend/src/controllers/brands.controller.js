@@ -31,6 +31,8 @@ const list = asyncHandler(async (req, res) => {
   res.json(await brands.listBrands(req.user, {
     status: req.query.status,
     search: req.query.search,
+    page: req.query.page,
+    pageSize: req.query.pageSize,
   }));
 });
 
