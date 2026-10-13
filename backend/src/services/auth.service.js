@@ -7,7 +7,11 @@ const { sendOtpEmail } = require('../utils/mailer');
 const genId = () => 'usr_' + crypto.randomBytes(8).toString('hex');
 const genOtp = () => String(crypto.randomInt(100000, 1000000));
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const DEFAULT_SECRET = 'retentio_jwt_secret_2026_default_secure_key_min32chars';
+const JWT_SECRET = (process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32)
+  ? process.env.JWT_SECRET
+  : DEFAULT_SECRET;
+
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_COOLDOWN_S = 60;
