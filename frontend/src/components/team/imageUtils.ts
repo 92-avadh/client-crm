@@ -6,8 +6,9 @@
  */
 
 const MAX_DIMENSION = 400;
-const MAX_BYTES = 5 * 1024 * 1024;
-const ACCEPTED = /^image\//;
+const MAX_BYTES = 2 * 1024 * 1024;
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ACCEPTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
 export interface ProcessResult {
   ok: boolean;
@@ -17,12 +18,13 @@ export interface ProcessResult {
 
 export function processImageFile(file: File): Promise<ProcessResult> {
   return new Promise((resolve) => {
-    if (!ACCEPTED.test(file.type)) {
-      resolve({ ok: false, error: 'Please select a valid image file (JPG, PNG, WebP)' });
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!ACCEPTED_TYPES.includes(file.type) && !ACCEPTED_EXTENSIONS.includes(ext)) {
+      resolve({ ok: false, error: 'Please select a valid image file (JPG, PNG or WebP)' });
       return;
     }
     if (file.size > MAX_BYTES) {
-      resolve({ ok: false, error: 'Photo size must be less than 5MB' });
+      resolve({ ok: false, error: `Photo size must be less than ${Math.round(MAX_BYTES / 1024 / 1024)}MB` });
       return;
     }
 

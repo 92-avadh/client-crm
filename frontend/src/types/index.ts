@@ -1,4 +1,18 @@
-export type Role = 'admin' | 'hr' | 'team' | 'brand';
+export type CorporateRole =
+  | 'admin'
+  | 'hr'
+  | 'team'
+  | 'brand'
+  | 'project_manager'
+  | 'operations_manager'
+  | 'finance'
+  | 'sales'
+  | 'marketing'
+  | 'account_executive'
+  | 'creative_designer'
+  | 'developer';
+
+export type Role = CorporateRole | (string & {});
 
 export interface User {
   id: string;
@@ -10,6 +24,7 @@ export interface User {
   designation: string;
   assignedBrandIds?: string[];
   brandId?: string;
+  permissions?: string[];
 }
 
 export type BrandStatus = 'Active' | 'Paused' | 'Inactive' | 'Churned';
@@ -229,17 +244,26 @@ export interface ChatMessage {
   timestamp: string;
   attachments?: ChatAttachment[];
   readBy: string[];
+  isRead?: boolean;
 }
 
 export interface Conversation {
   id: string;
-  type: 'brand' | 'direct';
+  type: 'brand' | 'direct' | 'team';
   title: string;
   brandId?: string;
   participantIds: string[];
   lastMessage?: string;
   lastMessageTime?: string;
   unreadCount?: number;
+  otherMember?: {
+    id: string;
+    name: string;
+    email?: string;
+    avatar?: string;
+    role?: string;
+    designation?: string;
+  } | null;
 }
 
 export interface Holiday {
@@ -284,6 +308,13 @@ export interface AppSettings {
     renewalDate: string;
     status: 'Active' | 'Grace Period' | 'Cancelled';
   };
+  currency: string;
+  currencySymbol: string;
+  industry?: string;
+  teamSize?: string;
+  goals?: string[];
+  dashboardLayout?: 'default' | 'compact' | 'expanded';
+  dashboardFocus?: 'balanced' | 'financial' | 'retention';
   retentionThresholdDays: number;
   whatsappClickToShareEnabled: boolean;
 }

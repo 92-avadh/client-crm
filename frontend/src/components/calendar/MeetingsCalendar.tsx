@@ -16,6 +16,7 @@ import {
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 export const MeetingsCalendar: React.FC = () => {
   const { currentUser, meetings, brands, allUsers, addMeeting, deleteMeeting, holidays } = useApp() as any;
@@ -290,9 +291,13 @@ export const MeetingsCalendar: React.FC = () => {
 
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Date *</label>
-                  <input type="date" required value={meetingForm.date} onChange={e => setMeetingForm({ ...meetingForm, date: e.target.value })}
-                    style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)' }} />
+                  <DatePicker
+                    value={meetingForm.date}
+                    onChange={(date) => setMeetingForm({ ...meetingForm, date })}
+                    required
+                    label="Meeting Date"
+                    placeholder="Select date"
+                  />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Time *</label>

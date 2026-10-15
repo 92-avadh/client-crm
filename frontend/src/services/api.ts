@@ -12,21 +12,64 @@ if (typeof window !== 'undefined') {
   }, 10 * 60 * 1000);
 }
 
-// Token is stored in httpOnly cookie — no localStorage token management needed
-export const getToken = () => null; // kept for backwards compatibility
-export const setToken = (_t: string) => {}; // noop — cookie is set by server
-export const clearToken = () => {}; // noop — cookie cleared by logout endpoint
+export const getToken = (): string | null => {
+  if (typeof localStorage !== 'undefined') {
+    return localStorage.getItem('retentio_token');
+  }
+  return null;
+};
+
+export const setToken = (t: string) => {
+  if (typeof localStorage !== 'undefined') {
+    if (t) localStorage.setItem('retentio_token', t);
+    else localStorage.removeItem('retentio_token');
+  }
+};
+
+export const clearToken = () => {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('retentio_token');
+  }
+};
+
+let sessionExpiredDebounceTimer: any = null;
+
+export function handleSessionExpired(message = 'Your session has expired. Please sign in again.') {
+  const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
+  if (isBypass) return;
+  clearToken();
+  try {
+    localStorage.removeItem('retentio_user');
+  } catch {}
+
+  if (typeof window !== 'undefined') {
+    if (!sessionExpiredDebounceTimer) {
+      window.dispatchEvent(new CustomEvent('retentio_session_expired', {
+        detail: { message }
+      }));
+      sessionExpiredDebounceTimer = setTimeout(() => {
+        sessionExpiredDebounceTimer = null;
+      }, 2500);
+    }
+  }
+}
 
 // Core fetch wrapper
 async function req<T>(method: string, path: string, body?: any): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       method,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined
     });
   } catch (networkErr) {
@@ -36,10 +79,19 @@ async function req<T>(method: string, path: string, body?: any): Promise<T> {
 
   if (!res.ok) {
     const payload = await res.json().catch(() => ({} as any));
+    const rawError = payload?.error || payload?.message || `HTTP ${res.status}`;
+    const friendlyMsg = getNaturalErrorMessage(rawError);
+
+    // If session expired or unauthorized on protected route, force logout and display message
+    if (res.status === 401 && !path.startsWith('/auth/login') && !path.startsWith('/auth/send-otp') && !path.startsWith('/auth/verify-otp')) {
+      const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
+      if (!isBypass) {
+        handleSessionExpired(friendlyMsg);
+      }
+    }
+
     // Prefer the server's message, but normalise it to something user-friendly.
-    throw new Error(
-      getNaturalErrorMessage(payload?.error || payload?.message || `HTTP ${res.status}`)
-    );
+    throw new Error(friendlyMsg);
   }
 
   // 204 / empty bodies
@@ -98,12 +150,14 @@ export const api = {
     create: (data: any) => req<any>('POST', '/invoices', data),
     updateStatus: (id: string, status: string) => req<any>('PATCH', `/invoices/${id}/status`, { status }),
     delete: (id: string) => req<any>('DELETE', `/invoices/${id}`),
+    bulkDelete: (ids: string[]) => req<any>('POST', '/invoices/bulk-delete', { ids }),
   },
   payments: {
     list: (params?: any) => req<any[]>('GET', '/payments' + (params ? '?' + new URLSearchParams(params) : '')),
     record: (data: any) => req<any>('POST', '/payments', data),
     update: (id: string, data: any) => req<any>('PATCH', `/payments/${id}`, data),
     delete: (id: string) => req<any>('DELETE', `/payments/${id}`),
+    bulkDelete: (ids: string[]) => req<any>('POST', '/payments/bulk-delete', { ids }),
     razorpayInitiate: (invoiceId: string) => req<any>('POST', '/payments/razorpay-initiate', { invoiceId }),
     razorpayVerify: (data: any) => req<any>('POST', '/payments/razorpay-verify', data),
   },
@@ -143,6 +197,8 @@ export const api = {
     messages: (convId: string) => req<any[]>('GET', `/chat/conversations/${convId}/messages`),
     sendMessage: (convId: string, data: any) => req<any>('POST', `/chat/conversations/${convId}/messages`, data),
     createConversation: (data: any) => req<any>('POST', '/chat/conversations', data),
+    direct: (targetUserId: string) => req<any>('POST', `/chat/direct/${targetUserId}`),
+    markRead: (convId: string) => req<any>('POST', `/chat/conversations/${convId}/read`),
   },
   settings: {
     get: () => req<any>('GET', '/settings'),

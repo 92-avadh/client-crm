@@ -14,10 +14,17 @@ async function getAssignedBrandIds(userId) {
 }
 
 function mapUser(u, brandIds) {
+  let perms = [];
+  if (Array.isArray(u.permissions)) {
+    perms = u.permissions;
+  } else if (typeof u.permissions === 'string') {
+    try { perms = JSON.parse(u.permissions); } catch { perms = []; }
+  }
   return {
     id: u.id, name: u.name, email: u.email, phone: u.phone,
     role: u.role, avatar: u.avatar, designation: u.designation,
     brandId: u.brand_id, isActive: u.is_active,
+    permissions: perms,
     assignedBrandIds: brandIds || []
   };
 }
@@ -29,12 +36,12 @@ async function listUsers(user, { page = 1, pageSize = 50 } = {}) {
 
   if (user && user.role !== 'admin') {
     if (user.role === 'brand') {
-      where += ` AND (id = $${idx} OR brand_id = $${idx + 1})`;
+      where += ` AND (id = $${idx} OR brand_id = $${idx + 1} OR id IN (SELECT member_id FROM brand_assignments WHERE brand_id = $${idx + 1}))`;
       params.push(user.id, user.brandId || 'none');
       idx += 2;
     } else {
-      where += ` AND (id = $${idx} OR created_by = $${idx})`;
-      params.push(user.id);
+      // All team members across the agency can discover and communicate with their colleagues
+      where += ` AND role != 'brand'`;
     }
   }
 
@@ -75,14 +82,15 @@ async function createUser(actor, data) {
   // the user is expected to reset it.
   const hash = await bcrypt.hash(data.password || 'Change@1234', 10);
   const id = genId();
+  const permissionsJson = JSON.stringify(Array.isArray(data.permissions) ? data.permissions : []);
 
   const { rows } = await pool.query(
-    `INSERT INTO users (id,name,email,phone,password_hash,role,designation,avatar,brand_id,created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    `INSERT INTO users (id,name,email,phone,password_hash,role,designation,avatar,brand_id,created_by,permissions)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb) RETURNING *`,
     [
       id, data.name, data.email.toLowerCase(), data.phone || null, hash,
       data.role, data.designation || null, data.avatar || null,
-      data.brandId || null, actor.id,
+      data.brandId || null, actor.id, permissionsJson,
     ]
   );
   return mapUser(rows[0], []);
@@ -107,18 +115,26 @@ async function updateUser(actor, userId, data) {
     passwordHash = await bcrypt.hash(data.password.trim(), 10);
   }
 
+  const prevPerms = Array.isArray(prev.permissions)
+    ? prev.permissions
+    : (typeof prev.permissions === 'string' ? JSON.parse(prev.permissions || '[]') : []);
+  const permissionsJson = data.permissions !== undefined
+    ? JSON.stringify(Array.isArray(data.permissions) ? data.permissions : [])
+    : JSON.stringify(prevPerms);
+
   const { rows } = await pool.query(
     `UPDATE users
-     SET name = $1, email = $2, phone = $3, designation = $4, avatar = $5, role = $6, password_hash = $7
-     WHERE id = $8 RETURNING *`,
+     SET name = $1, email = $2, phone = $3, designation = $4, avatar = $5, role = $6, password_hash = $7, permissions = $8::jsonb
+     WHERE id = $9 RETURNING *`,
     [
       data.name !== undefined ? data.name : prev.name,
       data.email !== undefined ? data.email.trim() : prev.email,
       data.phone !== undefined ? data.phone : prev.phone,
       data.designation !== undefined ? data.designation : prev.designation,
-      data.avatar !== undefined ? data.avatar : prev.avatar,
+      data.avatar !== undefined ? (data.avatar || null) : prev.avatar,
       data.role !== undefined ? data.role : prev.role,
       passwordHash,
+      permissionsJson,
       userId,
     ]
   );

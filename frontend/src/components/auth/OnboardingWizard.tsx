@@ -22,6 +22,8 @@ export interface OnboardingData {
   industry: string;
   customIndustry?: string;
   teamSize: string;
+  currency: string;
+  currencySymbol: string;
   goals: string[];
   customGoal?: string;
   theme: 'light' | 'dark' | 'system';
@@ -45,6 +47,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     industry: '',
     customIndustry: '',
     teamSize: '',
+    currency: localStorage.getItem('retentio_currency') || 'INR',
+    currencySymbol: localStorage.getItem('retentio_currency_symbol') || '₹',
     goals: [],
     customGoal: '',
     theme: (localStorage.getItem('retentio_theme') as any) || 'light',
@@ -121,6 +125,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     }));
   };
 
+  const handleSelectCurrency = (code: string, symbol: string) => {
+    setData(prev => ({
+      ...prev,
+      currency: code,
+      currencySymbol: symbol,
+    }));
+  };
+
   const canProceed = () => {
     switch (step) {
       case 0:
@@ -128,7 +140,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         if (data.role === 'other' && !data.customRole?.trim()) return false;
         return true;
       case 1:
-        if (!data.industry || !data.teamSize) return false;
+        if (!data.industry || !data.teamSize || !data.currency) return false;
         if (data.industry === 'Other' && !data.customIndustry?.trim()) return false;
         return true;
       case 2:
@@ -230,6 +242,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               direction={direction}
               onSelectIndustry={handleSelectIndustry}
               onCustomIndustryChange={handleCustomIndustryChange}
+              onSelectCurrency={handleSelectCurrency}
             />
           )}
 

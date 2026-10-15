@@ -33,6 +33,21 @@ module.exports = (req, res, next) => {
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
     req.user = jwt.verify(token, JWT_SECRET);
+
+    const isProd = process.env.NODE_ENV === 'production';
+    const COOKIE_OPTIONS = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    };
+    const newToken = jwt.sign(
+      { id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, brandId: req.user.brandId, permissions: req.user.permissions || [] },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+    res.cookie('token', newToken, COOKIE_OPTIONS);
+
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });

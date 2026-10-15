@@ -82,14 +82,16 @@ export const FormSelect: React.FC<{
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
+  placeholder?: string;
   error?: string;
   required?: boolean;
-}> = ({ label, value, onChange, options, error, required }) => (
+}> = ({ label, value, onChange, options, placeholder, error, required }) => (
   <AnimatedSelect
     label={label}
     value={value}
     onChange={onChange}
     options={options}
+    placeholder={placeholder}
     error={error}
     required={required}
   />

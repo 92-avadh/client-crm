@@ -15,6 +15,7 @@ import { InvoiceDesignTab, type InvoiceDesign } from './InvoiceDesignTab';
 export const SettingsManager: React.FC = () => {
   const {
     currentUser,
+    setCurrentUser,
     settings,
     updateSettings,
     auditLogs,
@@ -22,6 +23,7 @@ export const SettingsManager: React.FC = () => {
     holidays,
     addHoliday,
     deleteHoliday,
+    updateTeamMember,
   } = useApp();
 
   const role = currentUser.role;
@@ -29,6 +31,10 @@ export const SettingsManager: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [formData, setFormData] = useState<AppSettings>({ ...settings });
+
+  React.useEffect(() => {
+    setFormData({ ...settings });
+  }, [settings]);
 
   const [profileName, setProfileName] = useState(currentUser.name);
   const [profileEmail, setProfileEmail] = useState(currentUser.email);
@@ -121,8 +127,43 @@ export const SettingsManager: React.FC = () => {
             if (patch.email !== undefined) setProfileEmail(patch.email);
             if (patch.phone !== undefined) setProfilePhone(patch.phone);
           }}
-          onSave={(e) => {
+          onAvatarChange={async (dataUrl: string) => {
+            try {
+              await updateTeamMember(currentUser.id, { avatar: dataUrl });
+              showToast(dataUrl ? 'Profile photo updated successfully!' : 'Profile photo removed', 'success');
+            } catch {
+              setCurrentUser((prev: any) => {
+                const next = { ...prev, avatar: dataUrl };
+                try {
+                  localStorage.setItem('retentio_user', JSON.stringify(next));
+                } catch {}
+                return next;
+              });
+              showToast(dataUrl ? 'Profile photo updated successfully!' : 'Profile photo removed', 'success');
+            }
+          }}
+          onSave={async (e) => {
             e.preventDefault();
+            try {
+              await updateTeamMember(currentUser.id, {
+                name: profileName,
+                email: profileEmail,
+                phone: profilePhone,
+              });
+            } catch {
+              setCurrentUser((prev: any) => {
+                const next = {
+                  ...prev,
+                  name: profileName,
+                  email: profileEmail,
+                  phone: profilePhone,
+                };
+                try {
+                  localStorage.setItem('retentio_user', JSON.stringify(next));
+                } catch {}
+                return next;
+              });
+            }
             showToast('Profile preferences updated successfully', 'success');
           }}
         />
@@ -132,11 +173,11 @@ export const SettingsManager: React.FC = () => {
         <NotificationsTab
           isAdmin={isAdmin}
           formData={formData}
-          onThresholdChange={(d) => {
+          onThresholdChange={(d: number) => {
             patchSettings({ retentionThresholdDays: d });
             updateSettings({ retentionThresholdDays: d });
           }}
-          onWhatsAppToggle={(v) => {
+          onWhatsAppToggle={(v: boolean) => {
             patchSettings({ whatsappClickToShareEnabled: v });
             updateSettings({ whatsappClickToShareEnabled: v });
           }}

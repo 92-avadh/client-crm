@@ -1,6 +1,7 @@
-import React from 'react';
-import { Briefcase, Plus, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Briefcase, Plus, Sparkles, Coins, Check } from 'lucide-react';
 import type { OnboardingData } from './OnboardingWizard';
+import { SUPPORTED_CURRENCIES, getCurrencyConfig } from '../../utils/currency';
 
 const INDUSTRIES = [
   'Digital Marketing',
@@ -28,6 +29,7 @@ interface StepIndustryProps {
   direction: 'forward' | 'backward';
   onSelectIndustry: (ind: string) => void;
   onCustomIndustryChange: (val: string) => void;
+  onSelectCurrency: (code: string, symbol: string) => void;
 }
 
 export const StepIndustry: React.FC<StepIndustryProps> = ({
@@ -35,22 +37,167 @@ export const StepIndustry: React.FC<StepIndustryProps> = ({
   setData,
   onSelectIndustry,
   onCustomIndustryChange,
+  onSelectCurrency,
 }) => {
+  const [showAllCurrencies, setShowAllCurrencies] = useState(false);
+
+  // Top 6 primary quick-pick currencies + expandable list
+  const primaryCurrencies = SUPPORTED_CURRENCIES.slice(0, 6);
+  const activeCurrencyConfig = getCurrencyConfig(data.currency);
+
   return (
     <div>
       <div className="step-badge-pill">
         <Briefcase size={14} className="badge-sparkle-icon" />
-        <span>Workspace Profile</span>
+        <span>Workspace & Financial Profile</span>
       </div>
 
-      <h2 className="step-main-title">Your workspace profile</h2>
+      <h2 className="step-main-title">Workspace & Financial Unit</h2>
       <p className="step-sub-caption">
-        Tell us about your industry and team scale to customize retention benchmarks and KPIs.
+        Configure your industry, team scale, and operating currency to customize billing and dashboard metrics.
       </p>
+
+      {/* Operating Currency (REQUIRED) */}
+      <div className="section-block" style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <label className="section-group-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Coins size={14} className="text-emerald-500" />
+            <span>Primary Operating Currency</span>
+            <span style={{ color: '#ef4444', fontWeight: 800 }}>* (Required)</span>
+          </label>
+          <button
+            type="button"
+            onClick={() => setShowAllCurrencies(prev => !prev)}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--text-secondary, #64748b)',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              padding: 0,
+            }}
+          >
+            {showAllCurrencies ? 'Show Top Currencies' : 'More Currencies (' + SUPPORTED_CURRENCIES.length + ')'}
+          </button>
+        </div>
+
+        {/* Currency Options Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))',
+            gap: 8,
+          }}
+        >
+          {(showAllCurrencies ? SUPPORTED_CURRENCIES : primaryCurrencies).map((curr) => {
+            const isSelected = data.currency === curr.code;
+
+            return (
+              <button
+                key={curr.code}
+                type="button"
+                onClick={() => onSelectCurrency(curr.code, curr.symbol)}
+                className={`glass-card-option compact ${isSelected ? 'selected' : ''}`}
+                style={{
+                  padding: '9px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  borderRadius: 10,
+                  transition: 'all 0.15s ease',
+                  border: isSelected
+                    ? '2px solid #0284c7'
+                    : '1px solid rgba(255, 255, 255, 0.4)',
+                  background: isSelected
+                    ? 'rgba(56, 189, 248, 0.15)'
+                    : 'rgba(255, 255, 255, 0.08)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                  <span style={{ fontSize: 16 }}>{curr.flag}</span>
+                  <div style={{ textAlign: 'left', minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>
+                      {curr.code} ({curr.symbol})
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: 'var(--text-muted)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {curr.name}
+                    </div>
+                  </div>
+                </div>
+
+                {isSelected && (
+                  <div
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      background: '#0284c7',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Check size={11} strokeWidth={3} />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Live Currency Preview Card */}
+        {data.currency ? (
+          <div
+            style={{
+              marginTop: 10,
+              padding: '8px 14px',
+              borderRadius: 8,
+              background: 'rgba(34, 197, 94, 0.08)',
+              border: '1px solid rgba(34, 197, 94, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: 11.5,
+              color: 'var(--text-primary)',
+            }}
+          >
+            <span>
+              Selected: <strong>{activeCurrencyConfig.name}</strong> ({activeCurrencyConfig.code} · {activeCurrencyConfig.symbol})
+            </span>
+            <span style={{ fontWeight: 700, color: '#16a34a' }}>
+              Sample: {activeCurrencyConfig.symbol}50,000 / mo
+            </span>
+          </div>
+        ) : (
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 11,
+              color: '#ef4444',
+              fontWeight: 600,
+            }}
+          >
+            * Please pick your operating currency to continue.
+          </div>
+        )}
+      </div>
 
       {/* Industry Pills */}
       <div className="section-block">
-        <label className="section-group-label">Agency / Company Industry</label>
+        <label className="section-group-label">Agency / Company Industry *</label>
         <div className="industry-pills-wrap">
           {INDUSTRIES.map(ind => {
             const isSelected = data.industry === ind;
@@ -87,7 +234,7 @@ export const StepIndustry: React.FC<StepIndustryProps> = ({
 
       {/* Team Size Cards */}
       <div className="section-block">
-        <label className="section-group-label">Team scale</label>
+        <label className="section-group-label">Team scale *</label>
         <div className="team-size-grid">
           {TEAM_SIZES.map(ts => {
             const isSelected = data.teamSize === ts.id;

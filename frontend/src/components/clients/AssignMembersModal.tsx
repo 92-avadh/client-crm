@@ -17,7 +17,7 @@ export const AssignMembersModal: React.FC<Props> = ({
 }) => {
   if (!brand) return null;
 
-  const candidates = allUsers.filter((u) => u.role === 'team' || u.role === 'hr');
+  const candidates = allUsers.filter((u) => u.role !== 'brand' && u.role !== 'admin');
 
   return (
     <div

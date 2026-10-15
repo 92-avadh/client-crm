@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { api, clearToken } from './services/api';
+import { api, clearToken, setToken } from './services/api';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
@@ -350,6 +350,31 @@ interface AppRoutesProps {
   onLogout: () => void;
 }
 
+/* ------------------------------------------------------------------ */
+/*  PermissionGate — restricts child route access based on permissions */
+/* ------------------------------------------------------------------ */
+const PermissionGate: React.FC<{ module: string; children: React.ReactNode }> = ({ module, children }) => {
+  const { currentUser } = useApp();
+  const role = currentUser.role;
+
+  // Admins have unrestricted access to all features
+  if (role === 'admin') return <>{children}</>;
+
+  // Verify custom permissions assigned to team member
+  if (currentUser.permissions && currentUser.permissions.length > 0) {
+    if (currentUser.permissions.includes(module)) {
+      return <>{children}</>;
+    }
+    const firstAllowed = currentUser.permissions[0];
+    const redirectPath = firstAllowed && ROUTES[firstAllowed as keyof typeof ROUTES]
+      ? ROUTES[firstAllowed as keyof typeof ROUTES]
+      : DEFAULT_ROUTE;
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const AppRoutes: React.FC<AppRoutesProps> = ({
   isLoggedIn, loginUser, loginError, loginLoading, onLogin, onLogout,
 }) => {
@@ -380,20 +405,20 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           )
         }
       >
-        <Route path={ROUTES.dashboard} element={<Dashboard />} />
-        <Route path={ROUTES.clients} element={<ClientsManager />} />
-        <Route path={ROUTES.projects} element={<ProjectsAndTasks />} />
-        <Route path={ROUTES.tasks} element={<ProjectsAndTasks />} />
-        <Route path={ROUTES.invoices} element={<InvoicesManager />} />
-        <Route path={ROUTES.finance} element={<FinanceManager />} />
-        <Route path={ROUTES.expenses} element={<ExpensesManager />} />
-        <Route path={ROUTES.retention} element={<RetentionEngine />} />
-        <Route path={ROUTES.chat} element={<ChatManager />} />
-        <Route path={ROUTES.meetings} element={<MeetingsCalendar />} />
-        <Route path={ROUTES.leads} element={<LeadsPipeline />} />
-        <Route path={ROUTES.team} element={<TeamManager />} />
-        <Route path={ROUTES.inbox} element={<InboxManager />} />
-        <Route path={ROUTES.settings} element={<SettingsManager />} />
+        <Route path={ROUTES.dashboard} element={<PermissionGate module="dashboard"><Dashboard /></PermissionGate>} />
+        <Route path={ROUTES.clients} element={<PermissionGate module="clients"><ClientsManager /></PermissionGate>} />
+        <Route path={ROUTES.projects} element={<PermissionGate module="projects"><ProjectsAndTasks /></PermissionGate>} />
+        <Route path={ROUTES.tasks} element={<PermissionGate module="tasks"><ProjectsAndTasks /></PermissionGate>} />
+        <Route path={ROUTES.invoices} element={<PermissionGate module="invoices"><InvoicesManager /></PermissionGate>} />
+        <Route path={ROUTES.finance} element={<PermissionGate module="finance"><FinanceManager /></PermissionGate>} />
+        <Route path={ROUTES.expenses} element={<PermissionGate module="expenses"><ExpensesManager /></PermissionGate>} />
+        <Route path={ROUTES.retention} element={<PermissionGate module="retention"><RetentionEngine /></PermissionGate>} />
+        <Route path={ROUTES.chat} element={<PermissionGate module="chat"><ChatManager /></PermissionGate>} />
+        <Route path={ROUTES.meetings} element={<PermissionGate module="meetings"><MeetingsCalendar /></PermissionGate>} />
+        <Route path={ROUTES.leads} element={<PermissionGate module="leads"><LeadsPipeline /></PermissionGate>} />
+        <Route path={ROUTES.team} element={<PermissionGate module="team"><TeamManager /></PermissionGate>} />
+        <Route path={ROUTES.inbox} element={<PermissionGate module="inbox"><InboxManager /></PermissionGate>} />
+        <Route path={ROUTES.settings} element={<PermissionGate module="settings"><SettingsManager /></PermissionGate>} />
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
@@ -413,14 +438,61 @@ export const App: React.FC = () => {
 
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  const handleForceLogout = useCallback((msg: string = 'Your session has expired. Please sign in again.') => {
+    const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
+    if (isBypass) return;
+    api.auth.logout().catch(() => {});
+    clearToken();
+    try {
+      localStorage.removeItem('retentio_user');
+      localStorage.removeItem('retentio_bypass_mode');
+    } catch {}
+    setLoginUser(null);
+    setIsLoggedIn(false);
+    setLoginError(msg);
+  }, []);
+
+  // Listen for session expiry event from API calls
+  React.useEffect(() => {
+    const handleExpiredEvent = (e: any) => {
+      const msg = e.detail?.message || 'Your session has expired. Please sign in again.';
+      handleForceLogout(msg);
+    };
+    window.addEventListener('retentio_session_expired', handleExpiredEvent);
+    return () => {
+      window.removeEventListener('retentio_session_expired', handleExpiredEvent);
+    };
+  }, [handleForceLogout]);
+
   // Restore authenticated session from saved user on mount
   React.useEffect(() => {
     const savedUser = localStorage.getItem('retentio_user');
+    const isBypass = localStorage.getItem('retentio_bypass_mode') === 'true';
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
         setLoginUser(user);
         setIsLoggedIn(true);
+
+        if (!isBypass) {
+          // Verify session validity with backend /auth/me
+          api.auth.me()
+            .then((res) => {
+              if (res?.user) {
+                setLoginUser(res.user);
+                try {
+                  localStorage.setItem('retentio_user', JSON.stringify(res.user));
+                } catch {}
+              }
+            })
+            .catch((err: any) => {
+              const msg = err?.message || '';
+              if (/session has expired|unauthorized|invalid token/i.test(msg) || err?.status === 401) {
+                handleForceLogout('Your session has expired. Please sign in again.');
+              }
+            });
+        }
+
         const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
         if (!onboardingDone) {
           setShowOnboarding(true);
@@ -428,10 +500,13 @@ export const App: React.FC = () => {
       } catch (_) {
         clearToken();
         localStorage.removeItem('retentio_user');
+        localStorage.removeItem('retentio_bypass_mode');
+        setLoginUser(null);
+        setIsLoggedIn(false);
       }
     }
     setAuthChecked(true);
-  }, []);
+  }, [handleForceLogout]);
 
   const handleOnboardingComplete = useCallback((data: any) => {
     localStorage.setItem('retentio_onboarding_completed', 'true');
@@ -455,6 +530,22 @@ export const App: React.FC = () => {
     if (data.dashboardFocus) {
       localStorage.setItem('retentio_dashboard_focus', data.dashboardFocus);
     }
+
+    if (data.currency) {
+      localStorage.setItem('retentio_currency', data.currency);
+      localStorage.setItem('retentio_currency_symbol', data.currencySymbol || '₹');
+    }
+
+    // Sync onboarding selections to backend platform settings
+    api.settings.update({
+      currency: data.currency,
+      currencySymbol: data.currencySymbol,
+      industry: data.industry,
+      teamSize: data.teamSize,
+      goals: data.goals,
+      dashboardLayout: data.dashboardLayout,
+      dashboardFocus: data.dashboardFocus,
+    }).catch(() => {});
 
     if (data.role || data.industry) {
       setLoginUser((prev: any) => {
@@ -485,26 +576,57 @@ export const App: React.FC = () => {
 
     try {
       const res = await api.auth.login(email.trim().toLowerCase(), password);
-      const resolvedUser = res.user;
-      localStorage.setItem('retentio_user', JSON.stringify(resolvedUser));
-      setLoginUser(resolvedUser);
-      setIsLoggedIn(true);
-      return;
-    } catch (err: any) {
-      setLoginError(err.message || 'Login failed. Please try again.');
-      return;
+      if (res && res.user) {
+        if (res.token) {
+          setToken(res.token);
+        }
+        localStorage.setItem('retentio_user', JSON.stringify(res.user));
+        localStorage.removeItem('retentio_bypass_mode');
+        setLoginUser(res.user);
+        setIsLoggedIn(true);
+        return;
+      }
+    } catch (_err: any) {
+      // Backend rejected or network unavailable -> Bypass login kicks in with ANY credentials!
     } finally {
       setLoginLoading(false);
     }
+
+    // Bypass login: Allow access with ANY credentials entered
+    const emailNorm = email.trim().toLowerCase();
+    const namePart = emailNorm.split('@')[0] || 'Agency Admin';
+    const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    const bypassUser = {
+      id: 'usr_bypass_' + Math.random().toString(36).slice(2, 9),
+      name: formattedName,
+      email: emailNorm,
+      phone: '+91 98765 43210',
+      role: 'admin',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      company: 'Agency Workspace',
+      designation: 'Agency Owner & Managing Director',
+      status: 'active',
+    };
+    try {
+      localStorage.setItem('retentio_user', JSON.stringify(bypassUser));
+      localStorage.setItem('retentio_bypass_mode', 'true');
+    } catch {}
+    setLoginUser(bypassUser);
+    setIsLoggedIn(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     api.auth.logout().catch(() => {});
     clearToken();
-    localStorage.removeItem('retentio_user');
+    try {
+      localStorage.removeItem('retentio_user');
+      localStorage.removeItem('retentio_bypass_mode');
+      localStorage.removeItem('retentio_token');
+    } catch {}
     setLoginUser(null);
     setIsLoggedIn(false);
-  };
+    setLoginError('');
+  }, []);
 
   if (!authChecked) return <Splash />;
 

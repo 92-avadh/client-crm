@@ -11,6 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import DatePicker from '@/components/ui/DatePicker';
 
 const getDefaultDueDate = () => new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -483,13 +484,11 @@ export const ProjectsAndTasks: React.FC = () => {
                 />
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Due Date *</label>
-                  <input
-                    type="date"
-                    required
+                  <DatePicker
+                    label="Due Date *"
                     value={taskForm.dueDate}
-                    onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                    style={inputFieldStyle}
+                    onChange={(date) => setTaskForm({ ...taskForm, dueDate: date })}
+                    placeholder="Select due date"
                   />
                 </div>
               </div>
@@ -499,10 +498,10 @@ export const ProjectsAndTasks: React.FC = () => {
                 value={taskForm.assigneeId}
                 onChange={(val) => setTaskForm({ ...taskForm, assigneeId: val })}
                 options={allUsers
-                  .filter((u) => u.role === 'team' || u.role === 'admin' || u.role === 'hr')
+                  .filter((u) => u.role !== 'brand')
                   .map((u) => ({
                     value: u.id,
-                    label: `${u.name} (${u.role.toUpperCase()})`,
+                    label: `${u.name} (${u.role})`,
                   }))}
               />
 
@@ -581,12 +580,11 @@ export const ProjectsAndTasks: React.FC = () => {
 
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Start Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
+                    label="Start Date"
                     value={projectForm.startDate}
-                    onChange={(e) => setProjectForm({ ...projectForm, startDate: e.target.value })}
-                    style={inputFieldStyle}
+                    onChange={(date) => setProjectForm({ ...projectForm, startDate: date })}
+                    placeholder="Select start date"
                   />
                 </div>
                 <div>

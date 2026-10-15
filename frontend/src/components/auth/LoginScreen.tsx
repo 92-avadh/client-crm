@@ -7,7 +7,7 @@ import {
   ArrowRight, Sparkles, Users, Receipt, BarChart3, LogIn,
   KeyRound
 } from 'lucide-react';
-import { api } from '../../services/api';
+import { api, setToken } from '../../services/api';
 import { getNaturalErrorMessage } from '../../services/errors';
 
 interface LoginScreenProps {
@@ -160,7 +160,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
     try {
       setLoading(true);
-      await api.auth.verifyOtp({ name: regName, email: regEmail, password: regPassword, company: regCompany, otp: otpValue });
+      const res = await api.auth.verifyOtp({ name: regName, email: regEmail, password: regPassword, company: regCompany, otp: otpValue });
+      if (res?.token) {
+        setToken(res.token);
+      }
       setRegStep('success');
     } catch (err: any) {
       setError(getNaturalErrorMessage(err));
@@ -566,7 +569,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <p className="form-subtitle">Sign in to access your agency dashboard</p>
                 </div>
 
-                <div className="form-fields">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!siEmail.trim()) {
+                      setError('Email address is required.');
+                      return;
+                    }
+                    if (!siPassword) {
+                      setError('Password is required.');
+                      return;
+                    }
+                    setError('');
+                    onLogin(siEmail.trim(), siPassword);
+                  }}
+                  className="form-fields"
+                >
                   <div>
                     <label className="field-label">Email address</label>
                     <div className="field-input-box">
@@ -576,7 +594,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                         placeholder="you@agency.com"
                         value={siEmail}
                         onChange={e => setSiEmail(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && onLogin(siEmail, siPassword)}
                         className="text-input"
                       />
                     </div>
@@ -596,7 +613,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                         placeholder="••••••••"
                         value={siPassword}
                         onChange={e => setSiPassword(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && onLogin(siEmail, siPassword)}
                         className="text-input pr-10"
                       />
                       <button type="button" onClick={() => setShowPwd(!showPwd)} className="toggle-pwd-btn">
@@ -606,15 +622,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   </div>
 
                   <button
-                    type="button"
-                    onClick={() => onLogin(siEmail, siPassword)}
+                    type="submit"
                     disabled={loginLoading}
                     className="btn-primary-action"
                   >
                     {loginLoading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                     <span>{loginLoading ? 'Signing in…' : 'Sign In'}</span>
                   </button>
-                </div>
+                </form>
 
                 <p className="switch-prompt">
                   New agency?{' '}

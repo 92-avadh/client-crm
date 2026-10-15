@@ -15,6 +15,7 @@ import {
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import DatePicker from '@/components/ui/DatePicker';
 
 export interface ExpenseFormData {
   title: string;
@@ -217,8 +218,13 @@ export const ExpenseFormModal: React.FC<Props> = ({
           <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label className="form-label">Payment Date *</label>
-              <input type="date" required value={formData.date}
-                onChange={(e) => onFormChange({ date: e.target.value })} className="input-field" />
+              <DatePicker
+                value={formData.date}
+                onChange={(date) => onFormChange({ date })}
+                required
+                label="Payment Date"
+                placeholder="Select date"
+              />
             </div>
 
             <div>

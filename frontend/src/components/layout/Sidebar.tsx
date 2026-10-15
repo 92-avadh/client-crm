@@ -75,7 +75,7 @@ export const Sidebar: React.FC = () => {
     icon: React.ElementType;
     badge?: string | number;
     badgeVariant?: 'danger' | 'warn' | 'neutral';
-    roles: ('admin' | 'hr' | 'team' | 'brand')[];
+    roles: string[];
   }
 
   const allItems: NavItem[] = [
@@ -99,7 +99,13 @@ export const Sidebar: React.FC = () => {
     { id: 'settings',     label: 'Settings',            icon: Settings,        roles: ['admin','hr','team','brand'] },
   ];
 
-  const items = allItems.filter(i => i.roles.includes(role));
+  const items = allItems.filter((i) => {
+    if (role === 'admin') return true;
+    if (currentUser.permissions && currentUser.permissions.length > 0) {
+      return currentUser.permissions.includes(i.id);
+    }
+    return i.roles.includes(role) || (role !== 'brand' && i.roles.includes('team'));
+  });
   const coreItems = items.filter(i => !['chat','meetings','leads','settings'].includes(i.id));
   const commItems = items.filter(i => ['chat','meetings','leads'].includes(i.id));
   const sysItems  = items.filter(i => i.id === 'settings');

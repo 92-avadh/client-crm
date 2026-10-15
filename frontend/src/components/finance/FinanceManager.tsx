@@ -22,10 +22,22 @@ import {
   X,
   Trash2,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { DatePicker } from '../ui/DatePicker';
 import { DeleteExpenseModal } from '../expenses/ExpenseFormModal';
 import { AnimatedNumber } from '../../hooks/useCountUp';
+import {
+  AlertDialog,
+  AlertDialogPopup,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/animate-ui/components/base/alert-dialog';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -70,6 +82,7 @@ export const FinanceManager: React.FC = () => {
     invoices,
     updatePaymentStatus,
     deletePayment,
+    deletePayments,
     showToast,
     setActiveTab: setNavTab
   } = useApp();
@@ -159,6 +172,72 @@ export const FinanceManager: React.FC = () => {
   const [paymentFilterStatus, setPaymentFilterStatus] = useState<'all' | 'Success' | 'Pending'>('all');
   const [paymentSearch, setPaymentSearch] = useState('');
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+
+  // Filtered payments list — must be defined before selection state
+  const filteredPayments = payments.filter(p => {
+    if (paymentFilterStatus !== 'all' && p.status !== paymentFilterStatus) return false;
+    if (paymentSearch.trim()) {
+      const q = paymentSearch.toLowerCase();
+      const matchBrand = (p.brandName || '').toLowerCase().includes(q);
+      const matchRef = (p.referenceNo || '').toLowerCase().includes(q);
+      const matchMode = (p.mode || '').toLowerCase().includes(q);
+      if (!matchBrand && !matchRef && !matchMode) return false;
+    }
+    return true;
+  });
+
+  /* ── Payment selection state ─────────────────────────────────── */
+  const [selectedPaymentIds, setSelectedPaymentIds] = useState<Set<string>>(new Set());
+  const [showPaymentDeleteDialog, setShowPaymentDeleteDialog] = useState(false);
+  const [isDeletingPayments, setIsDeletingPayments] = useState(false);
+
+  const paymentHeaderCheckboxRef = React.useRef<HTMLInputElement>(null);
+  const allPaymentsSelected = filteredPayments.length > 0 && selectedPaymentIds.size > 0 && filteredPayments.every(p => selectedPaymentIds.has(p.id));
+  const somePaymentsSelected = selectedPaymentIds.size > 0 && filteredPayments.some(p => selectedPaymentIds.has(p.id)) && !allPaymentsSelected;
+
+  React.useEffect(() => {
+    if (paymentHeaderCheckboxRef.current) {
+      paymentHeaderCheckboxRef.current.indeterminate = somePaymentsSelected;
+    }
+  }, [somePaymentsSelected]);
+
+  const handleToggleSelectPayment = (id: string) => {
+    setSelectedPaymentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllPayments = (checked: boolean) => {
+    if (checked) {
+      setSelectedPaymentIds(new Set(filteredPayments.map((p) => p.id)));
+    } else {
+      setSelectedPaymentIds(new Set());
+    }
+  };
+
+  const handleOpenBulkDeletePayments = () => {
+    const selected = filteredPayments.filter((p) => selectedPaymentIds.has(p.id));
+    if (selected.length === 0) return;
+    setShowPaymentDeleteDialog(true);
+  };
+
+  const confirmDeletePayments = async () => {
+    const idsToDelete = Array.from(selectedPaymentIds);
+    if (idsToDelete.length === 0) return;
+    setIsDeletingPayments(true);
+    try {
+      await deletePayments(idsToDelete);
+      setSelectedPaymentIds(new Set());
+      setShowPaymentDeleteDialog(false);
+    } catch (err: any) {
+      showToast(getNaturalErrorMessage(err), 'error');
+    } finally {
+      setIsDeletingPayments(false);
+    }
+  };
 
   const emptyExpenseForm = () => ({
     category: 'Brand Expenses' as ExpenseCategory,
@@ -283,19 +362,6 @@ export const FinanceManager: React.FC = () => {
     const profit = revenue - directExpenses;
     const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
     return { brand: b, revenue, pendingRevenue, directExpenses, profit, margin };
-  });
-
-  // Filtered payments list
-  const filteredPayments = payments.filter(p => {
-    if (paymentFilterStatus !== 'all' && p.status !== paymentFilterStatus) return false;
-    if (paymentSearch.trim()) {
-      const q = paymentSearch.toLowerCase();
-      const matchBrand = (p.brandName || '').toLowerCase().includes(q);
-      const matchRef = (p.referenceNo || '').toLowerCase().includes(q);
-      const matchMode = (p.mode || '').toLowerCase().includes(q);
-      if (!matchBrand && !matchRef && !matchMode) return false;
-    }
-    return true;
   });
 
   return (
@@ -541,10 +607,102 @@ export const FinanceManager: React.FC = () => {
             </div>
           </div>
 
+          {/* Bulk Action Toolbar for Payments */}
+          {isAdmin && selectedPaymentIds.size > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 16px',
+                borderRadius: 12,
+                background: 'var(--bg-raised)',
+                border: '1px solid var(--border-strong)',
+                boxShadow: 'var(--shadow-sm)',
+                animation: 'fadeIn 0.2s ease',
+                flexWrap: 'wrap',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 7,
+                    background: 'var(--solid-btn-bg)',
+                    color: 'var(--solid-btn-text)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontWeight: 800,
+                  }}
+                >
+                  {selectedPaymentIds.size}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {selectedPaymentIds.size} payment record{selectedPaymentIds.size > 1 ? 's' : ''} selected
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  (₹{filteredPayments
+                    .filter((p) => selectedPaymentIds.has(p.id))
+                    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+                    .toLocaleString('en-IN')})
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentIds(new Set())}
+                  className="btn-secondary"
+                  style={{ height: 32, padding: '0 12px', fontSize: 12, borderRadius: 8 }}
+                >
+                  Clear Selection
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenBulkDeletePayments}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    height: 32,
+                    padding: '0 14px',
+                    borderRadius: 8,
+                    background: 'var(--danger-bg)',
+                    color: 'var(--danger-text)',
+                    border: '1px solid var(--danger-border)',
+                    fontSize: 12,
+                    fontWeight: 750,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Trash2 style={{ width: 13, height: 13 }} />
+                  Delete Selected ({selectedPaymentIds.size})
+                </button>
+              </div>
+            </div>
+          )}
+
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
             <table className="data-table">
               <thead>
                 <tr>
+                  {isAdmin && (
+                    <th style={{ width: 42, textAlign: 'center', padding: '0 8px' }}>
+                      <input
+                        ref={paymentHeaderCheckboxRef}
+                        type="checkbox"
+                        checked={allPaymentsSelected}
+                        onChange={(e) => handleSelectAllPayments(e.target.checked)}
+                        title="Select all payments"
+                        style={{ cursor: 'pointer', accentColor: 'var(--text-primary)', width: 16, height: 16 }}
+                      />
+                    </th>
+                  )}
                   <th>Date</th>
                   <th>Client</th>
                   <th>Amount (INR)</th>
@@ -557,7 +715,7 @@ export const FinanceManager: React.FC = () => {
               <tbody>
                 {filteredPayments.length === 0 ? (
                   <tr>
-                    <td colSpan={isAdmin ? 7 : 6} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+                    <td colSpan={isAdmin ? 8 : 7} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
                       No payments found matching the selected filter.
                     </td>
                   </tr>
@@ -565,9 +723,26 @@ export const FinanceManager: React.FC = () => {
                   filteredPayments.map((p) => {
                     const isSuccess = p.status === 'Success';
                     const isPending = p.status === 'Pending';
+                    const isSelected = selectedPaymentIds.has(p.id);
 
                     return (
-                      <tr key={p.id}>
+                      <tr
+                        key={p.id}
+                        style={{
+                          background: isSelected ? 'var(--bg-raised)' : undefined,
+                          transition: 'background 0.15s ease',
+                        }}
+                      >
+                        {isAdmin && (
+                          <td style={{ width: 42, textAlign: 'center', padding: '0 8px' }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelectPayment(p.id)}
+                              style={{ cursor: 'pointer', accentColor: 'var(--text-primary)', width: 16, height: 16 }}
+                            />
+                          </td>
+                        )}
                         <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{p.paymentDate}</td>
                         <td>
                           <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12 }}>{p.brandName}</div>
@@ -1026,13 +1201,12 @@ export const FinanceManager: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Payment Date</label>
-                <input
-                  type="date"
-                  required
+                <DatePicker
                   value={expenseForm.date}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
-                  style={inputFieldStyle}
+                  onChange={(date) => setExpenseForm({ ...expenseForm, date })}
+                  label="Payment Date"
+                  placeholder="Select date"
+                  required
                 />
               </div>
 
@@ -1110,6 +1284,36 @@ export const FinanceManager: React.FC = () => {
         onConfirm={confirmDeleteExpenses}
         deleting={isDeletingExpenses}
       />
+
+      {/* Payment bulk delete confirmation */}
+      <AlertDialog open={showPaymentDeleteDialog} onOpenChange={(o) => { if (!o && !isDeletingPayments) setShowPaymentDeleteDialog(false); }}>
+        <AlertDialogPopup from="bottom">
+          <AlertDialogHeader>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--danger-bg)', color: 'var(--danger-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                <AlertTriangle style={{ width: 19, height: 19 }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                <AlertDialogTitle>Delete {selectedPaymentIds.size} Payment Record{selectedPaymentIds.size > 1 ? 's' : ''}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Permanently remove {selectedPaymentIds.size} selected payment record{selectedPaymentIds.size > 1 ? 's' : ''}. Linked invoice balances will be recalculated.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingPayments}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeletePayments}
+              disabled={isDeletingPayments}
+              style={{ background: 'var(--danger-text)', color: 'var(--solid-btn-text)', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: isDeletingPayments ? 0.7 : 1, cursor: isDeletingPayments ? 'not-allowed' : 'pointer' }}
+            >
+              {isDeletingPayments && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
+              Yes, Delete {selectedPaymentIds.size} Payment Record{selectedPaymentIds.size > 1 ? 's' : ''}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogPopup>
+      </AlertDialog>
     </div>
   );
 };

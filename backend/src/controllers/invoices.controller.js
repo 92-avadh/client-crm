@@ -59,4 +59,17 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Invoice deleted successfully', invoice: deleted });
 });
 
-module.exports = { list, get, create, updateStatus, pdfData, remove };
+/** POST /api/invoices/bulk-delete — batch delete invoices. */
+const bulkRemove = asyncHandler(async (req, res) => {
+  if (!['admin', 'hr', 'manager'].includes(req.user.role)) {
+    return res.status(403).json({ error: "You don't have permission to delete invoices." });
+  }
+  const { ids } = req.body || {};
+  if (!Array.isArray(ids) || !ids.length) {
+    return res.status(400).json({ error: 'Please provide an array of invoice IDs to delete.' });
+  }
+  const count = await invoices.deleteInvoices(req.user, ids);
+  res.json({ success: true, count, message: `${count} invoice(s) deleted successfully` });
+});
+
+module.exports = { list, get, create, updateStatus, pdfData, remove, bulkRemove };

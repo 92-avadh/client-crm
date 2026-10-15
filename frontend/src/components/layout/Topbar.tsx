@@ -15,8 +15,12 @@ import {
   LogOut,
   Menu,
   Moon,
-  Sun
+  Sun,
+  Camera,
+  Loader2,
+  Trash2,
 } from 'lucide-react';
+import { processImageFile } from '../team/imageUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DropdownMenu,
@@ -49,12 +53,50 @@ export const Topbar: React.FC = () => {
     theme,
     toggleTheme,
     toggleMobileSidebar,
+    updateTeamMember,
+    showToast,
   } = useApp();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [search, setSearch] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [photoAction, setPhotoAction] = useState<'uploading' | 'removing' | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const isPhotoBusy = Boolean(photoAction);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || photoAction) return;
+    try {
+      setPhotoAction('uploading');
+      const result = await processImageFile(file);
+      if (!result.ok) {
+        showToast(result.error || 'Could not process that image', 'error');
+        return;
+      }
+      await updateTeamMember(currentUser.id, { avatar: result.dataUrl });
+      showToast('Profile photo updated successfully!', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update profile photo', 'error');
+    } finally {
+      setPhotoAction(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    if (photoAction) return;
+    try {
+      setPhotoAction('removing');
+      await updateTeamMember(currentUser.id, { avatar: '' });
+      showToast('Profile photo removed', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to remove profile photo', 'error');
+    } finally {
+      setPhotoAction(null);
+    }
+  };
 
   const { confirm, element: confirmDialog } = useConfirm();
 
@@ -105,9 +147,17 @@ export const Topbar: React.FC = () => {
 
   const roleLabel: Record<string, string> = useMemo(() => ({
     admin: 'Admin',
-    hr: 'Manager',
-    team: 'Team',
+    hr: 'HR Manager',
+    team: 'Team Member',
     brand: 'Client',
+    project_manager: 'Project Manager',
+    operations_manager: 'Operations',
+    finance: 'Finance Specialist',
+    sales: 'Sales & BD',
+    marketing: 'Marketing Strategist',
+    account_executive: 'Account Exec',
+    creative_designer: 'Creative Designer',
+    developer: 'Developer',
   }), []);
 
   // Search query calculations
@@ -783,23 +833,62 @@ export const Topbar: React.FC = () => {
               onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border-strong, #c8c8c8)')}
               onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border, #e2e2e2)')}
             >
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: 6,
-                  objectFit: 'cover',
-                  border: '1px solid var(--border-strong, #d4d4d4)',
-                }}
-              />
+              <div style={{ position: 'relative', width: 26, height: 26, flexShrink: 0 }}>
+                {currentUser.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 6,
+                      objectFit: 'cover',
+                      border: '1px solid var(--border-strong, #d4d4d4)',
+                      filter: isPhotoBusy ? 'blur(1px) brightness(0.6)' : 'none',
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 6,
+                      background: 'var(--brand-green, #059639)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 12,
+                      fontWeight: 750,
+                      filter: isPhotoBusy ? 'blur(1px) brightness(0.6)' : 'none',
+                    }}
+                  >
+                    {(currentUser.name || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                {isPhotoBusy && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: 6,
+                      background: 'rgba(0,0,0,0.65)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 2,
+                    }}
+                  >
+                    <Loader2 style={{ width: 13, height: 13, color: '#4ade80' }} className="animate-spin" />
+                  </div>
+                )}
+              </div>
               <div style={{ textAlign: 'left', lineHeight: 1.15 }}>
                 <div style={{ fontSize: 13, fontWeight: 750, color: 'var(--text-primary, #0a0a0a)' }}>
                   {currentUser.name.split(' ')[0]}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted, #888888)', marginTop: 2 }}>
-                  {roleLabel[currentUser.role]}
+                  {roleLabel[currentUser.role] || currentUser.role}
                 </div>
               </div>
               <ChevronDown style={{ width: 14, height: 14, color: 'var(--text-muted, #888888)' }} />
@@ -809,17 +898,81 @@ export const Topbar: React.FC = () => {
           <DropdownMenuContent align="end" sideOffset={8} className="w-[min(268px,calc(100vw-32px))] p-0">
             {/* User info banner */}
             <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid var(--border, #f0f0f0)', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 10,
-                  objectFit: 'cover',
-                  border: '1px solid var(--border, #e2e2e2)',
-                }}
-              />
+              <div
+                style={{ position: 'relative', cursor: isPhotoBusy ? 'not-allowed' : 'pointer', flexShrink: 0 }}
+                onClick={() => !isPhotoBusy && photoInputRef.current?.click()}
+                title={isPhotoBusy ? 'Updating photo...' : 'Click to change profile photo'}
+              >
+                {currentUser.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 10,
+                      objectFit: 'cover',
+                      border: '1.5px solid var(--border-strong, #d4d4d4)',
+                      display: 'block',
+                      filter: isPhotoBusy ? 'blur(1px) brightness(0.6)' : 'none',
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 10,
+                      background: 'var(--brand-green, #059639)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 18,
+                      fontWeight: 750,
+                      filter: isPhotoBusy ? 'blur(1px) brightness(0.6)' : 'none',
+                    }}
+                  >
+                    {(currentUser.name || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                {isPhotoBusy ? (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: 10,
+                      background: 'rgba(6, 26, 18, 0.75)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 2,
+                    }}
+                  >
+                    <Loader2 style={{ width: 16, height: 16, color: '#4ade80' }} className="animate-spin" />
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: -3,
+                      right: -3,
+                      background: 'var(--solid-btn-bg, #0a0a0a)',
+                      color: 'var(--solid-btn-text, #ffffff)',
+                      borderRadius: '50%',
+                      width: 18,
+                      height: 18,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '2px solid var(--bg-card)',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    <Camera style={{ width: 10, height: 10 }} />
+                  </div>
+                )}
+              </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div className="truncate" style={{ fontSize: 14, fontWeight: 750, color: 'var(--text-primary, #0a0a0a)' }}>
                   {currentUser.name}
@@ -837,12 +990,57 @@ export const Topbar: React.FC = () => {
 
             <DropdownMenuGroup style={{ padding: 6 }}>
               <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  if (!isPhotoBusy) photoInputRef.current?.click();
+                }}
+                style={{ fontSize: 13.5, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: isPhotoBusy ? 'not-allowed' : 'pointer' }}
+                disabled={isPhotoBusy}
+              >
+                {photoAction === 'uploading' ? (
+                  <Loader2 style={{ width: 15, height: 15, color: '#22c55e' }} className="animate-spin" />
+                ) : (
+                  <Camera style={{ width: 15, height: 15 }} />
+                )}
+                <span>{photoAction === 'uploading' ? 'Uploading photo…' : 'Change Profile Photo'}</span>
+              </DropdownMenuItem>
+
+              {currentUser.avatar && (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={async (e) => {
+                    e.preventDefault();
+                    if (!isPhotoBusy) await handlePhotoRemove();
+                  }}
+                  disabled={isPhotoBusy}
+                  style={{ fontSize: 13.5, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: isPhotoBusy ? 'not-allowed' : 'pointer' }}
+                >
+                  {photoAction === 'removing' ? (
+                    <Loader2 style={{ width: 15, height: 15 }} className="animate-spin" />
+                  ) : (
+                    <Trash2 style={{ width: 15, height: 15 }} />
+                  )}
+                  <span>{photoAction === 'removing' ? 'Removing photo…' : 'Remove Profile Photo'}</span>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem
                 onSelect={() => setActiveTab('settings')}
                 style={{ fontSize: 13.5, padding: '10px 12px' }}
+                disabled={isPhotoBusy}
               >
                 Settings &amp; Account
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              disabled={isPhotoBusy}
+              onChange={handlePhotoUpload}
+            />
 
             <DropdownMenuSeparator style={{ margin: 0 }} />
 
@@ -859,6 +1057,58 @@ export const Topbar: React.FC = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Full-screen loader overlay */}
+      {isPhotoBusy && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            animation: 'fadeIn 0.15s ease-out',
+            pointerEvents: 'auto',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 14,
+              padding: '24px 36px',
+              borderRadius: 18,
+              background: 'var(--bg-card, #141414)',
+              border: '1px solid var(--border, rgba(255, 255, 255, 0.12))',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65)',
+            }}
+          >
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: '50%',
+                background: 'rgba(34, 197, 94, 0.14)',
+                border: '1.5px solid rgba(34, 197, 94, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#22c55e',
+              }}
+            >
+              <Loader2 style={{ width: 28, height: 28 }} className="animate-spin" />
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary, #ffffff)' }}>
+              {photoAction === 'removing' ? 'Removing photo…' : 'Updating profile photo…'}
+            </span>
+          </div>
+        </div>
+      )}
 
       {confirmDialog}
     </header>

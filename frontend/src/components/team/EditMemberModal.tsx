@@ -3,7 +3,11 @@ import { X, Camera, Eye, EyeOff } from 'lucide-react';
 import type { User } from '../../types';
 import { useConfirm } from '../../hooks/useConfirm';
 import { isDirty } from '../../hooks/isDirty';
-import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { RoleSelector } from './RoleSelector';
+import { AVATAR_PRESETS } from './teamUi';
+
+import { PermissionsSelector } from './PermissionsSelector';
+import { getDefaultPermissionsForRole } from './permissionsConfig';
 
 export interface EditMemberForm {
   name: string;
@@ -13,6 +17,7 @@ export interface EditMemberForm {
   role: string;
   password: string;
   avatar: string;
+  permissions?: string[];
 }
 
 interface Props {
@@ -72,7 +77,7 @@ export const EditMemberModal: React.FC<Props> = ({
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
       onClick={(e) => { if (e.target === e.currentTarget) requestClose(); }}
     >
-      <div style={{ background: 'var(--bg-card)', borderRadius: 20, width: '100%', maxWidth: 540, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 20, width: '100%', maxWidth: 620, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 26px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div>
@@ -113,6 +118,31 @@ export const EditMemberModal: React.FC<Props> = ({
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickFile(f); e.target.value = ''; }} />
             </div>
 
+            {/* Realistic Avatars Presets */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Quick picks:</span>
+              {AVATAR_PRESETS.map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt={`Realistic Avatar ${i + 1}`}
+                  onClick={() => onFormChange({ avatar: url })}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    cursor: 'pointer',
+                    border: form.avatar === url ? '2.5px solid var(--border-focus)' : '1.5px solid var(--border)',
+                    boxShadow: form.avatar === url ? '0 0 0 2px rgba(56, 189, 248, 0.35)' : 'var(--shadow-xs)',
+                    transform: form.avatar === url ? 'scale(1.08)' : 'scale(1)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title={`Realistic Corporate Avatar ${i + 1}`}
+                />
+              ))}
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={labelStyle}>Full Name</label>
               <input type="text" value={form.name} onChange={(e) => onFormChange({ name: e.target.value })} style={inputStyle} />
@@ -134,15 +164,17 @@ export const EditMemberModal: React.FC<Props> = ({
               </div>
             </div>
 
-            <AnimatedSelect
+            <RoleSelector
               label="Role"
-              value={form.role}
-              onChange={(v) => onFormChange({ role: v })}
-              options={[
-                { value: 'team', label: 'Team Member' },
-                { value: 'hr', label: 'HR Manager' },
-                { value: 'admin', label: 'Admin' },
-              ]}
+              required
+              role={form.role}
+              allowAdmin={true}
+              onChange={(newRole) => {
+                onFormChange({
+                  role: newRole,
+                  permissions: form.permissions && form.permissions.length > 0 ? form.permissions : getDefaultPermissionsForRole(newRole),
+                });
+              }}
             />
 
             {/* Password reset */}
@@ -164,6 +196,15 @@ export const EditMemberModal: React.FC<Props> = ({
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
+            </div>
+
+            {/* Modular Dashboard Permissions */}
+            <div style={{ marginTop: 4, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+              <PermissionsSelector
+                selectedPermissions={form.permissions ?? (member.permissions && member.permissions.length > 0 ? member.permissions : getDefaultPermissionsForRole(form.role))}
+                onChange={(perms) => onFormChange({ permissions: perms })}
+                role={form.role}
+              />
             </div>
           </div>
 

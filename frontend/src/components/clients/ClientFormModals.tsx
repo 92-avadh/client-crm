@@ -19,7 +19,7 @@ export interface ClientFormData {
   pan: string;
   serviceDetails: string;
   monthlyFee: string;
-  billingCycleDay: number | string;
+  billingCycleDay: string;
   paymentStatus: 'Paid' | 'Pending' | string;
   status?: string;
   notes?: string;
@@ -32,10 +32,50 @@ const STATUS_OPTIONS = [
   { value: 'Churned', label: 'Churned' },
 ];
 
+export const INITIAL_STATUS_OPTIONS = [
+  { value: 'Active', label: 'Active' },
+  { value: 'Inactive', label: 'Inactive' },
+  { value: 'Paused', label: 'Paused' },
+  { value: 'Churned', label: 'Churned' },
+];
+
+export const SERVICE_OPTIONS = [
+  { value: 'Web Development & Maintenance', label: 'Web Development & Maintenance' },
+  { value: 'Performance Marketing & Ads', label: 'Performance Marketing & Ads' },
+  { value: 'SEO & Content Marketing', label: 'SEO & Content Marketing' },
+  { value: 'Social Media Management', label: 'Social Media Management' },
+  { value: 'Brand Strategy & UI/UX Design', label: 'Brand Strategy & UI/UX Design' },
+  { value: 'Others', label: 'Others' },
+];
+
 const PAYMENT_OPTIONS = [
   { value: 'Paid', label: 'Paid' },
   { value: 'Pending', label: 'Pending' },
 ];
+
+const BILLING_CYCLE_OPTIONS = [
+  { value: '1', label: '1st of every month' },
+  { value: '2', label: '2nd of every month' },
+  { value: '3', label: '3rd of every month' },
+  { value: '5', label: '5th of every month' },
+  { value: '10', label: '10th of every month' },
+  { value: '15', label: '15th of every month' },
+  { value: '20', label: '20th of every month' },
+  { value: '25', label: '25th of every month' },
+  { value: '31', label: 'Last day of month' },
+];
+
+const BILLING_CYCLE_HELPER: Record<string, string> = {
+  '1': '1st',
+  '2': '2nd',
+  '3': '3rd',
+  '5': '5th',
+  '10': '10th',
+  '15': '15th',
+  '20': '20th',
+  '25': '25th',
+  '31': 'last day',
+};
 
 const modalShell: React.CSSProperties = {
   background: 'var(--bg-card)', borderRadius: 18, width: '100%',
@@ -69,21 +109,52 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
   const { confirm, element: confirmDialog } = useConfirm();
   const baseline = React.useRef<ClientFormData | null>(null);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [serviceOption, setServiceOption] = useState<string>('');
+  const [customServiceText, setCustomServiceText] = useState<string>('');
 
   // Capture the pristine form the first time this modal opens
   React.useEffect(() => {
     if (open) {
       baseline.current = formData;
       setTouched({});
+      const current = String(formData.serviceDetails || '').trim();
+      const match = SERVICE_OPTIONS.find(o => o.value !== 'Others' && o.value.toLowerCase() === current.toLowerCase());
+      if (match) {
+        setServiceOption(match.value);
+        setCustomServiceText('');
+      } else if (current) {
+        setServiceOption('Others');
+        setCustomServiceText(current);
+      } else {
+        setServiceOption('');
+        setCustomServiceText('');
+      }
     } else {
       baseline.current = null;
       setTouched({});
+      setServiceOption('');
+      setCustomServiceText('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const handleBlur = (field: keyof ClientFormData) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const handleServiceOptionChange = (opt: string) => {
+    setServiceOption(opt);
+    setTouched(prev => ({ ...prev, serviceDetails: true }));
+    if (opt === 'Others') {
+      onFormChange({ serviceDetails: customServiceText });
+    } else {
+      onFormChange({ serviceDetails: opt });
+    }
+  };
+
+  const handleCustomServiceChange = (text: string) => {
+    setCustomServiceText(text);
+    onFormChange({ serviceDetails: text });
   };
 
   const getFieldError = (field: keyof ClientFormData): string => {
@@ -119,8 +190,14 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
         return !String(formData.state || '').trim() ? 'State is required' : '';
       case 'pincode':
         return !String(formData.pincode || '').trim() ? 'Pincode is required' : '';
-      case 'serviceDetails':
-        return !String(formData.serviceDetails || '').trim() ? 'Service details are required' : '';
+      case 'serviceDetails': {
+        if (!serviceOption) return 'Service details are required';
+        if (serviceOption === 'Others' && !String(formData.serviceDetails || '').trim()) {
+          return 'Please enter the service details';
+        }
+        if (!String(formData.serviceDetails || '').trim()) return 'Service details are required';
+        return '';
+      }
       case 'monthlyFee':
         return !String(formData.monthlyFee || '').trim() ? 'Monthly fee is required' : '';
       default:
@@ -209,19 +286,55 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
                 placeholder="AAAAA0000A" onChange={(v) => onFormChange({ pan: v.toUpperCase() })} />
             </FieldRow>
 
-            <FormField label="Service Details" required value={formData.serviceDetails} error={getFieldError('serviceDetails')}
-              onBlur={() => handleBlur('serviceDetails')} placeholder="e.g. Social media management, performance marketing"
-              onChange={(v) => onFormChange({ serviceDetails: v })} />
+            <div>
+              <FormSelect
+                label="Service Details"
+                required
+                value={serviceOption}
+                placeholder="Select service..."
+                options={SERVICE_OPTIONS}
+                error={getFieldError('serviceDetails')}
+                onChange={handleServiceOptionChange}
+              />
+              {serviceOption === 'Others' && (
+                <div style={{ marginTop: 12 }}>
+                  <FormField
+                    label="Enter Service"
+                    required
+                    value={customServiceText}
+                    error={getFieldError('serviceDetails')}
+                    onBlur={() => handleBlur('serviceDetails')}
+                    placeholder="Enter custom service details..."
+                    onChange={handleCustomServiceChange}
+                  />
+                </div>
+              )}
+            </div>
 
             <FieldRow>
               <FormField label="Monthly Retainer (₹)" required value={formData.monthlyFee} error={getFieldError('monthlyFee')}
                 onBlur={() => handleBlur('monthlyFee')} type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
-              <FormField label="Billing Cycle Day" value={formData.billingCycleDay ?? ''}
-                type="number" placeholder="1-31" onChange={(v) => onFormChange({ billingCycleDay: v === '' ? '' : Number(v) })} />
+              <div>
+                <FormSelect label="Billing Cycle Day" value={formData.billingCycleDay} required
+                  options={BILLING_CYCLE_OPTIONS} placeholder="Select billing day..."
+                  onChange={(v) => onFormChange({ billingCycleDay: v })} />
+                {formData.billingCycleDay && BILLING_CYCLE_HELPER[formData.billingCycleDay] && (
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                    Invoice will be drafted on the {BILLING_CYCLE_HELPER[formData.billingCycleDay]} of every month
+                  </span>
+                )}
+              </div>
             </FieldRow>
 
-            <FormSelect label="Initial Payment Status" value={formData.paymentStatus}
-              options={PAYMENT_OPTIONS} onChange={(v) => onFormChange({ paymentStatus: v as any })} />
+            <FormSelect
+              label="Initial Payment Status"
+              value={formData.status || 'Active'}
+              options={INITIAL_STATUS_OPTIONS}
+              onChange={(v) => onFormChange({
+                status: v,
+                paymentStatus: v === 'Active' ? 'Paid' : 'Pending',
+              })}
+            />
           </div>
 
           <div style={footerStyle}>
@@ -256,21 +369,52 @@ export const EditClientModal: React.FC<EditProps> = ({
   const { confirm, element: confirmDialog } = useConfirm();
   const baseline = React.useRef<ClientFormData | null>(null);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [serviceOption, setServiceOption] = useState<string>('');
+  const [customServiceText, setCustomServiceText] = useState<string>('');
 
   // Snapshot the loaded client when the modal opens
   React.useEffect(() => {
     if (open) {
       baseline.current = formData;
       setTouched({});
+      const current = String(formData.serviceDetails || '').trim();
+      const match = SERVICE_OPTIONS.find(o => o.value !== 'Others' && o.value.toLowerCase() === current.toLowerCase());
+      if (match) {
+        setServiceOption(match.value);
+        setCustomServiceText('');
+      } else if (current) {
+        setServiceOption('Others');
+        setCustomServiceText(current);
+      } else {
+        setServiceOption('');
+        setCustomServiceText('');
+      }
     } else {
       baseline.current = null;
       setTouched({});
+      setServiceOption('');
+      setCustomServiceText('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const handleBlur = (field: keyof ClientFormData) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const handleServiceOptionChange = (opt: string) => {
+    setServiceOption(opt);
+    setTouched(prev => ({ ...prev, serviceDetails: true }));
+    if (opt === 'Others') {
+      onFormChange({ serviceDetails: customServiceText });
+    } else {
+      onFormChange({ serviceDetails: opt });
+    }
+  };
+
+  const handleCustomServiceChange = (text: string) => {
+    setCustomServiceText(text);
+    onFormChange({ serviceDetails: text });
   };
 
   const getFieldError = (field: keyof ClientFormData): string => {
@@ -384,14 +528,39 @@ export const EditClientModal: React.FC<EditProps> = ({
                 onChange={(v) => onFormChange({ pan: v.toUpperCase() })} />
             </FieldRow>
 
-            <FormField label="Service Details" value={formData.serviceDetails}
-              placeholder="e.g. Monthly CA Compliance" onChange={(v) => onFormChange({ serviceDetails: v })} />
+            <div>
+              <FormSelect
+                label="Service Details"
+                value={serviceOption}
+                placeholder="Select service..."
+                options={SERVICE_OPTIONS}
+                onChange={handleServiceOptionChange}
+              />
+              {serviceOption === 'Others' && (
+                <div style={{ marginTop: 12 }}>
+                  <FormField
+                    label="Enter Service"
+                    value={customServiceText}
+                    placeholder="Enter custom service details..."
+                    onChange={handleCustomServiceChange}
+                  />
+                </div>
+              )}
+            </div>
 
             <FieldRow>
               <FormField label="Monthly Retainer (₹)" value={formData.monthlyFee}
                 type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
-              <FormField label="Billing Cycle Day" value={formData.billingCycleDay ?? ''}
-                type="number" placeholder="1-31" onChange={(v) => onFormChange({ billingCycleDay: v === '' ? '' : Number(v) })} />
+              <div>
+                <FormSelect label="Billing Cycle Day" value={formData.billingCycleDay}
+                  options={BILLING_CYCLE_OPTIONS} placeholder="Select billing day..."
+                  onChange={(v) => onFormChange({ billingCycleDay: v })} />
+                {formData.billingCycleDay && BILLING_CYCLE_HELPER[formData.billingCycleDay] && (
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                    Invoice will be drafted on the {BILLING_CYCLE_HELPER[formData.billingCycleDay]} of every month
+                  </span>
+                )}
+              </div>
             </FieldRow>
 
             <FormField label="Internal Notes" value={formData.notes || ''}

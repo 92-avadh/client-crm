@@ -22,9 +22,10 @@ const create = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .requiredString('name', { max: 150, label: 'Name' })
     .email('email', { required: true, label: 'Email' })
-    .oneOf('role', users.USER_ROLES, { required: true, label: 'Role' })
+    .requiredString('role', { max: 100, label: 'Role' })
     .optionalString('phone', { max: 40, label: 'Phone' })
     .optionalString('designation', { max: 200, label: 'Designation' })
+    .array('permissions', { ofStrings: true, max: 50, label: 'Permissions' })
     .check(
       !req.body?.password || String(req.body.password).length >= 8,
       'Password must be at least 8 characters.'
@@ -44,7 +45,8 @@ const update = asyncHandler(async (req, res) => {
     .email('email', { label: 'Email' })
     .optionalString('phone', { max: 40, label: 'Phone' })
     .optionalString('designation', { max: 200, label: 'Designation' })
-    .oneOf('role', users.USER_ROLES, { label: 'Role' })
+    .optionalString('role', { max: 100, label: 'Role' })
+    .array('permissions', { ofStrings: true, max: 50, label: 'Permissions' })
     .check(
       !req.body?.password || String(req.body.password).length >= 8,
       'Password must be at least 8 characters.'

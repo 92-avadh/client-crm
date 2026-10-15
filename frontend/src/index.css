@@ -522,6 +522,16 @@ input, select, textarea {
   appearance: none;
 }
 
+/* Restore checkbox appearance — the global appearance:none above hides them */
+input[type="checkbox"] {
+  -webkit-appearance: checkbox;
+  appearance: checkbox;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--brand-green, #059639);
+}
+
 /* Number input spinners — hide for cleaner look */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

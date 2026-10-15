@@ -14,6 +14,7 @@ import {
   XCircle,
   X
 } from 'lucide-react';
+import DatePicker from '@/components/ui/DatePicker';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -259,12 +260,12 @@ export const LeadsPipeline: React.FC = () => {
                 </div>
                 <div>
                   <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Follow-up Date</label>
-                  <input
-                    type="date"
-                    value={leadForm.followUpDate}
-                    onChange={(e) => setLeadForm({ ...leadForm, followUpDate: e.target.value })}
-                    style={inputFieldStyle}
-                  />
+                  <DatePicker
+                                      value={leadForm.followUpDate}
+                                      onChange={(date) => setLeadForm({ ...leadForm, followUpDate: date })}
+                                      label="Follow-up Date"
+                                      placeholder="Select follow-up date"
+                                    />
                 </div>
               </div>
 

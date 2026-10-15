@@ -176,7 +176,7 @@ async function initiateRazorpay(invoiceId) {
 }
 
 async function deletePayment(user, id) {
-  if (user && !['admin', 'hr'].includes(user.role)) {
+  if (user && !['admin', 'hr', 'manager'].includes(user.role)) {
     const err = new Error('Only admin or manager can delete payments');
     err.status = 403;
     throw err;
@@ -229,7 +229,17 @@ async function deletePayment(user, id) {
   }
 }
 
+async function deletePayments(user, ids) {
+  if (!Array.isArray(ids) || !ids.length) return 0;
+  let deletedCount = 0;
+  for (const id of ids) {
+    const deleted = await deletePayment(user, id);
+    if (deleted) deletedCount++;
+  }
+  return deletedCount;
+}
+
 module.exports = {
   PAYMENT_MODES, PAYMENT_STATUSES,
-  mapPayment, recordPayment, listPayments, updatePayment, initiateRazorpay, deletePayment,
+  mapPayment, recordPayment, listPayments, updatePayment, initiateRazorpay, deletePayment, deletePayments,
 };

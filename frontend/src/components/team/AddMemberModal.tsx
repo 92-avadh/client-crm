@@ -3,7 +3,10 @@ import { X, Camera, Copy, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import { AVATAR_PRESETS } from './teamUi';
 import { useConfirm } from '../../hooks/useConfirm';
 import { isDirty } from '../../hooks/isDirty';
-import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { RoleSelector } from './RoleSelector';
+
+import { PermissionsSelector } from './PermissionsSelector';
+import { getDefaultPermissionsForRole } from './permissionsConfig';
 
 export interface AddMemberForm {
   name: string;
@@ -13,6 +16,7 @@ export interface AddMemberForm {
   role: string;
   password: string;
   avatar: string;
+  permissions?: string[];
 }
 
 interface Props {
@@ -79,7 +83,7 @@ export const AddMemberModal: React.FC<Props> = ({
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
       onClick={(e) => { if (e.target === e.currentTarget) requestClose(); }}
     >
-      <div style={{ background: 'var(--bg-card)', borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 20, width: '100%', maxWidth: 620, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 26px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div>
@@ -160,12 +164,27 @@ export const AddMemberModal: React.FC<Props> = ({
                 </div>
 
                 {/* Presets */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Quick picks:</span>
                   {AVATAR_PRESETS.map((url, i) => (
-                    <img key={i} src={url} alt={`Preset ${i + 1}`}
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`Realistic Avatar ${i + 1}`}
                       onClick={() => onFormChange({ avatar: url })}
-                      style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer', border: form.avatar === url ? '2px solid var(--border-focus)' : '1px solid var(--border)' }} />
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        cursor: 'pointer',
+                        border: form.avatar === url ? '2.5px solid var(--border-focus)' : '1.5px solid var(--border)',
+                        boxShadow: form.avatar === url ? '0 0 0 2px rgba(56, 189, 248, 0.35)' : 'var(--shadow-xs)',
+                        transform: form.avatar === url ? 'scale(1.08)' : 'scale(1)',
+                        transition: 'all 0.15s ease',
+                      }}
+                      title={`Realistic Corporate Avatar ${i + 1}`}
+                    />
                   ))}
                 </div>
               </div>
@@ -184,15 +203,17 @@ export const AddMemberModal: React.FC<Props> = ({
                   <label style={labelStyle}>Phone</label>
                   <input type="tel" value={form.phone} onChange={(e) => onFormChange({ phone: e.target.value })} style={inputStyle} />
                 </div>
-                <AnimatedSelect
+                <RoleSelector
                   label="Role"
                   required
-                  value={form.role}
-                  onChange={(v) => onFormChange({ role: v })}
-                  options={[
-                    { value: 'team', label: 'Team Member' },
-                    { value: 'hr', label: 'HR Manager' },
-                  ]}
+                  role={form.role}
+                  allowAdmin={false}
+                  onChange={(newRole) => {
+                    onFormChange({
+                      role: newRole,
+                      permissions: getDefaultPermissionsForRole(newRole),
+                    });
+                  }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -207,6 +228,15 @@ export const AddMemberModal: React.FC<Props> = ({
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Sparkles style={{ width: 11, height: 11 }} /> Auto-generated — share it with the member after saving.
                 </span>
+              </div>
+
+              {/* Modular Dashboard Permissions */}
+              <div style={{ marginTop: 4, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                <PermissionsSelector
+                  selectedPermissions={form.permissions ?? getDefaultPermissionsForRole(form.role)}
+                  onChange={(perms) => onFormChange({ permissions: perms })}
+                  role={form.role}
+                />
               </div>
             </div>
 

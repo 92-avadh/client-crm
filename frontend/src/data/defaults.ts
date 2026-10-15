@@ -36,5 +36,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
     status: 'Active'
   },
   retentionThresholdDays: 15,
-  whatsappClickToShareEnabled: false
+  whatsappClickToShareEnabled: false,
+  currency: 'INR',
+  currencySymbol: '₹',
+  industry: '',
+  teamSize: '',
+  goals: [],
+  dashboardLayout: 'default',
+  dashboardFocus: 'balanced',
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Building2, ChevronRight, Edit3, UserX, Loader2 } from 'lucide-react';
+import { Mail, Building2, ChevronRight, Edit3, UserX, Loader2, MessageSquare } from 'lucide-react';
 import type { User } from '../../types';
 import { Avatar, RoleBadge } from './teamUi';
 
@@ -12,13 +12,14 @@ interface Props {
   onView: (user: User) => void;
   onEdit: (user: User) => void;
   onDeactivate: (user: User) => void;
+  onDirectChat?: (userId: string) => void;
 }
 
 const GRID = '2.3fr 1.1fr 0.9fr 0.8fr 1.5fr 0.9fr';
 
 /** Team members table (horizontally scrollable on mobile). */
 export const TeamTable: React.FC<Props> = ({
-  users, currentUserId, isAdmin, deactivatingId, getBrandCount, onView, onEdit, onDeactivate,
+  users, currentUserId, isAdmin, deactivatingId, getBrandCount, onView, onEdit, onDeactivate, onDirectChat,
 }) => (
   <div className="table-scroll" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
     <div className="rg-team" style={{ display: 'grid', gridTemplateColumns: GRID, gap: 12, padding: '12px 24px', background: 'var(--bg-raised)', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
@@ -66,6 +67,28 @@ export const TeamTable: React.FC<Props> = ({
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+              {user.id !== currentUserId && onDirectChat && (
+                <button
+                  onClick={() => onDirectChat(user.id)}
+                  title={`Chat with ${user.name}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '7px 11px',
+                    background: 'var(--brand-green-subtle, #ecfdf5)',
+                    color: 'var(--brand-green, #059639)',
+                    border: '1px solid var(--brand-green-subtle, #a7f3d0)',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <MessageSquare style={{ width: 13, height: 13 }} /> Chat
+                </button>
+              )}
               <button onClick={() => onView(user)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'var(--bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
                 View <ChevronRight style={{ width: 13, height: 13 }} />
               </button>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { api } from '../../services/api';
 import { getNaturalErrorMessage } from '../../services/errors';
 import type { User } from '../../types';
 import { Users, UserPlus, UserCheck, Shield, Briefcase, UserX, Loader2 } from 'lucide-react';
@@ -21,12 +20,16 @@ import {
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
 
+import { getDefaultPermissionsForRole } from './permissionsConfig';
+
 const emptyForm = (): AddMemberForm => ({
   name: '', email: '', phone: '', designation: '', role: 'team', password: '', avatar: '',
+  permissions: getDefaultPermissionsForRole('team'),
 });
 
 const emptyEditForm = (): EditMemberForm => ({
   name: '', email: '', phone: '', designation: '', role: 'team', password: '', avatar: '',
+  permissions: getDefaultPermissionsForRole('team'),
 });
 
 /**
@@ -36,7 +39,17 @@ const emptyEditForm = (): EditMemberForm => ({
  * modals are separate components.
  */
 export const TeamManager: React.FC = () => {
-  const { currentUser, allUsers, brands, showToast, loadDomain } = useApp() as any;
+  const {
+    currentUser,
+    allUsers,
+    brands,
+    showToast,
+    loadDomain,
+    startDirectChat,
+    addTeamMember,
+    updateTeamMember,
+    deactivateTeamMember,
+  } = useApp() as any;
   const isAdmin = currentUser.role === 'admin';
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -58,7 +71,7 @@ export const TeamManager: React.FC = () => {
   const totalMembers = teamUsers.length;
   const activeMembers = teamUsers.filter((u: any) => u.isActive !== false).length;
   const adminHrCount = teamUsers.filter((u) => u.role === 'admin' || u.role === 'hr').length;
-  const teamMemberCount = teamUsers.filter((u) => u.role === 'team').length;
+  const teamMemberCount = teamUsers.filter((u) => u.role !== 'admin' && u.role !== 'hr').length;
 
   const getBrandCount = (userId: string) =>
     brands.filter((b: any) => b.assignedMemberIds?.includes(userId)).length;
@@ -78,28 +91,26 @@ export const TeamManager: React.FC = () => {
   };
 
   const handleUpdateAvatar = async (file: File) => {
-    if (!selectedMember) return;
-    await pickPhoto(file, async (dataUrl) => {
-      try {
-        setUpdatingAvatar(true);
-        await api.users.update(selectedMember.id, { avatar: dataUrl });
-        await loadDomain('team');
+    if (!selectedMember || updatingAvatar) return;
+    try {
+      setUpdatingAvatar(true);
+      await pickPhoto(file, async (dataUrl) => {
+        await updateTeamMember(selectedMember.id, { avatar: dataUrl });
         setSelectedMember((prev) => (prev ? { ...prev, avatar: dataUrl } : null));
         showToast('Profile photo updated successfully', 'success');
-      } catch (err: any) {
-        showToast(getNaturalErrorMessage(err), 'error');
-      } finally {
-        setUpdatingAvatar(false);
-      }
-    });
+      });
+    } catch (err: any) {
+      showToast(getNaturalErrorMessage(err), 'error');
+    } finally {
+      setUpdatingAvatar(false);
+    }
   };
 
   const handleRemoveAvatar = async () => {
-    if (!selectedMember) return;
+    if (!selectedMember || updatingAvatar) return;
     try {
       setUpdatingAvatar(true);
-      await api.users.update(selectedMember.id, { avatar: '' });
-      await loadDomain('team');
+      await updateTeamMember(selectedMember.id, { avatar: '' });
       setSelectedMember((prev) => (prev ? { ...prev, avatar: '' } : null));
       showToast('Profile photo removed', 'success');
     } catch (err: any) {
@@ -125,12 +136,12 @@ export const TeamManager: React.FC = () => {
     }
     try {
       setSubmitting(true);
-      await api.users.create({
+      await addTeamMember({
         name: form.name, email: form.email, phone: form.phone,
         designation: form.designation, role: form.role, password: form.password,
         avatar: form.avatar || undefined,
+        permissions: form.permissions ?? getDefaultPermissionsForRole(form.role),
       });
-      await loadDomain('team');
       setCreatedCreds({ name: form.name, email: form.email, password: form.password });
       showToast(`${form.name} added successfully`, 'success');
     } catch (err: any) {
@@ -152,6 +163,9 @@ export const TeamManager: React.FC = () => {
       role: (user.role as any) || 'team',
       password: '',
       avatar: user.avatar || '',
+      permissions: user.permissions && user.permissions.length > 0
+        ? user.permissions
+        : getDefaultPermissionsForRole(user.role || 'team'),
     });
     setShowEditPwd(false);
     setShowEditModal(true);
@@ -173,11 +187,11 @@ export const TeamManager: React.FC = () => {
         designation: editForm.designation.trim(),
         role: editForm.role,
         avatar: editForm.avatar || '',
+        permissions: editForm.permissions ?? getDefaultPermissionsForRole(editForm.role),
       };
       if (editForm.password.trim().length > 0) payload.password = editForm.password.trim();
 
-      await api.users.update(editingMember.id, payload);
-      await loadDomain('team');
+      await updateTeamMember(editingMember.id, payload);
 
       if (selectedMember?.id === editingMember.id) {
         setSelectedMember((prev) => (prev ? { ...prev, ...payload } : null));
@@ -209,8 +223,7 @@ export const TeamManager: React.FC = () => {
     if (!user) return;
     try {
       setDeactivating(user.id);
-      await api.users.deactivate(user.id);
-      await loadDomain('team');
+      await deactivateTeamMember(user.id);
       showToast(`${user.name} has been deactivated`, 'success');
       if (selectedMember?.id === user.id) setSelectedMember(null);
       setMemberToDeactivate(null);
@@ -256,6 +269,7 @@ export const TeamManager: React.FC = () => {
         onView={setSelectedMember}
         onEdit={openEditModal}
         onDeactivate={handleDeactivate}
+        onDirectChat={startDirectChat}
       />
 
       {/* Drawer */}

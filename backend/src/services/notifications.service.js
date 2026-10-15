@@ -10,9 +10,10 @@ function mapNotif(n) {
 }
 
 async function listNotifications(user, { unreadOnly } = {}) {
-  let query = `SELECT * FROM notifications WHERE ($1 = ANY(recipient_roles) OR recipient_roles IS NULL OR target_user_id = $2)`;
-  const params = [user.role, user.id];
-  let idx = 3;
+  const isTeamMember = user.role !== 'brand';
+  let query = `SELECT * FROM notifications WHERE ($1 = ANY(recipient_roles) OR ($3::boolean = true AND 'team' = ANY(recipient_roles)) OR recipient_roles IS NULL OR target_user_id = $2)`;
+  const params = [user.role, user.id, isTeamMember];
+  let idx = 4;
 
   if (user.role === 'brand') {
     query += ` AND brand_id = $${idx}`;
@@ -32,9 +33,10 @@ async function listNotifications(user, { unreadOnly } = {}) {
 }
 
 async function markAllRead(user) {
+  const isTeamMember = user.role !== 'brand';
   const result = await pool.query(
-    `UPDATE notifications SET is_read=true WHERE ($1 = ANY(recipient_roles) OR recipient_roles IS NULL OR target_user_id = $2)`,
-    [user.role, user.id]
+    `UPDATE notifications SET is_read=true WHERE ($1 = ANY(recipient_roles) OR ($3::boolean = true AND 'team' = ANY(recipient_roles)) OR recipient_roles IS NULL OR target_user_id = $2)`,
+    [user.role, user.id, isTeamMember]
   );
   return result.rowCount;
 }

@@ -24,7 +24,8 @@ const emptyOnboard = (): ClientFormData => ({
   serviceDetails: '',
   monthlyFee: '',
   billingCycleDay: '' as any,
-  paymentStatus: 'Paid',
+  status: 'Active',
+  paymentStatus: 'Active',
   notes: '',
 });
 
@@ -66,6 +67,7 @@ export function validateClientForm(f: ClientFormData, isEdit = false): Record<st
     if (!String(f.pincode || '').trim()) errs.pincode = 'Pincode is required';
     if (!String(f.serviceDetails || '').trim()) errs.serviceDetails = 'Service details are required';
     if (!String(f.monthlyFee || '').trim()) errs.monthlyFee = 'Monthly fee is required';
+    if (!String(f.billingCycleDay || '').trim()) errs.billingCycleDay = 'Billing cycle day is required';
   }
   return errs;
 }
@@ -146,11 +148,13 @@ export const ClientsManager: React.FC = () => {
     setFormErrors({});
     setIsSubmitting(true);
     try {
+      const selectedStatus = formData.status || 'Active';
       const newBrand = await addBrand({
         ...formData,
         monthlyFee: Number(formData.monthlyFee) || 0,
         billingCycleDay: Number(formData.billingCycleDay) || 1,
-        paymentStatus: formData.paymentStatus || 'Paid',
+        status: selectedStatus,
+        paymentStatus: selectedStatus === 'Active' ? 'Paid' : 'Pending',
       } as any);
       setShowOnboardModal(false);
       setFormData(emptyOnboard());
@@ -179,7 +183,7 @@ export const ClientsManager: React.FC = () => {
       pan: brand.pan || '',
       serviceDetails: brand.serviceDetails || '',
       monthlyFee: brand.monthlyFee != null ? String(brand.monthlyFee) : '',
-      billingCycleDay: brand.billingCycleDay || '',
+      billingCycleDay: brand.billingCycleDay != null ? String(brand.billingCycleDay) : '',
       status: brand.status || 'Active',
       paymentStatus: brand.paymentStatus === 'Pending' ? 'Pending' : 'Paid',
       notes: brand.notes || '',

@@ -199,7 +199,7 @@ async function writeAudit(user, action, details) {
 }
 
 async function deleteInvoice(user, id) {
-  if (user && !['admin', 'hr'].includes(user.role)) {
+  if (user && !['admin', 'hr', 'manager'].includes(user.role)) {
     const err = new Error('Only admin or manager can delete invoices');
     err.status = 403;
     throw err;
@@ -236,7 +236,17 @@ async function deleteInvoice(user, id) {
   }
 }
 
+async function deleteInvoices(user, ids) {
+  if (!Array.isArray(ids) || !ids.length) return 0;
+  let deletedCount = 0;
+  for (const id of ids) {
+    const deleted = await deleteInvoice(user, id);
+    if (deleted) deletedCount++;
+  }
+  return deletedCount;
+}
+
 module.exports = {
   INVOICE_STATUSES, GST_TYPES,
-  mapInvoice, listInvoices, getInvoice, createInvoice, updateInvoiceStatus, deleteInvoice,
+  mapInvoice, listInvoices, getInvoice, createInvoice, updateInvoiceStatus, deleteInvoice, deleteInvoices,
 };

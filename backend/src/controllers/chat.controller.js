@@ -12,7 +12,7 @@ const listConversations = asyncHandler(async (req, res) => {
 const listMessages = asyncHandler(async (req, res) => {
   res.json(await chat.listMessages(req.params.id, {
     page: Math.max(1, parseInt(req.query.page, 10) || 1),
-    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 50)),
+    pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 100)),
   }));
 });
 
@@ -46,4 +46,26 @@ const createConversation = asyncHandler(async (req, res) => {
   res.status(201).json(await chat.createConversation(req.user, body));
 });
 
-module.exports = { listConversations, listMessages, sendMessage, createConversation };
+const directConversation = asyncHandler(async (req, res) => {
+  const targetUserId = req.params.targetUserId || req.body.targetUserId;
+  if (!targetUserId) {
+    return res.status(400).json({ error: 'Target team member ID is required for direct chat.' });
+  }
+
+  const conv = await chat.getOrCreateDirectConversation(req.user, targetUserId);
+  res.json(conv);
+});
+
+const markRead = asyncHandler(async (req, res) => {
+  const result = await chat.markMessagesRead(req.params.id, req.user.id);
+  res.json(result);
+});
+
+module.exports = {
+  listConversations,
+  listMessages,
+  sendMessage,
+  createConversation,
+  directConversation,
+  markRead,
+};

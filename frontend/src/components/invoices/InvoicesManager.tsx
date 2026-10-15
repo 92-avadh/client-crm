@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import type { Invoice } from '../../types';
 import confetti from 'canvas-confetti';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Trash2, Loader2 } from 'lucide-react';
 import { btnPrimary, btnSecondary } from './invoiceStyles';
 import { useInvoiceBuilder } from './useInvoiceBuilder';
 import { InvoiceTable } from './InvoiceTable';
@@ -10,6 +10,17 @@ import { InvoiceBuilderModal } from './InvoiceBuilderModal';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { RazorpayModal, OfflinePaymentModal, type OfflineForm } from './PaymentModals';
 import { RecurringPanel } from './RecurringPanel';
+import {
+  AlertDialog,
+  AlertDialogPopup,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/animate-ui/components/base/alert-dialog';
+import { AlertTriangle } from 'lucide-react';
 
 /**
  * Invoice module orchestrator.
@@ -25,11 +36,13 @@ export const InvoicesManager: React.FC = () => {
     brands,
     createInvoice,
     deleteInvoice,
+    deleteInvoices,
     recordPayment,
     simulateRazorpayPayment,
     selectedInvoiceId,
     setSelectedInvoiceId,
     settings,
+    showToast,
   } = useApp();
 
   const canManage = currentUser?.role === 'admin' || currentUser?.role === 'hr';
@@ -47,6 +60,9 @@ export const InvoicesManager: React.FC = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInvoiceIds, setRecurringInvoiceIds] = useState<Set<string>>(
     () => new Set(invoices.slice(0, 2).map((i) => i.id))
@@ -84,7 +100,12 @@ export const InvoicesManager: React.FC = () => {
     });
   }, [invoices, search, statusFilter]);
 
-  /* ── Handlers ────────────────────────────────────────────────── */
+    const dueBrands = useMemo(() => {
+      const todayDay = new Date().getDate();
+      return brands.filter(b => b.status === 'Active' && b.billingCycleDay <= todayDay);
+    }, [brands]);
+
+    /* ── Handlers ────────────────────────────────────────────────── */
 
   const handleGenerateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +156,44 @@ export const InvoicesManager: React.FC = () => {
     }
   };
 
+  const handleToggleSelectInvoice = (id: string) => {
+    setSelectedInvoiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllInvoices = (select: boolean) => {
+    if (select) {
+      setSelectedInvoiceIds(new Set(filteredInvoices.map((i) => i.id)));
+    } else {
+      setSelectedInvoiceIds(new Set());
+    }
+  };
+
+  const handleOpenBulkDelete = () => {
+    const selected = filteredInvoices.filter((i) => selectedInvoiceIds.has(i.id));
+    if (selected.length === 0) return;
+    setShowBulkDeleteDialog(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    const idsToDelete = Array.from(selectedInvoiceIds);
+    if (idsToDelete.length === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      await deleteInvoices(idsToDelete);
+      setSelectedInvoiceIds(new Set());
+      setShowBulkDeleteDialog(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to delete invoices', 'error');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   const handlePayOnline = async (inv: Invoice) => {
     setIsProcessingPayment(true);
     const success = await simulateRazorpayPayment(inv.id);
@@ -177,6 +236,58 @@ export const InvoicesManager: React.FC = () => {
       else next.add(id);
       return next;
     });
+  };
+
+  const handleDraftInvoices = async (brandIds: string[]) => {
+    const todayIso = new Date().toISOString().split('T')[0];
+    const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    let successCount = 0;
+
+    for (const brandId of brandIds) {
+      const brand = brands.find(b => b.id === brandId);
+      if (!brand) continue;
+
+      try {
+        const hasGst = !!brand.gstNumber;
+        const gstRate = 0.18;
+        const subtotal = brand.monthlyFee;
+        const cgst = hasGst ? (subtotal * gstRate) / 2 : 0;
+        const sgst = hasGst ? (subtotal * gstRate) / 2 : 0;
+        const igst = 0;
+        const totalAmount = hasGst ? subtotal * (1 + gstRate) : subtotal;
+
+        await createInvoice({
+          brandId: brand.id,
+          brandName: brand.name,
+          issueDate: todayIso,
+          dueDate: dueDate,
+          items: [{
+            id: `item_${brand.id}_${Date.now()}`,
+            description: brand.serviceDetails,
+            hsnSac: '9983',
+            quantity: 1,
+            unitPrice: subtotal,
+            amount: subtotal,
+          }],
+          subtotal,
+          hasGst,
+          gstType: hasGst ? 'CGST_SGST' : 'NONE',
+          cgstAmount: cgst,
+          sgstAmount: sgst,
+          igstAmount: igst,
+          totalAmount,
+          notes: 'Recurring monthly billing',
+        });
+        successCount++;
+      } catch {
+        // Continue to next brand
+      }
+    }
+
+    if (successCount > 0) {
+      showToast(`Successfully drafted ${successCount} invoice${successCount > 1 ? 's' : ''}`, 'success');
+    }
   };
 
   if (pageLoading) {
@@ -266,6 +377,86 @@ export const InvoicesManager: React.FC = () => {
       </div>
 
       {/* ── Table ───────────────────────────────────────────────── */}
+      {/* Bulk Action Toolbar */}
+      {canManage && selectedInvoiceIds.size > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 16px',
+            borderRadius: 12,
+            background: 'var(--bg-raised)',
+            border: '1px solid var(--border-strong)',
+            boxShadow: 'var(--shadow-sm)',
+            animation: 'fadeIn 0.2s ease',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 7,
+                background: 'var(--solid-btn-bg)',
+                color: 'var(--solid-btn-text)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 800,
+              }}
+            >
+              {selectedInvoiceIds.size}
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {selectedInvoiceIds.size} invoice{selectedInvoiceIds.size > 1 ? 's' : ''} selected
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              (₹{filteredInvoices
+                .filter((i) => selectedInvoiceIds.has(i.id))
+                .reduce((sum, i) => sum + (i.totalAmount || 0), 0)
+                .toLocaleString('en-IN')})
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setSelectedInvoiceIds(new Set())}
+              className="btn-secondary"
+              style={{ height: 32, padding: '0 12px', fontSize: 12, borderRadius: 8 }}
+            >
+              Clear Selection
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenBulkDelete}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                height: 32,
+                padding: '0 14px',
+                borderRadius: 8,
+                background: 'var(--danger-bg)',
+                color: 'var(--danger-text)',
+                border: '1px solid var(--danger-border)',
+                fontSize: 12,
+                fontWeight: 750,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Trash2 style={{ width: 13, height: 13 }} />
+              Delete Selected ({selectedInvoiceIds.size})
+            </button>
+          </div>
+        </div>
+      )}
+
       <InvoiceTable
         invoices={filteredInvoices}
         recurringIds={recurringInvoiceIds}
@@ -275,6 +466,9 @@ export const InvoicesManager: React.FC = () => {
         onDelete={handleDeleteInvoice}
         deletingId={deletingInvoiceId}
         canDelete={canManage}
+        selectedIds={selectedInvoiceIds}
+        onToggleSelect={handleToggleSelectInvoice}
+        onSelectAll={handleSelectAllInvoices}
       />
 
       {/* ── Modals ──────────────────────────────────────────────── */}
@@ -328,13 +522,43 @@ export const InvoicesManager: React.FC = () => {
 
       <RecurringPanel
         open={showRecurringPanel}
-        invoices={invoices}
+        brands={brands}
         recurringIds={recurringInvoiceIds}
         pausedIds={pausedRecurringIds}
         onTogglePause={togglePauseRecurring}
+        onDraftInvoices={handleDraftInvoices}
         onClose={() => setShowRecurringPanel(false)}
         onEdit={() => { setShowRecurringPanel(false); setShowCreateModal(true); }}
       />
+
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={(o) => { if (!o && !isBulkDeleting) setShowBulkDeleteDialog(false); }}>
+        <AlertDialogPopup from="bottom">
+          <AlertDialogHeader>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--danger-bg)', color: 'var(--danger-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                <AlertTriangle style={{ width: 19, height: 19 }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                <AlertDialogTitle>Delete {selectedInvoiceIds.size} Invoice{selectedInvoiceIds.size > 1 ? 's' : ''}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Permanently remove {selectedInvoiceIds.size} selected invoice{selectedInvoiceIds.size > 1 ? 's' : ''}. Linked payment records and line items will also be removed.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkDelete}
+              disabled={isBulkDeleting}
+              style={{ background: 'var(--danger-text)', color: 'var(--solid-btn-text)', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: isBulkDeleting ? 0.7 : 1, cursor: isBulkDeleting ? 'not-allowed' : 'pointer' }}
+            >
+              {isBulkDeleting && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
+              Yes, Delete {selectedInvoiceIds.size} Invoice{selectedInvoiceIds.size > 1 ? 's' : ''}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogPopup>
+      </AlertDialog>
     </div>
   );
 };

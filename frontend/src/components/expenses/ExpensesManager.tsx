@@ -9,6 +9,7 @@ import { exportExpensesToCsv } from './exportCsv';
 import { ExpenseTable } from './ExpenseTable';
 import { ExpenseFormModal, DeleteExpenseModal, type ExpenseFormData } from './ExpenseFormModal';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 
 const todayIso = () => new Date().toISOString().split('T')[0];
@@ -336,10 +337,8 @@ export const ExpensesManager: React.FC = () => {
 
         {dateRangePreset === 'custom' && (
           <>
-            <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)}
-              style={{ height: 36, padding: '0 10px', fontSize: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }} />
-            <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)}
-              style={{ height: 36, padding: '0 10px', fontSize: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }} />
+            <DatePicker value={customStartDate} onChange={setCustomStartDate} placeholder="Start date" />
+            <DatePicker value={customEndDate} onChange={setCustomEndDate} placeholder="End date" />
           </>
         )}
 

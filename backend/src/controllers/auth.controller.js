@@ -2,11 +2,12 @@ const asyncHandler = require('../utils/asyncHandler');
 const { makeValidator } = require('../utils/validate');
 const auth = require('../services/auth.service');
 
+const isProd = process.env.NODE_ENV === 'production';
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  secure: isProd,
+  sameSite: isProd ? 'none' : 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
 const sendOtp = asyncHandler(async (req, res) => {
@@ -51,7 +52,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   const result = await auth.verifyOtpAndRegister(body);
   res.cookie('token', result.token, COOKIE_OPTIONS);
-  res.status(201).json({ success: true, user: result.user });
+  res.status(201).json({ success: true, user: result.user, token: result.token });
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -62,19 +63,45 @@ const login = asyncHandler(async (req, res) => {
 
   const result = await auth.login(body);
   res.cookie('token', result.token, COOKIE_OPTIONS);
-  res.json({ user: result.user });
+  res.json({ user: result.user, token: result.token });
 });
 
 const logout = asyncHandler(async (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
   });
   res.json({ success: true });
 });
 
+const pool = require('../db');
+
 const me = asyncHandler(async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    if (rows.length) {
+      const u = rows[0];
+      let perms = [];
+      if (Array.isArray(u.permissions)) perms = u.permissions;
+      else if (typeof u.permissions === 'string') {
+        try { perms = JSON.parse(u.permissions); } catch { perms = []; }
+      }
+      return res.json({
+        user: {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          role: u.role,
+          avatar: u.avatar,
+          designation: u.designation,
+          brandId: u.brand_id,
+          permissions: perms,
+        }
+      });
+    }
+  } catch (_e) {}
   res.json({ user: req.user });
 });
 

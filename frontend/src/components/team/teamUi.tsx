@@ -14,13 +14,14 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-/** Suggested profile photos for quick assignment. */
+/** Fresh realistic corporate profile avatars. */
 export const AVATAR_PRESETS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80',
+  '/avatars/avatar-1.jpg',
+  '/avatars/avatar-2.jpg',
+  '/avatars/avatar-3.jpg',
+  '/avatars/avatar-4.jpg',
+  '/avatars/avatar-5.jpg',
+  '/avatars/avatar-6.jpg',
 ];
 
 /** Avatar with graceful fallback to coloured initials. */
@@ -56,21 +57,46 @@ export const Avatar: React.FC<{ user: User; size?: number }> = ({ user, size = 3
 };
 
 const ROLE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  admin: { bg: 'var(--text-primary)', color: 'var(--solid-btn-text)', label: 'Admin' },
-  hr:    { bg: 'var(--info-bg)',    color: 'var(--info-text)',    label: 'HR Manager' },
-  team:  { bg: 'var(--success-bg)', color: 'var(--success-text)', label: 'Team Member' },
-  brand: { bg: 'var(--danger-bg)',  color: 'var(--danger-text)',  label: 'Brand' },
+  admin:               { bg: 'var(--text-primary)', color: 'var(--solid-btn-text)', label: 'Admin' },
+  hr:                  { bg: 'var(--info-bg)',    color: 'var(--info-text)',    label: 'HR Manager' },
+  team:                { bg: 'var(--success-bg)', color: 'var(--success-text)', label: 'Team Member' },
+  brand:               { bg: 'var(--danger-bg)',  color: 'var(--danger-text)',  label: 'Brand' },
+  project_manager:     { bg: 'rgba(99, 102, 241, 0.12)', color: '#6366f1', label: 'Project Manager' },
+  operations_manager:  { bg: 'rgba(14, 165, 233, 0.12)', color: '#0ea5e9', label: 'Operations' },
+  finance:             { bg: 'rgba(16, 185, 129, 0.12)', color: '#10b981', label: 'Finance' },
+  sales:               { bg: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', label: 'Sales & BD' },
+  marketing:           { bg: 'rgba(236, 72, 153, 0.12)', color: '#ec4899', label: 'Marketing' },
+  account_executive:   { bg: 'rgba(139, 92, 246, 0.12)', color: '#8b5cf6', label: 'Account Exec' },
+  creative_designer:   { bg: 'rgba(217, 70, 239, 0.12)', color: '#d946ef', label: 'Creative Designer' },
+  developer:           { bg: 'rgba(20, 184, 166, 0.12)', color: '#14b8a6', label: 'Developer' },
 };
 
 /** Role pill. */
 export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
-  const s = ROLE_STYLES[role] ?? { bg: 'var(--bg-raised)', color: 'var(--text-secondary)', label: role };
+  const s = ROLE_STYLES[role] ?? {
+    bg: 'rgba(100, 116, 139, 0.12)',
+    color: 'var(--text-primary)',
+    label: role || 'Member',
+  };
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', padding: '2px 10px',
-      borderRadius: 20, fontSize: 11, fontWeight: 700,
-      background: s.bg, color: s.color, letterSpacing: '0.02em',
-    }}>
+    <span
+      title={s.label}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 10px',
+        borderRadius: 20,
+        fontSize: 11,
+        fontWeight: 700,
+        background: s.bg,
+        color: s.color,
+        letterSpacing: '0.02em',
+        maxWidth: 160,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
       {s.label}
     </span>
   );

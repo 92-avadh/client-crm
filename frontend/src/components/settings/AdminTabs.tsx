@@ -12,6 +12,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 interface Props {
   formData: AppSettings;
@@ -114,9 +115,13 @@ export const HolidaysTab: React.FC<HolidaysProps> = ({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Date</label>
-            <input type="date" value={newHoliday.date}
-              onChange={(e) => onNewHolidayChange({ ...newHoliday, date: e.target.value })}
-              style={fieldStyle} />
+            <DatePicker
+              value={newHoliday.date}
+              onChange={(date) => onNewHolidayChange({ ...newHoliday, date })}
+              label="Holiday Date"
+              placeholder="Select date"
+              required
+            />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Type</label>

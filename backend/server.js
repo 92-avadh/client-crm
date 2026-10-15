@@ -5,9 +5,12 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 const { connectWithRetry } = require('./src/db');
 const pool = require('./src/db');
+const { initSocket } = require('./src/socket');
 const app = express();
+const httpServer = http.createServer(app);
 
 // Render runs behind a reverse proxy/load balancer — enable trust proxy for accurate client IPs & rate limiting
 app.set('trust proxy', 1);
@@ -141,8 +144,9 @@ app.use(require('./src/middleware/errorHandler'));
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Shutting down gracefully...');
   try {
+    httpServer.close();
     await pool.end();
-    console.log('Database pool closed.');
+    console.log('HTTP server & database pool closed.');
   } catch (err) {
     console.error('Error closing database pool:', err.message);
   }
@@ -181,7 +185,16 @@ connectWithRetry()
         ALTER TABLE meetings ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
         ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
         ALTER TABLE users ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
-        ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS attempts INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]';
+        ALTER TABLE users ALTER COLUMN role TYPE VARCHAR(100);
+        ALTER TABLE audit_logs ALTER COLUMN actor_role TYPE VARCHAR(100);
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'INR';
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS currency_symbol VARCHAR(10) DEFAULT '₹';
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS industry VARCHAR(100);
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS team_size VARCHAR(50);
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS goals JSONB DEFAULT '[]';
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS dashboard_layout VARCHAR(30) DEFAULT 'default';
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS dashboard_focus VARCHAR(30) DEFAULT 'balanced';
         UPDATE brands SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE tasks SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE projects SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
@@ -251,8 +264,9 @@ connectWithRetry()
     } catch (err) {
       console.error('⚠️  Schema / Seed error:', err.message);
     }
-    app.listen(PORT, () => {
-      console.log(`🚀 Retentio backend running on port ${PORT}`);
+    initSocket(httpServer, isAllowedOrigin);
+    httpServer.listen(PORT, () => {
+      console.log(`🚀 Retentio backend & Socket.io running on port ${PORT}`);
     });
   })
   .catch(err => {

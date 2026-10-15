@@ -94,7 +94,7 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr'].includes(req.user.role)) {
+  if (!['admin', 'hr', 'manager'].includes(req.user.role)) {
     return res.status(403).json({ error: "You don't have permission to delete payments." });
   }
   const deleted = await payments.deletePayment(req.user, req.params.id);
@@ -102,4 +102,17 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Payment record deleted', payment: deleted });
 });
 
-module.exports = { list, record, razorpayInitiate, razorpayVerify, update, remove };
+/** POST /api/payments/bulk-delete — batch delete payments. */
+const bulkRemove = asyncHandler(async (req, res) => {
+  if (!['admin', 'hr', 'manager'].includes(req.user.role)) {
+    return res.status(403).json({ error: "You don't have permission to delete payments." });
+  }
+  const { ids } = req.body || {};
+  if (!Array.isArray(ids) || !ids.length) {
+    return res.status(400).json({ error: 'Please provide an array of payment IDs to delete.' });
+  }
+  const count = await payments.deletePayments(req.user, ids);
+  res.json({ success: true, count, message: `${count} payment record(s) deleted successfully` });
+});
+
+module.exports = { list, record, razorpayInitiate, razorpayVerify, update, remove, bulkRemove };

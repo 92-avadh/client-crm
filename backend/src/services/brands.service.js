@@ -5,8 +5,8 @@ const genId = () => 'brand_' + crypto.randomBytes(6).toString('hex');
 const docId = () => 'doc_' + crypto.randomBytes(6).toString('hex');
 const payId = () => 'pay_' + crypto.randomBytes(6).toString('hex');
 
-const CLIENT_STATUSES = ['Active', 'On Hold', 'Churned'];
-const PAYMENT_STATUSES = ['Paid', 'Pending'];
+const CLIENT_STATUSES = ['Active', 'Inactive', 'Paused', 'Churned', 'On Hold'];
+const PAYMENT_STATUSES = ['Paid', 'Pending', 'Active', 'Inactive', 'Paused', 'Churned'];
 const DOCUMENT_TYPES = ['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'PNG', 'JPG', 'JPEG', 'Other'];
 
 function mapBrand(b) {
@@ -44,12 +44,7 @@ async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}
   let baseWhere;
   let alias;
 
-  if (user.role === 'team') {
-    alias = 'b';
-    baseWhere = `b.id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx})`;
-    params.push(user.id);
-    idx += 1;
-  } else if (user.role === 'brand') {
+  if (user.role === 'brand') {
     alias = '';
     baseWhere = `id = $${idx}`;
     params.push(user.brandId || '');
@@ -60,8 +55,9 @@ async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}
     params.push(user.id);
     idx += 1;
   } else {
-    alias = '';
-    baseWhere = `owner_id = $${idx}`;
+    // All internal roles (team, hr, corporate presets, custom roles)
+    alias = 'b';
+    baseWhere = `b.id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx})`;
     params.push(user.id);
     idx += 1;
   }
@@ -123,7 +119,8 @@ async function createBrand(user, data) {
     const id = genId();
     const fee = parseFloat(data.monthlyFee) || 0;
     const today = data.onboardingDate || new Date().toISOString().split('T')[0];
-    const paymentStatus = data.paymentStatus === 'Paid' ? 'Paid' : 'Pending';
+    const status = data.status || (['Active', 'Inactive', 'Paused', 'Churned'].includes(data.paymentStatus) ? data.paymentStatus : 'Active');
+    const paymentStatus = (data.paymentStatus === 'Pending' || (['Inactive', 'Paused', 'Churned'].includes(status) && data.paymentStatus !== 'Paid')) ? 'Pending' : (data.paymentStatus === 'Pending' ? 'Pending' : 'Paid');
 
     await client.query(
       `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,state,pincode,gst_number,pan,
@@ -134,7 +131,7 @@ async function createBrand(user, data) {
         data.billingAddress || null, data.state || null, data.pincode || null,
         data.gstNumber || null, data.pan || null, data.serviceDetails || null,
         fee, data.billingCycleDay || 1, today, data.notes || null,
-        data.status || 'Active', paymentStatus, today, user.id,
+        status, paymentStatus, today, user.id,
       ]
     );
 

@@ -31,16 +31,14 @@ function scopeForUser(user) {
   if (user.role === 'brand') {
     return { sql: ' AND brand_id = $1', params: [user.brandId || ''] };
   }
-  if (user.role === 'team') {
-    return {
-      sql: ' AND (assignee_id = $1 OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $1))',
-      params: [user.id],
-    };
-  }
   if (user.role === 'admin') {
     return { sql: '', params: [] };
   }
-  return { sql: '', params: [] };
+  // Internal team members (standard, corporate presets, or custom roles)
+  return {
+    sql: ' AND (assignee_id = $1 OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $1))',
+    params: [user.id],
+  };
 }
 
 async function listTasks(user, filters = {}) {

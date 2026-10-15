@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
-import { X, Mail, Phone, Camera, Trash2, Edit3, Loader2 } from 'lucide-react';
+import { X, Mail, Phone, Camera, Trash2, Edit3, Loader2, MessageSquare } from 'lucide-react';
 import type { User, Brand } from '../../types';
 import { Avatar, RoleBadge } from './teamUi';
+import { useApp } from '../../context/AppContext';
 
 interface Props {
   member: User | null;
@@ -28,6 +29,7 @@ export const MemberDrawer: React.FC<Props> = ({
   onClose, onEdit, onAvatarChange, onAvatarRemove,
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
+  const { currentUser, startDirectChat } = useApp();
   if (!member) return null;
 
   return (
@@ -39,9 +41,25 @@ export const MemberDrawer: React.FC<Props> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ position: 'relative' }}>
               <Avatar user={member} size={54} />
+              {updatingAvatar && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '50%',
+                    background: 'rgba(6, 26, 18, 0.75)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2,
+                  }}
+                >
+                  <Loader2 style={{ width: 18, height: 18, color: '#4ade80' }} className="animate-spin" />
+                </div>
+              )}
               {isAdmin && (
                 <label title="Upload or change member photo"
-                  style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg)', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
+                  style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: updatingAvatar ? 'not-allowed' : 'pointer', border: '2px solid var(--bg)', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', pointerEvents: updatingAvatar ? 'none' : 'auto' }}>
                   {updatingAvatar ? <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" /> : <Camera style={{ width: 11, height: 11 }} />}
                   <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} disabled={updatingAvatar}
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) onAvatarChange(f); e.target.value = ''; }} />
@@ -55,8 +73,13 @@ export const MemberDrawer: React.FC<Props> = ({
                 <RoleBadge role={member.role} />
                 {isAdmin && member.avatar && (
                   <button onClick={onAvatarRemove} disabled={updatingAvatar}
-                    style={{ background: 'none', border: 'none', color: 'var(--danger-text)', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3, padding: 0 }}>
-                    <Trash2 style={{ width: 11, height: 11 }} /> Remove photo
+                    style={{ background: 'none', border: 'none', color: 'var(--danger-text)', fontSize: 11, fontWeight: 600, cursor: updatingAvatar ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, opacity: updatingAvatar ? 0.6 : 1 }}>
+                    {updatingAvatar ? (
+                      <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />
+                    ) : (
+                      <Trash2 style={{ width: 11, height: 11 }} />
+                    )}
+                    {updatingAvatar ? 'Updating…' : 'Remove photo'}
                   </button>
                 )}
               </div>
@@ -67,14 +90,39 @@ export const MemberDrawer: React.FC<Props> = ({
           </button>
         </div>
 
-        {isAdmin && (
-          <div style={{ padding: '12px 28px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', justifyContent: 'flex-end' }}>
+        {/* Actions Bar */}
+        <div style={{ padding: '12px 28px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          {member.id !== currentUser?.id && (
+            <button
+              onClick={() => {
+                onClose();
+                startDirectChat(member.id);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                background: 'var(--brand-green, #059639)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(5, 150, 57, 0.2)',
+              }}
+            >
+              <MessageSquare style={{ width: 13, height: 13 }} /> Message
+            </button>
+          )}
+          {isAdmin && (
             <button onClick={() => onEdit(member)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               <Edit3 style={{ width: 13, height: 13 }} /> Edit Team Member
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Contact */}
         <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border)' }}>

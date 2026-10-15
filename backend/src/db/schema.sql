@@ -5,11 +5,12 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(200) UNIQUE NOT NULL,
   phone VARCHAR(50),
   password_hash VARCHAR(200),
-  role VARCHAR(20) NOT NULL DEFAULT 'team',
+  role VARCHAR(100) NOT NULL DEFAULT 'team',
   avatar TEXT,
   designation VARCHAR(200),
   brand_id VARCHAR(50),
   is_active BOOLEAN DEFAULT true,
+  permissions JSONB DEFAULT '[]',
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -307,6 +308,13 @@ CREATE TABLE IF NOT EXISTS settings (
   retention_threshold_days INTEGER DEFAULT 30,
   whatsapp_enabled BOOLEAN DEFAULT true,
   invoice_design JSONB DEFAULT '{}',
+  currency VARCHAR(10) DEFAULT 'INR',
+  currency_symbol VARCHAR(10) DEFAULT '₹',
+  industry VARCHAR(100),
+  team_size VARCHAR(50),
+  goals JSONB DEFAULT '[]',
+  dashboard_layout VARCHAR(30) DEFAULT 'default',
+  dashboard_focus VARCHAR(30) DEFAULT 'balanced',
   updated_at TIMESTAMP DEFAULT NOW()
 );
 

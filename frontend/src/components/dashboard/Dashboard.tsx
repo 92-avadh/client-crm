@@ -180,6 +180,8 @@ export const Dashboard: React.FC = () => {
     tasks,
     meetings,
     setActiveTab,
+    currencySymbol,
+    formatCurrency,
   } = useApp();
 
   const role = currentUser?.role;
@@ -372,7 +374,7 @@ export const Dashboard: React.FC = () => {
         items.push({
           id: `pay_${p.id}`,
           icon: <DollarSign size={14} />,
-          text: `Payment received: ₹${Number(p.amount || 0).toLocaleString('en-IN')} from ${p.brandName || 'Client'}`,
+          text: `Payment received: ${formatCurrency(p.amount)} from ${p.brandName || 'Client'}`,
           time: p.paymentDate ? formatDateDisplay(p.paymentDate) : 'Recent',
           color: BRAND.green,
         });
@@ -615,7 +617,7 @@ export const Dashboard: React.FC = () => {
             {[
               {
                 title: 'Total Collections',
-                value: `₹${animatedTotalReceived.toLocaleString('en-IN')}`,
+                value: formatCurrency(animatedTotalReceived),
                 icon: <Wallet className="w-4 h-4" />,
                 iconColor: BRAND.greenDark,
                 iconBg: BRAND.greenSubtle,
@@ -628,7 +630,7 @@ export const Dashboard: React.FC = () => {
               },
               {
                 title: 'Pending / Overdue',
-                value: `₹${animatedTotalPending.toLocaleString('en-IN')}`,
+                value: formatCurrency(animatedTotalPending),
                 icon: <Clock className="w-4 h-4" />,
                 iconColor: totalPending > 0 ? BRAND.amber : BRAND.navyMuted,
                 iconBg: totalPending > 0 ? BRAND.amberSubtle : BRAND.navySubtle,
@@ -643,14 +645,14 @@ export const Dashboard: React.FC = () => {
               },
               {
                 title: 'Total Expenses',
-                value: `₹${animatedTotalExpenses.toLocaleString('en-IN')}`,
+                value: formatCurrency(animatedTotalExpenses),
                 icon: <CreditCard className="w-4 h-4" />,
                 iconColor: BRAND.navyLight,
                 iconBg: BRAND.navySubtle,
                 iconBorder: BRAND.navyBorder,
                 context:
                   pendingExpensesTotal > 0
-                    ? `₹${pendingExpensesTotal.toLocaleString('en-IN')} pending`
+                    ? `${formatCurrency(pendingExpensesTotal)} pending`
                     : 'Salaries & overhead',
                 trend: null,
                 cardBorder: BRAND.border,
@@ -658,7 +660,7 @@ export const Dashboard: React.FC = () => {
               },
               {
                 title: 'Net Agency Profit',
-                value: `₹${animatedNetProfit.toLocaleString('en-IN')}`,
+                value: formatCurrency(animatedNetProfit),
                 icon: <Sparkles className="w-4 h-4" />,
                 iconColor: BRAND.greenDark,
                 iconBg: BRAND.greenSubtle,
@@ -1090,7 +1092,7 @@ export const Dashboard: React.FC = () => {
                             )}
                           </span>
                           <span className="font-amount" style={{ fontSize: 12.5, fontWeight: 700, color: BRAND.navy }}>
-                            ₹{m.income.toLocaleString('en-IN')}
+                            {formatCurrency(m.income)}
                             {role === 'admin' && m.exp > 0 && (
                               <span
                                 style={{
@@ -1100,7 +1102,7 @@ export const Dashboard: React.FC = () => {
                                   marginLeft: 6,
                                 }}
                               >
-                                (overhead: ₹{m.exp.toLocaleString('en-IN')})
+                                (overhead: {formatCurrency(m.exp)})
                               </span>
                             )}
                           </span>
@@ -1147,7 +1149,7 @@ export const Dashboard: React.FC = () => {
                     <span>
                       Avg retainer / client:{' '}
                       <strong className="font-amount" style={{ color: BRAND.navy, fontWeight: 750 }}>
-                        ₹{avgRetainer.toLocaleString('en-IN')}/mo
+                        {formatCurrency(avgRetainer)}/mo
                       </strong>
                     </span>
                     {growthRate !== null ? (
@@ -1227,7 +1229,7 @@ export const Dashboard: React.FC = () => {
                             {b.name}
                           </span>
                           <span className="font-amount" style={{ color: BRAND.greenDark, fontWeight: 750 }}>
-                            {pct}% ({`₹${fee.toLocaleString('en-IN')}/mo`})
+                            {pct}% ({`${formatCurrency(fee)}/mo`})
                           </span>
                         </div>
                         <div
@@ -1697,7 +1699,7 @@ export const Dashboard: React.FC = () => {
                             color: BRAND.navy,
                           }}
                         >
-                          ₹{Number(inv.totalAmount || 0).toLocaleString('en-IN')}
+                          {formatCurrency(inv.totalAmount)}
                         </span>
                         <span
                           style={{

@@ -3,8 +3,10 @@ const router = express.Router();
 const controller = require('../controllers/chat.controller');
 
 router.get('/conversations', controller.listConversations);
+router.post('/conversations', controller.createConversation);
+router.post('/direct/:targetUserId', controller.directConversation);
 router.get('/conversations/:id/messages', controller.listMessages);
 router.post('/conversations/:id/messages', controller.sendMessage);
-router.post('/conversations', controller.createConversation);
+router.post('/conversations/:id/read', controller.markRead);
 
 module.exports = router;
