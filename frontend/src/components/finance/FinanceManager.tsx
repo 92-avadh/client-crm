@@ -84,7 +84,8 @@ export const FinanceManager: React.FC = () => {
     deletePayment,
     deletePayments,
     showToast,
-    setActiveTab: setNavTab
+    setActiveTab: setNavTab,
+    currencySymbol,
   } = useApp();
 
   const role = currentUser.role;
@@ -420,7 +421,7 @@ export const FinanceManager: React.FC = () => {
             Total Collections Received
           </div>
           <div className="metric-value font-amount count-up" style={{ color: 'var(--text-primary)' }}>
-            <AnimatedNumber value={totalCollections} prefix="₹" />
+            <AnimatedNumber value={totalCollections} prefix={currencySymbol} />
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
             <CheckCircle style={{ width: 14, height: 14, color: 'var(--success-text)' }} />
@@ -443,7 +444,7 @@ export const FinanceManager: React.FC = () => {
               Pending Collections
             </div>
             <div className="metric-value font-amount count-up" style={{ color: totalPending > 0 ? 'var(--warn-text)' : 'var(--text-primary)' }}>
-              <AnimatedNumber value={totalPending} prefix="₹" />
+              <AnimatedNumber value={totalPending} prefix={currencySymbol} />
             </div>
             <div style={{ fontSize: 11, color: 'var(--warn-text)', marginTop: 8 }}>
               {pendingPaymentsList.length} client payments awaiting clearance
@@ -455,7 +456,7 @@ export const FinanceManager: React.FC = () => {
           <div className="stat-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
             <div className="metric-label" style={{ marginBottom: 12, color: 'var(--text-secondary)' }}>Total Expenses</div>
             <div className="metric-value font-amount count-up" style={{ color: 'var(--text-primary)' }}>
-              <AnimatedNumber value={totalExpenses} prefix="₹" />
+              <AnimatedNumber value={totalExpenses} prefix={currencySymbol} />
             </div>
             <div style={{ fontSize: 11, color: pendingExpensesTotal > 0 ? 'var(--warn-text)' : 'var(--text-secondary)', marginTop: 8 }}>
               {pendingExpensesTotal > 0
@@ -477,7 +478,7 @@ export const FinanceManager: React.FC = () => {
           >
             <div className="metric-label" style={{ marginBottom: 12, color: totalCollections > 0 ? 'var(--success-text)' : 'var(--text-secondary)' }}>Net Agency Profit</div>
             <div className="metric-value font-amount count-up" style={{ color: netAgencyProfit >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
-              <AnimatedNumber value={netAgencyProfit} prefix="₹" />
+              <AnimatedNumber value={netAgencyProfit} prefix={currencySymbol} />
             </div>
             <div style={{ fontSize: 11, color: totalCollections > 0 ? 'var(--success-text)' : 'var(--text-secondary)', fontWeight: 600, marginTop: 8 }}>
               {netMargin}% Agency Margin

@@ -245,6 +245,8 @@ export interface ChatMessage {
   attachments?: ChatAttachment[];
   readBy: string[];
   isRead?: boolean;
+  isDeletedForEveryone?: boolean;
+  deletedForUserIds?: string[];
 }
 
 export interface Conversation {

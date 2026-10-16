@@ -199,6 +199,8 @@ export const api = {
     createConversation: (data: any) => req<any>('POST', '/chat/conversations', data),
     direct: (targetUserId: string) => req<any>('POST', `/chat/direct/${targetUserId}`),
     markRead: (convId: string) => req<any>('POST', `/chat/conversations/${convId}/read`),
+    deleteMessage: (convId: string, messageId: string, deleteType: string) =>
+      req<any>('DELETE', `/chat/conversations/${convId}/messages/${messageId}`, { deleteType }),
   },
   settings: {
     get: () => req<any>('GET', '/settings'),

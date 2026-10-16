@@ -81,3 +81,16 @@ export function emitMarkRead(conversationId: string, userId: string) {
     s.emit('mark_read', { conversationId, userId });
   }
 }
+
+export function emitDeleteMessage(
+  conversationId: string,
+  messageId: string,
+  deleteType: 'forEveryone' | 'forMe',
+  userId: string
+) {
+  const s = getSocket();
+  if (s.connected) {
+    s.emit('delete_message', { conversationId, messageId, deleteType, userId });
+  }
+}
+

@@ -241,7 +241,7 @@ export const Dashboard: React.FC = () => {
   const monthlyIncomeMap: Record<string, number> = {};
   payments.forEach(p => {
     if (p.paymentDate && p.status === 'Success') {
-      const key = p.paymentDate.slice(0, 7);
+      const key = String(p.paymentDate).slice(0, 7);
       monthlyIncomeMap[key] = (monthlyIncomeMap[key] || 0) + (Number(p.amount) || 0);
     }
   });
@@ -254,7 +254,7 @@ export const Dashboard: React.FC = () => {
   const monthlyExpenseMap: Record<string, number> = {};
   expenses.forEach(e => {
     if (e.date && (e.paymentStatus || 'Paid') === 'Paid') {
-      const key = e.date.slice(0, 7);
+      const key = String(e.date).slice(0, 7);
       monthlyExpenseMap[key] = (monthlyExpenseMap[key] || 0) + Number(e.amount || 0);
     }
   });

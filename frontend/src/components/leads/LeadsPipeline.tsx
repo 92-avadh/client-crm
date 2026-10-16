@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import DatePicker from '@/components/ui/DatePicker';
+import { AnimatedNumber } from '../../hooks/useCountUp';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -41,7 +42,8 @@ export const LeadsPipeline: React.FC = () => {
     leads,
     addLead,
     updateLeadStage,
-    convertLeadToBrand
+    convertLeadToBrand,
+    currencySymbol,
   } = useApp();
 
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
@@ -116,7 +118,7 @@ export const LeadsPipeline: React.FC = () => {
                   </span>
                 </div>
                 <div className="font-amount" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', marginTop: 4 }}>
-                  Value: ₹{stageTotal.toLocaleString('en-IN')}
+                  Value: <AnimatedNumber value={stageTotal} prefix={currencySymbol} />
                 </div>
               </div>
 

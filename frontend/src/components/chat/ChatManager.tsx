@@ -16,7 +16,8 @@ import {
   User as UserIcon,
   Sparkles,
   Shield,
-  Briefcase
+  Briefcase,
+  Trash2,
 } from 'lucide-react';
 import { getSocket, emitTypingStatus } from '../../services/socket';
 import type { User, Conversation } from '../../types';
@@ -33,6 +34,7 @@ export const ChatManager: React.FC = () => {
     loadMessages,
     startDirectChat,
     markConversationRead,
+    deleteMessage,
   } = useApp();
 
   const [inputText, setInputText] = useState('');
@@ -752,8 +754,15 @@ export const ChatManager: React.FC = () => {
                             position: 'relative',
                           }}
                         >
-                          <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                            {msg.text}
+                          <div
+                            style={{
+                              wordBreak: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                              fontStyle: msg.isDeletedForEveryone ? 'italic' : 'normal',
+                              opacity: msg.isDeletedForEveryone ? 0.75 : 1,
+                            }}
+                          >
+                            {msg.isDeletedForEveryone ? '🚫 This message was deleted' : msg.text}
                           </div>
 
                           {/* Attachments */}
@@ -809,6 +818,31 @@ export const ChatManager: React.FC = () => {
                             }}
                           >
                             <span>{msg.timestamp}</span>
+
+                            {isMe && !msg.isDeletedForEveryone && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm('Delete this message for everyone?')) {
+                                    deleteMessage(activeConv.id, msg.id, 'forEveryone');
+                                  }
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '1px 3px',
+                                  color: 'rgba(255,255,255,0.7)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  marginLeft: 2,
+                                }}
+                                title="Delete message"
+                              >
+                                <Trash2 style={{ width: 10, height: 10 }} />
+                              </button>
+                            )}
 
                             {isMe && (
                               <span

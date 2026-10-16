@@ -204,7 +204,13 @@ async function seed(closePool = false) {
     INSERT INTO conversations (id, type, title, brand_id, last_message, last_message_time, unread_count) VALUES
     ('conv_apex_internal', 'brand', 'Apex Media - Internal', 'brand_apex', 'SEO audit draft is ready for review. Sharing the doc now.', '2026-09-30T11:30:00.000Z', 2),
     ('conv_zephyr_internal', 'brand', 'Zephyr Technologies - Internal', 'brand_zephyr', 'Let''s schedule the campaign review for next week.', '2026-09-29T17:00:00.000Z', 0),
-    ('conv_team_general', 'team', 'Team General', NULL, 'Reminder: Monday stand-up at 10 AM.', '2026-09-28T09:00:00.000Z', 1)
+    ('conv_team_general', 'team', 'Team General', NULL, 'Reminder: Monday stand-up at 10 AM.', '2026-09-28T09:00:00.000Z', 1),
+    ('conv_dm_usr_admin_usr_hr', 'direct', 'Sarah Jenkins', NULL, 'Hey Sarah, client onboarding status updated.', '2026-09-30T10:15:00.000Z', 0),
+    ('conv_dm_usr_admin_usr_team_rahul', 'direct', 'Rahul Verma', NULL, 'SEO audit is on track for Friday.', '2026-09-30T11:45:00.000Z', 0),
+    ('conv_dm_usr_admin_usr_team_priya', 'direct', 'Priya Sharma', NULL, 'Growth deck draft looks sharp!', '2026-09-29T15:20:00.000Z', 0),
+    ('conv_dm_usr_hr_usr_team_rahul', 'direct', 'Rahul Verma', NULL, 'Performance feedback submitted.', '2026-09-28T14:10:00.000Z', 0),
+    ('conv_dm_usr_hr_usr_team_priya', 'direct', 'Priya Sharma', NULL, 'Leave approved for next month.', '2026-09-27T12:00:00.000Z', 0),
+    ('conv_dm_usr_team_priya_usr_team_rahul', 'direct', 'Rahul Verma', NULL, 'Shared campaign creative assets.', '2026-09-29T16:30:00.000Z', 0)
     ON CONFLICT DO NOTHING
   `);
 
@@ -218,7 +224,19 @@ async function seed(closePool = false) {
     ('conv_team_general', 'usr_admin'),
     ('conv_team_general', 'usr_hr'),
     ('conv_team_general', 'usr_team_rahul'),
-    ('conv_team_general', 'usr_team_priya')
+    ('conv_team_general', 'usr_team_priya'),
+    ('conv_dm_usr_admin_usr_hr', 'usr_admin'),
+    ('conv_dm_usr_admin_usr_hr', 'usr_hr'),
+    ('conv_dm_usr_admin_usr_team_rahul', 'usr_admin'),
+    ('conv_dm_usr_admin_usr_team_rahul', 'usr_team_rahul'),
+    ('conv_dm_usr_admin_usr_team_priya', 'usr_admin'),
+    ('conv_dm_usr_admin_usr_team_priya', 'usr_team_priya'),
+    ('conv_dm_usr_hr_usr_team_rahul', 'usr_hr'),
+    ('conv_dm_usr_hr_usr_team_rahul', 'usr_team_rahul'),
+    ('conv_dm_usr_hr_usr_team_priya', 'usr_hr'),
+    ('conv_dm_usr_hr_usr_team_priya', 'usr_team_priya'),
+    ('conv_dm_usr_team_priya_usr_team_rahul', 'usr_team_priya'),
+    ('conv_dm_usr_team_priya_usr_team_rahul', 'usr_team_rahul')
     ON CONFLICT DO NOTHING
   `);
 

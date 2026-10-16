@@ -78,6 +78,19 @@ function initSocket(httpServer, isAllowedOrigin) {
       }
     });
 
+    // Delete message broadcast
+    socket.on('delete_message', async ({ conversationId, messageId, deleteType, userId }) => {
+      if (conversationId && messageId) {
+        try {
+          const chatService = require('./services/chat.service');
+          await chatService.deleteMessage(conversationId, messageId, deleteType, userId);
+          broadcastMessageDeleted(conversationId, messageId, deleteType, userId);
+        } catch (err) {
+          console.error('Socket delete_message error:', err.message);
+        }
+      }
+    });
+
     socket.on('disconnect', () => {
       // Room cleanup is handled automatically by socket.io
     });
@@ -125,10 +138,21 @@ function broadcastConversationCreated(conversation, participantIds = []) {
   }
 }
 
+function broadcastMessageDeleted(conversationId, messageId, deleteType, userId) {
+  if (!io) return;
+  io.to(`conversation_${conversationId}`).emit('message_deleted', {
+    conversationId,
+    messageId,
+    deleteType,
+    userId,
+  });
+}
+
 module.exports = {
   initSocket,
   getIO,
   broadcastNewMessage,
   broadcastMessagesRead,
   broadcastConversationCreated,
+  broadcastMessageDeleted,
 };

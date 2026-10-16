@@ -10,6 +10,7 @@ import {
   joinConversationRoom,
   leaveConversationRoom,
   emitMarkRead,
+  emitDeleteMessage,
 } from '../services/socket';
 import type {
   User,
@@ -113,6 +114,7 @@ interface AppContextType {
   loadMessages: (convId: string) => Promise<void>;
   startDirectChat: (targetUserId: string) => Promise<string>;
   markConversationRead: (convId: string) => Promise<void>;
+  deleteMessage: (conversationId: string, messageId: string, deleteType: 'forEveryone' | 'forMe') => Promise<void>;
 
   settings: AppSettings;
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
@@ -671,11 +673,69 @@ export const AppProvider: React.FC<{
               api.chat.conversations().catch(() => []),
               api.users.list().catch(() => []),
             ]);
-            if (convsData && convsData.length > 0) {
-              setConversations(convsData);
-              if (convsData.length > 0) setActiveConversationId((prev) => prev || convsData[0].id);
-            }
+            const allU = usersData && usersData.length > 0 ? usersData : allUsers;
             if (usersData && usersData.length > 0) setAllUsers(usersData);
+
+            const baseConvs = Array.isArray(convsData) ? convsData : [];
+            const enriched = baseConvs.map((c: any) => {
+              if (c.type === 'direct') {
+                const otherId = c.participantIds?.find((id: any) => String(id) !== String(currentUser.id));
+                const foundUser = allU.find((u: any) => String(u.id) === String(otherId) || (u.name && u.name === c.title && u.name !== 'Direct Chat'));
+
+                if (foundUser) {
+                  return {
+                    ...c,
+                    title: foundUser.name,
+                    otherMember: {
+                      id: foundUser.id,
+                      name: foundUser.name,
+                      avatar: foundUser.avatar,
+                      role: foundUser.role,
+                      designation: foundUser.designation || foundUser.role,
+                      email: foundUser.email,
+                    },
+                  };
+                }
+              }
+              return c;
+            });
+
+            // Ensure every active agency colleague has a visible direct chat channel without manual addition
+            if (currentUser && currentUser.role !== 'brand') {
+              const colleagues = allU.filter((u: any) => u.id !== currentUser.id && u.role !== 'brand' && u.status !== 'inactive');
+              for (const col of colleagues) {
+                const exists = enriched.some((c: any) =>
+                  c.type === 'direct' && (
+                    (c.participantIds && c.participantIds.includes(col.id)) ||
+                    (c.otherMember && c.otherMember.id === col.id) ||
+                    c.title === col.name
+                  )
+                );
+                if (!exists) {
+                  const autoConvId = `conv_dm_${[currentUser.id, col.id].sort().join('_')}`;
+                  enriched.push({
+                    id: autoConvId,
+                    type: 'direct',
+                    title: col.name,
+                    participantIds: [currentUser.id, col.id],
+                    lastMessage: 'Direct conversation ready',
+                    lastMessageTime: 'Just now',
+                    unreadCount: 0,
+                    otherMember: {
+                      id: col.id,
+                      name: col.name,
+                      avatar: col.avatar,
+                      role: col.role,
+                      designation: col.designation || col.role,
+                      email: col.email,
+                    },
+                  });
+                }
+              }
+            }
+
+            setConversations(enriched);
+            if (enriched.length > 0) setActiveConversationId((prev) => prev || enriched[0].id);
             break;
           }
           case 'settings': {
@@ -1435,16 +1495,39 @@ export const AppProvider: React.FC<{
       });
     };
 
+    const handleMessageDeleted = ({ conversationId, messageId, deleteType, userId }: any) => {
+      setMessages(prev => {
+        const list = prev[conversationId];
+        if (!list) return prev;
+        if (deleteType === 'forEveryone') {
+          return {
+            ...prev,
+            [conversationId]: list.map(m =>
+              m.id === messageId ? { ...m, isDeletedForEveryone: true, text: 'This message was deleted' } : m
+            ),
+          };
+        } else if (userId === currentUser.id) {
+          return {
+            ...prev,
+            [conversationId]: list.filter(m => m.id !== messageId),
+          };
+        }
+        return prev;
+      });
+    };
+
     s.on('new_message', handleNewMessage);
     s.on('messages_read', handleMessagesRead);
     s.on('conversation_updated', handleConversationUpdated);
     s.on('new_conversation', handleNewConversation);
+    s.on('message_deleted', handleMessageDeleted);
 
     return () => {
       s.off('new_message', handleNewMessage);
       s.off('messages_read', handleMessagesRead);
       s.off('conversation_updated', handleConversationUpdated);
       s.off('new_conversation', handleNewConversation);
+      s.off('message_deleted', handleMessageDeleted);
     };
   }, [currentUser?.id]);
 
@@ -1582,6 +1665,33 @@ export const AppProvider: React.FC<{
     } catch (err: any) {
       console.warn('API chat.sendMessage failed, keeping optimistic message:', err);
     }
+  };
+
+  const deleteMessage = async (conversationId: string, messageId: string, deleteType: 'forEveryone' | 'forMe') => {
+    if (!currentUser) return;
+    try {
+      emitDeleteMessage(conversationId, messageId, deleteType, currentUser.id);
+      await api.chat.deleteMessage(conversationId, messageId, deleteType).catch(() => {});
+    } catch (err) {
+      console.warn('API chat.deleteMessage failed, applying local update:', err);
+    }
+
+    setMessages(prev => {
+      const list = prev[conversationId] || [];
+      if (deleteType === 'forEveryone') {
+        return {
+          ...prev,
+          [conversationId]: list.map(m =>
+            m.id === messageId ? { ...m, isDeletedForEveryone: true, text: 'This message was deleted' } : m
+          ),
+        };
+      } else {
+        return {
+          ...prev,
+          [conversationId]: list.filter(m => m.id !== messageId),
+        };
+      }
+    });
   };
 
   // ---- Settings ----
@@ -1763,6 +1873,7 @@ export const AppProvider: React.FC<{
         loadMessages,
         startDirectChat,
         markConversationRead,
+        deleteMessage,
         settings,
         updateSettings,
         currency: activeCurrency,

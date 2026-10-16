@@ -405,6 +405,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           )
         }
       >
+        <Route index element={<Navigate to={ROUTES.dashboard} replace />} />
         <Route path={ROUTES.dashboard} element={<PermissionGate module="dashboard"><Dashboard /></PermissionGate>} />
         <Route path={ROUTES.clients} element={<PermissionGate module="clients"><ClientsManager /></PermissionGate>} />
         <Route path={ROUTES.projects} element={<PermissionGate module="projects"><ProjectsAndTasks /></PermissionGate>} />

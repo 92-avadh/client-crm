@@ -61,6 +61,13 @@ const markRead = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+const deleteMessage = asyncHandler(async (req, res) => {
+  const { id: conversationId, messageId } = req.params;
+  const deleteType = req.body?.deleteType || req.query?.deleteType || 'forEveryone';
+  const result = await chat.deleteMessage(conversationId, messageId, deleteType, req.user.id);
+  res.json(result);
+});
+
 module.exports = {
   listConversations,
   listMessages,
@@ -68,4 +75,5 @@ module.exports = {
   createConversation,
   directConversation,
   markRead,
+  deleteMessage,
 };

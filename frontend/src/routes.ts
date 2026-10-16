@@ -23,9 +23,12 @@ export const ROUTES = {
 export type RouteTab = keyof typeof ROUTES;
 
 /** Reverse map: URL path → tab id */
-export const PATH_TO_TAB: Record<string, RouteTab> = Object.fromEntries(
-  Object.entries(ROUTES).map(([tab, path]) => [path, tab as RouteTab])
-);
+export const PATH_TO_TAB: Record<string, RouteTab> = {
+  ...Object.fromEntries(
+    Object.entries(ROUTES).map(([tab, path]) => [path, tab as RouteTab])
+  ),
+  '/': 'dashboard',
+};
 
 /** Default landing route */
 export const DEFAULT_ROUTE = ROUTES.dashboard;

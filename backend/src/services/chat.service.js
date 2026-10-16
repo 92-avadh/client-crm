@@ -113,7 +113,62 @@ async function getAttachmentsForMessages(messageIds) {
   return map;
 }
 
+async function ensureDirectConversations(userId) {
+  try {
+    const { rows: meRows } = await pool.query('SELECT id, name, role FROM users WHERE id = $1', [userId]);
+    if (!meRows.length) return;
+    const me = meRows[0];
+    if (me.role === 'brand') return;
+
+    const { rows: colleagues } = await pool.query(
+      `SELECT id, name, avatar, role, designation FROM users WHERE role != 'brand' AND id != $1 AND (status IS NULL OR status != 'inactive')`,
+      [userId]
+    );
+
+    for (const colleague of colleagues) {
+      const { rows: existing } = await pool.query(
+        `SELECT c.id FROM conversations c
+         JOIN conversation_participants p1 ON c.id = p1.conversation_id AND p1.user_id = $1
+         JOIN conversation_participants p2 ON c.id = p2.conversation_id AND p2.user_id = $2
+         WHERE c.type = 'direct'
+         LIMIT 1`,
+        [userId, colleague.id]
+      );
+
+      if (existing.length === 0) {
+        const convId = `conv_dm_${[userId, colleague.id].sort().join('_')}`;
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(
+            `INSERT INTO conversations (id, type, title, last_message, last_message_time, unread_count)
+             VALUES ($1, 'direct', $2, 'Direct conversation ready', 'Just now', 0)
+             ON CONFLICT (id) DO NOTHING`,
+            [convId, colleague.name]
+          );
+          await client.query(
+            `INSERT INTO conversation_participants (conversation_id, user_id)
+             VALUES ($1, $2), ($1, $3)
+             ON CONFLICT DO NOTHING`,
+            [convId, userId, colleague.id]
+          );
+          await client.query('COMMIT');
+        } catch (e) {
+          await client.query('ROLLBACK');
+        } finally {
+          client.release();
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('ensureDirectConversations warning:', err.message);
+  }
+}
+
 async function listConversations(userId, { page = 1, pageSize = 50 } = {}) {
+  // Proactively provision direct 1-on-1 channels for all active team colleagues
+  await ensureDirectConversations(userId);
+
   // Count total conversations
   const { rows: countRows } = await pool.query(
     `SELECT COUNT(*) FROM conversations c
@@ -215,6 +270,33 @@ async function sendMessage(conversationId, user, { text, attachments = [] }) {
 
     const id = msgId();
     const ts = new Date().toISOString();
+
+    // Ensure conversation exists in DB so foreign key never fails
+    const { rows: convCheck } = await client.query('SELECT id FROM conversations WHERE id = $1', [conversationId]);
+    if (convCheck.length === 0) {
+      let otherUserId = null;
+      if (conversationId.includes('usr_')) {
+        const parts = conversationId.split('_');
+        const uids = parts.filter(p => p.startsWith('usr_') && p !== user.id);
+        if (uids.length > 0) otherUserId = uids[0];
+      }
+      await client.query(
+        `INSERT INTO conversations (id, type, title, last_message, last_message_time, unread_count)
+         VALUES ($1, 'direct', 'Direct Chat', $2, $3, 0)
+         ON CONFLICT (id) DO UPDATE SET last_message = EXCLUDED.last_message, last_message_time = EXCLUDED.last_message_time`,
+        [conversationId, text, ts]
+      );
+      await client.query(
+        `INSERT INTO conversation_participants (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [conversationId, user.id]
+      );
+      if (otherUserId) {
+        await client.query(
+          `INSERT INTO conversation_participants (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [conversationId, otherUserId]
+        );
+      }
+    }
 
     const { rows } = await client.query(
       `INSERT INTO chat_messages (id,conversation_id,sender_id,sender_name,sender_role,text,timestamp)
@@ -395,6 +477,22 @@ async function getOrCreateDirectConversation(user, targetUserId) {
   return newConv;
 }
 
+async function deleteMessage(conversationId, messageId, deleteType, userId) {
+  if (deleteType === 'forEveryone') {
+    await pool.query(
+      `UPDATE chat_messages SET text = 'This message was deleted' WHERE id = $1 AND conversation_id = $2`,
+      [messageId, conversationId]
+    );
+    await pool.query('DELETE FROM message_attachments WHERE message_id = $1', [messageId]);
+  } else {
+    await pool.query(
+      `DELETE FROM message_read_by WHERE message_id = $1 AND user_id = $2`,
+      [messageId, userId]
+    );
+  }
+  return { success: true, conversationId, messageId, deleteType };
+}
+
 module.exports = {
   CONVERSATION_TYPES,
   mapConv,
@@ -405,4 +503,6 @@ module.exports = {
   markMessagesRead,
   createConversation,
   getOrCreateDirectConversation,
+  deleteMessage,
+  ensureDirectConversations,
 };
