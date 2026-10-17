@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS brands (
   mobile VARCHAR(50),
   email VARCHAR(200),
   billing_address TEXT,
+  city VARCHAR(100),
   state VARCHAR(100),
   pincode VARCHAR(20),
   gst_number VARCHAR(20),

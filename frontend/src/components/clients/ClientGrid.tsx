@@ -125,7 +125,7 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <MapPin style={{ width: 13, height: 13, color: 'var(--text-muted)' }} />
-                    {brand.state}
+                    {[brand.city, brand.state].filter(Boolean).join(', ') || brand.state || '—'}
                   </span>
                   {role !== 'team' && (
                     <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>

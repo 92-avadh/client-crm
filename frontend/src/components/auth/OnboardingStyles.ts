@@ -7,13 +7,19 @@ export const ONBOARDING_CSS = `
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(10, 25, 36, 0.42);
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
+          background: rgba(15, 23, 42, 0.45);
+          backdrop-filter: blur(16px) saturate(180%);
+          -webkit-backdrop-filter: blur(16px) saturate(180%);
           padding: 24px 16px;
           overflow-y: auto;
           font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
           animation: overlayFadeIn 0.3s ease-out forwards;
+        }
+
+        :root.dark .onboarding-root-overlay {
+          background: rgba(4, 9, 15, 0.78);
+          backdrop-filter: blur(24px) saturate(190%);
+          -webkit-backdrop-filter: blur(24px) saturate(190%);
         }
 
         /* ── AMBIENT LIQUID ORBS (Flowing behind frosted glass) ── */
@@ -82,30 +88,30 @@ export const ONBOARDING_CSS = `
           position: relative;
           z-index: 3002;
           width: 100%;
-          max-width: 620px;
-          max-height: 90vh;
+          max-width: 600px;
+          max-height: 88vh;
           overflow-y: auto;
-          border-radius: 26px;
-          padding: 34px 34px 28px;
+          border-radius: 24px;
+          padding: 30px 32px 24px;
           box-sizing: border-box;
-          background: rgba(255, 255, 255, 0.74);
-          backdrop-filter: blur(48px) saturate(210%);
-          -webkit-backdrop-filter: blur(48px) saturate(210%);
-          border: 1px solid rgba(255, 255, 255, 0.75);
-          box-shadow: 0 35px 90px -15px rgba(0, 0, 0, 0.32),
-                      0 0 0 1px rgba(255, 255, 255, 0.45) inset,
-                      0 2px 4px rgba(255, 255, 255, 0.85) inset;
+          background: rgba(255, 255, 255, 0.90);
+          backdrop-filter: blur(40px) saturate(200%);
+          -webkit-backdrop-filter: blur(40px) saturate(200%);
+          border: 1px solid rgba(255, 255, 255, 0.95);
+          box-shadow: 0 30px 85px -15px rgba(15, 23, 42, 0.18),
+                      0 0 0 1px rgba(15, 23, 42, 0.06),
+                      0 2px 4px rgba(255, 255, 255, 1) inset;
           color: #0F172A;
           animation: modalPopUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         /* Dark mode glass adaptation */
         :root.dark .liquid-glass-modal {
-          background: rgba(11, 23, 20, 0.78);
+          background: rgba(13, 20, 32, 0.86);
           border: 1px solid rgba(255, 255, 255, 0.12);
-          box-shadow: 0 35px 90px -15px rgba(0, 0, 0, 0.65),
+          box-shadow: 0 35px 90px -15px rgba(0, 0, 0, 0.75),
                       0 0 0 1px rgba(255, 255, 255, 0.08) inset,
-                      0 1.5px 2px rgba(255, 255, 255, 0.15) inset;
+                      0 1.5px 2px rgba(255, 255, 255, 0.2) inset;
           color: #F8FAFC;
         }
 
@@ -325,48 +331,55 @@ export const ONBOARDING_CSS = `
           display: flex;
           align-items: flex-start;
           gap: 12px;
-          padding: 14px 16px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.52);
+          padding: 13px 15px;
+          border-radius: 14px;
+          background: rgba(248, 250, 252, 0.85);
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
-          border: 1.5px solid rgba(255, 255, 255, 0.7);
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+          border: 1.5px solid rgba(226, 232, 240, 0.9);
+          box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
           cursor: pointer;
           text-align: left;
           font-family: inherit;
-          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         :root.dark .glass-card-option {
           background: rgba(255, 255, 255, 0.04);
           border-color: rgba(255, 255, 255, 0.09);
           box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+          color: #F8FAFC;
         }
 
         .glass-card-option:hover {
           transform: translateY(-2px);
-          border-color: rgba(0, 208, 94, 0.45);
-          background: rgba(255, 255, 255, 0.72);
-          box-shadow: 0 8px 24px rgba(0, 208, 94, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.95);
+          border-color: rgba(0, 208, 94, 0.5);
+          background: rgba(255, 255, 255, 0.98);
+          box-shadow: 0 8px 24px rgba(0, 208, 94, 0.12);
         }
 
         :root.dark .glass-card-option:hover {
-          border-color: rgba(0, 208, 94, 0.45);
+          border-color: rgba(0, 208, 94, 0.5);
           background: rgba(255, 255, 255, 0.08);
           box-shadow: 0 8px 24px rgba(0, 208, 94, 0.16);
         }
 
-        .glass-card-option.selected {
-          border: 2px solid #00D05E;
-          background: linear-gradient(135deg, rgba(0, 208, 94, 0.15) 0%, rgba(5, 150, 57, 0.07) 100%);
-          box-shadow: 0 8px 28px rgba(0, 208, 94, 0.22), inset 0 1.5px 2px rgba(255, 255, 255, 0.95);
+        .glass-card-option:active,
+        .glass-pill-option:active {
+          transform: scale(0.975) !important;
+          transition: transform 90ms cubic-bezier(0.2, 0, 0, 1) !important;
+        }
+
+        .glass-card-option.selected,
+        :root.dark .glass-card-option.selected {
+          border: 2px solid #00D05E !important;
+          background: linear-gradient(135deg, rgba(0, 208, 94, 0.14) 0%, rgba(5, 150, 57, 0.05) 100%) !important;
+          box-shadow: 0 8px 28px rgba(0, 208, 94, 0.22), inset 0 1.5px 2px rgba(255, 255, 255, 0.4) !important;
         }
 
         :root.dark .glass-card-option.selected {
-          border-color: #00D05E;
-          background: linear-gradient(135deg, rgba(0, 208, 94, 0.22) 0%, rgba(5, 150, 57, 0.10) 100%);
-          box-shadow: 0 8px 28px rgba(0, 208, 94, 0.28);
+          background: linear-gradient(135deg, rgba(0, 208, 94, 0.22) 0%, rgba(5, 150, 57, 0.10) 100%) !important;
+          box-shadow: 0 8px 28px rgba(0, 208, 94, 0.3) !important;
         }
 
         .glass-card-option.centered {
@@ -464,44 +477,219 @@ export const ONBOARDING_CSS = `
         }
 
         .glass-pill-option {
-          padding: 8px 15px;
+          padding: 8px 16px;
           border-radius: 20px;
-          font-size: 12px;
+          font-size: 12.5px;
           font-weight: 650;
           font-family: inherit;
           cursor: pointer;
-          background: rgba(255, 255, 255, 0.55);
+          background: rgba(248, 250, 252, 0.85);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border: 1.5px solid rgba(255, 255, 255, 0.75);
+          border: 1.5px solid rgba(226, 232, 240, 0.9);
           color: #334155;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+          box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
           transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
         }
 
         :root.dark .glass-pill-option {
           background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.10);
+          border-color: rgba(255, 255, 255, 0.12);
           color: #CBD5E1;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
 
         .glass-pill-option:hover {
           transform: translateY(-1px);
-          border-color: rgba(0, 208, 94, 0.45);
-          background: rgba(255, 255, 255, 0.85);
+          border-color: rgba(0, 208, 94, 0.5);
+          background: rgba(255, 255, 255, 0.95);
           color: #0F172A;
         }
 
         :root.dark .glass-pill-option:hover {
-          background: rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.10);
           color: #FFFFFF;
+          border-color: rgba(0, 208, 94, 0.5);
         }
 
-        .glass-pill-option.selected {
-          background: linear-gradient(135deg, #059639 0%, #00D05E 100%);
-          color: #FFFFFF;
+        .glass-pill-option.selected,
+        :root.dark .glass-pill-option.selected {
+          background: linear-gradient(135deg, #059639 0%, #00D05E 100%) !important;
+          color: #FFFFFF !important;
+          border-color: #00D05E !important;
+          box-shadow: 0 4px 18px rgba(0, 208, 94, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.25) inset !important;
+          font-weight: 750 !important;
+          transform: scale(1.02);
+        }
+
+        .glass-pill-option.selected:hover,
+        :root.dark .glass-pill-option.selected:hover {
+          background: linear-gradient(135deg, #04782e 0%, #00bd55 100%) !important;
+          color: #FFFFFF !important;
+          box-shadow: 0 6px 22px rgba(0, 208, 94, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.35) inset !important;
+        }
+
+        /* ── APPLE GLASS CURRENCY DROPDOWN ── */
+        .currency-dropdown-wrap {
+          position: relative;
+          width: 100%;
+        }
+
+        .currency-dropdown-trigger {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 14px;
+          border-radius: 12px;
+          cursor: pointer;
+          font-family: inherit;
+          text-align: left;
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          border: 1.5px solid rgba(203, 213, 225, 0.85);
+          color: #0F172A;
+          box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        :root.dark .currency-dropdown-trigger {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.12);
+          color: #F8FAFC;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .currency-dropdown-trigger:hover {
+          border-color: rgba(0, 208, 94, 0.5);
+          background: rgba(255, 255, 255, 0.95);
+        }
+
+        :root.dark .currency-dropdown-trigger:hover {
+          background: rgba(255, 255, 255, 0.09);
+          border-color: rgba(0, 208, 94, 0.5);
+        }
+
+        .currency-dropdown-trigger.open {
           border-color: #00D05E;
-          box-shadow: 0 4px 14px rgba(0, 208, 94, 0.35);
+          box-shadow: 0 0 0 3px rgba(0, 208, 94, 0.2);
+        }
+
+        .currency-trigger-content {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .currency-trigger-symbol {
+          font-size: 15px;
+          font-weight: 800;
+          color: #059639;
+          min-width: 32px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 6px;
+          background: rgba(0, 208, 94, 0.10);
+        }
+
+        :root.dark .currency-trigger-symbol {
+          color: #00D05E;
+          background: rgba(0, 208, 94, 0.16);
+        }
+
+        .currency-trigger-name {
+          font-size: 13.5px;
+          font-weight: 650;
+          color: inherit;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .currency-dropdown-menu {
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0;
+          right: 0;
+          z-index: 50;
+          max-height: 240px;
+          overflow-y: auto;
+          border-radius: 14px;
+          padding: 6px;
+          background: rgba(255, 255, 255, 0.96);
+          backdrop-filter: blur(28px) saturate(200%);
+          -webkit-backdrop-filter: blur(28px) saturate(200%);
+          border: 1px solid rgba(226, 232, 240, 0.95);
+          box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(15, 23, 42, 0.05);
+          animation: expandSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        :root.dark .currency-dropdown-menu {
+          background: rgba(15, 23, 36, 0.96);
+          border-color: rgba(255, 255, 255, 0.14);
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+        }
+
+        .currency-dropdown-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 13px;
+          color: #334155;
+          transition: background 0.12s, color 0.12s;
+        }
+
+        :root.dark .currency-dropdown-item {
+          color: #E2E8F0;
+        }
+
+        .currency-dropdown-item:hover {
+          background: rgba(0, 208, 94, 0.08);
+          color: #059639;
+        }
+
+        :root.dark .currency-dropdown-item:hover {
+          background: rgba(0, 208, 94, 0.15);
+          color: #00D05E;
+        }
+
+        .currency-dropdown-item.selected {
+          background: rgba(0, 208, 94, 0.14);
+          color: #059639;
+          font-weight: 750;
+        }
+
+        :root.dark .currency-dropdown-item.selected {
+          background: rgba(0, 208, 94, 0.22);
+          color: #00D05E;
+        }
+
+        .currency-item-symbol {
+          font-weight: 800;
+          font-size: 14px;
+          min-width: 32px;
+          color: inherit;
+        }
+
+        .currency-item-name {
+          flex: 1;
+          color: inherit;
+          margin-left: 6px;
+        }
+
+        .currency-item-check {
+          color: #00D05E;
+          flex-shrink: 0;
         }
 
         /* ── DYNAMIC "OTHER" EXPANDING TEXTBOX (Apple Glass Input) ── */

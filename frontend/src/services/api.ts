@@ -19,14 +19,22 @@ export const getToken = (): string | null => {
   return null;
 };
 
+let isCircuitBroken = false;
+
 export const setToken = (t: string) => {
   if (typeof localStorage !== 'undefined') {
-    if (t) localStorage.setItem('retentio_token', t);
-    else localStorage.removeItem('retentio_token');
+    if (t) {
+      localStorage.setItem('retentio_token', t);
+      isCircuitBroken = false;
+    } else {
+      localStorage.removeItem('retentio_token');
+      isCircuitBroken = true;
+    }
   }
 };
 
 export const clearToken = () => {
+  isCircuitBroken = true;
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem('retentio_token');
   }
@@ -37,6 +45,7 @@ let sessionExpiredDebounceTimer: any = null;
 export function handleSessionExpired(message = 'Your session has expired. Please sign in again.') {
   const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
   if (isBypass) return;
+  isCircuitBroken = true;
   clearToken();
   try {
     localStorage.removeItem('retentio_user');
@@ -54,49 +63,142 @@ export function handleSessionExpired(message = 'Your session has expired. Please
   }
 }
 
-// Core fetch wrapper
+// In-flight Promise deduplication map to prevent redundant concurrent fetches
+const inFlightRequests = new Map<string, Promise<any>>();
+
+// Client-side short-lived memory cache (TTL = 15 seconds) to eliminate duplicate DB reads
+interface CacheEntry {
+  data: any;
+  expiry: number;
+}
+const responseCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 15_000;
+
+export const clearApiCache = (pattern?: string) => {
+  if (!pattern) {
+    responseCache.clear();
+    return;
+  }
+  for (const k of responseCache.keys()) {
+    if (k.includes(pattern)) responseCache.delete(k);
+  }
+};
+
+const isPublicRoute = (path: string) =>
+  path.startsWith('/auth/login') ||
+  path.startsWith('/auth/send-otp') ||
+  path.startsWith('/auth/verify-otp') ||
+  path.startsWith('/auth/resend-otp') ||
+  path.startsWith('/auth/forgot-password') ||
+  path.startsWith('/auth/reset-password') ||
+  path === '/health';
+
+// Core fetch wrapper with circuit breaker, deduplication, and cache
 async function req<T>(method: string, path: string, body?: any): Promise<T> {
+  const isPublic = isPublicRoute(path);
+  const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
   const token = getToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+
+  // If in bypass/demo mode, do not spam remote server with protected calls that will 401
+  if (!isPublic && isBypass) {
+    return (Array.isArray(body) ? [] : undefined) as unknown as T;
   }
 
-  let res: Response;
-  try {
-    res = await fetch(`${BASE_URL}${path}`, {
-      method,
-      credentials: 'include',
-      headers,
-      body: body ? JSON.stringify(body) : undefined
-    });
-  } catch (networkErr) {
-    // fetch() only rejects on network/CORS failure — never on HTTP status.
-    throw new Error(getNaturalErrorMessage(networkErr));
+  // If no token exists on protected routes or circuit breaker has tripped, short-circuit immediately
+  if (!isPublic && (!token || isCircuitBroken)) {
+    if (!isCircuitBroken) {
+      handleSessionExpired('Please sign in to access your workspace.');
+    }
+    return Promise.reject(new Error('Session expired or unauthorized'));
   }
 
-  if (!res.ok) {
-    const payload = await res.json().catch(() => ({} as any));
-    const rawError = payload?.error || payload?.message || `HTTP ${res.status}`;
-    const friendlyMsg = getNaturalErrorMessage(rawError);
+  // Invalidate cache on mutations
+  if (method !== 'GET') {
+    const resourcePrefix = path.split('/')[1] || '';
+    clearApiCache(resourcePrefix);
+  }
 
-    // If session expired or unauthorized on protected route, force logout and display message
-    if (res.status === 401 && !path.startsWith('/auth/login') && !path.startsWith('/auth/send-otp') && !path.startsWith('/auth/verify-otp')) {
-      const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
-      if (!isBypass) {
-        handleSessionExpired(friendlyMsg);
-      }
+  // Cache lookup for GET
+  const cacheKey = `${method}:${path}`;
+  if (method === 'GET') {
+    const cached = responseCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return cached.data as T;
     }
 
-    // Prefer the server's message, but normalise it to something user-friendly.
-    throw new Error(friendlyMsg);
+    // In-flight request deduplication: return existing promise if identical request is pending
+    const inFlight = inFlightRequests.get(cacheKey);
+    if (inFlight) {
+      return inFlight as Promise<T>;
+    }
   }
 
-  // 204 / empty bodies
-  if (res.status === 204) return undefined as T;
-  return res.json();
+  const executeRequest = async (): Promise<T> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(`${BASE_URL}${path}`, {
+        method,
+        credentials: 'include',
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch (networkErr) {
+      // fetch() only rejects on network/CORS failure — never on HTTP status.
+      throw new Error(getNaturalErrorMessage(networkErr));
+    }
+
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({} as any));
+      const rawError = payload?.error || payload?.message || `HTTP ${res.status}`;
+      const friendlyMsg = getNaturalErrorMessage(rawError);
+
+      // If session expired or unauthorized on protected route, trip circuit breaker and trigger single logout
+      if (res.status === 401 && !isPublic) {
+        isCircuitBroken = true;
+        if (!isBypass) {
+          handleSessionExpired(friendlyMsg);
+        }
+      }
+
+      throw new Error(friendlyMsg);
+    }
+
+    // Reset circuit breaker on successful protected response
+    if (!isPublic) {
+      isCircuitBroken = false;
+    }
+
+    // 204 / empty bodies
+    if (res.status === 204) return undefined as T;
+    const data = await res.json();
+
+    // Store in read cache
+    if (method === 'GET') {
+      responseCache.set(cacheKey, {
+        data,
+        expiry: Date.now() + CACHE_TTL_MS,
+      });
+    }
+
+    return data as T;
+  };
+
+  if (method === 'GET') {
+    const promise = executeRequest().finally(() => {
+      inFlightRequests.delete(cacheKey);
+    });
+    inFlightRequests.set(cacheKey, promise);
+    return promise;
+  }
+
+  return executeRequest();
 }
 
 // Auth

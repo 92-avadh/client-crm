@@ -267,8 +267,10 @@ export const Topbar: React.FC = () => {
     <header
       style={{
         height: 62,
-        background: 'var(--bg, #ffffff)',
-        borderBottom: '1px solid var(--border, #D0E0EF)',
+        background: 'var(--header-glass-bg)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        borderBottom: '1px solid var(--border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -277,6 +279,7 @@ export const Topbar: React.FC = () => {
         top: 0,
         zIndex: 30,
         flexShrink: 0,
+        transition: 'background 0.2s ease, border-color 0.2s ease',
       }}
       className="px-5 lg:px-6"
     >

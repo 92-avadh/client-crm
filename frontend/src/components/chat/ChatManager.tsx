@@ -21,8 +21,10 @@ import {
 } from 'lucide-react';
 import { getSocket, emitTypingStatus } from '../../services/socket';
 import type { User, Conversation } from '../../types';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export const ChatManager: React.FC = () => {
+  const { confirm, element: confirmDialog } = useConfirm();
   const {
     currentUser,
     allUsers,
@@ -822,9 +824,16 @@ export const ChatManager: React.FC = () => {
                             {isMe && !msg.isDeletedForEveryone && (
                               <button
                                 type="button"
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
-                                  if (window.confirm('Delete this message for everyone?')) {
+                                  const ok = await confirm({
+                                    title: 'Delete message?',
+                                    description: 'Delete this message for everyone? This action cannot be undone.',
+                                    confirmText: 'Delete for everyone',
+                                    destructive: true,
+                                    icon: 'trash',
+                                  });
+                                  if (ok) {
                                     deleteMessage(activeConv.id, msg.id, 'forEveryone');
                                   }
                                 }}
@@ -1298,6 +1307,7 @@ export const ChatManager: React.FC = () => {
           </div>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 };

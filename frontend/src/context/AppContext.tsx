@@ -169,11 +169,23 @@ export const AppProvider: React.FC<{
   onLogout
 }) => {
   const logout = useCallback(() => {
+    try {
+      localStorage.removeItem('retentio_token');
+      localStorage.removeItem('retentio_user');
+      localStorage.removeItem('retentio_active_user_id');
+      localStorage.removeItem('retentio_bypass_mode');
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('retentio_local_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch {}
     if (onLogout) {
       onLogout();
     } else {
-      localStorage.removeItem('retentio_token');
-      localStorage.removeItem('retentio_user');
       window.location.reload();
     }
   }, [onLogout]);
@@ -450,10 +462,32 @@ export const AppProvider: React.FC<{
     } catch {}
   }
 
+  const activeUserId = initialUser?.id || initialUserId || '';
+
+  // User boundary isolation: if a different user/ID is detected, clear un-scoped cache
+  if (typeof localStorage !== 'undefined' && activeUserId) {
+    const prevUserId = localStorage.getItem('retentio_active_user_id');
+    if (prevUserId && prevUserId !== activeUserId) {
+      // Switching to a different user: clear previous user's un-scoped workspace cache!
+      const emptyArr = JSON.stringify([]);
+      localStorage.setItem('retentio_local_brands', emptyArr);
+      localStorage.setItem('retentio_local_projects', emptyArr);
+      localStorage.setItem('retentio_local_tasks', emptyArr);
+      localStorage.setItem('retentio_local_invoices', emptyArr);
+      localStorage.setItem('retentio_local_payments', emptyArr);
+      localStorage.setItem('retentio_local_expenses', emptyArr);
+      localStorage.setItem('retentio_local_meetings', emptyArr);
+      localStorage.setItem('retentio_local_leads', emptyArr);
+    }
+    localStorage.setItem('retentio_active_user_id', activeUserId);
+  }
+
   const isCleanTesting = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_clean_testing') === 'true';
 
   const [brands, setBrands] = useState<Brand[]>(() => {
     try {
+      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_brands_${activeUserId}`) : null;
+      if (userSaved) return JSON.parse(userSaved);
       const saved = localStorage.getItem('retentio_local_brands');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -462,6 +496,8 @@ export const AppProvider: React.FC<{
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
+      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_projects_${activeUserId}`) : null;
+      if (userSaved) return JSON.parse(userSaved);
       const saved = localStorage.getItem('retentio_local_projects');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -469,6 +505,8 @@ export const AppProvider: React.FC<{
   });
   const [tasks, setTasks] = useState<Task[]>(() => {
     try {
+      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_tasks_${activeUserId}`) : null;
+      if (userSaved) return JSON.parse(userSaved);
       const saved = localStorage.getItem('retentio_local_tasks');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -476,6 +514,8 @@ export const AppProvider: React.FC<{
   });
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
     try {
+      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_invoices_${activeUserId}`) : null;
+      if (userSaved) return JSON.parse(userSaved);
       const saved = localStorage.getItem('retentio_local_invoices');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -484,6 +524,8 @@ export const AppProvider: React.FC<{
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [payments, setPayments] = useState<Payment[]>(() => {
     try {
+      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_payments_${activeUserId}`) : null;
+      if (userSaved) return JSON.parse(userSaved);
       const saved = localStorage.getItem('retentio_local_payments');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -491,6 +533,8 @@ export const AppProvider: React.FC<{
   });
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     try {
+      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_expenses_${activeUserId}`) : null;
+      if (userSaved) return JSON.parse(userSaved);
       const saved = localStorage.getItem('retentio_local_expenses');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -498,6 +542,8 @@ export const AppProvider: React.FC<{
   });
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
     try {
+      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_meetings_${activeUserId}`) : null;
+      if (userSaved) return JSON.parse(userSaved);
       const saved = localStorage.getItem('retentio_local_meetings');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -505,6 +551,8 @@ export const AppProvider: React.FC<{
   });
   const [leads, setLeads] = useState<Lead[]>(() => {
     try {
+      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_leads_${activeUserId}`) : null;
+      if (userSaved) return JSON.parse(userSaved);
       const saved = localStorage.getItem('retentio_local_leads');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -827,7 +875,9 @@ export const AppProvider: React.FC<{
         failedRef.current.add(domain);
         const msg = getNaturalErrorMessage(e);
         setApiError(msg);
-        showToast(msg, 'error');
+        if (!/unauthorized|expired|session/i.test(msg)) {
+          showToast(msg, 'error');
+        }
       } finally {
         inflightRef.current.delete(domain);
       }
@@ -898,7 +948,7 @@ export const AppProvider: React.FC<{
   // ---- Brand CRUD ----
   const addBrand = async (brandData: any): Promise<Brand> => {
     const selectedStatus = brandData.status || (['Active', 'Inactive', 'Paused', 'Churned'].includes(brandData.paymentStatus) ? brandData.paymentStatus : 'Active');
-    const payStatus = (brandData.paymentStatus === 'Pending' || (['Inactive', 'Paused', 'Churned'].includes(selectedStatus) && brandData.paymentStatus !== 'Paid')) ? 'Pending' : (brandData.paymentStatus === 'Pending' ? 'Pending' : 'Paid');
+    const payStatus = brandData.paymentStatus === 'Pending' ? 'Pending' : (brandData.paymentStatus === 'Paid' ? 'Paid' : (['Inactive', 'Paused', 'Churned'].includes(selectedStatus) ? 'Pending' : 'Paid'));
     const fee = Number(brandData.monthlyFee) || 0;
 
     let created: Brand;
@@ -913,6 +963,7 @@ export const AppProvider: React.FC<{
         mobile: brandData.mobile,
         email: brandData.email,
         billingAddress: brandData.billingAddress || '',
+        city: brandData.city || '',
         state: brandData.state || '',
         pincode: brandData.pincode || '',
         gstNumber: brandData.gstNumber || '',
@@ -1899,7 +1950,7 @@ export const AppProvider: React.FC<{
       console.warn('API users.deactivate failed, updating local state:', err);
     }
     setAllUsers(prev => {
-      const next = prev.map(u => (u.id === id ? { ...u, status: 'inactive' as const } : u));
+      const next = prev.map(u => (u.id === id ? { ...u, status: 'inactive' as const, isActive: false } : u));
       try {
         localStorage.setItem('retentio_local_users', JSON.stringify(next));
       } catch {}

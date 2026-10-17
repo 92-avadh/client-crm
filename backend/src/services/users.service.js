@@ -29,8 +29,8 @@ function mapUser(u, brandIds) {
   };
 }
 
-async function listUsers(user, { page = 1, pageSize = 50 } = {}) {
-  let where = 'WHERE is_active = true';
+async function listUsers(user, { page = 1, pageSize = 50, includeInactive = false } = {}) {
+  let where = (user?.role === 'admin' || includeInactive) ? 'WHERE 1=1' : 'WHERE is_active = true';
   const params = [];
   let idx = 1;
 

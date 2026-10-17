@@ -13,6 +13,7 @@ export interface ClientFormData {
   countryCode: string; // ISO 3166-1 alpha-2, e.g. 'IN'
   email: string;
   billingAddress: string;
+  city?: string;
   state: string;
   pincode: string;
   gstNumber: string;
@@ -271,14 +272,16 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
             </FieldRow>
 
             <FormField label="Billing Address" required value={formData.billingAddress} error={getFieldError('billingAddress')}
-              onBlur={() => handleBlur('billingAddress')} placeholder="Street, area, city" onChange={(v) => onFormChange({ billingAddress: v })} />
+              onBlur={() => handleBlur('billingAddress')} placeholder="Street, area" onChange={(v) => onFormChange({ billingAddress: v })} />
 
-            <FieldRow>
+            <div className="rg-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              <FormField label="City" value={formData.city || ''} error={getFieldError('city')}
+                onBlur={() => handleBlur('city')} placeholder="e.g. Surat" onChange={(v) => onFormChange({ city: v })} />
               <FormField label="State" required value={formData.state} error={getFieldError('state')}
                 onBlur={() => handleBlur('state')} placeholder="e.g. Gujarat" onChange={(v) => onFormChange({ state: v })} />
               <FormField label="Pincode" required value={formData.pincode} error={getFieldError('pincode')}
                 onBlur={() => handleBlur('pincode')} placeholder="e.g. 395006" onChange={(v) => onFormChange({ pincode: v })} />
-            </FieldRow>
+            </div>
 
             <FieldRow>
               <FormField label="GSTIN" value={formData.gstNumber} error={errors.gstNumber} mono
@@ -527,12 +530,14 @@ export const EditClientModal: React.FC<EditProps> = ({
             <FormField label="Billing Address" value={formData.billingAddress} error={errors.billingAddress}
               onChange={(v) => onFormChange({ billingAddress: v })} />
 
-            <FieldRow>
+            <div className="rg-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              <FormField label="City" value={formData.city || ''} error={errors.city}
+                placeholder="e.g. Surat" onChange={(v) => onFormChange({ city: v })} />
               <FormField label="State" value={formData.state} error={errors.state}
                 placeholder="e.g. Maharashtra" onChange={(v) => onFormChange({ state: v })} />
               <FormField label="Pincode" value={formData.pincode} error={errors.pincode}
                 placeholder="e.g. 400001" onChange={(v) => onFormChange({ pincode: v })} />
-            </FieldRow>
+            </div>
 
             <FieldRow>
               <FormField label="GSTIN" value={formData.gstNumber} mono

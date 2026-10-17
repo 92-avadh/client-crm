@@ -58,6 +58,10 @@ async function listInvoices(user, { brandId, status, search, page = 1, pageSize 
     whereClause += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
+  } else if (user.id !== 'usr_admin') {
+    whereClause += ` AND brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx})`;
+    params.push(user.id);
+    idx += 1;
   }
   if (brandId) {
     whereClause += ` AND brand_id=$${idx}`;

@@ -32,6 +32,12 @@ function scopeForUser(user) {
     return { sql: ' AND brand_id = $1', params: [user.brandId || ''] };
   }
   if (user.role === 'admin') {
+    if (user.id !== 'usr_admin') {
+      return {
+        sql: ' AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $1) OR brand_id IS NULL)',
+        params: [user.id],
+      };
+    }
     return { sql: '', params: [] };
   }
   // Internal team members (standard, corporate presets, or custom roles)

@@ -13,6 +13,7 @@ function validateClient(body, { requireName = false } = {}) {
     .optionalString('mobile', { max: 40, label: 'Mobile number' })
     .email('email', { label: 'Email' })
     .optionalString('billingAddress', { max: 500, label: 'Billing address' })
+    .optionalString('city', { max: 100, label: 'City' })
     .optionalString('state', { max: 80, label: 'State' })
     .optionalString('pincode', { max: 12, label: 'Pincode' })
     .optionalString('gstNumber', { max: 30, label: 'GST number' })

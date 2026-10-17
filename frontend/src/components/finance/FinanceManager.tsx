@@ -86,6 +86,7 @@ export const FinanceManager: React.FC = () => {
     showToast,
     setActiveTab: setNavTab,
     currencySymbol,
+    formatCurrency,
   } = useApp();
 
   const role = currentUser.role;
@@ -100,6 +101,7 @@ export const FinanceManager: React.FC = () => {
 
   /* ── Payment action state ────────────────────────────────────── */
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<any | null>(null);
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
   const [isSubmittingExpense, setIsSubmittingExpense] = useState(false);
 
@@ -174,8 +176,37 @@ export const FinanceManager: React.FC = () => {
   const [paymentSearch, setPaymentSearch] = useState('');
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
 
-  // Filtered payments list — must be defined before selection state
-  const filteredPayments = payments.filter(p => {
+  // ── STRICT USER DATA SCOPING: Associate data exclusively with the active user ──
+  // An account must only see payments, revenue, and expenses belonging to their own clients/brands
+  const userBrandIds = React.useMemo(() => new Set((brands || []).map((b) => b.id)), [brands]);
+
+  const scopedPayments = React.useMemo(() => {
+    return (payments || []).filter((p) => {
+      if (!p) return false;
+      // If the current account has no brands, they must not see unassociated client payments
+      if (userBrandIds.size === 0) return false;
+      return Boolean(p.brandId && userBrandIds.has(p.brandId));
+    });
+  }, [payments, userBrandIds]);
+
+  const scopedExpenses = React.useMemo(() => {
+    return (expenses || []).filter((e) => {
+      if (!e) return false;
+      if (e.brandId && !userBrandIds.has(e.brandId)) return false;
+      return true;
+    });
+  }, [expenses, userBrandIds]);
+
+  const scopedInvoices = React.useMemo(() => {
+    return (invoices || []).filter((i) => {
+      if (!i) return false;
+      if (userBrandIds.size === 0) return false;
+      return Boolean(i.brandId && userBrandIds.has(i.brandId));
+    });
+  }, [invoices, userBrandIds]);
+
+  // Filtered payments list — strictly scoped to active user
+  const filteredPayments = scopedPayments.filter(p => {
     if (paymentFilterStatus !== 'all' && p.status !== paymentFilterStatus) return false;
     if (paymentSearch.trim()) {
       const q = paymentSearch.toLowerCase();
@@ -293,16 +324,24 @@ export const FinanceManager: React.FC = () => {
     }
   };
 
-  const handleDeletePayment = async (p: any) => {
+  const handleDeletePayment = (p: any) => {
     if (!isAdmin) return;
-    const ok = window.confirm(
-      `Delete payment record of ₹${Number(p.amount).toLocaleString('en-IN')} for ${p.brandName}? This action cannot be undone.`
-    );
-    if (!ok) return;
+    setPaymentToDelete(p);
+  };
 
-    setDeletingPaymentId(p.id);
+  const confirmDeleteSinglePayment = async () => {
+    if (!paymentToDelete) return;
+    setDeletingPaymentId(paymentToDelete.id);
     try {
-      await deletePayment(p.id);
+      await deletePayment(paymentToDelete.id);
+      setSelectedPaymentIds(prev => {
+        const next = new Set(prev);
+        next.delete(paymentToDelete.id);
+        return next;
+      });
+      setPaymentToDelete(null);
+    } catch (err: any) {
+      showToast(getNaturalErrorMessage(err), 'error');
     } finally {
       setDeletingPaymentId(null);
     }
@@ -318,8 +357,8 @@ export const FinanceManager: React.FC = () => {
   };
 
   // ── STRICT CALCULATION LOGIC: Only payments actually received count as collected revenue ──
-  const receivedPayments = (payments || []).filter(p => p && p.status === 'Success');
-  const pendingPaymentsList = (payments || []).filter(p => p && p.status === 'Pending');
+  const receivedPayments = scopedPayments.filter(p => p && p.status === 'Success');
+  const pendingPaymentsList = scopedPayments.filter(p => p && p.status === 'Pending');
 
   const paymentsTotal = receivedPayments.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
 
@@ -332,8 +371,8 @@ export const FinanceManager: React.FC = () => {
 
   // Total expenses accounts ONLY for expenses actually paid (paymentStatus === 'Paid')
   // Pending expenses are excluded from Total Expenses and Net Profit until marked Paid
-  const paidExpenses = (expenses || []).filter(e => e && (e.paymentStatus || 'Paid') === 'Paid');
-  const pendingExpenses = (expenses || []).filter(e => e && e.paymentStatus === 'Pending');
+  const paidExpenses = scopedExpenses.filter(e => e && (e.paymentStatus || 'Paid') === 'Paid');
+  const pendingExpenses = scopedExpenses.filter(e => e && e.paymentStatus === 'Pending');
   const totalExpenses = paidExpenses.reduce((acc, e) => acc + (Number(e?.amount) || 0), 0);
   const pendingExpensesTotal = pendingExpenses.reduce((acc, e) => acc + (Number(e?.amount) || 0), 0);
   const netAgencyProfit = totalCollections - totalExpenses;
@@ -342,22 +381,22 @@ export const FinanceManager: React.FC = () => {
   // Pending Collections / Unpaid client fees (NEVER counted in totalCollections)
   const pendingPaymentsTotal = pendingPaymentsList.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
   const pendingBrandFees = (brands || [])
-    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Pending' && !(payments || []).some(p => p.brandId === b.id))
+    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id))
     .reduce((acc, b) => acc + (Number(b.monthlyFee) || 0), 0);
-  const invoicePendingTotal = (invoices || [])
+  const invoicePendingTotal = scopedInvoices
     .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue'))
     .reduce((acc, i) => acc + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0);
   const totalPending = invoicePendingTotal + pendingPaymentsTotal + pendingBrandFees;
 
   const brandProfitability = (brands || []).map((b) => {
     // Only actual received payments for this brand count as collected revenue
-    const revenue = (payments || [])
+    const revenue = scopedPayments
       .filter((p) => p && p.brandId === b.id && p.status === 'Success')
-      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.paymentStatus === 'Paid' && !(payments || []).some(p => p.brandId === b.id && p.status === 'Success') ? (Number(b.monthlyFee) || 0) : 0);
-    const pendingRevenue = (payments || [])
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.paymentStatus === 'Paid' && !scopedPayments.some(p => p.brandId === b.id && p.status === 'Success') ? (Number(b.monthlyFee) || 0) : 0);
+    const pendingRevenue = scopedPayments
       .filter((p) => p && p.brandId === b.id && p.status === 'Pending')
-      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.paymentStatus === 'Pending' && !(payments || []).some(p => p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
-    const directExpenses = (expenses || [])
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
+    const directExpenses = scopedExpenses
       .filter((e) => e && e.brandId === b.id && (e.paymentStatus || 'Paid') === 'Paid')
       .reduce((acc, e) => acc + (Number(e?.amount) || 0), 0);
     const profit = revenue - directExpenses;
@@ -1311,6 +1350,62 @@ export const FinanceManager: React.FC = () => {
             >
               {isDeletingPayments && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
               Yes, Delete {selectedPaymentIds.size} Payment Record{selectedPaymentIds.size > 1 ? 's' : ''}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogPopup>
+      </AlertDialog>
+
+      {/* Single Payment Delete confirmation (Animated AlertDialog) */}
+      <AlertDialog
+        open={Boolean(paymentToDelete)}
+        onOpenChange={(o) => {
+          if (!o && !deletingPaymentId) setPaymentToDelete(null);
+        }}
+      >
+        <AlertDialogPopup from="bottom" className="sm:max-w-[425px]">
+          <AlertDialogHeader>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
+                  background: 'var(--danger-bg)',
+                  color: 'var(--danger-text)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: 1,
+                }}
+              >
+                <Trash2 style={{ width: 19, height: 19 }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the payment record of {paymentToDelete ? formatCurrency(paymentToDelete.amount) : ''} for {paymentToDelete?.brandName}.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(deletingPaymentId)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteSinglePayment}
+              disabled={Boolean(deletingPaymentId)}
+              style={{
+                background: 'var(--danger-text)',
+                color: 'var(--solid-btn-text)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                opacity: deletingPaymentId ? 0.7 : 1,
+                cursor: deletingPaymentId ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {deletingPaymentId && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
+              Continue
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogPopup>

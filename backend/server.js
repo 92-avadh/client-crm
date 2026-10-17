@@ -85,6 +85,14 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
   validate: { xForwardedForHeader: false },
 });
+const burstLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: { error: 'Too many requests in a short time. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
@@ -102,10 +110,50 @@ const otpLimiter = rateLimit({
   validate: { xForwardedForHeader: false },
 });
 app.use('/api/', generalLimiter);
+app.use('/api/', burstLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/send-otp', otpLimiter);
 app.use('/api/auth/resend-otp', otpLimiter);
 app.use('/api/auth/verify-otp', otpLimiter);
+
+/* ------------------------------------------------------------------ */
+/*  In-memory read cache to protect PostgreSQL from repeated queries   */
+/* ------------------------------------------------------------------ */
+const serverMemoryCache = new Map();
+function cacheMiddleware(ttlSeconds = 20) {
+  return (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    const key = `${req.baseUrl || ''}${req.path}_${req.user?.id || 'anon'}`;
+    const cached = serverMemoryCache.get(key);
+    if (cached && Date.now() < cached.expiry) {
+      res.setHeader('X-Cache', 'HIT');
+      return res.json(cached.data);
+    }
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        serverMemoryCache.set(key, { data: body, expiry: Date.now() + (ttlSeconds * 1000) });
+      }
+      return originalJson(body);
+    };
+    next();
+  };
+}
+
+function invalidateServerCache(pattern) {
+  for (const k of serverMemoryCache.keys()) {
+    if (!pattern || k.includes(pattern)) serverMemoryCache.delete(k);
+  }
+}
+
+// Automatically invalidate cache on mutations
+app.use('/api', (req, res, next) => {
+  if (req.method !== 'GET') {
+    const resource = req.path.split('/')[1];
+    if (resource) invalidateServerCache(resource);
+  }
+  next();
+});
 
 const auth = require('./src/middleware/auth');
 
@@ -125,9 +173,9 @@ app.use('/api/meetings', auth, require('./src/routes/meetings'));
 app.use('/api/leads', auth, require('./src/routes/leads'));
 app.use('/api/notifications', auth, require('./src/routes/notifications'));
 app.use('/api/chat', auth, require('./src/routes/chat'));
-app.use('/api/settings', auth, require('./src/routes/settings'));
-app.use('/api/holidays', auth, require('./src/routes/holidays'));
-app.use('/api/audit-logs', auth, require('./src/routes/auditLogs'));
+app.use('/api/settings', auth, cacheMiddleware(30), require('./src/routes/settings'));
+app.use('/api/holidays', auth, cacheMiddleware(60), require('./src/routes/holidays'));
+app.use('/api/audit-logs', auth, cacheMiddleware(15), require('./src/routes/auditLogs'));
 app.use('/api/recurring-invoices', auth, require('./src/routes/recurring-invoices'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
@@ -177,6 +225,7 @@ connectWithRetry()
 
       await pool.query(`
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS city VARCHAR(100);
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
         ALTER TABLE projects ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);
         ALTER TABLE invoices ADD COLUMN IF NOT EXISTS owner_id VARCHAR(50);

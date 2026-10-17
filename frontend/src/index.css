@@ -63,10 +63,15 @@
   --selection-bg:   #0a0a0a;
   --selection-text: #ffffff;
 
-  /* Typography Fonts - Shopify Polaris Inter / SF Pro stack */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', 'Plus Jakarta Sans', sans-serif;
+  /* Apple Translucent Materials & Depth Tokens */
+  --header-glass-bg: rgba(255, 255, 255, 0.80);
+  --header-glass-border: rgba(226, 226, 226, 0.80);
+  --glass-specular: rgba(255, 255, 255, 0.50);
+
+  /* Typography Fonts - Apple SF Pro / Inter system stack */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
-  --font-amount: 'Inter', -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', 'Plus Jakarta Sans', sans-serif;
+  --font-amount: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
 
   /* Typographic Spacing Tokens (Rhythm & Proportions) */
   --leading-none:     1.15;
@@ -166,6 +171,11 @@
   --scrollbar-thumb-hover: #475569;
   --selection-bg:   #38BDF8;
   --selection-text: #090D16;
+
+  /* Apple Translucent Materials & Depth Tokens (dark) */
+  --header-glass-bg: rgba(9, 13, 22, 0.82);
+  --header-glass-border: rgba(30, 41, 59, 0.80);
+  --glass-specular: rgba(255, 255, 255, 0.08);
 
   --shadow-sm:  0 1px 3px rgba(0,0,0,.35);
   --shadow:     0 4px 12px rgba(0,0,0,.45);
@@ -596,6 +606,32 @@ input:-webkit-autofill:focus {
   -webkit-tap-highlight-color: rgba(5, 150, 57, 0.1);
 }
 
+/* ─── Apple Fluid Interface Tactile Feedback (Response: Kill Latency) ─── */
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active,
+.btn:not(:disabled):active {
+  transform: scale(0.972);
+  transition: transform 90ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ─── Apple Optical Typography & Proportional Tracking ─── */
+h1, h2, h3, h4, .display-heading {
+  font-optical-sizing: auto;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+h1 {
+  letter-spacing: -0.024em;
+  line-height: 1.15;
+}
+h2 {
+  letter-spacing: -0.018em;
+  line-height: 1.25;
+}
+h3 {
+  letter-spacing: -0.012em;
+  line-height: 1.32;
+}
+
 /* Safe area insets for notched devices */
 @supports (padding: max(0px)) {
   body {
@@ -645,20 +681,20 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
 .data-table tbody tr:hover td { background: var(--bg-subtle); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 
-/* ─── Modal ──────────────────────────────────────────────── */
+/* ─── Modal (Apple Frosted Glass Depth & Specular Catch) ─── */
 .modal-overlay {
   position: fixed;
   inset: 0;
   background: var(--overlay);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
   overflow-y: auto;
-  animation: overlayIn 0.15s ease;
+  animation: overlayIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -670,12 +706,36 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-lg);
-  animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 0 1px var(--glass-specular) inset, var(--shadow-lg);
+  animation: modalIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.97) translateY(10px); }
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ─── Apple Accessibility Standards (Reduced Motion & Transparency) ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .modal-overlay, .modal-content, .animate-fade-in {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --header-glass-bg: var(--bg);
+  }
+  .modal-overlay, header {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
 /* ─── Animations ─────────────────────────────────────────── */

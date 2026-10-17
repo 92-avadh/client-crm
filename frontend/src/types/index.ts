@@ -25,6 +25,8 @@ export interface User {
   assignedBrandIds?: string[];
   brandId?: string;
   permissions?: string[];
+  isActive?: boolean;
+  status?: string;
 }
 
 export type BrandStatus = 'Active' | 'Paused' | 'Inactive' | 'Churned';
@@ -44,6 +46,7 @@ export interface Brand {
   mobile: string;
   email: string;
   billingAddress: string;
+  city?: string;
   state: string;
   pincode: string;
   gstNumber?: string;

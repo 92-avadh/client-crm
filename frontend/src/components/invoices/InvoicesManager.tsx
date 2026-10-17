@@ -60,6 +60,7 @@ export const InvoicesManager: React.FC = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -141,16 +142,22 @@ export const InvoicesManager: React.FC = () => {
     }
   };
 
-  const handleDeleteInvoice = async (inv: Invoice) => {
+  const handleDeleteInvoice = (inv: Invoice) => {
     if (!canManage) return;
-    const ok = window.confirm(
-      `Are you sure you want to delete invoice "${inv.invoiceNumber}" for ${inv.brandName}? This action cannot be undone.`
-    );
-    if (!ok) return;
+    setInvoiceToDelete(inv);
+  };
 
-    setDeletingInvoiceId(inv.id);
+  const confirmDeleteSingleInvoice = async () => {
+    if (!invoiceToDelete) return;
+    setDeletingInvoiceId(invoiceToDelete.id);
     try {
-      await deleteInvoice(inv.id);
+      await deleteInvoice(invoiceToDelete.id);
+      setSelectedInvoiceIds((prev) => {
+        const next = new Set(prev);
+        next.delete(invoiceToDelete.id);
+        return next;
+      });
+      setInvoiceToDelete(null);
     } finally {
       setDeletingInvoiceId(null);
     }
@@ -555,6 +562,62 @@ export const InvoicesManager: React.FC = () => {
             >
               {isBulkDeleting && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
               Yes, Delete {selectedInvoiceIds.size} Invoice{selectedInvoiceIds.size > 1 ? 's' : ''}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogPopup>
+      </AlertDialog>
+
+      {/* Single Invoice Delete confirmation (Animated AlertDialog) */}
+      <AlertDialog
+        open={Boolean(invoiceToDelete)}
+        onOpenChange={(o) => {
+          if (!o && !deletingInvoiceId) setInvoiceToDelete(null);
+        }}
+      >
+        <AlertDialogPopup from="bottom" className="sm:max-w-[425px]">
+          <AlertDialogHeader>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
+                  background: 'var(--danger-bg)',
+                  color: 'var(--danger-text)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: 1,
+                }}
+              >
+                <Trash2 style={{ width: 19, height: 19 }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete invoice &quot;{invoiceToDelete?.invoiceNumber}&quot; for {invoiceToDelete?.brandName}.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(deletingInvoiceId)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteSingleInvoice}
+              disabled={Boolean(deletingInvoiceId)}
+              style={{
+                background: 'var(--danger-text)',
+                color: 'var(--solid-btn-text)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                opacity: deletingInvoiceId ? 0.7 : 1,
+                cursor: deletingInvoiceId ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {deletingInvoiceId && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
+              Continue
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogPopup>

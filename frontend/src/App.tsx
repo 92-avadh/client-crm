@@ -441,6 +441,19 @@ export const App: React.FC = () => {
 
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  const purgeAllWorkspaceCache = useCallback(() => {
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('retentio_local_') || key === 'retentio_active_user_id' || key === 'retentio_bypass_mode')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch {}
+  }, []);
+
   const handleForceLogout = useCallback((msg: string = 'Your session has expired. Please sign in again.') => {
     const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
     if (isBypass) return;
@@ -450,10 +463,11 @@ export const App: React.FC = () => {
       localStorage.removeItem('retentio_user');
       localStorage.removeItem('retentio_bypass_mode');
     } catch {}
+    purgeAllWorkspaceCache();
     setLoginUser(null);
     setIsLoggedIn(false);
     setLoginError(msg);
-  }, []);
+  }, [purgeAllWorkspaceCache]);
 
   // Listen for session expiry event from API calls
   React.useEffect(() => {
@@ -473,6 +487,16 @@ export const App: React.FC = () => {
     const isBypass = localStorage.getItem('retentio_bypass_mode') === 'true';
     if (savedUser) {
       try {
+        const token = localStorage.getItem('retentio_token');
+        if (!isBypass && !token) {
+          // No valid auth token found — clear stale user state and prompt clean login
+          localStorage.removeItem('retentio_user');
+          setLoginUser(null);
+          setIsLoggedIn(false);
+          setAuthChecked(true);
+          return;
+        }
+
         const user = JSON.parse(savedUser);
         setLoginUser(user);
         setIsLoggedIn(true);
@@ -626,10 +650,11 @@ export const App: React.FC = () => {
       localStorage.removeItem('retentio_bypass_mode');
       localStorage.removeItem('retentio_token');
     } catch {}
+    purgeAllWorkspaceCache();
     setLoginUser(null);
     setIsLoggedIn(false);
     setLoginError('');
-  }, []);
+  }, [purgeAllWorkspaceCache]);
 
   if (!authChecked) return <Splash />;
 

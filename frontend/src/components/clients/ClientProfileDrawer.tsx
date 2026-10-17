@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, FileText, Users, MessageSquare, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 import type { Brand, User, Invoice, Task } from '../../types';
 import { useApp } from '../../context/AppContext';
 
@@ -46,14 +47,45 @@ export const ClientProfileDrawer: React.FC<Props> = ({
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 900 }} />
-      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(720px, 100vw)', background: 'var(--bg-card)', zIndex: 901, boxShadow: '-12px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'var(--overlay)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 900,
+        }}
+      />
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 'min(720px, 100vw)',
+          background: 'var(--bg-card)',
+          zIndex: 901,
+          boxShadow: '-12px 0 40px rgba(0,0,0,0.18)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, background: 'var(--bg-subtle)' }}>
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>{brand.name}</h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>
-              {brand.ownerName} · {brand.state}
+              {brand.ownerName} · {[brand.city, brand.state].filter(Boolean).join(', ') || brand.state || ''}
             </p>
           </div>
           <button onClick={onClose} style={{ background: 'var(--bg-raised)', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -93,7 +125,9 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                 <div style={cardStyle}>
                   <span style={capStyle}>Billing Address</span>
                   <div style={{ color: 'var(--text-primary)', marginTop: 4, fontWeight: 600 }}>{brand.billingAddress}</div>
-                  <div style={{ color: 'var(--text-secondary)', marginTop: 2 }}>{brand.state} - {brand.pincode}</div>
+                  <div style={{ color: 'var(--text-secondary)', marginTop: 2 }}>
+                    {[brand.city, brand.state].filter(Boolean).join(', ')}{brand.pincode ? ` - ${brand.pincode}` : ''}
+                  </div>
                 </div>
               </div>
 
@@ -248,7 +282,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
             Open Chat
           </button>
         </div>
-      </div>
+      </motion.div>
     </>
   );
 };

@@ -57,7 +57,7 @@ async function listExpenses(user, filters = {}) {
   const params = [];
   let idx = 1;
 
-  if (user && user.role !== 'admin') {
+  if (user && user.id !== 'usr_admin') {
     whereClause += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
     params.push(user.id);
     idx += 1;

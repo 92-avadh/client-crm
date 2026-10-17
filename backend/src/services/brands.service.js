@@ -12,7 +12,7 @@ const DOCUMENT_TYPES = ['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'PNG', 'JPG', 'JPEG
 function mapBrand(b) {
   return {
     id: b.id, name: b.name, ownerName: b.owner_name, mobile: b.mobile, email: b.email,
-    billingAddress: b.billing_address, state: b.state, pincode: b.pincode,
+    billingAddress: b.billing_address, city: b.city, state: b.state, pincode: b.pincode,
     gstNumber: b.gst_number, pan: b.pan, serviceDetails: b.service_details,
     monthlyFee: parseFloat(b.monthly_fee || 0), billingCycleDay: b.billing_cycle_day,
     onboardingDate: b.onboarding_date, notes: b.notes, status: b.status,
@@ -49,9 +49,14 @@ async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}
     baseWhere = `id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin' || user.id === 'usr_admin') {
+  } else if (user.id === 'usr_admin') {
     alias = '';
-    baseWhere = `(owner_id = $${idx} OR owner_id IS NULL OR $${idx} = 'usr_admin')`;
+    baseWhere = `(owner_id = $${idx} OR owner_id IS NULL)`;
+    params.push(user.id);
+    idx += 1;
+  } else if (user.role === 'admin') {
+    alias = '';
+    baseWhere = `owner_id = $${idx}`;
     params.push(user.id);
     idx += 1;
   } else {
@@ -120,15 +125,15 @@ async function createBrand(user, data) {
     const fee = parseFloat(data.monthlyFee) || 0;
     const today = data.onboardingDate || new Date().toISOString().split('T')[0];
     const status = data.status || (['Active', 'Inactive', 'Paused', 'Churned'].includes(data.paymentStatus) ? data.paymentStatus : 'Active');
-    const paymentStatus = (data.paymentStatus === 'Pending' || (['Inactive', 'Paused', 'Churned'].includes(status) && data.paymentStatus !== 'Paid')) ? 'Pending' : (data.paymentStatus === 'Pending' ? 'Pending' : 'Paid');
+    const paymentStatus = data.paymentStatus === 'Pending' ? 'Pending' : (data.paymentStatus === 'Paid' ? 'Paid' : (['Inactive', 'Paused', 'Churned'].includes(status) ? 'Pending' : 'Paid'));
 
     await client.query(
-      `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,state,pincode,gst_number,pan,
+      `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,city,state,pincode,gst_number,pan,
        service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date,owner_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$18,$19)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20)`,
       [
         id, data.name, data.ownerName || null, data.mobile || null, data.email || null,
-        data.billingAddress || null, data.state || null, data.pincode || null,
+        data.billingAddress || null, data.city || null, data.state || null, data.pincode || null,
         data.gstNumber || null, data.pan || null, data.serviceDetails || null,
         fee, data.billingCycleDay || 1, today, data.notes || null,
         status, paymentStatus, today, user.id,
@@ -170,15 +175,15 @@ async function updateBrand(id, data) {
   const { rows } = await pool.query(
     `UPDATE brands SET
      name=COALESCE($1,name), owner_name=COALESCE($2,owner_name), mobile=COALESCE($3,mobile),
-     email=COALESCE($4,email), billing_address=COALESCE($5,billing_address), state=COALESCE($6,state),
-     pincode=COALESCE($7,pincode), gst_number=COALESCE($8,gst_number), pan=COALESCE($9,pan),
-     service_details=COALESCE($10,service_details), monthly_fee=COALESCE($11,monthly_fee),
-     billing_cycle_day=COALESCE($12,billing_cycle_day), onboarding_date=COALESCE($13,onboarding_date),
-     notes=COALESCE($14,notes), status=COALESCE($15,status), payment_status=COALESCE($16,payment_status)
-     WHERE id=$17 RETURNING *`,
+     email=COALESCE($4,email), billing_address=COALESCE($5,billing_address), city=COALESCE($6,city), state=COALESCE($7,state),
+     pincode=COALESCE($8,pincode), gst_number=COALESCE($9,gst_number), pan=COALESCE($10,pan),
+     service_details=COALESCE($11,service_details), monthly_fee=COALESCE($12,monthly_fee),
+     billing_cycle_day=COALESCE($13,billing_cycle_day), onboarding_date=COALESCE($14,onboarding_date),
+     notes=COALESCE($15,notes), status=COALESCE($16,status), payment_status=COALESCE($17,payment_status)
+     WHERE id=$18 RETURNING *`,
     [
       data.name ?? null, data.ownerName ?? null, data.mobile ?? null,
-      data.email ?? null, data.billingAddress ?? null, data.state ?? null,
+      data.email ?? null, data.billingAddress ?? null, data.city ?? null, data.state ?? null,
       data.pincode ?? null, data.gstNumber ?? null, data.pan ?? null,
       data.serviceDetails ?? null, data.monthlyFee ?? null,
       data.billingCycleDay ?? null, data.onboardingDate ?? null,

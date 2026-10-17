@@ -68,6 +68,13 @@ This document is the authoritative engineering manual and operational contract f
 - Zero tolerance for critical/warning issues: resolve security vulnerabilities, edge cases, and performance regressions immediately.
 - Use `coderabbit-code-review` and `coderabbit-autofix` skills for AI-powered PR triage.
 
+### 🔬 Reverse Engineering & External Feature Transposition (Extract, Adapt, Elevate)
+- **Zero-Assumption Deconstruction**: When adapting features, UX patterns, or workflows from other sites, competitors, or screenshots:
+  1. *Deconstruct Behavioral Models*: Map the underlying state machine, entity relations, data payload contracts, and user interactions before touching code.
+  2. *Token & Design System Transposition*: Translate external styles, dimensions, and colors directly into this project's design system tokens (`var(--bg-card)`, `var(--text-primary)`, `var(--solid-btn-bg)`, `var(--border)`, etc.). Never inject un-scoped foreign CSS, hardcoded hex values, or conflicting external utility classes.
+  3. *Stack Alignment*: Adapt foreign paradigms into our established architecture (e.g. Express backend services with PostgreSQL queries, React context/hooks, and Vanilla CSS token-driven components).
+  4. *Cleanroom Re-Implementation*: Rebuild from behavior and design specifications with complete WCAG AA accessibility, keyboard operability, robust error boundaries, and zero extraneous dependencies.
+
 ---
 
 ## 2. A to Z Engineering & Architecture Encyclopedia
@@ -151,9 +158,19 @@ This document is the authoritative engineering manual and operational contract f
 - **Query Optimization**: Avoid N+1 database queries. Use Prisma `include`/`select` with indexed relations, batching (`DataLoader`), and compound indexes for common filter combinations.
 - **Queue Management**: Offload heavy background work (email sending, image processing, webhook delivery) to background jobs or queue workers rather than blocking API responses.
 
-### **R** — Rate Limiting & Responsive Design
+### **R** — Rate Limiting, Responsive Design & Reverse Engineering
 - **Rate Limiting**: Protect public and sensitive endpoints (auth, login, checkout, search) using IP and user-based token bucket or sliding window rate limiting.
 - **Responsive Design**: Mobile-first fluid layouts using responsive utility classes or CSS variables. Ensure zero horizontal scroll overflows across all viewport widths (320px to 4K).
+- **Reverse Engineering Protocol**:
+  - *Phase 1 — Inspection & Reconnaissance*:
+    - Analyze target network activity: capture request payloads, REST endpoints, response structures, headers, and socket traffic.
+    - Inspect DOM & micro-interactions: break down visual hierarchy, responsive breakpoints, animation easings/timings, active/focus/hover/disabled/loading states, and keyboard navigation.
+  - *Phase 2 — Architectural Normalization*:
+    - Translate target concepts into existing relational DB tables, migrations, and service layer methods.
+    - Enforce existing auth, tenant boundaries, validation schemas, and natural error messages.
+  - *Phase 3 — UI/UX Transposition & Elevation*:
+    - Bind external design patterns to existing project CSS tokens and theme variables.
+    - Improve accessibility, keyboard shortcuts, and performance over the original inspiration.
 
 ### **S** — SSRF & SQLi Elimination
 - **SSRF (Server-Side Request Forgery)**:

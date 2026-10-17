@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import { getNaturalErrorMessage } from '../../services/errors';
 import type { User } from '../../types';
@@ -69,7 +70,7 @@ export const TeamManager: React.FC = () => {
 
   const teamUsers = (allUsers as User[]).filter((u) => u.role !== 'brand');
   const totalMembers = teamUsers.length;
-  const activeMembers = teamUsers.filter((u: any) => u.isActive !== false).length;
+  const activeMembers = teamUsers.filter((u: any) => u.isActive !== false && u.status !== 'inactive').length;
   const adminHrCount = teamUsers.filter((u) => u.role === 'admin' || u.role === 'hr').length;
   const teamMemberCount = teamUsers.filter((u) => u.role !== 'admin' && u.role !== 'hr').length;
 
@@ -273,16 +274,21 @@ export const TeamManager: React.FC = () => {
       />
 
       {/* Drawer */}
-      <MemberDrawer
-        member={selectedMember}
-        isAdmin={isAdmin}
-        assignedBrands={selectedMember ? getAssignedBrands(selectedMember.id) : []}
-        updatingAvatar={updatingAvatar}
-        onClose={() => setSelectedMember(null)}
-        onEdit={openEditModal}
-        onAvatarChange={handleUpdateAvatar}
-        onAvatarRemove={handleRemoveAvatar}
-      />
+      <AnimatePresence>
+        {selectedMember && (
+          <MemberDrawer
+            key={selectedMember.id}
+            member={selectedMember}
+            isAdmin={isAdmin}
+            assignedBrands={getAssignedBrands(selectedMember.id)}
+            updatingAvatar={updatingAvatar}
+            onClose={() => setSelectedMember(null)}
+            onEdit={openEditModal}
+            onAvatarChange={handleUpdateAvatar}
+            onAvatarRemove={handleRemoveAvatar}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Modals */}
       <AddMemberModal

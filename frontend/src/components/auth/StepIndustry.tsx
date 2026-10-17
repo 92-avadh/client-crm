@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Briefcase, Plus, Sparkles, Coins, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Briefcase, Plus, Sparkles, Coins, Check, ChevronDown } from 'lucide-react';
 import type { OnboardingData } from './OnboardingWizard';
 import { SUPPORTED_CURRENCIES, getCurrencyConfig } from '../../utils/currency';
 
@@ -39,11 +39,37 @@ export const StepIndustry: React.FC<StepIndustryProps> = ({
   onCustomIndustryChange,
   onSelectCurrency,
 }) => {
-  const [showAllCurrencies, setShowAllCurrencies] = useState(false);
-
-  // Top 6 primary quick-pick currencies + expandable list
-  const primaryCurrencies = SUPPORTED_CURRENCIES.slice(0, 6);
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const [isIndustryOpen, setIsIndustryOpen] = useState(false);
+  const currencyDropdownRef = useRef<HTMLDivElement>(null);
+  const industryDropdownRef = useRef<HTMLDivElement>(null);
   const activeCurrencyConfig = getCurrencyConfig(data.currency);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (currencyDropdownRef.current && !currencyDropdownRef.current.contains(e.target as Node)) {
+        setIsCurrencyOpen(false);
+      }
+      if (industryDropdownRef.current && !industryDropdownRef.current.contains(e.target as Node)) {
+        setIsIndustryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close dropdowns on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCurrencyOpen(false);
+        setIsIndustryOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div>
@@ -57,162 +83,153 @@ export const StepIndustry: React.FC<StepIndustryProps> = ({
         Configure your industry, team scale, and operating currency to customize billing and dashboard metrics.
       </p>
 
-      {/* Operating Currency (REQUIRED) */}
-      <div className="section-block" style={{ marginBottom: 24 }}>
+      {/* Operating Currency Dropdown */}
+      <div className="section-block" style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <label className="section-group-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Coins size={14} className="text-emerald-500" />
             <span>Primary Operating Currency</span>
             <span style={{ color: '#ef4444', fontWeight: 800 }}>* (Required)</span>
           </label>
+          <span style={{ fontSize: 11.5, color: 'var(--text-muted, #64748b)', fontWeight: 600 }}>
+            Sample: {activeCurrencyConfig.symbol}50,000 / mo
+          </span>
+        </div>
+
+        {/* Currency Dropdown: Only currency symbol/sign and currency name */}
+        <div className="currency-dropdown-wrap" ref={currencyDropdownRef}>
           <button
             type="button"
-            onClick={() => setShowAllCurrencies(prev => !prev)}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'var(--text-secondary, #64748b)',
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              padding: 0,
+            onClick={() => {
+              setIsIndustryOpen(false);
+              setIsCurrencyOpen(prev => !prev);
             }}
+            className={`currency-dropdown-trigger ${isCurrencyOpen ? 'open' : ''}`}
+            aria-haspopup="listbox"
+            aria-expanded={isCurrencyOpen}
           >
-            {showAllCurrencies ? 'Show Top Currencies' : 'More Currencies (' + SUPPORTED_CURRENCIES.length + ')'}
+            <div className="currency-trigger-content">
+              <span className="currency-trigger-symbol">{activeCurrencyConfig.symbol}</span>
+              <span className="currency-trigger-name">{activeCurrencyConfig.name}</span>
+            </div>
+            <ChevronDown
+              size={16}
+              style={{
+                transform: isCurrencyOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                color: 'var(--text-muted, #94a3b8)',
+                flexShrink: 0,
+              }}
+            />
           </button>
-        </div>
 
-        {/* Currency Options Grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))',
-            gap: 8,
-          }}
-        >
-          {(showAllCurrencies ? SUPPORTED_CURRENCIES : primaryCurrencies).map((curr) => {
-            const isSelected = data.currency === curr.code;
-
-            return (
-              <button
-                key={curr.code}
-                type="button"
-                onClick={() => onSelectCurrency(curr.code, curr.symbol)}
-                className={`glass-card-option compact ${isSelected ? 'selected' : ''}`}
-                style={{
-                  padding: '9px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                  borderRadius: 10,
-                  transition: 'all 0.15s ease',
-                  border: isSelected
-                    ? '2px solid #0284c7'
-                    : '1px solid rgba(255, 255, 255, 0.4)',
-                  background: isSelected
-                    ? 'rgba(56, 189, 248, 0.15)'
-                    : 'rgba(255, 255, 255, 0.08)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-                  <span style={{ fontSize: 16 }}>{curr.flag}</span>
-                  <div style={{ textAlign: 'left', minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>
-                      {curr.code} ({curr.symbol})
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: 'var(--text-muted)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {curr.name}
-                    </div>
-                  </div>
-                </div>
-
-                {isSelected && (
+          {isCurrencyOpen && (
+            <div className="currency-dropdown-menu" role="listbox">
+              {SUPPORTED_CURRENCIES.map((curr) => {
+                const isSelected = data.currency === curr.code;
+                return (
                   <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: '50%',
-                      background: '#0284c7',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
+                    key={curr.code}
+                    role="option"
+                    aria-selected={isSelected}
+                    tabIndex={0}
+                    onClick={() => {
+                      onSelectCurrency(curr.code, curr.symbol);
+                      setIsCurrencyOpen(false);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectCurrency(curr.code, curr.symbol);
+                        setIsCurrencyOpen(false);
+                      }
+                    }}
+                    className={`currency-dropdown-item ${isSelected ? 'selected' : ''}`}
                   >
-                    <Check size={11} strokeWidth={3} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <span className="currency-item-symbol">{curr.symbol}</span>
+                      <span className="currency-item-name">{curr.name}</span>
+                    </div>
+                    {isSelected && <Check size={14} className="currency-item-check" />}
                   </div>
-                )}
-              </button>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
-
-        {/* Live Currency Preview Card */}
-        {data.currency ? (
-          <div
-            style={{
-              marginTop: 10,
-              padding: '8px 14px',
-              borderRadius: 8,
-              background: 'rgba(34, 197, 94, 0.08)',
-              border: '1px solid rgba(34, 197, 94, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: 11.5,
-              color: 'var(--text-primary)',
-            }}
-          >
-            <span>
-              Selected: <strong>{activeCurrencyConfig.name}</strong> ({activeCurrencyConfig.code} · {activeCurrencyConfig.symbol})
-            </span>
-            <span style={{ fontWeight: 700, color: '#16a34a' }}>
-              Sample: {activeCurrencyConfig.symbol}50,000 / mo
-            </span>
-          </div>
-        ) : (
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 11,
-              color: '#ef4444',
-              fontWeight: 600,
-            }}
-          >
-            * Please pick your operating currency to continue.
-          </div>
-        )}
       </div>
 
-      {/* Industry Pills */}
-      <div className="section-block">
-        <label className="section-group-label">Agency / Company Industry *</label>
-        <div className="industry-pills-wrap">
-          {INDUSTRIES.map(ind => {
-            const isSelected = data.industry === ind;
-            return (
-              <button
-                key={ind}
-                type="button"
-                onClick={() => onSelectIndustry(ind)}
-                className={`glass-pill-option ${isSelected ? 'selected' : ''}`}
+      {/* Agency / Company Industry Dropdown */}
+      <div className="section-block" style={{ marginBottom: 18 }}>
+        <label className="section-group-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <Briefcase size={14} className="text-emerald-500" />
+          <span>Agency / Company Industry</span>
+          <span style={{ color: '#ef4444', fontWeight: 800 }}>* (Required)</span>
+        </label>
+
+        <div className="currency-dropdown-wrap" ref={industryDropdownRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsCurrencyOpen(false);
+              setIsIndustryOpen(prev => !prev);
+            }}
+            className={`currency-dropdown-trigger ${isIndustryOpen ? 'open' : ''}`}
+            aria-haspopup="listbox"
+            aria-expanded={isIndustryOpen}
+          >
+            <div className="currency-trigger-content">
+              <span
+                className="currency-trigger-name"
+                style={{
+                  fontWeight: data.industry ? 700 : 500,
+                  color: data.industry ? 'inherit' : 'var(--text-muted, #94a3b8)',
+                }}
               >
-                {ind === 'Other' && <Plus size={12} className="inline mr-1 opacity-70" />}
-                {ind}
-              </button>
-            );
-          })}
+                {data.industry || 'Select your industry...'}
+              </span>
+            </div>
+            <ChevronDown
+              size={16}
+              style={{
+                transform: isIndustryOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                color: 'var(--text-muted, #94a3b8)',
+                flexShrink: 0,
+              }}
+            />
+          </button>
+
+          {isIndustryOpen && (
+            <div className="currency-dropdown-menu" role="listbox">
+              {INDUSTRIES.map((ind) => {
+                const isSelected = data.industry === ind;
+                return (
+                  <div
+                    key={ind}
+                    role="option"
+                    aria-selected={isSelected}
+                    tabIndex={0}
+                    onClick={() => {
+                      onSelectIndustry(ind);
+                      setIsIndustryOpen(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectIndustry(ind);
+                        setIsIndustryOpen(false);
+                      }
+                    }}
+                    className={`currency-dropdown-item ${isSelected ? 'selected' : ''}`}
+                  >
+                    <span className="currency-item-name">{ind}</span>
+                    {isSelected && <Check size={14} className="currency-item-check" />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {data.industry === 'Other' && (
@@ -234,7 +251,7 @@ export const StepIndustry: React.FC<StepIndustryProps> = ({
 
       {/* Team Size Cards */}
       <div className="section-block">
-        <label className="section-group-label">Team scale *</label>
+        <label className="section-group-label" style={{ marginBottom: 8 }}>Team scale *</label>
         <div className="team-size-grid">
           {TEAM_SIZES.map(ts => {
             const isSelected = data.teamSize === ts.id;
@@ -244,6 +261,7 @@ export const StepIndustry: React.FC<StepIndustryProps> = ({
                 type="button"
                 onClick={() => setData(prev => ({ ...prev, teamSize: ts.id }))}
                 className={`glass-card-option compact ${isSelected ? 'selected' : ''}`}
+                aria-pressed={isSelected}
               >
                 <div className="team-header-row">
                   <span className="card-title-text">{ts.label}</span>
@@ -258,3 +276,5 @@ export const StepIndustry: React.FC<StepIndustryProps> = ({
     </div>
   );
 };
+
+export default StepIndustry;

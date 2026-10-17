@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import type { Brand, BrandStatus } from '../../types';
 import { Plus, Search, Filter } from 'lucide-react';
@@ -18,6 +19,7 @@ const emptyOnboard = (): ClientFormData => ({
   countryCode: 'IN',
   email: '',
   billingAddress: '',
+  city: '',
   state: '',
   pincode: '',
   gstNumber: '',
@@ -134,7 +136,11 @@ export const ClientsManager: React.FC = () => {
       brand.name.toLowerCase().includes(q) ||
       brand.ownerName.toLowerCase().includes(q) ||
       (brand.gstNumber ? brand.gstNumber.toLowerCase().includes(q) : false);
-    const matchesStatus = statusFilter === 'All' || brand.status === statusFilter;
+    const matchesStatus = statusFilter === 'All'
+      ? true
+      : (statusFilter === 'Paid' || statusFilter === 'Pending')
+        ? (brand.paymentStatus || 'Paid') === statusFilter
+        : brand.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -165,16 +171,18 @@ export const ClientsManager: React.FC = () => {
     setIsSubmitting(true);
     try {
       const selectedStatus = formData.status || 'Active';
-      const newBrand = await addBrand({
+      const selectedPaymentStatus = formData.paymentStatus || 'Pending';
+      await addBrand({
         ...formData,
+        city: formData.city?.trim() || '',
         monthlyFee: Number(formData.monthlyFee) || 0,
         billingCycleDay: Number(formData.billingCycleDay) || 1,
         status: selectedStatus,
-        paymentStatus: selectedStatus === 'Active' ? 'Paid' : 'Pending',
+        paymentStatus: selectedPaymentStatus,
       } as any);
       setShowOnboardModal(false);
       setFormData(emptyOnboard());
-      if (newBrand?.id) setSelectedBrandId(newBrand.id);
+      // Do not auto-open the side drawer when adding a client
     } catch (err: any) {
       const msg = getNaturalErrorMessage(err);
       setSubmitError(msg);
@@ -194,6 +202,7 @@ export const ClientsManager: React.FC = () => {
       countryCode: countryCode || 'IN',
       email: brand.email || '',
       billingAddress: brand.billingAddress || '',
+      city: brand.city || '',
       state: brand.state || '',
       pincode: brand.pincode || '',
       gstNumber: brand.gstNumber || '',
@@ -230,6 +239,7 @@ export const ClientsManager: React.FC = () => {
     try {
       await updateBrand(editingBrand.id, {
         ...editFormData,
+        city: editFormData.city?.trim() || '',
         monthlyFee: Number(editFormData.monthlyFee) || 0,
         billingCycleDay: Number(editFormData.billingCycleDay) || 1,
         status: editFormData.status as BrandStatus,
@@ -320,7 +330,7 @@ export const ClientsManager: React.FC = () => {
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginRight: 4 }}>
             <Filter style={{ width: 13, height: 13 }} /> Filter:
           </span>
-          {['All', 'Active', 'Inactive', 'Paused', 'Churned'].map((status) => (
+          {['All', 'Active', 'Paid', 'Pending', 'Inactive', 'Paused', 'Churned'].map((status) => (
             <button key={status} onClick={() => setStatusFilter(status)}
               style={{
                 padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease',
@@ -346,17 +356,22 @@ export const ClientsManager: React.FC = () => {
       />
 
       {/* Drawer */}
-      <ClientProfileDrawer
-        brand={selectedBrand}
-        role={role}
-        allUsers={allUsers}
-        invoices={invoices}
-        tasks={tasks}
-        activeTab={activeProfileTab}
-        onTabChange={setActiveProfileTab}
-        onClose={() => setSelectedBrandId(null)}
-        onChat={() => setActiveTab('chat')}
-      />
+      <AnimatePresence>
+        {selectedBrand && (
+          <ClientProfileDrawer
+            key={selectedBrand.id}
+            brand={selectedBrand}
+            role={role}
+            allUsers={allUsers}
+            invoices={invoices}
+            tasks={tasks}
+            activeTab={activeProfileTab}
+            onTabChange={setActiveProfileTab}
+            onClose={() => setSelectedBrandId(null)}
+            onChat={() => setActiveTab('chat')}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Modals */}
       <OnboardClientModal

@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { motion } from 'framer-motion';
 import { X, Mail, Phone, Camera, Trash2, Edit3, Loader2, MessageSquare } from 'lucide-react';
 import type { User, Brand } from '../../types';
 import { Avatar, RoleBadge } from './teamUi';
@@ -34,8 +35,40 @@ export const MemberDrawer: React.FC<Props> = ({
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 900 }} />
-      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(420px, 100vw)', background: 'var(--bg-card)', zIndex: 901, boxShadow: '-12px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', overflowY: 'auto' as const }}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'var(--overlay)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 900,
+        }}
+      />
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 'min(420px, 100vw)',
+          background: 'var(--bg-card)',
+          zIndex: 901,
+          boxShadow: '-12px 0 40px rgba(0,0,0,0.18)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto' as const,
+        }}
+      >
         {/* Header */}
         <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -168,7 +201,7 @@ export const MemberDrawer: React.FC<Props> = ({
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </>
   );
 };
