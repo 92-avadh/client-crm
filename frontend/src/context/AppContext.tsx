@@ -430,6 +430,26 @@ export const AppProvider: React.FC<{
     // <NotFound /> unreachable and masked broken links.
   }, [location.pathname, activeTab]);
 
+  // One-time auto-purge to wipe out stale mock/cached data across all browser sessions
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('retentio_data_state_cleared_v1') !== 'true') {
+    try {
+      localStorage.setItem('retentio_data_state_cleared_v1', 'true');
+      localStorage.setItem('retentio_clean_testing', 'true');
+      const emptyArr = JSON.stringify([]);
+      localStorage.setItem('retentio_local_brands', emptyArr);
+      localStorage.setItem('retentio_local_projects', emptyArr);
+      localStorage.setItem('retentio_local_tasks', emptyArr);
+      localStorage.setItem('retentio_local_invoices', emptyArr);
+      localStorage.setItem('retentio_local_payments', emptyArr);
+      localStorage.setItem('retentio_local_expenses', emptyArr);
+      localStorage.setItem('retentio_local_meetings', emptyArr);
+      localStorage.setItem('retentio_local_leads', emptyArr);
+      localStorage.setItem('retentio_local_users', JSON.stringify(DEMO_USERS));
+      localStorage.removeItem('retentio_onboarding_completed');
+      localStorage.removeItem('retentio_onboarding_data');
+    } catch {}
+  }
+
   const isCleanTesting = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_clean_testing') === 'true';
 
   const [brands, setBrands] = useState<Brand[]>(() => {
