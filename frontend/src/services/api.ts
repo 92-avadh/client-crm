@@ -205,6 +205,7 @@ export const api = {
   settings: {
     get: () => req<any>('GET', '/settings'),
     update: (data: any) => req<any>('PATCH', '/settings', data),
+    resetData: () => req<{ success: boolean; message: string }>('POST', '/settings/reset-data'),
   },
   holidays: {
     list: () => req<any[]>('GET', '/holidays'),

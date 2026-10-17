@@ -50,6 +50,20 @@ export const MeetingsCalendar: React.FC = () => {
     notes: ''
   });
 
+  const availableMembers = React.useMemo(() => {
+    return ((allUsers as any[]) || []).filter((u: any) => u.role !== 'brand' && u.status !== 'inactive');
+  }, [allUsers]);
+
+  const toggleAttendee = (userId: string) => {
+    setMeetingForm(prev => {
+      const current = prev.attendeeIds || [];
+      const next = current.includes(userId)
+        ? (current.length > 1 ? current.filter(id => id !== userId) : current)
+        : [...current, userId];
+      return { ...prev, attendeeIds: next };
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!meetingForm.title) return;
@@ -316,6 +330,44 @@ export const MeetingsCalendar: React.FC = () => {
                   <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Meet Link / Location</label>
                   <input type="text" placeholder="https://meet.google.com/..." value={meetingForm.linkOrLocation} onChange={e => setMeetingForm({ ...meetingForm, linkOrLocation: e.target.value })}
                     style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)' }} />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>
+                  Invite Team Attendees ({(meetingForm.attendeeIds || []).length})
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 110, overflowY: 'auto', padding: 8, background: 'var(--bg-subtle)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  {availableMembers.map((u: any) => {
+                    const isSelected = (meetingForm.attendeeIds || []).includes(u.id);
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => toggleAttendee(u.id)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '5px 10px',
+                          borderRadius: 20,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          background: isSelected ? 'var(--solid-btn-bg)' : 'var(--bg-card)',
+                          color: isSelected ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
+                          border: isSelected ? '1px solid var(--border-focus)' : '1px solid var(--border)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--bg-raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700 }}>
+                          {u.name.charAt(0)}
+                        </span>
+                        <span>{u.name}</span>
+                        {u.id === currentUser.id && <span style={{ opacity: 0.7, fontSize: 9 }}>(You)</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

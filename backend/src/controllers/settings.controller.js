@@ -56,4 +56,13 @@ const update = asyncHandler(async (req, res) => {
   res.json(await settings.updateSettings(fullPayload));
 });
 
-module.exports = { get, update };
+const resetData = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: "Only administrators can reset workspace data." });
+  }
+  const resetDb = require('../db/reset');
+  await resetDb();
+  res.json({ success: true, message: 'All workspace data cleared successfully. Admin user preserved.' });
+});
+
+module.exports = { get, update, resetData };

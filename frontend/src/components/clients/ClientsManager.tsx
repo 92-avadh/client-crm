@@ -7,6 +7,7 @@ import { ClientGrid } from './ClientGrid';
 import { ClientProfileDrawer, type ProfileTab } from './ClientProfileDrawer';
 import { OnboardClientModal, EditClientModal, type ClientFormData } from './ClientFormModals';
 import { AssignMembersModal } from './AssignMembersModal';
+import { COUNTRIES, parsePhoneAndCountry } from '../ui/CountryCodePicker';
 
 const todayIso = () => new Date().toISOString().split('T')[0];
 
@@ -25,7 +26,7 @@ const emptyOnboard = (): ClientFormData => ({
   monthlyFee: '',
   billingCycleDay: '' as any,
   status: 'Active',
-  paymentStatus: 'Active',
+  paymentStatus: 'Paid',
   notes: '',
 });
 
@@ -49,11 +50,25 @@ export function validateClientForm(f: ClientFormData, isEdit = false): Record<st
   if (!String(f.mobile || '').trim()) {
     errs.mobile = 'Mobile number is required';
   } else {
-    const digits = String(f.mobile).replace(/\D/g, '');
+    let digits = String(f.mobile).replace(/\D/g, '');
     const expectedLengths = COUNTRY_PHONE_LENGTHS[f.countryCode] || [10];
+
+    // If digits already include country dial code, strip it for validation
+    const country = COUNTRIES.find(c => c.code === f.countryCode);
+    const dialDigits = country ? country.dial.replace(/\D/g, '') : '';
+    if (dialDigits && digits.startsWith(dialDigits) && digits.length > dialDigits.length) {
+      const stripped = digits.slice(dialDigits.length);
+      if (expectedLengths.includes(stripped.length)) {
+        digits = stripped;
+      }
+    }
+
     if (!expectedLengths.includes(digits.length)) {
-      const expected = expectedLengths.join(' or ');
-      errs.mobile = `Mobile number must be ${expected} digits for ${f.countryCode}`;
+      // In edit mode, allow existing valid or reasonably formatted international numbers
+      if (!isEdit || digits.length < 5) {
+        const expected = expectedLengths.join(' or ');
+        errs.mobile = `Mobile number must be ${expected} digits for ${f.countryCode}`;
+      }
     }
   }
   if (!String(f.email || '').trim()) {
@@ -82,6 +97,7 @@ export const ClientsManager: React.FC = () => {
   const {
     currentUser, brands, allUsers, addBrand, updateBrand, assignMembersToBrand,
     selectedBrandId, setSelectedBrandId, invoices, tasks, setActiveTab, showToast,
+    currencySymbol,
   } = useApp();
 
   const role = currentUser.role;
@@ -112,7 +128,7 @@ export const ClientsManager: React.FC = () => {
   const [draftMemberIds, setDraftMemberIds] = useState<string[]>([]);
 
   const visibleBrands = brands.filter((brand) => {
-    if (role === 'team' && !brand.assignedMemberIds.includes(currentUser.id)) return false;
+    if (role === 'team' && !(brand.assignedMemberIds || []).includes(currentUser.id)) return false;
     const q = search.toLowerCase();
     const matchesSearch =
       brand.name.toLowerCase().includes(q) ||
@@ -170,11 +186,12 @@ export const ClientsManager: React.FC = () => {
 
   const openEditModal = (brand: Brand) => {
     setEditingBrand(brand);
+    const { countryCode, nationalNumber } = parsePhoneAndCountry(brand.mobile, (brand as any).countryCode || 'IN');
     setEditFormData({
       name: brand.name || '',
       ownerName: brand.ownerName || '',
-      mobile: brand.mobile || '',
-      countryCode: (brand as any).countryCode || 'IN',
+      mobile: nationalNumber || brand.mobile || '',
+      countryCode: countryCode || 'IN',
       email: brand.email || '',
       billingAddress: brand.billingAddress || '',
       state: brand.state || '',
@@ -200,8 +217,10 @@ export const ClientsManager: React.FC = () => {
     const errs = validateClientForm(editFormData, true);
     if (Object.keys(errs).length > 0) {
       setEditFormErrors(errs);
-      setEditSubmitError('Please complete all required fields highlighted in red below.');
-      showToast('Please fix errors in the edit form', 'error');
+      const firstField = Object.keys(errs)[0];
+      const errorMsg = errs[firstField] || 'Please complete all required fields highlighted in red below.';
+      setEditSubmitError(errorMsg);
+      showToast(errorMsg, 'error');
       return;
     }
 
@@ -214,6 +233,7 @@ export const ClientsManager: React.FC = () => {
         monthlyFee: Number(editFormData.monthlyFee) || 0,
         billingCycleDay: Number(editFormData.billingCycleDay) || 1,
         status: editFormData.status as BrandStatus,
+        paymentStatus: editFormData.paymentStatus,
       } as any);
       setShowEditModal(false);
       setEditingBrand(null);
@@ -223,6 +243,15 @@ export const ClientsManager: React.FC = () => {
       showToast(msg, 'error');
     } finally {
       setIsEditSubmitting(false);
+    }
+  };
+
+  const handleTogglePaymentStatus = async (brand: Brand) => {
+    const nextStatus = brand.paymentStatus === 'Paid' ? 'Pending' : 'Paid';
+    try {
+      await updateBrand(brand.id, { paymentStatus: nextStatus });
+    } catch (err: any) {
+      showToast(getNaturalErrorMessage(err), 'error');
     }
   };
 
@@ -313,6 +342,7 @@ export const ClientsManager: React.FC = () => {
         onView={(b) => { setSelectedBrandId(b.id); setActiveProfileTab('overview'); }}
         onEdit={openEditModal}
         onAssign={openAssignModal}
+        onTogglePaymentStatus={handleTogglePaymentStatus}
       />
 
       {/* Drawer */}
@@ -341,6 +371,7 @@ export const ClientsManager: React.FC = () => {
         submitting={isSubmitting}
         onClose={() => setShowOnboardModal(false)}
         onSubmit={handleOnboardSubmit}
+        currencySymbol={currencySymbol}
       />
 
       <EditClientModal
@@ -352,6 +383,7 @@ export const ClientsManager: React.FC = () => {
         submitting={isEditSubmitting}
         onClose={() => { setShowEditModal(false); setEditingBrand(null); }}
         onSubmit={handleEditSubmit}
+        currencySymbol={currencySymbol}
       />
 
       <AssignMembersModal

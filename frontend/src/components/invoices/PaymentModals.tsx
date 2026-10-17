@@ -5,7 +5,7 @@ import { inputFieldStyle, btnPrimary, btnSecondary, modalOverlay, modalCard } fr
 import { useConfirm } from '../../hooks/useConfirm';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
 
-const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+const formatCurrency = (n: number, symbol = '₹') => `${symbol}${Number(n || 0).toLocaleString()}`;
 
 /* ------------------------------------------------------------------ */
 /*  Online (Razorpay) payment simulator                                */
@@ -46,7 +46,7 @@ export const RazorpayModal: React.FC<OnlineProps> = ({
           <div style={{ textAlign: 'center', padding: 16, borderRadius: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)' }}>
             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Paying to: {settings.companyName}</span>
             <div className="font-amount" style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>
-              {inr(invoice.totalAmount - invoice.paidAmount)}
+              {formatCurrency(invoice.totalAmount - invoice.paidAmount, settings.currencySymbol || '₹')}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
               Invoice #{invoice.invoiceNumber} • {invoice.brandName}

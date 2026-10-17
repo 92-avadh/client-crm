@@ -140,7 +140,7 @@ export const LeadsPipeline: React.FC = () => {
                     </div>
 
                     <div className="font-amount" style={{ fontWeight: 800, fontSize: 13, color: 'var(--success-text)' }}>
-                      ₹{lead.value.toLocaleString('en-IN')}/mo
+                      {currencySymbol}{Number(lead.value || 0).toLocaleString()}/mo
                     </div>
 
                     {lead.notes && (
@@ -251,7 +251,7 @@ export const LeadsPipeline: React.FC = () => {
 
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Expected Fee (INR)</label>
+                  <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Expected Fee ({currencySymbol})</label>
                   <input
                     type="number"
                     value={leadForm.value}

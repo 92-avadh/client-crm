@@ -212,7 +212,11 @@ export const HolidaysTab: React.FC<HolidaysProps> = ({
 };
 
 /** Security & audit trail. */
-export const SecurityTab: React.FC<{ isAdmin: boolean; auditLogs: any[] }> = ({ isAdmin, auditLogs }) => (
+export const SecurityTab: React.FC<{
+  isAdmin: boolean;
+  auditLogs: any[];
+  onResetWorkspace?: (mode: 'empty' | 'demo') => void;
+}> = ({ isAdmin, auditLogs, onResetWorkspace }) => (
   <div style={tabBodyStyle}>
     <TabHeader
       title="Two-Factor Authentication & Audit Trail"
@@ -252,6 +256,59 @@ export const SecurityTab: React.FC<{ isAdmin: boolean; auditLogs: any[] }> = ({ 
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{log.details}</div>
             </div>
           ))}
+        </div>
+      </div>
+    )}
+
+    {isAdmin && (
+      <div style={{ marginTop: 12, padding: '20px 24px', borderRadius: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>🛠️ Workspace Data &amp; Testing Management</span>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>
+            Reset your database and browser storage for testing. Wipe all current records to test from a clean blank slate, or restore fresh seed data anytime.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => onResetWorkspace?.('empty')}
+            style={{
+              padding: '9px 16px',
+              borderRadius: 8,
+              border: 'none',
+              background: 'var(--danger-text, #dc2626)',
+              color: '#ffffff',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            Clear All Current Data (Blank Testing State)
+          </button>
+          <button
+            type="button"
+            onClick={() => onResetWorkspace?.('demo')}
+            style={{
+              padding: '9px 16px',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            Seed Demo Dataset
+          </button>
         </div>
       </div>
     )}

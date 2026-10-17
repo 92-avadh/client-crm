@@ -10,6 +10,7 @@ import { StarParticles } from './components/layout/StarParticles';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { Check, AlertCircle, Info, X } from 'lucide-react';
 import { ROUTES, DEFAULT_ROUTE } from './routes';
+import { getDefaultPermissionsForRole } from './components/team/permissionsConfig';
 
 /* ------------------------------------------------------------------ */
 /*  Lazy-loaded route components — code splitting for smaller bundle    */
@@ -360,19 +361,20 @@ const PermissionGate: React.FC<{ module: string; children: React.ReactNode }> = 
   // Admins have unrestricted access to all features
   if (role === 'admin') return <>{children}</>;
 
-  // Verify custom permissions assigned to team member
-  if (currentUser.permissions && currentUser.permissions.length > 0) {
-    if (currentUser.permissions.includes(module)) {
-      return <>{children}</>;
-    }
-    const firstAllowed = currentUser.permissions[0];
-    const redirectPath = firstAllowed && ROUTES[firstAllowed as keyof typeof ROUTES]
-      ? ROUTES[firstAllowed as keyof typeof ROUTES]
-      : DEFAULT_ROUTE;
-    return <Navigate to={redirectPath} replace />;
+  // Fallback to role default permissions if custom permissions list is not explicitly populated
+  const permissions = (currentUser.permissions && currentUser.permissions.length > 0)
+    ? currentUser.permissions
+    : getDefaultPermissionsForRole(role);
+
+  if (permissions && permissions.includes(module)) {
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  const firstAllowed = permissions && permissions[0];
+  const redirectPath = firstAllowed && ROUTES[firstAllowed as keyof typeof ROUTES]
+    ? ROUTES[firstAllowed as keyof typeof ROUTES]
+    : DEFAULT_ROUTE;
+  return <Navigate to={redirectPath} replace />;
 };
 
 const AppRoutes: React.FC<AppRoutesProps> = ({

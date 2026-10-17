@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RETENTIO DATABASE RESET SCRIPT
  *
  * Clears all user-added data from every table while preserving the schema.
@@ -28,6 +28,7 @@ async function reset() {
     await client.query('DELETE FROM notifications');
     await client.query('DELETE FROM audit_logs');
     await client.query('DELETE FROM otp_verifications');
+    await client.query('DELETE FROM holidays');
 
     await client.query('DELETE FROM payments');
     await client.query('DELETE FROM invoice_items');
@@ -68,20 +69,34 @@ async function reset() {
         razorpay_connected  = false,
         invoice_prefix      = 'INV-2026-',
         default_gst_rate    = 18,
+        currency            = 'INR',
+        currency_symbol     = '₹',
+        industry            = NULL,
+        team_size           = NULL,
+        goals               = '[]'::jsonb,
+        dashboard_layout    = 'default',
+        dashboard_focus     = 'balanced',
         updated_at          = NOW()
       WHERE id = 'main'
     `);
 
     await client.query('COMMIT');
     console.log('Database reset complete. All data cleared (admin user preserved).');
+    return { success: true };
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Reset failed, rolled back:', err.message);
-    process.exit(1);
+    throw err;
   } finally {
     client.release();
-    await pool.end();
+    if (require.main === module) {
+      await pool.end();
+    }
   }
 }
 
-reset();
+if (require.main === module) {
+  reset().catch(() => process.exit(1));
+}
+
+module.exports = reset;

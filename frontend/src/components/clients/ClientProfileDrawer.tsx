@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, FileText, Users, MessageSquare, CheckCircle } from 'lucide-react';
 import type { Brand, User, Invoice, Task } from '../../types';
+import { useApp } from '../../context/AppContext';
 
 export type ProfileTab = 'overview' | 'team' | 'financials' | 'tasks' | 'timeline';
 
@@ -22,15 +23,16 @@ const cardStyle: React.CSSProperties = {
 const capStyle: React.CSSProperties = {
   fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)',
 };
-const inr = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
 /** Client profile drawer with tabbed detail panes. */
 export const ClientProfileDrawer: React.FC<Props> = ({
   brand, role, allUsers, invoices, tasks, activeTab, onTabChange, onClose, onChat,
 }) => {
+  const { currencySymbol = '₹' } = useApp();
+  const formatAmt = (n: number) => `${currencySymbol}${Number(n || 0).toLocaleString()}`;
   if (!brand) return null;
 
-  const assignedUsers = allUsers.filter((u) => brand.assignedMemberIds.includes(u.id));
+  const assignedUsers = allUsers.filter((u) => (brand.assignedMemberIds || []).includes(u.id));
   const brandInvoices = invoices.filter((i) => i.brandId === brand.id);
   const brandTasks = tasks.filter((t) => t.brandId === brand.id);
 
@@ -112,7 +114,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                   <div style={cardStyle}>
                     <span style={capStyle}>Monthly Retainer</span>
                     <div className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', marginTop: 4, fontSize: 14 }}>
-                      {inr(brand.monthlyFee)}
+                      {formatAmt(brand.monthlyFee)}
                     </div>
                   </div>
                 </div>
@@ -188,7 +190,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                         <td style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700 }}>{inv.invoiceNumber}</td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{inv.issueDate}</td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{inv.dueDate}</td>
-                        <td className="font-amount" style={{ textAlign: 'right', fontWeight: 800 }}>{inr(inv.totalAmount)}</td>
+                        <td className="font-amount" style={{ textAlign: 'right', fontWeight: 800 }}>{formatAmt(inv.totalAmount)}</td>
                         <td style={{ fontSize: 12 }}>{inv.status}</td>
                       </tr>
                     ))}

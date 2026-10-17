@@ -275,23 +275,52 @@ export const Sidebar: React.FC = () => {
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img
-                  src="/retentio-icon.png"
-                  alt="Retentio"
-                  style={{ height: 28, width: 28, objectFit: 'contain', flexShrink: 0 }}
-                />
-                <span
+                <div
                   style={{
-                    fontSize: 20,
-                    fontWeight: 900,
-                    letterSpacing: '-0.03em',
-                    color: 'var(--text-primary)',
-                    lineHeight: 1,
-                    userSelect: 'none',
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    flexShrink: 0,
                   }}
                 >
-                  Retentio
-                </span>
+                  <img
+                    src="/retentio-icon.png"
+                    alt="Retentio"
+                    style={{ height: 20, width: 20, objectFit: 'contain' }}
+                  />
+                </div>
+                <div>
+                  <span
+                    style={{
+                      fontSize: 14.5,
+                      fontWeight: 750,
+                      letterSpacing: '-0.02em',
+                      color: 'var(--text-primary)',
+                      lineHeight: 1.1,
+                      display: 'block',
+                      userSelect: 'none',
+                    }}
+                  >
+                    Retentio
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      letterSpacing: '0.02em',
+                      display: 'block',
+                    }}
+                  >
+                    Agency Admin
+                  </span>
+                </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <button
@@ -371,43 +400,125 @@ export const Sidebar: React.FC = () => {
         )}
       </nav>
 
-      {/* Footer */}
+      {/* Shopify-Style Account Footer */}
       <div
         style={{
           borderTop: '1px solid var(--border, #D0E0EF)',
-          padding: sidebarCollapsed ? '10px 6px' : '10px 10px',
+          padding: sidebarCollapsed ? '8px 6px' : '10px 10px',
           display: 'flex',
           flexDirection: 'column',
           gap: 4,
           flexShrink: 0,
         }}
       >
-        <button
-          onClick={handleLogout}
-          title={sidebarCollapsed ? 'Log Out' : undefined}
-          style={{
-            width: '100%',
-            padding: sidebarCollapsed ? '10px 0' : '9px 12px',
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-            gap: 10,
-            fontSize: 13.5,
-            fontWeight: 650,
-            color: 'var(--danger-text)',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'background 0.15s',
-            fontFamily: 'inherit',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-        >
-          <LogOut style={{ width: 16, height: 16, flexShrink: 0 }} />
-          {!sidebarCollapsed && <span>Log Out</span>}
-        </button>
+        {!sidebarCollapsed ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 8px',
+              borderRadius: 8,
+              background: 'var(--bg-subtle, #f8fafc)',
+              border: '1px solid var(--border, #e2e2e2)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+              {currentUser?.avatar ? (
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: 'var(--brand-navy, #0A2540)',
+                    color: '#ffffff',
+                    fontSize: 11.5,
+                    fontWeight: 750,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {(currentUser?.name || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: 650,
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {currentUser?.name || 'User'}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {currentUser?.role || 'Admin'}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Log Out"
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 6,
+                borderRadius: 6,
+                cursor: 'pointer',
+                color: 'var(--danger-text)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleLogout}
+            title={`Logged in as ${currentUser?.name} (${currentUser?.role}). Click to Log Out`}
+            style={{
+              width: '100%',
+              padding: '8px 0',
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--danger-text)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'background 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+          >
+            <LogOut size={16} />
+          </button>
+        )}
       </div>
     </aside>
     {confirmDialog}

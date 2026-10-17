@@ -220,17 +220,17 @@ export const Dashboard: React.FC = () => {
         b.status === 'Active' &&
         (Number(b.monthlyFee) || 0) > 0 &&
         b.paymentStatus === 'Pending' &&
-        !payments.some(p => p.brandId === b.id)
+        !payments.some(p => p.brandId === b.id && p.status === 'Success') &&
+        !invoices.some(i => i.brandId === b.id && i.status !== 'Draft' && i.status !== 'Cancelled')
     )
     .reduce((a, b) => a + (Number(b.monthlyFee) || 0), 0);
 
   const overdueInvoices = invoices.filter(i => i.status === 'Overdue');
-  const totalPending =
-    invoices
-      .filter(i => i.status === 'Sent' || i.status === 'Overdue')
-      .reduce((a, i) => a + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0) +
-    pendingPayments +
-    pendingBrandFees;
+  const unpaidInvoicesBalance = invoices
+    .filter(i => i.status === 'Sent' || i.status === 'Overdue')
+    .reduce((a, i) => a + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0);
+
+  const totalPending = unpaidInvoicesBalance + pendingBrandFees;
 
   const activeBrands = brands.filter(b => b.status === 'Active');
   const relevantTasks = role === 'team' ? tasks.filter(t => t.assigneeId === currentUser?.id) : tasks;
@@ -681,9 +681,9 @@ export const Dashboard: React.FC = () => {
                     ? `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, var(--bg-card) 100%)`
                     : 'var(--bg-card)',
                   border: `1px solid ${c.cardBorder}`,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   padding: layoutMode === 'compact' ? '1rem 1.15rem' : '1.25rem 1.4rem',
-                  boxShadow: 'var(--shadow-sm)',
+                  boxShadow: 'var(--shadow-polaris-card, 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06))',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -696,7 +696,7 @@ export const Dashboard: React.FC = () => {
                   <span
                     style={{
                       fontSize: 13,
-                      fontWeight: 650,
+                      fontWeight: 600,
                       color: BRAND.navyMuted,
                       letterSpacing: '-0.01em',
                     }}
@@ -726,10 +726,11 @@ export const Dashboard: React.FC = () => {
                     className="metric-value count-up font-amount"
                     style={{
                       fontSize: '1.65rem',
-                      fontWeight: 800,
+                      fontWeight: 750,
                       color: c.strong ? BRAND.greenDark : BRAND.navy,
-                      letterSpacing: '-0.02em',
+                      letterSpacing: '-0.025em',
                       lineHeight: 1.15,
+                      fontVariantNumeric: 'tabular-nums',
                     }}
                   >
                     {c.value}
@@ -741,7 +742,7 @@ export const Dashboard: React.FC = () => {
                   <span
                     style={{
                       fontSize: 11.5,
-                      fontWeight: 600,
+                      fontWeight: 500,
                       color: BRAND.navyMuted,
                     }}
                   >
@@ -753,10 +754,10 @@ export const Dashboard: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 3,
-                        padding: '1px 7px',
-                        borderRadius: 12,
+                        padding: '2px 8px',
+                        borderRadius: 9999,
                         fontSize: 11,
-                        fontWeight: 700,
+                        fontWeight: 650,
                         background: c.trendPositive ? BRAND.greenSubtle : BRAND.dangerSubtle,
                         color: c.trendPositive ? BRAND.greenDark : BRAND.danger,
                         border: `1px solid ${c.trendPositive ? BRAND.greenBorder : BRAND.dangerBorder}`,
@@ -897,11 +898,11 @@ export const Dashboard: React.FC = () => {
             style={{
               background: 'var(--bg-card)',
               border: `1px solid ${BRAND.border}`,
-              borderRadius: 14,
+              borderRadius: 12,
               padding: '20px 22px',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: 'var(--shadow-sm)',
+              boxShadow: 'var(--shadow-polaris-card, 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06))',
             }}
           >
             {/* Widget Header */}
@@ -1295,11 +1296,11 @@ export const Dashboard: React.FC = () => {
             style={{
               background: 'var(--bg-card)',
               border: `1px solid ${BRAND.border}`,
-              borderRadius: 14,
+              borderRadius: 12,
               padding: '20px 22px',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: 'var(--shadow-sm)',
+              boxShadow: 'var(--shadow-polaris-card, 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06))',
             }}
           >
             {/* Widget Header */}
@@ -1469,10 +1470,10 @@ export const Dashboard: React.FC = () => {
                       style={{
                         flexShrink: 0,
                         display: 'inline-flex',
-                        padding: '3px 9px',
-                        borderRadius: 12,
+                        padding: '2.5px 8px',
+                        borderRadius: 9999,
                         fontSize: 11,
-                        fontWeight: 700,
+                        fontWeight: 650,
                         background: 'var(--bg-card)',
                         color: BRAND.navy,
                         border: `1px solid var(--border)`,
@@ -1497,11 +1498,11 @@ export const Dashboard: React.FC = () => {
             style={{
               background: 'var(--bg-card)',
               border: `1px solid ${BRAND.border}`,
-              borderRadius: 14,
+              borderRadius: 12,
               padding: '20px 22px',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: 'var(--shadow-sm)',
+              boxShadow: 'var(--shadow-polaris-card, 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06))',
             }}
           >
             {/* Header */}
@@ -1703,15 +1704,19 @@ export const Dashboard: React.FC = () => {
                         </span>
                         <span
                           style={{
-                            padding: '3px 8px',
-                            borderRadius: 12,
+                            padding: '2.5px 8px',
+                            borderRadius: 9999,
                             fontSize: 11,
-                            fontWeight: 700,
+                            fontWeight: 650,
                             background: s.bg,
                             color: s.text,
                             border: `1px solid ${s.border}`,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
                           }}
                         >
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.text }} />
                           {inv.status}
                         </span>
                       </div>
@@ -1730,11 +1735,11 @@ export const Dashboard: React.FC = () => {
             style={{
               background: 'var(--bg-card)',
               border: `1px solid ${BRAND.border}`,
-              borderRadius: 14,
+              borderRadius: 12,
               padding: '20px 22px',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: 'var(--shadow-sm)',
+              boxShadow: 'var(--shadow-polaris-card, 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06))',
             }}
           >
             {/* Header */}
@@ -1887,8 +1892,8 @@ export const Dashboard: React.FC = () => {
                         fontWeight: 600,
                         color: BRAND.navyMuted,
                         background: 'var(--bg-card)',
-                        padding: '2px 7px',
-                        borderRadius: 6,
+                        padding: '2.5px 8px',
+                        borderRadius: 9999,
                         border: `1px solid var(--border)`,
                       }}
                     >

@@ -1,8 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { InvoiceItem, Brand, AppSettings } from '../../types';
 
-const GST_RATE = 0.18;
-
 export interface InvoiceTotals {
   subtotal: number;
   cgst: number;
@@ -56,13 +54,13 @@ export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
       setItems([{
         id: 'item_' + Date.now(),
         description: `${b.serviceDetails} (Current Month)`,
-        hsnSac: '998231',
+        hsnSac: settings.defaultHsnSac || '998231',
         quantity: 1,
         unitPrice: b.monthlyFee,
         amount: b.monthlyFee,
       }]);
     }
-  }, [brands]);
+  }, [brands, settings.defaultHsnSac]);
 
   const updateItem = useCallback((idx: number, patch: Partial<InvoiceItem>) => {
     setItems((prev) => {
@@ -78,6 +76,9 @@ export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
   const totals: InvoiceTotals = useMemo(() => {
     const subtotal = items.reduce((acc, it) => acc + it.amount, 0);
     const isInterstate = selectedBrand?.state !== settings.companyState;
+    const gstRate = typeof settings.defaultGstRate === 'number' && settings.defaultGstRate >= 0
+      ? settings.defaultGstRate / 100
+      : 0.18;
 
     let cgst = 0, sgst = 0, igst = 0;
     let gstType: InvoiceTotals['gstType'] = 'NONE';
@@ -85,11 +86,11 @@ export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
     if (hasGst) {
       if (isInterstate) {
         gstType = 'IGST';
-        igst = Math.round(subtotal * GST_RATE);
+        igst = Math.round(subtotal * gstRate);
       } else {
         gstType = 'CGST_SGST';
-        cgst = Math.round(subtotal * (GST_RATE / 2));
-        sgst = Math.round(subtotal * (GST_RATE / 2));
+        cgst = Math.round(subtotal * (gstRate / 2));
+        sgst = Math.round(subtotal * (gstRate / 2));
       }
     }
 
@@ -97,7 +98,7 @@ export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
       subtotal, cgst, sgst, igst, gstType, isInterstate,
       totalAmount: subtotal + cgst + sgst + igst,
     };
-  }, [items, hasGst, selectedBrand, settings.companyState]);
+  }, [items, hasGst, selectedBrand, settings.companyState, settings.defaultGstRate]);
 
   const reset = useCallback(() => {
     setBrandId('');

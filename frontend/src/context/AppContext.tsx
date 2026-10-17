@@ -152,6 +152,7 @@ interface AppContextType {
   theme: 'light' | 'dark';
   toggleTheme: (eventOrTarget?: React.MouseEvent | MouseEvent | { clientX: number; clientY: number } | HTMLElement) => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  resetWorkspaceData: (mode?: 'empty' | 'demo') => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -429,12 +430,14 @@ export const AppProvider: React.FC<{
     // <NotFound /> unreachable and masked broken links.
   }, [location.pathname, activeTab]);
 
+  const isCleanTesting = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_clean_testing') === 'true';
+
   const [brands, setBrands] = useState<Brand[]>(() => {
     try {
       const saved = localStorage.getItem('retentio_local_brands');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_BRANDS;
+    return isCleanTesting ? [] : DEMO_BRANDS;
   });
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>(() => {
@@ -442,21 +445,21 @@ export const AppProvider: React.FC<{
       const saved = localStorage.getItem('retentio_local_projects');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_PROJECTS;
+    return isCleanTesting ? [] : DEMO_PROJECTS;
   });
   const [tasks, setTasks] = useState<Task[]>(() => {
     try {
       const saved = localStorage.getItem('retentio_local_tasks');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_TASKS;
+    return isCleanTesting ? [] : DEMO_TASKS;
   });
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
     try {
       const saved = localStorage.getItem('retentio_local_invoices');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_INVOICES;
+    return isCleanTesting ? [] : DEMO_INVOICES;
   });
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [payments, setPayments] = useState<Payment[]>(() => {
@@ -464,28 +467,28 @@ export const AppProvider: React.FC<{
       const saved = localStorage.getItem('retentio_local_payments');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_PAYMENTS;
+    return isCleanTesting ? [] : DEMO_PAYMENTS;
   });
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     try {
       const saved = localStorage.getItem('retentio_local_expenses');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_EXPENSES;
+    return isCleanTesting ? [] : DEMO_EXPENSES;
   });
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
     try {
       const saved = localStorage.getItem('retentio_local_meetings');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_MEETINGS;
+    return isCleanTesting ? [] : DEMO_MEETINGS;
   });
   const [leads, setLeads] = useState<Lead[]>(() => {
     try {
       const saved = localStorage.getItem('retentio_local_leads');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_LEADS;
+    return isCleanTesting ? [] : DEMO_LEADS;
   });
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -567,114 +570,141 @@ export const AppProvider: React.FC<{
         switch (domain) {
           case 'clients': {
             const [brandsData, usersData] = await Promise.all([
-              api.brands.list().catch(() => []),
-              api.users.list().catch(() => []),
+              api.brands.list().catch(() => null),
+              api.users.list().catch(() => null),
             ]);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
-            if (usersData && usersData.length > 0) setAllUsers(usersData);
+            if (Array.isArray(brandsData)) {
+              setBrands(brandsData);
+              try { localStorage.setItem('retentio_local_brands', JSON.stringify(brandsData)); } catch {}
+            }
+            if (Array.isArray(usersData) && usersData.length > 0) {
+              setAllUsers(usersData);
+              try { localStorage.setItem('retentio_local_users', JSON.stringify(usersData)); } catch {}
+            }
             break;
           }
           case 'projects':
           case 'tasks': {
             const [projectsData, tasksData, brandsData, usersData] = await Promise.all([
-              api.projects.list().catch(() => []),
-              api.tasks.list().catch(() => []),
-              api.brands.list().catch(() => []),
-              api.users.list().catch(() => []),
+              api.projects.list().catch(() => null),
+              api.tasks.list().catch(() => null),
+              api.brands.list().catch(() => null),
+              api.users.list().catch(() => null),
             ]);
-            if (projectsData && projectsData.length > 0) setProjects(projectsData);
-            if (tasksData && tasksData.length > 0) setTasks(tasksData);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
-            if (usersData && usersData.length > 0) setAllUsers(usersData);
+            if (Array.isArray(projectsData)) {
+              setProjects(projectsData);
+              try { localStorage.setItem('retentio_local_projects', JSON.stringify(projectsData)); } catch {}
+            }
+            if (Array.isArray(tasksData)) {
+              setTasks(tasksData);
+              try { localStorage.setItem('retentio_local_tasks', JSON.stringify(tasksData)); } catch {}
+            }
+            if (Array.isArray(brandsData)) setBrands(brandsData);
+            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
             break;
           }
           case 'invoices': {
             const [invoicesData, paymentsData, brandsData] = await Promise.all([
-              api.invoices.list().catch(() => []),
-              api.payments.list().catch(() => []),
-              api.brands.list().catch(() => []),
+              api.invoices.list().catch(() => null),
+              api.payments.list().catch(() => null),
+              api.brands.list().catch(() => null),
             ]);
-            if (invoicesData && invoicesData.length > 0) setInvoices(invoicesData);
-            if (paymentsData && paymentsData.length > 0) setPayments(paymentsData);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
+            if (Array.isArray(invoicesData)) {
+              setInvoices(invoicesData);
+              try { localStorage.setItem('retentio_local_invoices', JSON.stringify(invoicesData)); } catch {}
+            }
+            if (Array.isArray(paymentsData)) {
+              setPayments(paymentsData);
+              try { localStorage.setItem('retentio_local_payments', JSON.stringify(paymentsData)); } catch {}
+            }
+            if (Array.isArray(brandsData)) setBrands(brandsData);
             break;
           }
           case 'finance': {
             const [paymentsData, expensesData, invoicesData, brandsData] = await Promise.all([
-              api.payments.list().catch(() => []),
-              api.expenses.list().catch(() => []),
-              api.invoices.list().catch(() => []),
-              api.brands.list().catch(() => []),
+              api.payments.list().catch(() => null),
+              api.expenses.list().catch(() => null),
+              api.invoices.list().catch(() => null),
+              api.brands.list().catch(() => null),
             ]);
-            if (paymentsData && paymentsData.length > 0) setPayments(paymentsData);
-            if (expensesData && expensesData.length > 0) setExpenses(expensesData);
-            if (invoicesData && invoicesData.length > 0) setInvoices(invoicesData);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
+            if (Array.isArray(paymentsData)) setPayments(paymentsData);
+            if (Array.isArray(expensesData)) setExpenses(expensesData);
+            if (Array.isArray(invoicesData)) setInvoices(invoicesData);
+            if (Array.isArray(brandsData)) setBrands(brandsData);
             break;
           }
           case 'expenses': {
             const [expensesData, brandsData, usersData] = await Promise.all([
-              api.expenses.list().catch(() => []),
-              api.brands.list().catch(() => []),
-              api.users.list().catch(() => []),
+              api.expenses.list().catch(() => null),
+              api.brands.list().catch(() => null),
+              api.users.list().catch(() => null),
             ]);
-            if (expensesData && expensesData.length > 0) setExpenses(expensesData);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
-            if (usersData && usersData.length > 0) setAllUsers(usersData);
+            if (Array.isArray(expensesData)) {
+              setExpenses(expensesData);
+              try { localStorage.setItem('retentio_local_expenses', JSON.stringify(expensesData)); } catch {}
+            }
+            if (Array.isArray(brandsData)) setBrands(brandsData);
+            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
             break;
           }
           case 'retention': {
             const [brandsData, settingsData] = await Promise.all([
-              api.brands.list().catch(() => []),
+              api.brands.list().catch(() => null),
               api.settings.get().catch(() => null),
             ]);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
+            if (Array.isArray(brandsData)) setBrands(brandsData);
             if (settingsData) setSettings(settingsData);
             break;
           }
           case 'leads': {
             const [leadsData, brandsData] = await Promise.all([
-              api.leads.list().catch(() => []),
-              api.brands.list().catch(() => []),
+              api.leads.list().catch(() => null),
+              api.brands.list().catch(() => null),
             ]);
-            if (leadsData && leadsData.length > 0) setLeads(leadsData);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
+            if (Array.isArray(leadsData)) {
+              setLeads(leadsData);
+              try { localStorage.setItem('retentio_local_leads', JSON.stringify(leadsData)); } catch {}
+            }
+            if (Array.isArray(brandsData)) setBrands(brandsData);
             break;
           }
           case 'meetings': {
             const [meetingsData, brandsData, usersData, holidaysData] = await Promise.all([
-              api.meetings.list().catch(() => []),
-              api.brands.list().catch(() => []),
-              api.users.list().catch(() => []),
-              api.holidays.list().catch(() => []),
+              api.meetings.list().catch(() => null),
+              api.brands.list().catch(() => null),
+              api.users.list().catch(() => null),
+              api.holidays.list().catch(() => null),
             ]);
-            if (meetingsData && meetingsData.length > 0) setMeetings(meetingsData);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
-            if (usersData && usersData.length > 0) setAllUsers(usersData);
-            if (holidaysData && holidaysData.length > 0) setHolidays(holidaysData);
+            if (Array.isArray(meetingsData)) {
+              setMeetings(meetingsData);
+              try { localStorage.setItem('retentio_local_meetings', JSON.stringify(meetingsData)); } catch {}
+            }
+            if (Array.isArray(brandsData)) setBrands(brandsData);
+            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
+            if (Array.isArray(holidaysData)) setHolidays(holidaysData);
             break;
           }
           case 'team': {
             const [usersData, brandsData] = await Promise.all([
-              api.users.list().catch(() => []),
-              api.brands.list().catch(() => []),
+              api.users.list().catch(() => null),
+              api.brands.list().catch(() => null),
             ]);
-            if (usersData && usersData.length > 0) setAllUsers(usersData);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
+            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
+            if (Array.isArray(brandsData)) setBrands(brandsData);
             break;
           }
           case 'inbox': {
-            const notifData = await api.notifications.list().catch(() => []);
-            if (notifData && notifData.length > 0) setNotifications(notifData);
+            const notifData = await api.notifications.list().catch(() => null);
+            if (Array.isArray(notifData)) setNotifications(notifData);
             break;
           }
           case 'chat': {
             const [convsData, usersData] = await Promise.all([
-              api.chat.conversations().catch(() => []),
-              api.users.list().catch(() => []),
+              api.chat.conversations().catch(() => null),
+              api.users.list().catch(() => null),
             ]);
             const allU = usersData && usersData.length > 0 ? usersData : allUsers;
-            if (usersData && usersData.length > 0) setAllUsers(usersData);
+            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
 
             const baseConvs = Array.isArray(convsData) ? convsData : [];
             const enriched = baseConvs.map((c: any) => {
@@ -741,32 +771,32 @@ export const AppProvider: React.FC<{
           case 'settings': {
             const [settingsData, holidaysData] = await Promise.all([
               api.settings.get().catch(() => null),
-              api.holidays.list().catch(() => []),
+              api.holidays.list().catch(() => null),
             ]);
             if (settingsData) setSettings(settingsData);
-            if (holidaysData && holidaysData.length > 0) setHolidays(holidaysData);
+            if (Array.isArray(holidaysData)) setHolidays(holidaysData);
             break;
           }
           case 'audit': {
-            const auditData = await api.auditLogs.list().catch(() => []);
-            if (auditData && auditData.length > 0) setAuditLogs(auditData);
+            const auditData = await api.auditLogs.list().catch(() => null);
+            if (Array.isArray(auditData)) setAuditLogs(auditData);
             break;
           }
           case 'dashboard': {
             const [brandsData, invoicesData, tasksData, meetingsData, paymentsData, expensesData] = await Promise.all([
-              api.brands.list().catch(() => []),
-              api.invoices.list().catch(() => []),
-              api.tasks.list().catch(() => []),
-              api.meetings.list().catch(() => []),
-              api.payments.list().catch(() => []),
-              api.expenses.list().catch(() => []),
+              api.brands.list().catch(() => null),
+              api.invoices.list().catch(() => null),
+              api.tasks.list().catch(() => null),
+              api.meetings.list().catch(() => null),
+              api.payments.list().catch(() => null),
+              api.expenses.list().catch(() => null),
             ]);
-            if (brandsData && brandsData.length > 0) setBrands(brandsData);
-            if (invoicesData && invoicesData.length > 0) setInvoices(invoicesData);
-            if (tasksData && tasksData.length > 0) setTasks(tasksData);
-            if (meetingsData && meetingsData.length > 0) setMeetings(meetingsData);
-            if (paymentsData && paymentsData.length > 0) setPayments(paymentsData);
-            if (expensesData && expensesData.length > 0) setExpenses(expensesData);
+            if (Array.isArray(brandsData)) setBrands(brandsData);
+            if (Array.isArray(invoicesData)) setInvoices(invoicesData);
+            if (Array.isArray(tasksData)) setTasks(tasksData);
+            if (Array.isArray(meetingsData)) setMeetings(meetingsData);
+            if (Array.isArray(paymentsData)) setPayments(paymentsData);
+            if (Array.isArray(expensesData)) setExpenses(expensesData);
             break;
           }
           default:
@@ -1389,8 +1419,49 @@ export const AppProvider: React.FC<{
   };
 
   const convertLeadToBrand = async (leadId: string) => {
-    const result = await api.leads.convert(leadId);
-    // Only reload clients and leads domains (not all domains)
+    let result: any = null;
+    try {
+      result = await api.leads.convert(leadId);
+    } catch (_err) {
+      // Local fallback for offline / bypass mode
+      const lead = leads.find(l => l.id === leadId);
+      if (lead) {
+        const newBrand: Brand = {
+          id: 'brand_' + Date.now(),
+          name: lead.company,
+          ownerName: lead.name || lead.contact,
+          mobile: lead.phone || '',
+          email: lead.email || '',
+          billingAddress: '',
+          state: '',
+          pincode: '',
+          gstNumber: '',
+          pan: '',
+          serviceDetails: lead.notes || 'Retainer Services',
+          monthlyFee: lead.value || 0,
+          billingCycleDay: 1,
+          onboardingDate: today,
+          status: 'Active',
+          paymentStatus: 'Paid',
+          lastActivityDate: today,
+          lastPaymentDate: today,
+          assignedMemberIds: currentUser?.id ? [currentUser.id] : [],
+          documents: [],
+        };
+        result = { brand: newBrand };
+        setBrands(prev => {
+          const next = [newBrand, ...prev];
+          try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
+          return next;
+        });
+        setLeads(prev => {
+          const next = prev.filter(l => l.id !== leadId);
+          try { localStorage.setItem('retentio_local_leads', JSON.stringify(next)); } catch {}
+          return next;
+        });
+      }
+    }
+    // Reload from API if backend is connected
     const [newBrands, newLeads] = await Promise.all([
       api.brands.list().catch(() => null),
       api.leads.list().catch(() => null),
@@ -1816,6 +1887,80 @@ export const AppProvider: React.FC<{
     });
   };
 
+  const resetWorkspaceData = useCallback(async (mode: 'empty' | 'demo' = 'empty') => {
+    setIsLoading(true);
+    try {
+      if (mode === 'empty') {
+        if (currentUser?.role === 'admin') {
+          await api.settings.resetData().catch(() => {});
+        }
+
+        const emptyArr = JSON.stringify([]);
+        localStorage.setItem('retentio_clean_testing', 'true');
+        localStorage.setItem('retentio_local_brands', emptyArr);
+        localStorage.setItem('retentio_local_projects', emptyArr);
+        localStorage.setItem('retentio_local_tasks', emptyArr);
+        localStorage.setItem('retentio_local_invoices', emptyArr);
+        localStorage.setItem('retentio_local_payments', emptyArr);
+        localStorage.setItem('retentio_local_expenses', emptyArr);
+        localStorage.setItem('retentio_local_meetings', emptyArr);
+        localStorage.setItem('retentio_local_leads', emptyArr);
+        localStorage.removeItem('retentio_onboarding_completed');
+        localStorage.removeItem('retentio_onboarding_data');
+
+        setBrands([]);
+        setProjects([]);
+        setTasks([]);
+        setInvoices([]);
+        setPayments([]);
+        setExpenses([]);
+        setMeetings([]);
+        setLeads([]);
+        setNotifications([]);
+        setConversations([]);
+        setSelectedBrandId(null);
+        setSelectedInvoiceId(null);
+
+        loadedRef.current.clear();
+        failedRef.current.clear();
+
+        showToast('All current data removed! Clean testing state ready.', 'success');
+      } else {
+        localStorage.removeItem('retentio_clean_testing');
+        localStorage.setItem('retentio_local_brands', JSON.stringify(DEMO_BRANDS));
+        localStorage.setItem('retentio_local_projects', JSON.stringify(DEMO_PROJECTS));
+        localStorage.setItem('retentio_local_tasks', JSON.stringify(DEMO_TASKS));
+        localStorage.setItem('retentio_local_invoices', JSON.stringify(DEMO_INVOICES));
+        localStorage.setItem('retentio_local_payments', JSON.stringify(DEMO_PAYMENTS));
+        localStorage.setItem('retentio_local_expenses', JSON.stringify(DEMO_EXPENSES));
+        localStorage.setItem('retentio_local_meetings', JSON.stringify(DEMO_MEETINGS));
+        localStorage.setItem('retentio_local_leads', JSON.stringify(DEMO_LEADS));
+        localStorage.setItem('retentio_local_users', JSON.stringify(DEMO_USERS));
+
+        setBrands(DEMO_BRANDS);
+        setProjects(DEMO_PROJECTS);
+        setTasks(DEMO_TASKS);
+        setInvoices(DEMO_INVOICES);
+        setPayments(DEMO_PAYMENTS);
+        setExpenses(DEMO_EXPENSES);
+        setMeetings(DEMO_MEETINGS);
+        setLeads(DEMO_LEADS);
+        setAllUsers(DEMO_USERS);
+
+        loadedRef.current.clear();
+        failedRef.current.clear();
+
+        showToast('Fresh demo test dataset loaded successfully!', 'success');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    (window as any).resetRetentioWorkspace = resetWorkspaceData;
+  }, [resetWorkspaceData]);
+
   return (
     <AppContext.Provider
       value={{
@@ -1906,7 +2051,8 @@ export const AppProvider: React.FC<{
         toggleMobileSidebar,
         theme,
         toggleTheme,
-        setTheme
+        setTheme,
+        resetWorkspaceData
       }}
     >
       {children}

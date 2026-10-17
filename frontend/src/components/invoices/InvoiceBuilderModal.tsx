@@ -4,6 +4,7 @@ import type { Brand, InvoiceItem } from '../../types';
 import { inputFieldStyle, btnPrimary, btnSecondary, modalOverlay, modalCard, modalHeader } from './invoiceStyles';
 import type { InvoiceTotals } from './useInvoiceBuilder';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { useApp } from '../../context/AppContext';
 
 interface Props {
   open: boolean;
@@ -25,8 +26,6 @@ interface Props {
   totals: InvoiceTotals;
 }
 
-const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
-
 /** One-click GST invoice generator modal. */
 export const InvoiceBuilderModal: React.FC<Props> = ({
   open, onClose, onSubmit, submitting = false, brands, brandId, onSelectBrand,
@@ -34,6 +33,8 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
   hasGst, onHasGstChange, isRecurring, onIsRecurringChange,
   selectedBrand, totals,
 }) => {
+  const { settings, currencySymbol = '₹' } = useApp();
+  const formatAmt = (n: number) => `${currencySymbol}${Number(n || 0).toLocaleString()}`;
   if (!open) return null;
 
   return (
@@ -134,10 +135,10 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               <label style={{ fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input type="checkbox" checked={hasGst} onChange={(e) => onHasGstChange(e.target.checked)}
                   style={{ width: 16, height: 16, accentColor: 'var(--accent-text)' }} />
-                <span>Apply Indian GST (18%) to this invoice</span>
+                <span>Apply GST ({typeof settings.defaultGstRate === 'number' ? settings.defaultGstRate : 18}%) to this invoice</span>
               </label>
               <span className="font-amount" style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
-                Subtotal: <strong style={{ color: 'var(--text-primary)' }}>{inr(totals.subtotal)}</strong>
+                Subtotal: <strong style={{ color: 'var(--text-primary)' }}>{formatAmt(totals.subtotal)}</strong>
               </span>
             </div>
 
@@ -145,18 +146,18 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-secondary)' }}>
                 {totals.isInterstate ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>IGST (18%):</span>
-                    <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{inr(totals.igst)}</span>
+                    <span>IGST ({typeof settings.defaultGstRate === 'number' ? settings.defaultGstRate : 18}%):</span>
+                    <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{formatAmt(totals.igst)}</span>
                   </div>
                 ) : (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>CGST (9%):</span>
-                      <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{inr(totals.cgst)}</span>
+                      <span>CGST ({(typeof settings.defaultGstRate === 'number' ? settings.defaultGstRate : 18) / 2}%):</span>
+                      <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{formatAmt(totals.cgst)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>SGST (9%):</span>
-                      <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{inr(totals.sgst)}</span>
+                      <span>SGST ({(typeof settings.defaultGstRate === 'number' ? settings.defaultGstRate : 18) / 2}%):</span>
+                      <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{formatAmt(totals.sgst)}</span>
                     </div>
                   </>
                 )}
@@ -165,7 +166,7 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, fontSize: 14 }}>
               <span style={{ color: 'var(--text-primary)' }}>Total Payable Amount:</span>
-              <span className="font-amount" style={{ color: 'var(--accent-text)', fontSize: 17, fontWeight: 850 }}>{inr(totals.totalAmount)}</span>
+              <span className="font-amount" style={{ color: 'var(--accent-text)', fontSize: 17, fontWeight: 850 }}>{formatAmt(totals.totalAmount)}</span>
             </div>
           </div>
 

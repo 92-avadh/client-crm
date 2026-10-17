@@ -11,6 +11,7 @@ interface Props {
   onView: (brand: Brand) => void;
   onEdit: (brand: Brand) => void;
   onAssign: (brand: Brand) => void;
+  onTogglePaymentStatus?: (brand: Brand) => void;
 }
 
 /** Shows how long a client has been inactive. */
@@ -34,7 +35,7 @@ export const InactivityBadge: React.FC<{ lastActivityDate: string }> = ({ lastAc
 };
 
 /** Responsive grid of client cards. */
-export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, onEdit, onAssign }) => {
+export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, onEdit, onAssign, onTogglePaymentStatus }) => {
   const canManage = role === 'admin' || role === 'hr';
 
   if (brands.length === 0) {
@@ -80,15 +81,39 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                   <InactivityBadge lastActivityDate={brand.lastActivityDate} />
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
-                    background: brand.paymentStatus === 'Pending' ? 'var(--warn-bg)' : 'var(--success-bg)',
-                    color: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--success-text)',
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                  }}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (canManage && onTogglePaymentStatus) {
+                        onTogglePaymentStatus(brand);
+                      }
+                    }}
+                    title={canManage ? `Click to mark as ${brand.paymentStatus === 'Pending' ? 'Paid' : 'Pending'}` : undefined}
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      background: brand.paymentStatus === 'Pending' ? 'var(--warn-bg)' : 'var(--success-bg)',
+                      color: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--success-text)',
+                      border: `1px solid ${brand.paymentStatus === 'Pending' ? 'var(--warn-border)' : 'var(--success-border)'}`,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: canManage ? 'pointer' : 'default',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (canManage) e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (canManage) e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--success-text)' }} />
                     {brand.paymentStatus === 'Pending' ? 'Pending' : 'Paid'}
-                  </span>
+                  </button>
                 </div>
               </div>
 

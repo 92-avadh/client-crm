@@ -101,10 +101,11 @@ interface OnboardProps {
   submitting: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  currencySymbol?: string;
 }
 
 export const OnboardClientModal: React.FC<OnboardProps> = ({
-  open, formData, onFormChange, errors, submitError, submitting, onClose, onSubmit,
+  open, formData, onFormChange, errors, submitError, submitting, onClose, onSubmit, currencySymbol = '₹',
 }) => {
   const { confirm, element: confirmDialog } = useConfirm();
   const baseline = React.useRef<ClientFormData | null>(null);
@@ -223,7 +224,7 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
 
   return (
     <>
-    <div className="modal-overlay" onClick={() => requestClose()}>
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) requestClose(); }}>
       <div style={{ ...modalShell, maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-subtle)', flexShrink: 0 }}>
           <div>
@@ -312,7 +313,7 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
             </div>
 
             <FieldRow>
-              <FormField label="Monthly Retainer (₹)" required value={formData.monthlyFee} error={getFieldError('monthlyFee')}
+              <FormField label={`Monthly Retainer (${currencySymbol})`} required value={formData.monthlyFee} error={getFieldError('monthlyFee')}
                 onBlur={() => handleBlur('monthlyFee')} type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
               <div>
                 <FormSelect label="Billing Cycle Day" value={formData.billingCycleDay} required
@@ -326,15 +327,20 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
               </div>
             </FieldRow>
 
-            <FormSelect
-              label="Initial Payment Status"
-              value={formData.status || 'Active'}
-              options={INITIAL_STATUS_OPTIONS}
-              onChange={(v) => onFormChange({
-                status: v,
-                paymentStatus: v === 'Active' ? 'Paid' : 'Pending',
-              })}
-            />
+            <FieldRow>
+              <FormSelect
+                label="Account Status"
+                value={formData.status || 'Active'}
+                options={STATUS_OPTIONS}
+                onChange={(v) => onFormChange({ status: v })}
+              />
+              <FormSelect
+                label="Initial Payment Status"
+                value={formData.paymentStatus || 'Paid'}
+                options={PAYMENT_OPTIONS}
+                onChange={(v) => onFormChange({ paymentStatus: v as any })}
+              />
+            </FieldRow>
           </div>
 
           <div style={footerStyle}>
@@ -364,13 +370,20 @@ interface EditProps extends OnboardProps {
 }
 
 export const EditClientModal: React.FC<EditProps> = ({
-  open, formData, onFormChange, errors, submitError, submitting, onClose, onSubmit,
+  open, formData, onFormChange, errors, submitError, submitting, onClose, onSubmit, currencySymbol = '₹',
 }) => {
   const { confirm, element: confirmDialog } = useConfirm();
   const baseline = React.useRef<ClientFormData | null>(null);
+  const formScrollRef = React.useRef<HTMLDivElement>(null);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serviceOption, setServiceOption] = useState<string>('');
   const [customServiceText, setCustomServiceText] = useState<string>('');
+
+  React.useEffect(() => {
+    if (submitError && formScrollRef.current) {
+      formScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [submitError]);
 
   // Snapshot the loaded client when the modal opens
   React.useEffect(() => {
@@ -465,7 +478,7 @@ export const EditClientModal: React.FC<EditProps> = ({
 
   return (
     <>
-    <div className="modal-overlay" onClick={() => requestClose()}>
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) requestClose(); }}>
       <div style={{ ...modalShell, maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-subtle)', flexShrink: 0 }}>
           <div>
@@ -481,7 +494,7 @@ export const EditClientModal: React.FC<EditProps> = ({
         </div>
 
         <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-          <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1 }}>
+          <div ref={formScrollRef} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1 }}>
             <ErrorBanner message={submitError} />
 
             <FieldRow>
@@ -549,7 +562,7 @@ export const EditClientModal: React.FC<EditProps> = ({
             </div>
 
             <FieldRow>
-              <FormField label="Monthly Retainer (₹)" value={formData.monthlyFee}
+              <FormField label={`Monthly Retainer (${currencySymbol})`} value={formData.monthlyFee}
                 type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
               <div>
                 <FormSelect label="Billing Cycle Day" value={formData.billingCycleDay}

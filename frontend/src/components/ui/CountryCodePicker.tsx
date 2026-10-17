@@ -9,7 +9,7 @@ export interface Country {
   flag: string; // ISO 3166-1 alpha-2 code for flagcdn.com
 }
 
-const COUNTRIES: Country[] = [
+export const COUNTRIES: Country[] = [
   { code: 'IN', name: 'India', dial: '+91', phoneLength: 10, flag: 'in' },
   { code: 'US', name: 'United States', dial: '+1', phoneLength: 10, flag: 'us' },
   { code: 'GB', name: 'United Kingdom', dial: '+44', phoneLength: 10, flag: 'gb' },
@@ -68,6 +68,28 @@ const COUNTRIES: Country[] = [
   { code: 'RO', name: 'Romania', dial: '+40', phoneLength: 9, flag: 'ro' },
   { code: 'GR', name: 'Greece', dial: '+30', phoneLength: 10, flag: 'gr' },
 ];
+
+/**
+ * Extracts a normalized country code and national phone digits
+ * from raw phone strings that may contain +country prefixes.
+ */
+export function parsePhoneAndCountry(rawPhone?: string | null, defaultCountry = 'IN'): { countryCode: string; nationalNumber: string } {
+  if (!rawPhone) return { countryCode: defaultCountry, nationalNumber: '' };
+  const trimmed = String(rawPhone).trim();
+  if (trimmed.startsWith('+')) {
+    const sorted = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+    for (const c of sorted) {
+      if (trimmed.startsWith(c.dial)) {
+        return { countryCode: c.code, nationalNumber: trimmed.slice(c.dial.length).trim() };
+      }
+    }
+  }
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (defaultCountry === 'IN' && digitsOnly.length > 10 && digitsOnly.startsWith('91')) {
+    return { countryCode: 'IN', nationalNumber: digitsOnly.slice(2) };
+  }
+  return { countryCode: defaultCountry, nationalNumber: trimmed };
+}
 
 interface CountryCodePickerProps {
   countryCode: string; // ISO code e.g. 'IN'

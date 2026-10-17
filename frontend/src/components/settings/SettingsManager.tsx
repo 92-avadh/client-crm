@@ -40,6 +40,7 @@ export const SettingsManager: React.FC = () => {
     addHoliday,
     deleteHoliday,
     updateTeamMember,
+    resetWorkspaceData,
   } = useApp();
 
   const role = currentUser.role;
@@ -502,7 +503,7 @@ export const SettingsManager: React.FC = () => {
             )}
 
             {activeTab === 'security' && (
-              <SecurityTab isAdmin={isAdmin} auditLogs={auditLogs} />
+              <SecurityTab isAdmin={isAdmin} auditLogs={auditLogs} onResetWorkspace={resetWorkspaceData} />
             )}
           </div>
         </main>
