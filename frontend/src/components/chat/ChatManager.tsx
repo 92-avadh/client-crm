@@ -24,6 +24,8 @@ import {
   Volume2,
   Reply,
   Copy,
+  Forward,
+  CheckSquare,
   Trash2,
   Info,
   ChevronDown,
@@ -115,6 +117,9 @@ export const ChatManager: React.FC = () => {
     startDirectChat,
     markConversationRead,
     deleteMessage,
+    deleteConversation,
+    clearConversation,
+    isUserOnline,
     showToast,
   } = useApp();
 
@@ -177,6 +182,27 @@ export const ChatManager: React.FC = () => {
   const [messageContextMenu, setMessageContextMenu] = useState<{ message: ChatMessage; x: number; y: number } | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 
+  // Message Actions state (forward, Meta AI, stars, pins, select)
+  const [forwardingMessage, setForwardingMessage] = useState<ChatMessage | null>(null);
+  const [metaAiMessage, setMetaAiMessage] = useState<ChatMessage | null>(null);
+  const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('wa_starred_messages');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('wa_pinned_messages');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+
   // Quoted reply state
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
 
@@ -216,6 +242,18 @@ export const ChatManager: React.FC = () => {
       localStorage.setItem('wa_message_reactions', JSON.stringify(reactions));
     } catch {}
   }, [reactions]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('wa_starred_messages', JSON.stringify(Array.from(starredMessageIds)));
+    } catch {}
+  }, [starredMessageIds]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('wa_pinned_messages', JSON.stringify(Array.from(pinnedMessageIds)));
+    } catch {}
+  }, [pinnedMessageIds]);
 
   // Active conversation resolution
   const activeConv: Conversation | undefined =
@@ -332,6 +370,124 @@ export const ChatManager: React.FC = () => {
     setInputText('');
     setReplyingTo(null);
     setShowEmojiPicker(false);
+
+    // If direct recipient is online, simulate WhatsApp read receipt after ~3.5 seconds
+    if (activeConv.type === 'direct') {
+      const otherId = activeConv.otherMember?.id || activeConv.participantIds.find((id) => id !== currentUser.id);
+      if (otherId && isUserOnline(otherId)) {
+        setTimeout(() => {
+          if (activeConv) {
+            getSocket().emit('mark_read', { conversationId: activeConv.id, userId: otherId });
+          }
+        }, 3500);
+      }
+    }
+  };
+
+  // Format timestamp to clean WhatsApp 12h time (e.g. "10:55 am", "5:25 am")
+  const formatMessageTime = (ts?: string) => {
+    if (!ts) return '';
+    const trimmed = ts.trim();
+    if (trimmed === 'Just now') return 'Just now';
+    if (/^\d{1,2}:\d{2}\s*(am|pm)?$/i.test(trimmed)) {
+      return trimmed.toLowerCase();
+    }
+    try {
+      const d = new Date(trimmed);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+      }
+    } catch {}
+    return trimmed;
+  };
+
+  // Check if direct recipient in active conversation is currently online
+  const isRecipientOnline = useMemo(() => {
+    if (!activeConv) return false;
+    if (activeConv.type === 'direct') {
+      const otherId = activeConv.otherMember?.id || activeConv.participantIds.find((id) => id !== currentUser.id);
+      return otherId ? isUserOnline(otherId) : false;
+    }
+    return true;
+  }, [activeConv, isUserOnline, currentUser.id]);
+
+  // Render WhatsApp ticks: 1 tick grey if offline, 2 ticks grey if online, 2 ticks blue if read
+  const renderDeliveryTicks = (msg: ChatMessage) => {
+    const isRead = Boolean(
+      msg.isRead ||
+      (msg.readBy && msg.readBy.length > 1 && msg.readBy.some((id) => id !== currentUser.id))
+    );
+
+    if (isRead) {
+      return (
+        <span title="Read" style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <CheckCheck style={{ width: 14, height: 14, color: '#53bdeb', flexShrink: 0 }} />
+        </span>
+      );
+    }
+
+    let isOnline = false;
+    if (activeConv?.type === 'direct') {
+      const otherId = activeConv.otherMember?.id || activeConv.participantIds.find((id) => id !== currentUser.id);
+      isOnline = otherId ? isUserOnline(otherId) : false;
+    } else {
+      isOnline = true;
+    }
+
+    if (isOnline) {
+      return (
+        <span title="Delivered (recipient online)" style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <CheckCheck style={{ width: 14, height: 14, color: '#8696a0', flexShrink: 0 }} />
+        </span>
+      );
+    }
+
+    return (
+      <span title="Sent (recipient offline)" style={{ display: 'inline-flex', alignItems: 'center' }}>
+        <Check style={{ width: 14, height: 14, color: '#8696a0', flexShrink: 0 }} />
+      </span>
+    );
+  };
+
+  const toggleStarMessage = (id: string) => {
+    setStarredMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        showToast('Message unstarred', 'info');
+      } else {
+        next.add(id);
+        showToast('Message starred', 'success');
+      }
+      return next;
+    });
+  };
+
+  const togglePinMessage = (id: string) => {
+    setPinnedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        showToast('Message unpinned', 'info');
+      } else {
+        next.add(id);
+        showToast('Message pinned to chat', 'success');
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectMessage = (id: string) => {
+    setSelectedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      showToast(next.has(id) ? 'Message selected' : 'Message deselected', 'info');
+      return next;
+    });
   };
 
   // Quick reaction trigger
@@ -762,7 +918,7 @@ export const ChatManager: React.FC = () => {
                       )}
                     </div>
                     {/* Emerald Online dot */}
-                    {isDirect && (
+                    {isDirect && other?.id && isUserOnline(other.id) && (
                       <span
                         style={{
                           position: 'absolute',
@@ -795,15 +951,21 @@ export const ChatManager: React.FC = () => {
                         {isDirect && other ? other.name : conv.title}
                       </span>
                       <span style={{ fontSize: 11, color: (conv.unreadCount || 0) > 0 ? '#00a884' : '#8696a0', flexShrink: 0, fontWeight: (conv.unreadCount || 0) > 0 ? 700 : 400 }}>
-                        {conv.lastMessageTime || ''}
+                        {formatMessageTime(conv.lastMessageTime) || ''}
                       </span>
                     </div>
 
                     {/* Bottom Row: Snippet + Ticks + Unread Badge */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, flex: 1 }}>
-                        {/* Delivery ticks */}
-                        <CheckCheck style={{ width: 14, height: 14, color: '#53bdeb', flexShrink: 0 }} />
+                        {/* Delivery ticks: 1 grey if offline, 2 grey/blue if online */}
+                        {isDirect && (conv.unreadCount || 0) === 0 && (
+                          isUserOnline(other?.id || '') ? (
+                            <CheckCheck style={{ width: 14, height: 14, color: '#53bdeb', flexShrink: 0 }} />
+                          ) : (
+                            <Check style={{ width: 14, height: 14, color: '#8696a0', flexShrink: 0 }} />
+                          )
+                        )}
                         <span
                           style={{
                             fontSize: 12,
@@ -914,7 +1076,7 @@ export const ChatManager: React.FC = () => {
                       <Users style={{ width: 18, height: 18 }} />
                     )}
                   </div>
-                  {activeConv.type === 'direct' && (
+                  {activeConv.type === 'direct' && isRecipientOnline && (
                     <span
                       style={{
                         position: 'absolute',
@@ -937,7 +1099,11 @@ export const ChatManager: React.FC = () => {
                   </h3>
                   <div style={{ fontSize: 11, color: '#8696a0', marginTop: 2 }}>
                     {activeConv.type === 'direct' ? (
-                      <span style={{ color: '#00a884', fontWeight: 600 }}>online</span>
+                      isRecipientOnline ? (
+                        <span style={{ color: '#00a884', fontWeight: 600 }}>online</span>
+                      ) : (
+                        <span style={{ color: '#8696a0' }}>offline</span>
+                      )
                     ) : (
                       <span>tap here for group info</span>
                     )}
@@ -1190,10 +1356,15 @@ export const ChatManager: React.FC = () => {
 
                       {/* The WhatsApp Bubble */}
                       <div
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setMessageContextMenu({ message: msg, x: e.clientX, y: e.clientY });
+                        }}
                         style={{
                           background: isMe ? '#005c4b' : '#202c33',
                           color: '#e9edef',
-                          padding: '6px 9px 8px 9px',
+                          padding: '6px 9px 6px 9px',
                           borderRadius: 8,
                           borderTopRightRadius: isMe ? 0 : 8,
                           borderTopLeftRadius: !isMe ? 0 : 8,
@@ -1201,6 +1372,7 @@ export const ChatManager: React.FC = () => {
                           fontSize: 13.5,
                           lineHeight: 1.45,
                           position: 'relative',
+                          minWidth: 72,
                         }}
                       >
                         {/* Group Sender Name */}
@@ -1228,92 +1400,94 @@ export const ChatManager: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Main Text Content */}
-                        <div
-                          style={{
-                            wordBreak: 'break-word',
-                            whiteSpace: 'pre-wrap',
-                            fontStyle: msg.isDeletedForEveryone ? 'italic' : 'normal',
-                            opacity: msg.isDeletedForEveryone ? 0.75 : 1,
-                            marginRight: 55, // space for inline timestamp
-                          }}
-                        >
-                          {msg.isDeletedForEveryone ? '🚫 This message was deleted' : actualText}
-                        </div>
-
-                        {/* Document Attachment Preview Card */}
-                        {msg.attachments && msg.attachments.length > 0 && (
-                          <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            {msg.attachments.map((att, idx) => (
-                              <div
-                                key={idx}
-                                style={{
-                                  background: 'rgba(0, 0, 0, 0.25)',
-                                  borderRadius: 6,
-                                  padding: '8px 10px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: 10,
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <div
-                                    style={{
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: 4,
-                                      background: '#dc2626',
-                                      color: '#ffffff',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontWeight: 800,
-                                      fontSize: 10,
-                                    }}
-                                  >
-                                    PDF
-                                  </div>
-                                  <div>
-                                    <div style={{ fontSize: 12, fontWeight: 600, color: '#e9edef' }}>{att.name}</div>
-                                    <div style={{ fontSize: 10, color: '#8696a0' }}>{att.size}</div>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => showToast(`Downloading ${att.name}...`, 'info')}
-                                  style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: '#00a884',
-                                    cursor: 'pointer',
-                                    padding: 4,
-                                  }}
-                                  title="Download Document"
-                                >
-                                  <Download style={{ width: 16, height: 16 }} />
-                                </button>
-                              </div>
-                            ))}
+                        {/* Text and WhatsApp Timestamp in Flex Column to prevent ANY collision */}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div
+                            style={{
+                              wordBreak: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                              fontStyle: msg.isDeletedForEveryone ? 'italic' : 'normal',
+                              opacity: msg.isDeletedForEveryone ? 0.75 : 1,
+                              paddingRight: isMe ? 22 : 10,
+                            }}
+                          >
+                            {msg.isDeletedForEveryone ? '🚫 This message was deleted' : actualText}
                           </div>
-                        )}
 
-                        {/* Inline WhatsApp Timestamp & Read Ticks */}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            bottom: 4,
-                            right: 7,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 3,
-                            fontSize: 10,
-                            color: '#8696a0',
-                          }}
-                        >
-                          <span>{msg.timestamp || 'Just now'}</span>
-                          {isMe && !msg.isDeletedForEveryone && (
-                            <CheckCheck style={{ width: 14, height: 14, color: '#53bdeb' }} />
+                          {/* Document Attachment Preview Card */}
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {msg.attachments.map((att, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    background: 'rgba(0, 0, 0, 0.25)',
+                                    borderRadius: 6,
+                                    padding: '8px 10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: 10,
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <div
+                                      style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 4,
+                                        background: '#dc2626',
+                                        color: '#ffffff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: 800,
+                                        fontSize: 10,
+                                      }}
+                                    >
+                                      PDF
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize: 12, fontWeight: 600, color: '#e9edef' }}>{att.name}</div>
+                                      <div style={{ fontSize: 10, color: '#8696a0' }}>{att.size}</div>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => showToast(`Downloading ${att.name}...`, 'info')}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: '#00a884',
+                                      cursor: 'pointer',
+                                      padding: 4,
+                                    }}
+                                    title="Download Document"
+                                  >
+                                    <Download style={{ width: 16, height: 16 }} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           )}
+
+                          {/* WhatsApp Timestamp & Delivery Ticks */}
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'flex-end',
+                              alignSelf: 'flex-end',
+                              gap: 3,
+                              fontSize: 10.5,
+                              color: '#8696a0',
+                              marginTop: 2,
+                              userSelect: 'none',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <span>{formatMessageTime(msg.timestamp)}</span>
+                            {isMe && !msg.isDeletedForEveryone && renderDeliveryTicks(msg)}
+                          </div>
                         </div>
                       </div>
 
@@ -1753,134 +1927,246 @@ export const ChatManager: React.FC = () => {
           onClick={(e) => e.stopPropagation()}
           style={{
             position: 'fixed',
-            top: Math.min(messageContextMenu.y, window.innerHeight - 340),
-            left: Math.min(messageContextMenu.x, window.innerWidth - 220),
-            background: '#202c33',
-            border: '1px solid #222d34',
-            borderRadius: 10,
-            padding: '6px 0',
-            boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
+            top: Math.min(messageContextMenu.y, window.innerHeight - 390),
+            left: Math.min(messageContextMenu.x, window.innerWidth - 230),
             zIndex: 100,
-            minWidth: 190,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
           }}
         >
-          {/* Reaction Bar in Menu */}
+          {/* Reaction Bar Floating Pill on Top (Screenshot 3) */}
           <div
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'space-around',
-              padding: '6px 10px 8px 10px',
-              borderBottom: '1px solid #222d34',
+              gap: 6,
+              padding: '6px 10px',
+              background: '#202c33',
+              border: '1px solid #2a3942',
+              borderRadius: 24,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              alignSelf: 'flex-start',
             }}
           >
             {QUICK_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => handleToggleReaction(messageContextMenu.message.id, emoji)}
-                style={{ background: 'transparent', border: 'none', fontSize: 16, cursor: 'pointer', padding: 2 }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: 20,
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  lineHeight: 1,
+                  transition: 'transform 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.25)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                title={`React with ${emoji}`}
               >
                 {emoji}
               </button>
             ))}
+            <button
+              onClick={() => {
+                setShowEmojiPicker(true);
+                setMessageContextMenu(null);
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                color: '#8696a0',
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background 0.15s ease, color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#00a884';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.color = '#8696a0';
+              }}
+              title="More reactions"
+            >
+              <Plus style={{ width: 14, height: 14 }} />
+            </button>
           </div>
 
-          <button
-            onClick={() => {
-              showToast(`Message Info: Sent at ${messageContextMenu.message.timestamp}`, 'info');
-              setMessageContextMenu(null);
+          {/* Menu Dropdown List (Screenshot 3) */}
+          <div
+            style={{
+              background: '#202c33',
+              border: '1px solid #2a3942',
+              borderRadius: 12,
+              padding: '6px 0',
+              boxShadow: '0 16px 36px rgba(0,0,0,0.55)',
+              minWidth: 205,
+              overflow: 'hidden',
             }}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <Info style={{ width: 15, height: 15, color: '#8696a0' }} />
-            <span>Message info</span>
-          </button>
+            {/* 1. Reply */}
+            <button
+              onClick={() => {
+                setReplyingTo(messageContextMenu.message);
+                setMessageContextMenu(null);
+                inputRef.current?.focus();
+              }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Reply style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <span>Reply</span>
+            </button>
 
-          <button
-            onClick={() => {
-              setReplyingTo(messageContextMenu.message);
-              setMessageContextMenu(null);
-              inputRef.current?.focus();
-            }}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Reply style={{ width: 15, height: 15, color: '#8696a0' }} />
-            <span>Reply</span>
-          </button>
+            {/* 2. Copy */}
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(messageContextMenu.message.text);
+                showToast('Message copied to clipboard', 'success');
+                setMessageContextMenu(null);
+              }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Copy style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <span>Copy</span>
+            </button>
 
-          <button
-            onClick={() => {
-              navigator.clipboard?.writeText(messageContextMenu.message.text);
-              showToast('Message copied to clipboard', 'success');
-              setMessageContextMenu(null);
-            }}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Copy style={{ width: 15, height: 15, color: '#8696a0' }} />
-            <span>Copy</span>
-          </button>
+            {/* 3. Forward */}
+            <button
+              onClick={() => {
+                setForwardingMessage(messageContextMenu.message);
+                setMessageContextMenu(null);
+              }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Forward style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <span>Forward</span>
+            </button>
 
-          <button
-            onClick={() => {
-              showToast('Starred message', 'success');
-              setMessageContextMenu(null);
-            }}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Star style={{ width: 15, height: 15, color: '#8696a0' }} />
-            <span>Star</span>
-          </button>
+            {/* 4. Pin */}
+            <button
+              onClick={() => {
+                togglePinMessage(messageContextMenu.message.id);
+                setMessageContextMenu(null);
+              }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Pin style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <span>{pinnedMessageIds.has(messageContextMenu.message.id) ? 'Unpin' : 'Pin'}</span>
+            </button>
 
-          <button
-            onClick={async () => {
-              const msg = messageContextMenu.message;
-              setMessageContextMenu(null);
-              const ok = await confirm({
-                title: 'Delete message?',
-                description: 'Delete this message for everyone or delete for me?',
-                confirmText: 'Delete for everyone',
-                destructive: true,
-                icon: 'trash',
-              });
-              if (ok && activeConv) {
-                deleteMessage(activeConv.id, msg.id, 'forEveryone');
-              }
-            }}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#f87171', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Trash2 style={{ width: 15, height: 15, color: '#f87171' }} />
-            <span>Delete</span>
-          </button>
+            {/* 5. Ask Meta AI */}
+            <button
+              onClick={() => {
+                setMetaAiMessage(messageContextMenu.message);
+                setMessageContextMenu(null);
+              }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="9" stroke="url(#metaAiGrad)" strokeWidth="2.5" />
+                <defs>
+                  <linearGradient id="metaAiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#00c6ff" />
+                    <stop offset="50%" stopColor="#0072ff" />
+                    <stop offset="100%" stopColor="#e056fd" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span>Ask Meta AI</span>
+            </button>
+
+            {/* 6. Star */}
+            <button
+              onClick={() => {
+                toggleStarMessage(messageContextMenu.message.id);
+                setMessageContextMenu(null);
+              }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Star style={{ width: 16, height: 16, color: starredMessageIds.has(messageContextMenu.message.id) ? '#eab308' : '#8696a0' }} />
+              <span>{starredMessageIds.has(messageContextMenu.message.id) ? 'Unstar' : 'Star'}</span>
+            </button>
+
+            {/* 7. Select */}
+            <button
+              onClick={() => {
+                toggleSelectMessage(messageContextMenu.message.id);
+                setMessageContextMenu(null);
+              }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <CheckSquare style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <span>Select</span>
+            </button>
+
+            {/* 8. Delete */}
+            <button
+              onClick={async () => {
+                const msg = messageContextMenu.message;
+                setMessageContextMenu(null);
+                const ok = await confirm({
+                  title: 'Delete message?',
+                  description: 'Are you sure you want to delete this message?',
+                  confirmText: 'Delete for everyone',
+                  destructive: true,
+                  icon: 'trash',
+                });
+                if (ok && activeConv) {
+                  deleteMessage(activeConv.id, msg.id, 'forEveryone');
+                }
+              }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#f87171', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Trash2 style={{ width: 16, height: 16, color: '#f87171' }} />
+              <span>Delete</span>
+            </button>
+          </div>
         </div>
       )}
 
       {/* ────────────────────────────────────────────────────────────────── */}
-      {/* WHATSAPP CHAT ITEM CONTEXT MENU (Screenshot 2)                    */}
+      {/* WHATSAPP CHAT ITEM CONTEXT MENU (Screenshot 1)                    */}
       {/* ────────────────────────────────────────────────────────────────── */}
       {chatContextMenu && (
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
             position: 'fixed',
-            top: Math.min(chatContextMenu.y, window.innerHeight - 300),
+            top: Math.min(chatContextMenu.y, window.innerHeight - 280),
             left: Math.min(chatContextMenu.x, window.innerWidth - 220),
             background: '#202c33',
-            border: '1px solid #222d34',
+            border: '1px solid #2a3942',
             borderRadius: 10,
             padding: '6px 0',
             boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
             zIndex: 100,
-            minWidth: 190,
+            minWidth: 195,
+            overflow: 'hidden',
           }}
         >
           <button
@@ -1914,17 +2200,216 @@ export const ChatManager: React.FC = () => {
           </button>
 
           <button
-            onClick={() => {
-              markConversationRead(chatContextMenu.convId);
+            onClick={async () => {
+              const convId = chatContextMenu.convId;
               setChatContextMenu(null);
+              const ok = await confirm({
+                title: 'Clear chat history?',
+                description: 'Are you sure you want to clear all messages in this chat? This cannot be undone.',
+                confirmText: 'Clear chat',
+                destructive: true,
+                icon: 'trash',
+              });
+              if (ok) {
+                await clearConversation(convId);
+                showToast('Chat history cleared', 'success');
+              }
             }}
             style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
             onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <CheckCheck style={{ width: 15, height: 15, color: '#00a884' }} />
-            <span>Mark as read</span>
+            <MessageSquare style={{ width: 15, height: 15, color: '#8696a0' }} />
+            <span>Clear chat</span>
           </button>
+
+          <button
+            onClick={async () => {
+              const convId = chatContextMenu.convId;
+              setChatContextMenu(null);
+              const targetConv = conversations.find(c => c.id === convId);
+              const ok = await confirm({
+                title: 'Delete chat?',
+                description: `Are you sure you want to delete the chat with ${targetConv?.title || 'this contact'}? All messages and conversation history will be permanently deleted.`,
+                confirmText: 'Delete chat',
+                destructive: true,
+                icon: 'trash',
+              });
+              if (ok) {
+                await deleteConversation(convId);
+                showToast('Chat deleted', 'success');
+              }
+            }}
+            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#f87171', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <Trash2 style={{ width: 15, height: 15, color: '#f87171' }} />
+            <span>Delete chat</span>
+          </button>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────────── */}
+      {/* FORWARD MESSAGE MODAL                                              */}
+      {/* ────────────────────────────────────────────────────────────────── */}
+      {forwardingMessage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setForwardingMessage(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#111b21',
+              border: '1px solid #222d34',
+              borderRadius: 14,
+              width: '100%',
+              maxWidth: 420,
+              overflow: 'hidden',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+            }}
+          >
+            <div style={{ padding: '16px 20px', background: '#202c33', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #222d34' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Forward style={{ width: 18, height: 18, color: '#00a884' }} />
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#e9edef' }}>Forward message to...</h4>
+              </div>
+              <button onClick={() => setForwardingMessage(null)} style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 4 }}>
+                <X style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+            <div style={{ padding: '12px 16px', background: '#0b141a', fontSize: 12.5, color: '#8696a0', borderBottom: '1px solid #222d34', fontStyle: 'italic' }}>
+              "{forwardingMessage.text.slice(0, 100)}{forwardingMessage.text.length > 100 ? '...' : ''}"
+            </div>
+            <div style={{ maxHeight: 320, overflowY: 'auto', padding: '8px 0' }}>
+              {conversations.map((c) => (
+                <div
+                  key={c.id}
+                  onClick={() => {
+                    sendMessage(c.id, `↪️ [Forwarded]:\n${forwardingMessage.text}`);
+                    setForwardingMessage(null);
+                    showToast(`Message forwarded to ${c.title}`, 'success');
+                  }}
+                  style={{
+                    padding: '10px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid rgba(255,255,255,0.03)',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#202c33'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: '#e9edef' }}>{c.title}</span>
+                  <span style={{ fontSize: 12, color: '#00a884', fontWeight: 600 }}>Send</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────────── */}
+      {/* META AI ASSISTANT MODAL (Screenshot 3)                            */}
+      {/* ────────────────────────────────────────────────────────────────── */}
+      {metaAiMessage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setMetaAiMessage(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#111b21',
+              border: '1px solid #222d34',
+              borderRadius: 14,
+              width: '100%',
+              maxWidth: 460,
+              overflow: 'hidden',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+            }}
+          >
+            <div style={{ padding: '16px 20px', background: '#202c33', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #222d34' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="9" stroke="url(#metaAiGradModal)" strokeWidth="2.5" />
+                  <defs>
+                    <linearGradient id="metaAiGradModal" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00c6ff" />
+                      <stop offset="50%" stopColor="#0072ff" />
+                      <stop offset="100%" stopColor="#e056fd" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#e9edef' }}>Ask Meta AI</h4>
+              </div>
+              <button onClick={() => setMetaAiMessage(null)} style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 4 }}>
+                <X style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+            <div style={{ padding: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#8696a0', marginBottom: 6, letterSpacing: '0.04em' }}>SELECTED MESSAGE</div>
+              <div style={{ background: '#202c33', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#e9edef', marginBottom: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+                {metaAiMessage.text}
+              </div>
+              <div style={{ fontSize: 12, color: '#00a884', fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles style={{ width: 14, height: 14 }} />
+                <span>META AI ANALYSIS & DRAFT</span>
+              </div>
+              <div style={{ fontSize: 13, lineHeight: 1.5, color: '#d1d7db', background: 'rgba(0, 168, 132, 0.08)', border: '1px solid rgba(0, 168, 132, 0.25)', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+                {metaAiMessage.text.length < 15
+                  ? `Message is concise and direct. Suggested reply: "Got it, thank you for confirming!" or "Received, following up on this shortly."`
+                  : `Meta AI CRM Insight: This message addresses account progress. Recommended next step: Acknowledge receipt with clear milestone deliverables.`}
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    setInputText(`Understood, following up on this right away.`);
+                    setMetaAiMessage(null);
+                    inputRef.current?.focus();
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: '#00a884',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Use Draft Reply
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

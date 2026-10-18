@@ -115,6 +115,10 @@ interface AppContextType {
   startDirectChat: (targetUserId: string) => Promise<string>;
   markConversationRead: (convId: string) => Promise<void>;
   deleteMessage: (conversationId: string, messageId: string, deleteType: 'forEveryone' | 'forMe') => Promise<void>;
+  deleteConversation: (convId: string) => Promise<void>;
+  clearConversation: (convId: string) => Promise<void>;
+  onlineUserIds: Set<string>;
+  isUserOnline: (userId: string) => boolean;
 
   settings: AppSettings;
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
@@ -562,6 +566,7 @@ export const AppProvider: React.FC<{
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>('');
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState<AppSettings>(() => {
     const localCurr = localStorage.getItem('retentio_currency') || 'INR';
     const localSymbol = localStorage.getItem('retentio_currency_symbol') || '₹';
@@ -1658,11 +1663,36 @@ export const AppProvider: React.FC<{
       });
     };
 
+    const handleOnlineUsersList = (ids: string[]) => {
+      if (Array.isArray(ids)) {
+        setOnlineUserIds(new Set(ids));
+      }
+    };
+
+    const handleUserOnline = ({ userId }: { userId: string }) => {
+      if (userId) {
+        setOnlineUserIds(prev => new Set(prev).add(userId));
+      }
+    };
+
+    const handleUserOffline = ({ userId }: { userId: string }) => {
+      if (userId) {
+        setOnlineUserIds(prev => {
+          const next = new Set(prev);
+          next.delete(userId);
+          return next;
+        });
+      }
+    };
+
     s.on('new_message', handleNewMessage);
     s.on('messages_read', handleMessagesRead);
     s.on('conversation_updated', handleConversationUpdated);
     s.on('new_conversation', handleNewConversation);
     s.on('message_deleted', handleMessageDeleted);
+    s.on('online_users_list', handleOnlineUsersList);
+    s.on('user_online', handleUserOnline);
+    s.on('user_offline', handleUserOffline);
 
     return () => {
       s.off('new_message', handleNewMessage);
@@ -1670,8 +1700,18 @@ export const AppProvider: React.FC<{
       s.off('conversation_updated', handleConversationUpdated);
       s.off('new_conversation', handleNewConversation);
       s.off('message_deleted', handleMessageDeleted);
+      s.off('online_users_list', handleOnlineUsersList);
+      s.off('user_online', handleUserOnline);
+      s.off('user_offline', handleUserOffline);
     };
   }, [currentUser?.id]);
+
+  const isUserOnline = useCallback((userId: string) => {
+    if (!userId) return false;
+    if (onlineUserIds.has(userId)) return true;
+    const target = allUsers.find(u => u.id === userId);
+    return target ? (target as any).status !== 'inactive' && (target as any).isActive !== false : false;
+  }, [onlineUserIds, allUsers]);
 
   // Join/leave conversation room when active conversation changes
   useEffect(() => {
@@ -1834,6 +1874,38 @@ export const AppProvider: React.FC<{
         };
       }
     });
+  };
+
+  const deleteConversation = async (convId: string) => {
+    try {
+      await api.chat.deleteConversation(convId).catch(() => {});
+    } catch (err) {
+      console.warn('API chat.deleteConversation failed, updating local state:', err);
+    }
+    setConversations(prev => prev.filter(c => c.id !== convId));
+    setMessages(prev => {
+      const next = { ...prev };
+      delete next[convId];
+      return next;
+    });
+    if (activeConversationId === convId) {
+      const remaining = conversations.filter(c => c.id !== convId);
+      setActiveConversationId(remaining[0]?.id || '');
+    }
+  };
+
+  const clearConversation = async (convId: string) => {
+    try {
+      await api.chat.clearConversation(convId).catch(() => {});
+    } catch (err) {
+      console.warn('API chat.clearConversation failed, updating local state:', err);
+    }
+    setMessages(prev => ({ ...prev, [convId]: [] }));
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === convId ? { ...c, lastMessage: '', lastMessageTime: '', unreadCount: 0 } : c
+      )
+    );
   };
 
   // ---- Settings ----
@@ -2090,6 +2162,10 @@ export const AppProvider: React.FC<{
         startDirectChat,
         markConversationRead,
         deleteMessage,
+        deleteConversation,
+        clearConversation,
+        onlineUserIds,
+        isUserOnline,
         settings,
         updateSettings,
         currency: activeCurrency,

@@ -493,6 +493,34 @@ async function deleteMessage(conversationId, messageId, deleteType, userId) {
   return { success: true, conversationId, messageId, deleteType };
 }
 
+async function deleteConversation(conversationId, userId) {
+  try {
+    await pool.query('DELETE FROM message_read_by WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
+    await pool.query('DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
+    await pool.query('DELETE FROM chat_messages WHERE conversation_id = $1', [conversationId]);
+    await pool.query('DELETE FROM conversation_participants WHERE conversation_id = $1', [conversationId]);
+    await pool.query('DELETE FROM conversations WHERE id = $1', [conversationId]);
+  } catch (err) {
+    console.warn('deleteConversation warning:', err.message);
+  }
+  return { success: true, conversationId };
+}
+
+async function clearConversationMessages(conversationId) {
+  try {
+    await pool.query('DELETE FROM message_read_by WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
+    await pool.query('DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
+    await pool.query('DELETE FROM chat_messages WHERE conversation_id = $1', [conversationId]);
+    await pool.query(
+      'UPDATE conversations SET last_message = NULL, last_message_time = NULL, unread_count = 0 WHERE id = $1',
+      [conversationId]
+    );
+  } catch (err) {
+    console.warn('clearConversationMessages warning:', err.message);
+  }
+  return { success: true, conversationId };
+}
+
 module.exports = {
   CONVERSATION_TYPES,
   mapConv,
@@ -504,5 +532,7 @@ module.exports = {
   createConversation,
   getOrCreateDirectConversation,
   deleteMessage,
+  deleteConversation,
+  clearConversationMessages,
   ensureDirectConversations,
 };

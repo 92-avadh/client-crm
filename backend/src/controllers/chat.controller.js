@@ -83,10 +83,13 @@ const markRead = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
-const deleteMessage = asyncHandler(async (req, res) => {
-  const { id: conversationId, messageId } = req.params;
-  const deleteType = req.body?.deleteType || req.query?.deleteType || 'forEveryone';
-  const result = await chat.deleteMessage(conversationId, messageId, deleteType, req.user.id);
+const deleteConversation = asyncHandler(async (req, res) => {
+  const result = await chat.deleteConversation(req.params.id, req.user.id);
+  res.json(result);
+});
+
+const clearConversation = asyncHandler(async (req, res) => {
+  const result = await chat.clearConversationMessages(req.params.id);
   res.json(result);
 });
 
@@ -98,4 +101,6 @@ module.exports = {
   directConversation,
   markRead,
   deleteMessage,
+  deleteConversation,
+  clearConversation,
 };

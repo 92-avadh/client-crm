@@ -18,24 +18,34 @@ function initSocket(httpServer, isAllowedOrigin) {
     pingInterval: 10000,
   });
 
+  const onlineUserSockets = new Map(); // userId -> Set of socket IDs
+
   io.on('connection', (socket) => {
     let currentUserId = null;
 
+    const registerUser = (userId) => {
+      if (!userId) return;
+      currentUserId = userId;
+      socket.join(`user_${userId}`);
+      if (!onlineUserSockets.has(userId)) {
+        onlineUserSockets.set(userId, new Set());
+      }
+      onlineUserSockets.get(userId).add(socket.id);
+      socket.emit('online_users_list', Array.from(onlineUserSockets.keys()));
+      io.emit('user_online', { userId });
+    };
+
     // Handle user authentication / registration for personal notifications
     socket.on('authenticate', ({ userId }) => {
-      if (userId) {
-        currentUserId = userId;
-        socket.join(`user_${userId}`);
-      }
+      registerUser(userId);
     });
 
     // Join specific active conversation room
     socket.on('join_conversation', ({ conversationId, userId }) => {
       if (conversationId) {
         socket.join(`conversation_${conversationId}`);
-        if (userId && !currentUserId) {
-          currentUserId = userId;
-          socket.join(`user_${userId}`);
+        if (userId) {
+          registerUser(userId);
         }
       }
     });
@@ -92,7 +102,14 @@ function initSocket(httpServer, isAllowedOrigin) {
     });
 
     socket.on('disconnect', () => {
-      // Room cleanup is handled automatically by socket.io
+      if (currentUserId && onlineUserSockets.has(currentUserId)) {
+        const sockets = onlineUserSockets.get(currentUserId);
+        sockets.delete(socket.id);
+        if (sockets.size === 0) {
+          onlineUserSockets.delete(currentUserId);
+          io.emit('user_offline', { userId: currentUserId });
+        }
+      }
     });
   });
 

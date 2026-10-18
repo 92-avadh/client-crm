@@ -307,6 +307,8 @@ export const api = {
     markRead: (convId: string) => req<any>('POST', `/chat/conversations/${convId}/read`),
     deleteMessage: (convId: string, messageId: string, deleteType: string) =>
       req<any>('DELETE', `/chat/conversations/${convId}/messages/${messageId}`, { deleteType }),
+    deleteConversation: (convId: string) => req<any>('DELETE', `/chat/conversations/${convId}`),
+    clearConversation: (convId: string) => req<any>('POST', `/chat/conversations/${convId}/clear`),
   },
   settings: {
     get: () => req<any>('GET', '/settings'),
