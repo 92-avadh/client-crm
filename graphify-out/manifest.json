@@ -425,8 +425,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/chat/ChatManager.tsx": {
-    "mtime": 1792213266.1137805,
-    "ast_hash": "c4e01afa5ff03b1527c978c2d32ffa88",
+    "mtime": 1792300589.840055,
+    "ast_hash": "bdaafe076710c5a44ea83d388c782a82",
     "semantic_hash": ""
   },
   "frontend/src/components/clients/AssignMembersModal.tsx": {

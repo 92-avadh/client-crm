@@ -103,5 +103,6 @@
   "101": "healthcheck.sh",
   "102": "useApiData.ts",
   "103": "vite.config.ts",
-  "104": "backup.sh"
+  "104": "backup.sh",
+  "105": "useFinancials.ts"
 }
