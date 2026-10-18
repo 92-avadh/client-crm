@@ -573,6 +573,24 @@ button {
   }
 }
 
+/* ─── App Main Layout Spacing (Guaranteed padding on mobile & desktop) ─── */
+.app-main {
+  width: 100% !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 640px) {
+  .app-main {
+    padding: 20px 24px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-main {
+    padding: 24px 32px !important;
+  }
+}
 
 /* Smooth scroll for anchor links */
 html {

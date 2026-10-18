@@ -240,7 +240,7 @@ export const InboxManager: React.FC = () => {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 760 }}>
+    <div className="w-full" style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 760 }}>
 
       {/* ── Header ───────────────────────────────────────────────────────────── */}
       <div

@@ -211,7 +211,7 @@ const MainLayout: React.FC = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         <Topbar />
-        <main className="flex-1 w-full px-3.5 sm:px-6 lg:px-8 py-3.5 sm:py-6 max-w-full min-w-0">
+        <main className="app-main flex-1 w-full max-w-full min-w-0">
           {apiError && (
             <div
               role="alert"

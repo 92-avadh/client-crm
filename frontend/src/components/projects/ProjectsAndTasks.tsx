@@ -167,11 +167,11 @@ export const ProjectsAndTasks: React.FC = () => {
       {/* Tabs */}
       <div
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'var(--bg-card)', borderRadius: 12, padding: '4px 12px', border: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10,
+          background: 'var(--bg-card)', borderRadius: 12, padding: '6px 10px', border: '1px solid var(--border)',
         }}
       >
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveTab('tasks')}
             style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'tasks' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'tasks' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}

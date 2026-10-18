@@ -281,7 +281,7 @@ export const Topbar: React.FC = () => {
         flexShrink: 0,
         transition: 'background 0.2s ease, border-color 0.2s ease',
       }}
-      className="px-5 lg:px-6"
+      className="px-4 sm:px-6 lg:px-8"
     >
       {/* ── Left: Mobile Menu Toggle (Desktop expand button removed) ── */}
       <div className="flex items-center gap-2">
