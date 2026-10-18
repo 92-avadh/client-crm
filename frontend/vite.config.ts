@@ -62,4 +62,7 @@ export default defineConfig({
       interval: 100,
     },
   },
+  build: {
+    sourcemap: false,
+  },
 })

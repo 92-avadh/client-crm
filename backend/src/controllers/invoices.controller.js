@@ -13,12 +13,18 @@ const list = asyncHandler(async (req, res) => {
 });
 
 const get = asyncHandler(async (req, res) => {
-  const invoice = await invoices.getInvoice(req.params.id);
+  const invoice = await invoices.getInvoice(req.user, req.params.id);
   if (!invoice) return res.status(404).json({ error: 'We could not find that invoice.' });
+  if (invoice.error === 'forbidden') {
+    return res.status(403).json({ error: "You don't have permission to view this invoice." });
+  }
   res.json(invoice);
 });
 
 const create = asyncHandler(async (req, res) => {
+  if (!['admin', 'hr', 'manager'].includes(req.user.role) && !req.user.permissions?.includes('invoices_write')) {
+    return res.status(403).json({ error: "You don't have permission to create invoices." });
+  }
   const body = makeValidator(req.body)
     .requiredString('brandId', { max: 80, label: 'Client' })
     .requiredString('brandName', { max: 200, label: 'Client name' })
@@ -36,6 +42,9 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const updateStatus = asyncHandler(async (req, res) => {
+  if (!['admin', 'hr', 'manager'].includes(req.user.role) && !req.user.permissions?.includes('invoices_write')) {
+    return res.status(403).json({ error: "You don't have permission to update invoice status." });
+  }
   const body = makeValidator(req.body)
     .oneOf('status', invoices.INVOICE_STATUSES, { required: true, label: 'Status' })
     .validate();
@@ -47,8 +56,11 @@ const updateStatus = asyncHandler(async (req, res) => {
 
 /** GET /api/invoices/:id/pdf — returns invoice data for client-side rendering. */
 const pdfData = asyncHandler(async (req, res) => {
-  const invoice = await invoices.getInvoice(req.params.id);
+  const invoice = await invoices.getInvoice(req.user, req.params.id);
   if (!invoice) return res.status(404).json({ error: 'We could not find that invoice.' });
+  if (invoice.error === 'forbidden') {
+    return res.status(403).json({ error: "You don't have permission to view this invoice." });
+  }
   res.json({ invoice });
 });
 

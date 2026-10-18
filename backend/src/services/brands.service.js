@@ -26,9 +26,25 @@ function mapDoc(d) {
   return { id: d.id, brandId: d.brand_id, name: d.name, size: d.size, uploadDate: d.upload_date, type: d.type };
 }
 
-async function getBrandWithDetails(id) {
+async function verifyBrandAccess(user, id) {
+  if (!user) return false;
+  if (['admin', 'hr'].includes(user.role) || user.id === 'usr_admin') return true;
+  if (user.role === 'brand') return user.brandId === id;
+  const assignCheck = await pool.query(
+    'SELECT 1 FROM brand_assignments WHERE brand_id = $1 AND member_id = $2',
+    [id, user.id]
+  );
+  return assignCheck.rows.length > 0;
+}
+
+async function getBrandWithDetails(user, id) {
   const { rows } = await pool.query('SELECT * FROM brands WHERE id=$1', [id]);
   if (!rows.length) return null;
+
+  if (user && !await verifyBrandAccess(user, id)) {
+    return { error: 'forbidden' };
+  }
+
   const members = await pool.query('SELECT member_id FROM brand_assignments WHERE brand_id=$1', [id]);
   const docs = await pool.query('SELECT * FROM brand_documents WHERE brand_id=$1', [id]);
   return {
@@ -281,6 +297,6 @@ async function addDocument(brandId, data) {
 
 module.exports = {
   CLIENT_STATUSES, PAYMENT_STATUSES, DOCUMENT_TYPES,
-  mapBrand, mapDoc, getBrandWithDetails, listBrands, createBrand,
+  mapBrand, mapDoc, verifyBrandAccess, getBrandWithDetails, listBrands, createBrand,
   updateBrand, assignMembers, logActivity, markChurned, snoozeRetention, addDocument,
 };

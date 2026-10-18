@@ -121,6 +121,21 @@ async function updateTask(id, data) {
   return rows[0] ? mapTask(rows[0]) : null;
 }
 
+async function verifyTaskAccess(user, id) {
+  if (!user) return false;
+  if (['admin', 'hr', 'manager'].includes(user.role) || user.id === 'usr_admin') return true;
+  const { rows } = await pool.query('SELECT brand_id, assignee_id, owner_id FROM tasks WHERE id=$1', [id]);
+  if (!rows.length) return false;
+  const task = rows[0];
+  if (user.id === task.assignee_id || user.id === task.owner_id) return true;
+  if (user.role === 'brand') return user.brandId === task.brand_id;
+  const assignCheck = await pool.query(
+    'SELECT 1 FROM brand_assignments WHERE brand_id = $1 AND member_id = $2',
+    [task.brand_id, user.id]
+  );
+  return assignCheck.rows.length > 0;
+}
+
 module.exports = {
   PRIORITIES,
   STATUSES,
@@ -130,4 +145,5 @@ module.exports = {
   createTask,
   updateTaskStatus,
   updateTask,
+  verifyTaskAccess,
 };

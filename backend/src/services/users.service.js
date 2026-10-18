@@ -118,7 +118,10 @@ async function updateUser(actor, userId, data) {
   const prevPerms = Array.isArray(prev.permissions)
     ? prev.permissions
     : (typeof prev.permissions === 'string' ? JSON.parse(prev.permissions || '[]') : []);
-  const permissionsJson = data.permissions !== undefined
+
+  // Privilege Escalation Defense: Only administrators may change roles or permissions
+  const nextRole = (actor && actor.role === 'admin' && data.role !== undefined) ? data.role : prev.role;
+  const permissionsJson = (actor && actor.role === 'admin' && data.permissions !== undefined)
     ? JSON.stringify(Array.isArray(data.permissions) ? data.permissions : [])
     : JSON.stringify(prevPerms);
 
@@ -132,7 +135,7 @@ async function updateUser(actor, userId, data) {
       data.phone !== undefined ? data.phone : prev.phone,
       data.designation !== undefined ? data.designation : prev.designation,
       data.avatar !== undefined ? (data.avatar || null) : prev.avatar,
-      data.role !== undefined ? data.role : prev.role,
+      nextRole,
       passwordHash,
       permissionsJson,
       userId,

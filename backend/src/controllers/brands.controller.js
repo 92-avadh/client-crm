@@ -38,8 +38,11 @@ const list = asyncHandler(async (req, res) => {
 });
 
 const get = asyncHandler(async (req, res) => {
-  const brand = await brands.getBrandWithDetails(req.params.id);
+  const brand = await brands.getBrandWithDetails(req.user, req.params.id);
   if (!brand) return res.status(404).json({ error: 'We could not find that client.' });
+  if (brand.error === 'forbidden') {
+    return res.status(403).json({ error: "You don't have permission to view this client." });
+  }
   res.json(brand);
 });
 
@@ -52,6 +55,9 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
+  if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to edit this client." });
+  }
   const body = validateClient(req.body);
   const updated = await brands.updateBrand(req.params.id, body);
   if (!updated) return res.status(404).json({ error: 'We could not find that client.' });
@@ -59,6 +65,9 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const assignMembers = asyncHandler(async (req, res) => {
+  if (!['admin', 'hr'].includes(req.user.role)) {
+    return res.status(403).json({ error: "Only administrators can assign team members." });
+  }
   const body = makeValidator(req.body)
     .array('memberIds', { ofStrings: true, max: 100, label: 'Team members' })
     .validate();
@@ -69,24 +78,36 @@ const assignMembers = asyncHandler(async (req, res) => {
 });
 
 const logActivity = asyncHandler(async (req, res) => {
+  if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to log activity for this client." });
+  }
   const updated = await brands.logActivity(req.params.id);
   if (!updated) return res.status(404).json({ error: 'We could not find that client.' });
   res.json(updated);
 });
 
 const churn = asyncHandler(async (req, res) => {
+  if (!['admin', 'hr'].includes(req.user.role)) {
+    return res.status(403).json({ error: "Only administrators can mark clients as churned." });
+  }
   const updated = await brands.markChurned(req.params.id);
   if (!updated) return res.status(404).json({ error: 'We could not find that client.' });
   res.json(updated);
 });
 
 const snoozeRetention = asyncHandler(async (req, res) => {
+  if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to update retention for this client." });
+  }
   const updated = await brands.snoozeRetention(req.params.id);
   if (!updated) return res.status(404).json({ error: 'We could not find that client.' });
   res.json(updated);
 });
 
 const addDocument = asyncHandler(async (req, res) => {
+  if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to add documents for this client." });
+  }
   const body = makeValidator(req.body)
     .requiredString('name', { max: 300, label: 'Document name' })
     .oneOf('type', brands.DOCUMENT_TYPES, { label: 'Document type' })

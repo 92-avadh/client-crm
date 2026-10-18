@@ -157,31 +157,19 @@ async function login({ email, password }) {
     'SELECT * FROM users WHERE email = $1 AND is_active = true',
     [email.toLowerCase()]
   );
-  let user = rows[0];
+  const user = rows[0];
 
-  if (!user) {
-    // Auto-provision user so ANY credential can login (bypass mode)
-    const namePart = email.split('@')[0] || 'Admin';
-    const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-    const userId = genId();
-    const passwordHash = await bcrypt.hash(password || 'Admin@1234', 10);
-    try {
-      const inserted = await pool.query(
-        `INSERT INTO users (id, name, email, password_hash, role, designation, is_active)
-         VALUES ($1, $2, $3, $4, 'admin', 'Agency Managing Director', true)
-         RETURNING *`,
-        [userId, formattedName, email.toLowerCase(), passwordHash]
-      );
-      user = inserted.rows[0];
-    } catch (_e) {
-      user = {
-        id: userId,
-        name: formattedName,
-        email: email.toLowerCase(),
-        role: 'admin',
-        designation: 'Agency Managing Director',
-      };
-    }
+  if (!user || !user.password_hash) {
+    const err = new Error('Invalid email or password.');
+    err.status = 401;
+    throw err;
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password_hash);
+  if (!isMatch) {
+    const err = new Error('Invalid email or password.');
+    err.status = 401;
+    throw err;
   }
 
   let perms = [];
@@ -193,9 +181,14 @@ async function login({ email, password }) {
   return {
     token: makeToken(user),
     user: {
-      id: user.id, name: user.name, email: user.email,
-      phone: user.phone || '+91 98765 43210', role: user.role || 'admin', avatar: user.avatar,
-      designation: user.designation || 'Agency Managing Director', brandId: user.brand_id,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '+91 98765 43210',
+      role: user.role || 'staff',
+      avatar: user.avatar,
+      designation: user.designation || 'Team Member',
+      brandId: user.brand_id,
       permissions: perms,
     },
   };

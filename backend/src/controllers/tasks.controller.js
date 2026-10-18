@@ -30,6 +30,9 @@ const create = asyncHandler(async (req, res) => {
 
 /** PATCH /api/tasks/:id/status */
 const updateStatus = asyncHandler(async (req, res) => {
+  if (!await tasks.verifyTaskAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to update this task." });
+  }
   const body = makeValidator(req.body)
     .oneOf('status', tasks.STATUSES, { required: true, label: 'Status' })
     .validate();
@@ -41,6 +44,9 @@ const updateStatus = asyncHandler(async (req, res) => {
 
 /** PATCH /api/tasks/:id */
 const update = asyncHandler(async (req, res) => {
+  if (!await tasks.verifyTaskAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to edit this task." });
+  }
   const body = makeValidator(req.body)
     .optionalString('title', { max: 300, label: 'Title' })
     .optionalString('description', { max: 5000, label: 'Description' })

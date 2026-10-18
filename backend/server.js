@@ -22,10 +22,10 @@ app.use(helmet());
 app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'"],
+    scriptSrc: ["'self'"],
     styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "https://client-crm-api-g9qz.onrender.com"],
+    connectSrc: ["'self'", "https://client-crm-api-g9qz.onrender.com", "wss://client-crm-api-g9qz.onrender.com"],
     fontSrc: ["'self'", "https:"],
     objectSrc: ["'none'"],
     frameAncestors: ["'none'"],
@@ -34,12 +34,13 @@ app.use(helmet.contentSecurityPolicy({
 app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true, preload: true }));
 
 /* ------------------------------------------------------------------ */
-/*  CORS — restrict to known origins (no wildcard)                     */
+/*  CORS — restrict to known origins (no wildcards in production)     */
 /*  Set CORS_ORIGINS as a comma-separated list, e.g.                   */
-/*    CORS_ORIGINS=https://client-crm.example.workers.dev,https://app.example.com
-/*  Entries may use a leading wildcard: https://*.workers.dev          */
+/*    CORS_ORIGINS=https://client-crm.pages.dev,https://app.retentio.co*/
 /* ------------------------------------------------------------------ */
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:5173,http://localhost:4173,https://*.pages.dev,https://*.workers.dev,https://*.onrender.com';
+const DEFAULT_ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
+  ? 'http://localhost:5173,http://localhost:4173,https://client-crm.pages.dev'
+  : 'http://localhost:5173,http://localhost:4173';
 const RAW_ORIGINS = (process.env.CORS_ORIGINS || DEFAULT_ALLOWED_ORIGINS)
   .split(',').map(s => s.trim()).filter(Boolean);
 
@@ -53,7 +54,7 @@ const isAllowedOrigin = (origin) =>
   ALLOWED_ORIGINS.includes(origin) || ALLOWED_PATTERNS.some(rx => rx.test(origin));
 
 if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGINS) {
-  console.log('ℹ️  CORS_ORIGINS not set. Allowing localhost and default Cloudflare/Render deployment domains (*.pages.dev, *.workers.dev, *.onrender.com).');
+  console.log('ℹ️  CORS_ORIGINS not set. Defaulting to localhost and verified project origin.');
 }
 
 app.use(cors({
@@ -65,7 +66,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With','X-CSRF-Token','Idempotency-Key'],
 }));
 
 /* ------------------------------------------------------------------ */
@@ -156,6 +157,8 @@ app.use('/api', (req, res, next) => {
 });
 
 const auth = require('./src/middleware/auth');
+const idempotency = require('./src/middleware/idempotency');
+app.use('/api', idempotency);
 
 /* ------------------------------------------------------------------ */
 /*  Routes                                                             */
@@ -316,6 +319,13 @@ connectWithRetry()
     initSocket(httpServer, isAllowedOrigin);
     httpServer.listen(PORT, () => {
       console.log(`🚀 Retentio backend & Socket.io running on port ${PORT}`);
+
+      // Start background runner for recurring invoices (checks every 12 hours)
+      const { generateDueRecurring } = require('./src/services/recurring-invoices.service');
+      generateDueRecurring().catch(err => console.warn('Initial recurring invoice check warning:', err.message));
+      setInterval(() => {
+        generateDueRecurring().catch(err => console.warn('Recurring invoice scheduled check warning:', err.message));
+      }, 12 * 60 * 60 * 1000);
     });
   })
   .catch(err => {

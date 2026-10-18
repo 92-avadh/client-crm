@@ -19,5 +19,8 @@
     "@tailwindcss/oxide-linux-x64-musl": "4.3.3",
     "lightningcss-linux-x64-gnu": "1.33.0",
     "lightningcss-linux-x64-musl": "1.33.0"
+  },
+  "overrides": {
+    "braces": "^3.0.3"
   }
 }

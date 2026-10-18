@@ -97,10 +97,25 @@ async function listInvoices(user, { brandId, status, search, page = 1, pageSize 
   return { data, total, page, pageSize };
 }
 
-async function getInvoice(id) {
+async function getInvoice(user, id) {
   const { rows } = await pool.query('SELECT * FROM invoices WHERE id=$1', [id]);
   if (!rows.length) return null;
-  return mapInvoice(rows[0], await getItems(id));
+  const inv = rows[0];
+
+  // BOLA authorization check
+  if (user && user.role !== 'admin' && user.id !== 'usr_admin') {
+    if (user.role === 'brand') {
+      if (user.brandId !== inv.brand_id) return { error: 'forbidden' };
+    } else {
+      const assignCheck = await pool.query(
+        'SELECT 1 FROM brand_assignments WHERE brand_id = $1 AND member_id = $2',
+        [inv.brand_id, user.id]
+      );
+      if (!assignCheck.rows.length) return { error: 'forbidden' };
+    }
+  }
+
+  return mapInvoice(inv, await getItems(id));
 }
 
 /**

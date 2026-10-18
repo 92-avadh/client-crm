@@ -27,10 +27,32 @@ const sendMessage = asyncHandler(async (req, res) => {
     )
     .validate();
 
+  const sanitizedAttachments = (body.attachments || []).map((att, idx) => {
+    if (!att || typeof att !== 'object') {
+      const err = new Error(`Attachment ${idx + 1} is invalid.`);
+      err.status = 400;
+      throw err;
+    }
+    const url = String(att.url || '').trim();
+    const isSafeUrl = url.startsWith('https://') || url.startsWith('http://') || url.startsWith('data:image/') || url.startsWith('data:application/pdf');
+    if (!url || !isSafeUrl || /^(javascript|data:text\/html|file|vbscript):/i.test(url)) {
+      const err = new Error(`Attachment ${idx + 1} has an invalid or unsafe URL protocol.`);
+      err.status = 400;
+      throw err;
+    }
+    const safeName = String(att.name || 'attachment').replace(/[\/\\]/g, '_').slice(0, 200);
+    return {
+      name: safeName,
+      url,
+      size: typeof att.size === 'number' ? att.size : (parseInt(att.size, 10) || 0),
+      type: String(att.type || 'application/octet-stream').slice(0, 100),
+    };
+  });
+
   res.status(201).json(
     await chat.sendMessage(req.params.id, req.user, {
       text: body.text || '',
-      attachments: body.attachments || [],
+      attachments: sanitizedAttachments,
     })
   );
 });
