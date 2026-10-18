@@ -83,6 +83,13 @@ const markRead = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+const deleteMessage = asyncHandler(async (req, res) => {
+  const { id: conversationId, messageId } = req.params;
+  const deleteType = req.body?.deleteType || req.query?.deleteType || 'forEveryone';
+  const result = await chat.deleteMessage(conversationId, messageId, deleteType, req.user.id);
+  res.json(result);
+});
+
 const deleteConversation = asyncHandler(async (req, res) => {
   const result = await chat.deleteConversation(req.params.id, req.user.id);
   res.json(result);
