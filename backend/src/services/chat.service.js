@@ -166,9 +166,6 @@ async function ensureDirectConversations(userId) {
 }
 
 async function listConversations(userId, { page = 1, pageSize = 50 } = {}) {
-  // Proactively provision direct 1-on-1 channels for all active team colleagues
-  await ensureDirectConversations(userId);
-
   // Count total conversations
   const { rows: countRows } = await pool.query(
     `SELECT COUNT(*) FROM conversations c
@@ -176,7 +173,19 @@ async function listConversations(userId, { page = 1, pageSize = 50 } = {}) {
      WHERE cp.user_id = $1`,
     [userId]
   );
-  const total = parseInt(countRows[0].count, 10);
+  let total = parseInt(countRows[0]?.count || 0, 10);
+
+  // Provision direct 1-on-1 channels on initial onboarding if user has no conversations
+  if (total === 0) {
+    await ensureDirectConversations(userId);
+    const { rows: newCount } = await pool.query(
+      `SELECT COUNT(*) FROM conversations c
+       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
+       WHERE cp.user_id = $1`,
+      [userId]
+    );
+    total = parseInt(newCount[0]?.count || 0, 10);
+  }
 
   // Paginated query
   const offset = (page - 1) * pageSize;

@@ -611,19 +611,48 @@ export const ChatManager: React.FC = () => {
     );
   }, [currentMessages, inChatSearchQuery]);
 
-  // Discover team members for new direct chats
+  // Set of user IDs who already have an existing direct conversation with currentUser
+  const existingDirectUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    (conversations || []).forEach((conv) => {
+      if (conv.type === 'direct') {
+        if (conv.otherMember?.id) {
+          ids.add(conv.otherMember.id);
+        }
+        if (Array.isArray(conv.participantIds)) {
+          conv.participantIds.forEach((pid) => {
+            if (pid && pid !== currentUser.id) {
+              ids.add(pid);
+            }
+          });
+        }
+        if (conv.title) {
+          const matchedByName = (allUsers || []).find(
+            (u) => u.name.trim().toLowerCase() === conv.title.trim().toLowerCase()
+          );
+          if (matchedByName) {
+            ids.add(matchedByName.id);
+          }
+        }
+      }
+    });
+    return ids;
+  }, [conversations, currentUser.id, allUsers]);
+
+  // Discover team members for new direct chats (exclude colleagues already in direct chats to prevent duplicates)
   const availableTeamMembers = useMemo(() => {
     return (allUsers || []).filter(
       (u) =>
         u.role !== 'brand' &&
         u.id !== currentUser.id &&
         (u as any).isActive !== false &&
+        !existingDirectUserIds.has(u.id) &&
         (u.name.toLowerCase().includes(teamSearch.toLowerCase()) ||
           u.email.toLowerCase().includes(teamSearch.toLowerCase()) ||
           (u.designation || '').toLowerCase().includes(teamSearch.toLowerCase()) ||
           u.role.toLowerCase().includes(teamSearch.toLowerCase()))
     );
-  }, [allUsers, currentUser.id, teamSearch]);
+  }, [allUsers, currentUser.id, teamSearch, existingDirectUserIds]);
 
   // Quick video meet launcher
   const handleStartGoogleMeet = () => {
@@ -2510,8 +2539,51 @@ export const ChatManager: React.FC = () => {
             {/* Colleagues list */}
             <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
               {availableTeamMembers.length === 0 ? (
-                <div style={{ padding: '32px 16px', textAlign: 'center', color: '#8696a0', fontSize: 13 }}>
-                  No colleagues match your search.
+                <div
+                  style={{
+                    padding: '36px 20px',
+                    textAlign: 'center',
+                    color: '#8696a0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {teamSearch.trim() ? (
+                    <>
+                      <Search style={{ width: 34, height: 34, margin: '0 auto 10px', opacity: 0.35, color: '#8696a0' }} />
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#e9edef', marginBottom: 4 }}>
+                        No colleagues found
+                      </div>
+                      <div style={{ fontSize: 12, color: '#8696a0', maxWidth: 280, lineHeight: 1.5 }}>
+                        No team members match &ldquo;{teamSearch}&rdquo;. Try another search term.
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: '50%',
+                          background: 'rgba(0, 168, 132, 0.15)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 12px',
+                        }}
+                      >
+                        <CheckCheck style={{ width: 24, height: 24, color: '#00a884' }} />
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#e9edef', marginBottom: 4 }}>
+                        All colleagues are in your chats
+                      </div>
+                      <div style={{ fontSize: 12, color: '#8696a0', maxWidth: 300, lineHeight: 1.5 }}>
+                        You already have an active direct conversation with every team member. Select them from the chats list to continue.
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 availableTeamMembers.map((member) => (
