@@ -234,7 +234,7 @@ export const MeetingsCalendar: React.FC = () => {
       </div>
 
       {/* Two-column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 24 }}>
 
         {/* Left: Meetings */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

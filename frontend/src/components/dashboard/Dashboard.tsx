@@ -495,9 +495,9 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Header Action Buttons */}
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
           {/* Widget toggle */}
-          <div style={{ position: 'relative' }}>
+          <div className="relative">
             <button
               onClick={() => setShowWidgetPanel(!showWidgetPanel)}
               style={{
@@ -527,12 +527,12 @@ export const Dashboard: React.FC = () => {
               <button
                 onClick={() => setActiveTab('clients')}
                 style={{
-                  padding: '9px 18px',
+                  padding: '9px 16px',
                   background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyHover} 100%)`,
                   color: 'var(--solid-btn-text)',
                   border: `1px solid ${BRAND.navy}`,
                   borderRadius: 9,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   fontWeight: 700,
                   cursor: 'pointer',
                   display: 'inline-flex',
@@ -547,12 +547,12 @@ export const Dashboard: React.FC = () => {
               <button
                 onClick={() => setActiveTab('invoices')}
                 style={{
-                  padding: '9px 18px',
+                  padding: '9px 16px',
                   background: `linear-gradient(135deg, ${BRAND.greenSubtle} 0%, var(--grad-green-end) 100%)`,
                   color: BRAND.greenDark,
                   border: `1px solid ${BRAND.greenBorder}`,
                   borderRadius: 9,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   fontWeight: 700,
                   cursor: 'pointer',
                   display: 'inline-flex',

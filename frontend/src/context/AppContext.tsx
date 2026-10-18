@@ -1579,7 +1579,24 @@ export const AppProvider: React.FC<{
     const handleNewMessage = ({ conversationId, message }: { conversationId: string; message: ChatMessage }) => {
       setMessages(prev => {
         const existing = prev[conversationId] || [];
+        // 1. If already in list by exact ID, ignore
         if (existing.some(m => m.id === message.id)) return prev;
+
+        // 2. If sent by current user, replace matching optimistic message to avoid duplicate
+        if (message.senderId === currentUser.id) {
+          const optimisticIdx = existing.findIndex(
+            m => m.id.startsWith('msg-') && m.text === message.text
+          );
+          if (optimisticIdx !== -1) {
+            const next = [...existing];
+            next[optimisticIdx] = message;
+            return {
+              ...prev,
+              [conversationId]: next,
+            };
+          }
+        }
+
         return {
           ...prev,
           [conversationId]: [...existing, message],
@@ -1839,10 +1856,20 @@ export const AppProvider: React.FC<{
     try {
       const created = await api.chat.sendMessage(conversationId, { text, attachments });
       if (created && created.id) {
-        setMessages(prev => ({
-          ...prev,
-          [conversationId]: (prev[conversationId] || []).map(m => m.id === optimisticMsg.id ? created : m)
-        }));
+        setMessages(prev => {
+          const list = prev[conversationId] || [];
+          // If socket already added this message by real ID, remove the optimistic one to prevent duplicate
+          if (list.some(m => m.id === created.id)) {
+            return {
+              ...prev,
+              [conversationId]: list.filter(m => m.id !== optimisticMsg.id)
+            };
+          }
+          return {
+            ...prev,
+            [conversationId]: list.map(m => m.id === optimisticMsg.id ? created : m)
+          };
+        });
       }
     } catch (err: any) {
       console.warn('API chat.sendMessage failed, keeping optimistic message:', err);

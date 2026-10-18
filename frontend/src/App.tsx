@@ -205,14 +205,13 @@ const MainLayout: React.FC = () => {
       style={{
         background: 'var(--bg, #ffffff)',
         color: 'var(--text-primary, #0a0a0a)',
-        gap: 16,
       }}
     >
       <StarParticles />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         <Topbar />
-        <main className="flex-1 w-full px-5 sm:px-7 lg:px-10 py-4 sm:py-6">
+        <main className="flex-1 w-full px-3.5 sm:px-6 lg:px-8 py-3.5 sm:py-6 max-w-full min-w-0">
           {apiError && (
             <div
               role="alert"

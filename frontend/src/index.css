@@ -520,12 +520,59 @@ button {
   }
 }
 
-/* Focus visible for accessibility */
+/* Focus visible for accessibility (does not force outline on custom styled inputs) */
 :focus-visible {
-  outline: 2px solid var(--brand-green, #059639) !important;
-  outline-offset: 2px !important;
+  outline: 2px solid var(--brand-green, #059639);
+  outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+.wa-chat-input,
+.wa-chat-input:focus,
+.wa-chat-input:focus-visible,
+.wa-no-highlight,
+.wa-no-highlight:focus,
+.wa-no-highlight:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ─── WhatsApp Responsive Layout ────────────────────────── */
+.wa-sidebar {
+  width: 380px;
+  max-width: 380px;
+  flex-shrink: 0;
+}
+
+.wa-chat-window {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .whatsapp-container {
+    height: calc(100dvh - 84px) !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    border-radius: 10px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .wa-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    border-right: none !important;
+  }
+  .wa-chat-window {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+}
+
 
 /* Smooth scroll for anchor links */
 html {

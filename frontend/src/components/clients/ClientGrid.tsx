@@ -53,7 +53,7 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 20 }}>
       {brands.map((brand) => {
         const assignedUsers = allUsers.filter((u) => brand.assignedMemberIds.includes(u.id));
 

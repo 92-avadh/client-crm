@@ -362,7 +362,7 @@ export const ProjectsAndTasks: React.FC = () => {
 
       {/* Projects Tab */}
       {activeTab === 'projects' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 16 }}>
           {projects.map((proj) => {
             const brand = brands.find((b) => b.id === proj.brandId);
             return (

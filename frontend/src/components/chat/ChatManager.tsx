@@ -615,10 +615,19 @@ export const ChatManager: React.FC = () => {
       });
   }, [conversations, searchConv, activeFilter, pinnedConvIds, favouriteConvIds]);
 
-  // Filter messages in chat search
+  // Filter messages in chat search (with robust deduplication against race conditions)
   const visibleMessages = useMemo(() => {
-    if (!inChatSearchQuery.trim()) return currentMessages;
-    return currentMessages.filter((m) =>
+    const seen = new Set<string>();
+    const deduped: ChatMessage[] = [];
+    for (const m of currentMessages) {
+      if (!m || !m.id) continue;
+      if (seen.has(m.id)) continue;
+      seen.add(m.id);
+      deduped.push(m);
+    }
+
+    if (!inChatSearchQuery.trim()) return deduped;
+    return deduped.filter((m) =>
       m.text.toLowerCase().includes(inChatSearchQuery.toLowerCase())
     );
   }, [currentMessages, inChatSearchQuery]);
@@ -702,13 +711,10 @@ export const ChatManager: React.FC = () => {
       <div
         className={`wa-sidebar ${showMobileSidebar ? 'flex' : 'hidden md:flex'}`}
         style={{
-          width: '100%',
-          maxWidth: '380px',
           height: '100%',
           background: t.sidebarBg,
           borderRight: `1px solid ${t.border}`,
           flexDirection: 'column',
-          flexShrink: 0,
           position: 'relative',
         }}
       >
@@ -1827,6 +1833,7 @@ export const ChatManager: React.FC = () => {
 
               {/* Rounded Input Pill */}
               <div
+                className="wa-no-highlight"
                 style={{
                   flex: 1,
                   background: isLight ? '#ffffff' : '#2a3942',
@@ -1836,7 +1843,8 @@ export const ChatManager: React.FC = () => {
                   height: 42,
                   display: 'flex',
                   alignItems: 'center',
-                  boxShadow: isLight ? '0 1px 2px rgba(0,0,0,0.04)' : 'none',
+                  outline: 'none',
+                  boxShadow: 'none',
                 }}
               >
                 <input
@@ -1845,11 +1853,13 @@ export const ChatManager: React.FC = () => {
                   placeholder="Type a message"
                   value={inputText}
                   onChange={handleInputChange}
+                  className="wa-chat-input wa-no-highlight"
                   style={{
                     width: '100%',
                     background: 'transparent',
                     border: 'none',
                     outline: 'none',
+                    boxShadow: 'none',
                     color: t.inputText,
                     fontSize: 14,
                   }}
