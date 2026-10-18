@@ -128,8 +128,14 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                     {[brand.city, brand.state].filter(Boolean).join(', ') || brand.state || '—'}
                   </span>
                   {role !== 'team' && (
-                    <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>
-                      ₹{brand.monthlyFee.toLocaleString('en-IN')}/mo
+                    <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span>{(brand.currencySymbol || '₹')}{brand.monthlyFee.toLocaleString()}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>/mo</span>
+                      {brand.currency && brand.currency !== 'INR' && (
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                          {brand.currency}
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>

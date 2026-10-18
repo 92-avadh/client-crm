@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS brands (
   service_details TEXT,
   monthly_fee NUMERIC(12,2) DEFAULT 0,
   billing_cycle_day INTEGER DEFAULT 1,
+  currency VARCHAR(10) DEFAULT 'INR',
+  currency_symbol VARCHAR(10) DEFAULT '₹',
+  retainer_hours NUMERIC(10,2) DEFAULT 40,
+  used_hours NUMERIC(10,2) DEFAULT 0,
+  nps_score INTEGER DEFAULT 9,
+  contract_start_date DATE,
+  contract_end_date DATE,
+  magic_token VARCHAR(100),
   onboarding_date DATE DEFAULT CURRENT_DATE,
   notes TEXT,
   status VARCHAR(20) DEFAULT 'Active',
@@ -61,7 +69,11 @@ CREATE TABLE IF NOT EXISTS brand_documents (
   name VARCHAR(200),
   size VARCHAR(50),
   upload_date DATE DEFAULT CURRENT_DATE,
-  type VARCHAR(100)
+  type VARCHAR(100),
+  category VARCHAR(100) DEFAULT 'Contract',
+  renewal_date DATE,
+  status VARCHAR(50) DEFAULT 'Signed',
+  file_url TEXT
 );
 
 -- Projects
@@ -121,6 +133,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   payment_mode VARCHAR(50),
   razorpay_payment_id VARCHAR(100),
   is_recurring BOOLEAN DEFAULT false,
+  currency VARCHAR(10) DEFAULT 'INR',
+  currency_symbol VARCHAR(10) DEFAULT '₹',
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -316,6 +330,8 @@ CREATE TABLE IF NOT EXISTS settings (
   goals JSONB DEFAULT '[]',
   dashboard_layout VARCHAR(30) DEFAULT 'default',
   dashboard_focus VARCHAR(30) DEFAULT 'balanced',
+  slack_webhook_url TEXT,
+  discord_webhook_url TEXT,
   updated_at TIMESTAMP DEFAULT NOW()
 );
 

@@ -164,9 +164,11 @@ app.use('/api', idempotency);
 /*  Routes                                                             */
 /* ------------------------------------------------------------------ */
 app.use('/api/auth', require('./src/routes/auth'));
+app.use('/api/portal', require('./src/routes/portal'));
 
 app.use('/api/users', auth, require('./src/routes/users'));
 app.use('/api/brands', auth, require('./src/routes/brands'));
+app.use('/api/retention', auth, require('./src/routes/health'));
 app.use('/api/projects', auth, require('./src/routes/projects'));
 app.use('/api/tasks', auth, require('./src/routes/tasks'));
 app.use('/api/invoices', auth, require('./src/routes/invoices'));
@@ -247,6 +249,32 @@ connectWithRetry()
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS goals JSONB DEFAULT '[]';
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS dashboard_layout VARCHAR(30) DEFAULT 'default';
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS dashboard_focus VARCHAR(30) DEFAULT 'balanced';
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS slack_webhook_url TEXT;
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS discord_webhook_url TEXT;
+
+        -- Brand Retention & SaaS Strategy fields
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'INR';
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS currency_symbol VARCHAR(10) DEFAULT '₹';
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS retainer_hours NUMERIC(10,2) DEFAULT 40;
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS used_hours NUMERIC(10,2) DEFAULT 0;
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS nps_score INTEGER DEFAULT 9;
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS contract_start_date DATE;
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS contract_end_date DATE;
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS magic_token VARCHAR(100);
+
+        -- Brand Documents & Contract Vault
+        ALTER TABLE brand_documents ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Contract';
+        ALTER TABLE brand_documents ADD COLUMN IF NOT EXISTS renewal_date DATE;
+        ALTER TABLE brand_documents ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Signed';
+        ALTER TABLE brand_documents ADD COLUMN IF NOT EXISTS file_url TEXT;
+
+        -- Invoices per-client currency
+        ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'INR';
+        ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency_symbol VARCHAR(10) DEFAULT '₹';
+
+        -- Backfill magic tokens for existing brands
+        UPDATE brands SET magic_token = 'tok_' || substr(md5(random()::text || id), 1, 24) WHERE magic_token IS NULL;
+
         UPDATE brands SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE tasks SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE projects SET owner_id = 'usr_admin' WHERE owner_id IS NULL;

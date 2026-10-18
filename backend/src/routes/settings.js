@@ -4,6 +4,7 @@ const controller = require('../controllers/settings.controller');
 
 router.get('/', controller.get);
 router.patch('/', controller.update);
+router.post('/test-webhook', controller.testWebhook);
 router.post('/reset-data', controller.resetData);
 
 module.exports = router;

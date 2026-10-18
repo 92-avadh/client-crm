@@ -33,10 +33,15 @@ export type BrandStatus = 'Active' | 'Paused' | 'Inactive' | 'Churned';
 
 export interface BrandDocument {
   id: string;
+  brandId?: string;
   name: string;
   size: string;
   uploadDate: string;
   type: string;
+  category?: 'MSA' | 'SOW' | 'NDA' | 'KYC & Tax' | 'Contract' | 'Other' | string;
+  renewalDate?: string;
+  status?: 'Signed' | 'Pending' | 'Expired';
+  fileUrl?: string;
 }
 
 export interface Brand {
@@ -54,6 +59,14 @@ export interface Brand {
   serviceDetails: string;
   monthlyFee: number;
   billingCycleDay: number;
+  currency?: string;
+  currencySymbol?: string;
+  retainerHours?: number;
+  usedHours?: number;
+  npsScore?: number;
+  contractStartDate?: string;
+  contractEndDate?: string;
+  magicToken?: string;
   onboardingDate: string;
   notes?: string;
   status: BrandStatus;
@@ -322,4 +335,104 @@ export interface AppSettings {
   dashboardFocus?: 'balanced' | 'financial' | 'retention';
   retentionThresholdDays: number;
   whatsappClickToShareEnabled: boolean;
+  slackWebhookUrl?: string;
+  discordWebhookUrl?: string;
+}
+
+export interface ClientHealthScore {
+  brandId: string;
+  brandName: string;
+  ownerName: string;
+  mobile: string;
+  monthlyFee: number;
+  currency: string;
+  currencySymbol: string;
+  totalScore: number;
+  tier: 'Critical' | 'Warning' | 'Stable' | 'Expansion';
+  breakdown: {
+    taskVelocity: { score: number; max: 25; details: string; overdueTasks: number; totalTasks: number };
+    paymentHealth: { score: number; max: 25; details: string; overdueInvoices: number; totalInvoices: number };
+    strategicCadence: { score: number; max: 25; details: string; daysSinceReview: number };
+    clientFeedback: { score: number; max: 25; details: string; nps: number | null };
+  };
+  recommendation: {
+    actionType: 'whatsapp_reconnect' | 'retainer_review' | 'upsell_expansion';
+    title: string;
+    description: string;
+    suggestedMessage: string;
+  };
+}
+
+export interface AgencyHealthOverview {
+  overview: {
+    totalClients: number;
+    averageHealth: number;
+    churnRisksCount: number;
+    stableCount: number;
+    expansionCount: number;
+  };
+  scores: ClientHealthScore[];
+}
+
+export interface PortalData {
+  agency: {
+    companyName: string;
+    companyEmail: string;
+    companyPhone: string;
+    companyAddress: string;
+    bankDetails: {
+      accountName: string;
+      accountNumber: string;
+      ifsc: string;
+      branch: string;
+      upiId: string;
+    };
+  };
+  client: {
+    id: string;
+    name: string;
+    ownerName: string;
+    email: string;
+    mobile: string;
+    serviceDetails: string;
+    monthlyFee: number;
+    currency: string;
+    currencySymbol: string;
+    billingCycleDay: number;
+    contractStartDate?: string;
+    contractEndDate?: string;
+    status: string;
+    paymentStatus?: string;
+    lastPaymentDate?: string;
+    npsScore?: number;
+    retainerHours: number;
+    usedHours: number;
+    hoursRemaining: number;
+    hoursUtilizationPct: number;
+  };
+  deliverables: {
+    total: number;
+    completed: number;
+    progressPct: number;
+    items: {
+      id: string;
+      title: string;
+      description?: string;
+      status: string;
+      priority: string;
+      dueDate?: string;
+    }[];
+  };
+  invoices: {
+    id: string;
+    invoiceNumber: string;
+    issueDate: string;
+    dueDate: string;
+    totalAmount: number;
+    paidAmount: number;
+    status: string;
+    currency: string;
+    currencySymbol: string;
+    notes?: string;
+  }[];
 }

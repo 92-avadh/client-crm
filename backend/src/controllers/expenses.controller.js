@@ -32,6 +32,8 @@ const create = asyncHandler(async (req, res) => {
     .number('amount', { min: 0.01, required: true, label: 'Amount' })
     .optionalString('title', { max: 200, label: 'Title' })
     .optionalString('description', { max: 2000, label: 'Description' })
+    .optionalString('brandId', { max: 100, label: 'Client Brand' })
+    .optionalString('date', { max: 30, label: 'Date' })
     .oneOf('paymentMode', expenses.PAYMENT_MODES, { label: 'Payment mode' })
     .oneOf('paymentStatus', expenses.PAYMENT_STATUSES, { label: 'Payment status' })
     .optionalString('employeeName', { max: 150, label: 'Employee name' })
@@ -45,6 +47,9 @@ const update = asyncHandler(async (req, res) => {
   if (!requireFinanceRole(req, res)) return;
   const body = makeValidator(req.body)
     .number('amount', { min: 0.01, label: 'Amount' })
+    .optionalString('category', { max: 100, label: 'Category' })
+    .optionalString('brandId', { max: 100, label: 'Client Brand' })
+    .optionalString('date', { max: 30, label: 'Date' })
     .oneOf('paymentMode', expenses.PAYMENT_MODES, { label: 'Payment mode' })
     .oneOf('paymentStatus', expenses.PAYMENT_STATUSES, { label: 'Payment status' })
     .optionalString('title', { max: 200, label: 'Title' })

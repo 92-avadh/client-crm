@@ -1,9 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Save, Camera, Loader2, Trash2, UploadCloud } from 'lucide-react';
+import { Save, Camera, Loader2, Trash2, UploadCloud, Send, MessageSquare, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { AppSettings, User } from '../../types';
 import { fieldStyle, saveBtnStyle, tabBodyStyle, TabHeader, ToggleRow } from './settingsUi';
 import { processImageFile } from '../team/imageUtils';
 import { AVATAR_PRESETS } from '../team/teamUi';
+import { useApp } from '../../context/AppContext';
+import { api } from '../../services/api';
 
 /* ------------------------------------------------------------------ */
 /*  User Profile tab                                                   */
@@ -593,56 +595,197 @@ interface NotificationsProps {
   formData: AppSettings;
   onThresholdChange: (days: number) => void;
   onWhatsAppToggle: (v: boolean) => void;
+  onPatchSettings?: (patch: Partial<AppSettings>) => void;
 }
 
 export const NotificationsTab: React.FC<NotificationsProps> = ({
-  isAdmin, formData, onThresholdChange, onWhatsAppToggle,
-}) => (
-  <div style={tabBodyStyle}>
-    <TabHeader
-      title="Retention Alert Rules & Channels"
-      subtitle="Configure how and when the system alerts team leads about inactive clients."
-    />
+  isAdmin, formData, onThresholdChange, onWhatsAppToggle, onPatchSettings,
+}) => {
+  const { showToast, updateSettings } = useApp();
+  const [slackUrl, setSlackUrl] = useState(formData.slackWebhookUrl || '');
+  const [discordUrl, setDiscordUrl] = useState(formData.discordWebhookUrl || '');
+  const [testingSlack, setTestingSlack] = useState(false);
+  const [testingDiscord, setTestingDiscord] = useState(false);
+  const [savingWebhooks, setSavingWebhooks] = useState(false);
 
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {isAdmin && (
-        <div style={{ padding: '18px 20px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Inactivity Churn Threshold (Days)</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              Trigger warning when no chat, task, meeting or payment is detected for this many days:
+  useEffect(() => {
+    setSlackUrl(formData.slackWebhookUrl || '');
+    setDiscordUrl(formData.discordWebhookUrl || '');
+  }, [formData.slackWebhookUrl, formData.discordWebhookUrl]);
+
+  const handleTest = async (platform: 'slack' | 'discord') => {
+    const url = platform === 'slack' ? slackUrl : discordUrl;
+    if (!url.trim()) {
+      showToast(`Please enter a valid ${platform === 'slack' ? 'Slack' : 'Discord'} webhook URL first`, 'error');
+      return;
+    }
+    if (platform === 'slack') setTestingSlack(true);
+    else setTestingDiscord(true);
+
+    try {
+      await api.settings.testWebhook({ service: platform, url: url.trim() });
+      showToast(`Test notification sent successfully to ${platform === 'slack' ? 'Slack' : 'Discord'}!`, 'success');
+    } catch (err: any) {
+      showToast(err.response?.data?.error || `Failed to dispatch test notification to ${platform}`, 'error');
+    } finally {
+      if (platform === 'slack') setTestingSlack(false);
+      else setTestingDiscord(false);
+    }
+  };
+
+  const handleSaveWebhooks = async () => {
+    setSavingWebhooks(true);
+    try {
+      await updateSettings({
+        slackWebhookUrl: slackUrl.trim(),
+        discordWebhookUrl: discordUrl.trim(),
+      });
+      if (onPatchSettings) {
+        onPatchSettings({
+          slackWebhookUrl: slackUrl.trim(),
+          discordWebhookUrl: discordUrl.trim(),
+        });
+      }
+      showToast('Notification webhooks saved successfully', 'success');
+    } catch {
+      showToast('Failed to save webhook settings', 'error');
+    } finally {
+      setSavingWebhooks(false);
+    }
+  };
+
+  return (
+    <div style={tabBodyStyle}>
+      <TabHeader
+        title="Retention Alert Rules & Channels"
+        subtitle="Configure how and when the system alerts team leads about inactive clients and recurring invoice generation."
+      />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {isAdmin && (
+          <div style={{ padding: '18px 20px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Inactivity Churn Threshold (Days)</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                Trigger warning when no chat, task, meeting or payment is detected for this many days:
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[7, 15, 30, 45].map((d) => (
+                <button key={d} type="button" onClick={() => onThresholdChange(d)}
+                  style={{
+                    padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    border: formData.retentionThresholdDays === d ? '1px solid var(--border-focus)' : '1px solid var(--border)',
+                    background: formData.retentionThresholdDays === d ? 'var(--solid-btn-bg)' : 'var(--bg-card)',
+                    color: formData.retentionThresholdDays === d ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease',
+                  }}>
+                  {d} Days
+                </button>
+              ))}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {[7, 15, 30, 45].map((d) => (
-              <button key={d} type="button" onClick={() => onThresholdChange(d)}
+        )}
+
+        <ToggleRow
+          title="WhatsApp Click-to-Share Links"
+          description="Enable 1-click WhatsApp messaging for payment reminders & retention re-engagement."
+          checked={formData.whatsappClickToShareEnabled}
+          onChange={onWhatsAppToggle}
+        />
+
+        <ToggleRow
+          title="In-App Push & Toast Notifications"
+          description="Notify on client assignments, task due dates, and received Razorpay payments."
+          checked
+          onChange={() => {}}
+        />
+
+        {/* External Webhooks: Slack & Discord */}
+        {isAdmin && (
+          <div style={{ padding: '20px', borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <MessageSquare style={{ width: 16, height: 16 }} />
+                <span>External Notification Webhooks (Slack & Discord)</span>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                Receive automated alerts for recurring invoices, overdue retainers, and churn warnings directly in your agency channels.
+              </div>
+            </div>
+
+            {/* Slack Webhook */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Slack Incoming Webhook URL</label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input
+                  type="url"
+                  placeholder="https://hooks.slack.com/services/..."
+                  value={slackUrl}
+                  onChange={(e) => setSlackUrl(e.target.value)}
+                  style={{ ...fieldStyle, flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleTest('slack')}
+                  disabled={testingSlack || !slackUrl.trim()}
+                  style={{
+                    padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: !slackUrl.trim() ? 'not-allowed' : 'pointer',
+                    background: 'var(--bg-raised)', border: '1px solid var(--border)', color: 'var(--text-primary)',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, opacity: !slackUrl.trim() ? 0.6 : 1,
+                  }}
+                >
+                  {testingSlack ? <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" /> : <Send style={{ width: 13, height: 13 }} />}
+                  <span>Test Slack</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Discord Webhook */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Discord Incoming Webhook URL</label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input
+                  type="url"
+                  placeholder="https://discord.com/api/webhooks/..."
+                  value={discordUrl}
+                  onChange={(e) => setDiscordUrl(e.target.value)}
+                  style={{ ...fieldStyle, flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleTest('discord')}
+                  disabled={testingDiscord || !discordUrl.trim()}
+                  style={{
+                    padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: !discordUrl.trim() ? 'not-allowed' : 'pointer',
+                    background: 'var(--bg-raised)', border: '1px solid var(--border)', color: 'var(--text-primary)',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, opacity: !discordUrl.trim() ? 0.6 : 1,
+                  }}
+                >
+                  {testingDiscord ? <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" /> : <Send style={{ width: 13, height: 13 }} />}
+                  <span>Test Discord</span>
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+              <button
+                type="button"
+                onClick={handleSaveWebhooks}
+                disabled={savingWebhooks}
                 style={{
-                  padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  border: formData.retentionThresholdDays === d ? '1px solid var(--border-focus)' : '1px solid var(--border)',
-                  background: formData.retentionThresholdDays === d ? 'var(--solid-btn-bg)' : 'var(--bg-card)',
-                  color: formData.retentionThresholdDays === d ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
-                  transition: 'all 0.15s ease',
-                }}>
-                {d} Days
+                  padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                {savingWebhooks ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Save style={{ width: 14, height: 14 }} />}
+                <span>Save Webhooks</span>
               </button>
-            ))}
+            </div>
           </div>
-        </div>
-      )}
-
-      <ToggleRow
-        title="WhatsApp Click-to-Share Links"
-        description="Enable 1-click WhatsApp messaging for payment reminders & retention re-engagement."
-        checked={formData.whatsappClickToShareEnabled}
-        onChange={onWhatsAppToggle}
-      />
-
-      <ToggleRow
-        title="In-App Push & Toast Notifications"
-        description="Notify on client assignments, task due dates, and received Razorpay payments."
-        checked
-        onChange={() => {}}
-      />
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};

@@ -51,6 +51,8 @@ function mapSettings(r) {
     },
     retentionThresholdDays: r.retention_threshold_days,
     whatsappEnabled: r.whatsapp_enabled,
+    slackWebhookUrl: r.slack_webhook_url || '',
+    discordWebhookUrl: r.discord_webhook_url || '',
     invoiceDesign,
     updatedAt: r.updated_at
   };
@@ -69,9 +71,10 @@ async function updateSettings(data) {
       default_gst_rate, default_hsn_sac, invoice_prefix, bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id,
       razorpay_key_id, razorpay_connected, subscription_plan_name, subscription_price, subscription_billing_cycle,
       subscription_renewal_date, subscription_status, retention_threshold_days, whatsapp_enabled, invoice_design,
-      currency, currency_symbol, industry, team_size, goals, dashboard_layout, dashboard_focus, updated_at
+      currency, currency_symbol, industry, team_size, goals, dashboard_layout, dashboard_focus,
+      slack_webhook_url, discord_webhook_url, updated_at
     )
-    VALUES ('main', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, NOW())
+    VALUES ('main', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, NOW())
     ON CONFLICT (id) DO UPDATE SET
       company_name = COALESCE($1, settings.company_name),
       company_email = COALESCE($2, settings.company_email),
@@ -105,6 +108,8 @@ async function updateSettings(data) {
       goals = COALESCE($30, settings.goals),
       dashboard_layout = COALESCE($31, settings.dashboard_layout),
       dashboard_focus = COALESCE($32, settings.dashboard_focus),
+      slack_webhook_url = COALESCE($33, settings.slack_webhook_url),
+      discord_webhook_url = COALESCE($34, settings.discord_webhook_url),
       updated_at = NOW()
     RETURNING *`,
     [
@@ -140,6 +145,8 @@ async function updateSettings(data) {
       data.goals ? JSON.stringify(data.goals) : null,
       data.dashboardLayout ?? null,
       data.dashboardFocus ?? null,
+      data.slackWebhookUrl !== undefined ? data.slackWebhookUrl : null,
+      data.discordWebhookUrl !== undefined ? data.discordWebhookUrl : null,
     ]
   );
   return mapSettings(rows[0]);

@@ -42,4 +42,12 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Recurring schedule deleted' });
 });
 
-module.exports = { list, get, create, update, remove };
+const runNow = asyncHandler(async (req, res) => {
+  if (!['admin', 'hr'].includes(req.user.role)) {
+    return res.status(403).json({ error: "Only administrators can trigger invoice generation." });
+  }
+  const generated = await svc.generateDueRecurring();
+  res.json({ success: true, count: generated.length, generated });
+});
+
+module.exports = { list, get, create, update, remove, runNow };

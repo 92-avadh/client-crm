@@ -28,6 +28,7 @@ const importLeads = () => import('./components/leads/LeadsPipeline').then(m => (
 const importSettings = () => import('./components/settings/SettingsManager').then(m => ({ default: m.SettingsManager }));
 const importTeam = () => import('./components/team/TeamManager').then(m => ({ default: m.TeamManager }));
 const importInbox = () => import('./components/inbox/InboxManager').then(m => ({ default: m.InboxManager }));
+const importPortal = () => import('./components/portal/ClientPortal').then(m => ({ default: m.ClientPortal }));
 
 const Dashboard = lazy(importDashboard);
 const ClientsManager = lazy(importClients);
@@ -42,6 +43,7 @@ const LeadsPipeline = lazy(importLeads);
 const SettingsManager = lazy(importSettings);
 const TeamManager = lazy(importTeam);
 const InboxManager = lazy(importInbox);
+const ClientPortal = lazy(importPortal);
 
 export const prefetchRoute = (tab: string) => {
   switch (tab) {
@@ -385,6 +387,14 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
 
   return (
     <Routes>
+      <Route
+        path="/portal/:token"
+        element={
+          <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg-app)' }} />}>
+            <ClientPortal />
+          </Suspense>
+        }
+      />
       <Route
         path="/login"
         element={

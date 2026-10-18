@@ -35,7 +35,9 @@ const update = asyncHandler(async (req, res) => {
     .optionalString('bankBranch', { max: 150, label: 'Bank branch' })
     .optionalString('upiId', { max: 80, label: 'UPI ID' })
     .optionalString('razorpayKeyId', { max: 120, label: 'Razorpay key' })
-    .number('retentionThresholdDays', { min: 1, max: 365, label: 'Retention threshold' });
+    .number('retentionThresholdDays', { min: 1, max: 365, label: 'Retention threshold' })
+    .optionalString('slackWebhookUrl', { max: 500, label: 'Slack Webhook URL' })
+    .optionalString('discordWebhookUrl', { max: 500, label: 'Discord Webhook URL' });
 
   if (req.body.companyEmail) {
     v.email('companyEmail', { label: 'Company email' });
@@ -56,6 +58,19 @@ const update = asyncHandler(async (req, res) => {
   res.json(await settings.updateSettings(fullPayload));
 });
 
+const testWebhook = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: "Only administrators can test webhooks." });
+  }
+  const { url, service } = req.body;
+  const { testWebhookUrl } = require('../services/webhook.service');
+  const result = await testWebhookUrl(url, service);
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+  res.json(result);
+});
+
 const resetData = asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: "Only administrators can reset workspace data." });
@@ -65,4 +80,4 @@ const resetData = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'All workspace data cleared successfully. Admin user preserved.' });
 });
 
-module.exports = { get, update, resetData };
+module.exports = { get, update, testWebhook, resetData };

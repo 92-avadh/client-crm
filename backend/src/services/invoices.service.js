@@ -15,6 +15,7 @@ function mapInvoice(r, items) {
     hasGst: r.has_gst, gstType: r.gst_type, cgstAmount: parseFloat(r.cgst_amount || 0),
     sgstAmount: parseFloat(r.sgst_amount || 0), igstAmount: parseFloat(r.igst_amount || 0),
     totalAmount: parseFloat(r.total_amount || 0), paidAmount: parseFloat(r.paid_amount || 0),
+    currency: r.currency || 'INR', currencySymbol: r.currency_symbol || '₹',
     status: r.status, notes: r.notes, paymentDate: r.payment_date, paymentMode: r.payment_mode,
     razorpayPaymentId: r.razorpay_payment_id, isRecurring: r.is_recurring, createdAt: r.created_at,
     items: (items || []).map(i => ({
@@ -156,18 +157,21 @@ async function createInvoice(user, data) {
     await client.query('BEGIN');
 
     const invoiceNumber = await nextInvoiceNumber();
-    const id = genId();
+    const currency = data.currency || 'INR';
+    const currencySymbol = data.currencySymbol || (currency === 'USD' ? '$' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'AED' ? 'AED' : (currency === 'CAD' ? 'CA$' : '₹')))));
 
     await client.query(
       `INSERT INTO invoices (id,invoice_number,brand_id,brand_name,issue_date,due_date,subtotal,has_gst,gst_type,
-       cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring,owner_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16,$17)`,
+       cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring,owner_id,
+       currency,currency_symbol)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16,$17,$18,$19)`,
       [
         id, invoiceNumber, data.brandId, data.brandName, data.issueDate || null, data.dueDate || null,
         data.subtotal || 0, data.hasGst || false, data.gstType || 'NONE',
         data.cgstAmount || 0, data.sgstAmount || 0, data.igstAmount || 0,
         data.totalAmount || 0, data.notes || null, data.paymentMode || null,
         data.isRecurring || false, user.id,
+        currency, currencySymbol
       ]
     );
 

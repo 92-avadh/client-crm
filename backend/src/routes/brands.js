@@ -10,6 +10,7 @@ router.patch('/:id/assign-members', controller.assignMembers);
 router.patch('/:id/log-activity', controller.logActivity);
 router.patch('/:id/churn', controller.churn);
 router.patch('/:id/snooze-retention', controller.snoozeRetention);
+router.post('/:id/log-hours', controller.logHours);
 router.post('/:id/documents', controller.addDocument);
 
 module.exports = router;

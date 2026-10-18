@@ -17,10 +17,35 @@ export interface CategoryStyle {
  * historical data renders with the right label and colour.
  */
 export const CATEGORY_CONFIG: Record<string, CategoryStyle> = {
+  'Freelancer & Contractor Fees': {
+    label: 'Freelancer & Contractor Fees', icon: Users,
+    color: 'var(--info-text)', bg: 'var(--info-bg)', border: 'var(--info-border)',
+    desc: 'Contractor payouts, specialized consultants, and outsourced design/dev',
+  },
+  'Ad Spend & Media Buying': {
+    label: 'Ad Spend & Media Buying', icon: Megaphone,
+    color: 'var(--warn-text)', bg: 'var(--warn-bg)', border: 'var(--warn-border)',
+    desc: 'Meta, Google, LinkedIn ad budgets managed directly for client retainers',
+  },
+  'Stock Assets & Specialized Tools': {
+    label: 'Stock Assets & Specialized Tools', icon: Layers,
+    color: 'var(--accent-text)', bg: 'var(--accent-bg)', border: 'var(--accent-border)',
+    desc: 'Premium plugins, fonts, stock photography, and 3D assets',
+  },
+  'Client Deliverable Production': {
+    label: 'Client Deliverable Production', icon: Building2,
+    color: 'var(--text-primary)', bg: 'var(--bg-raised)', border: 'var(--border)',
+    desc: 'Production shoots, video editing, hosting, and print proofs',
+  },
   'Brand Expenses': {
     label: 'Brand Expenses', icon: Building2,
     color: 'var(--text-primary)', bg: 'var(--bg-raised)', border: 'var(--border)',
     desc: 'Direct client ad spend, creative assets, shoot costs & deliverables',
+  },
+  'Other Deliverable Costs': {
+    label: 'Other Deliverable Costs', icon: Tag,
+    color: 'var(--text-secondary)', bg: 'var(--bg-subtle)', border: 'var(--border)',
+    desc: 'Direct deliverable-associated fulfillment costs',
   },
   'Employee Salaries': {
     label: 'Employee Salaries', icon: Users,
@@ -70,7 +95,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryStyle> = {
     desc: 'Studio lease & office bills',
   },
   'Freelancer Payout': {
-    label: 'Employee Salaries', icon: Users,
+    label: 'Freelancer & Contractor Fees', icon: Users,
     color: 'var(--info-text)', bg: 'var(--info-bg)', border: 'var(--info-border)',
     desc: 'Specialist & contractor compensation',
   },
@@ -86,14 +111,16 @@ export const CATEGORY_CONFIG: Record<string, CategoryStyle> = {
   },
 };
 
-/** Canonical categories offered in the add/edit form. */
+/** Canonical categories offered in the add/edit form - focused on client deliverable & contractor costs for gross margin */
 export const STANDARD_CATEGORIES = [
+  'Freelancer & Contractor Fees',
+  'Ad Spend & Media Buying',
+  'Stock Assets & Specialized Tools',
+  'Client Deliverable Production',
   'Brand Expenses',
-  'Employee Salaries',
-  'Office Expenses',
   'Software & Subscriptions',
-  'Marketing Expenses',
-  'Other Expenses',
+  'Employee Salaries',
+  'Other Deliverable Costs',
 ];
 
 export const PAYMENT_MODES = [

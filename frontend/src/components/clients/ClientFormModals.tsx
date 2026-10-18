@@ -19,12 +19,28 @@ export interface ClientFormData {
   gstNumber: string;
   pan: string;
   serviceDetails: string;
+  currency?: string;
+  currencySymbol?: string;
+  retainerHours?: string | number;
   monthlyFee: string;
   billingCycleDay: string;
+  contractStartDate?: string;
+  contractEndDate?: string;
   paymentStatus: 'Paid' | 'Pending' | string;
   status?: string;
   notes?: string;
 }
+
+export const CURRENCY_OPTIONS = [
+  { value: 'INR', label: 'INR (₹) - Indian Rupee', symbol: '₹' },
+  { value: 'USD', label: 'USD ($) - US Dollar', symbol: '$' },
+  { value: 'EUR', label: 'EUR (€) - Euro', symbol: '€' },
+  { value: 'GBP', label: 'GBP (£) - British Pound', symbol: '£' },
+  { value: 'AED', label: 'AED (د.إ) - UAE Dirham', symbol: 'د.إ' },
+  { value: 'CAD', label: 'CAD ($) - Canadian Dollar', symbol: '$' },
+  { value: 'AUD', label: 'AUD ($) - Australian Dollar', symbol: '$' },
+  { value: 'SGD', label: 'SGD ($) - Singapore Dollar', symbol: '$' },
+];
 
 const STATUS_OPTIONS = [
   { value: 'Active', label: 'Active' },
@@ -316,8 +332,28 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
             </div>
 
             <FieldRow>
-              <FormField label={`Monthly Retainer (${currencySymbol})`} required value={formData.monthlyFee} error={getFieldError('monthlyFee')}
+              <FormSelect
+                label="Billing Currency"
+                value={formData.currency || 'INR'}
+                options={CURRENCY_OPTIONS.map(c => ({ value: c.value, label: c.label }))}
+                onChange={(v) => {
+                  const found = CURRENCY_OPTIONS.find(c => c.value === v);
+                  onFormChange({ currency: v, currencySymbol: found ? found.symbol : '$' });
+                }}
+              />
+              <FormField label={`Monthly Retainer (${formData.currencySymbol || currencySymbol})`} required value={formData.monthlyFee} error={getFieldError('monthlyFee')}
                 onBlur={() => handleBlur('monthlyFee')} type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
+            </FieldRow>
+
+            <FieldRow>
+              <FormField
+                label="Retainer Hours Quota"
+                value={formData.retainerHours != null ? String(formData.retainerHours) : '40'}
+                type="number"
+                placeholder="40"
+                helper="Monthly quota for anti-scope creep tracking"
+                onChange={(v) => onFormChange({ retainerHours: v })}
+              />
               <div>
                 <FormSelect label="Billing Cycle Day" value={formData.billingCycleDay} required
                   options={BILLING_CYCLE_OPTIONS} placeholder="Select billing day..."
@@ -328,6 +364,22 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
                   </span>
                 )}
               </div>
+            </FieldRow>
+
+            <FieldRow>
+              <FormField
+                label="Contract Start Date"
+                value={formData.contractStartDate || ''}
+                type="date"
+                onChange={(v) => onFormChange({ contractStartDate: v })}
+              />
+              <FormField
+                label="Contract End / Renewal Date"
+                value={formData.contractEndDate || ''}
+                type="date"
+                helper="Automatic renewal alerts in Contract Vault"
+                onChange={(v) => onFormChange({ contractEndDate: v })}
+              />
             </FieldRow>
 
             <FieldRow>
@@ -567,8 +619,28 @@ export const EditClientModal: React.FC<EditProps> = ({
             </div>
 
             <FieldRow>
-              <FormField label={`Monthly Retainer (${currencySymbol})`} value={formData.monthlyFee}
+              <FormSelect
+                label="Billing Currency"
+                value={formData.currency || 'INR'}
+                options={CURRENCY_OPTIONS.map(c => ({ value: c.value, label: c.label }))}
+                onChange={(v) => {
+                  const found = CURRENCY_OPTIONS.find(c => c.value === v);
+                  onFormChange({ currency: v, currencySymbol: found ? found.symbol : '$' });
+                }}
+              />
+              <FormField label={`Monthly Retainer (${formData.currencySymbol || currencySymbol})`} value={formData.monthlyFee}
                 type="number" placeholder="e.g. 100000" onChange={(v) => onFormChange({ monthlyFee: v })} />
+            </FieldRow>
+
+            <FieldRow>
+              <FormField
+                label="Retainer Hours Quota"
+                value={formData.retainerHours != null ? String(formData.retainerHours) : '40'}
+                type="number"
+                placeholder="40"
+                helper="Monthly quota for anti-scope creep tracking"
+                onChange={(v) => onFormChange({ retainerHours: v })}
+              />
               <div>
                 <FormSelect label="Billing Cycle Day" value={formData.billingCycleDay}
                   options={BILLING_CYCLE_OPTIONS} placeholder="Select billing day..."
@@ -579,6 +651,22 @@ export const EditClientModal: React.FC<EditProps> = ({
                   </span>
                 )}
               </div>
+            </FieldRow>
+
+            <FieldRow>
+              <FormField
+                label="Contract Start Date"
+                value={formData.contractStartDate || ''}
+                type="date"
+                onChange={(v) => onFormChange({ contractStartDate: v })}
+              />
+              <FormField
+                label="Contract End / Renewal Date"
+                value={formData.contractEndDate || ''}
+                type="date"
+                helper="Automatic renewal alerts in Contract Vault"
+                onChange={(v) => onFormChange({ contractEndDate: v })}
+              />
             </FieldRow>
 
             <FormField label="Internal Notes" value={formData.notes || ''}

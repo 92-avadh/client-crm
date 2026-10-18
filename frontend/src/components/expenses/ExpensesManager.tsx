@@ -244,10 +244,10 @@ export const ExpensesManager: React.FC = () => {
         style={{ paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2, margin: 0 }}>
-            Expenses &amp; Overhead Ledger
+            Deliverable &amp; Contractor Costs
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>
-            Track client costs, payroll and operational spend with GST-ready reporting.
+            Track client deliverable expenses, freelancer payouts, and media spend to calculate Client Gross Margin &amp; Retainer Profitability.
           </p>
         </div>
         {canManage && (

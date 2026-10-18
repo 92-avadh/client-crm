@@ -91,6 +91,7 @@ const isPublicRoute = (path: string) =>
   path.startsWith('/auth/resend-otp') ||
   path.startsWith('/auth/forgot-password') ||
   path.startsWith('/auth/reset-password') ||
+  path.startsWith('/portal') ||
   path === '/health';
 
 // Core fetch wrapper with circuit breaker, deduplication, and cache
@@ -234,6 +235,8 @@ export const api = {
     logActivity: (id: string, actionName: string) => req<any>('PATCH', `/brands/${id}/log-activity`, { actionName }),
     churn: (id: string) => req<any>('PATCH', `/brands/${id}/churn`),
     snoozeRetention: (id: string) => req<any>('PATCH', `/brands/${id}/snooze-retention`),
+    logHours: (id: string, hours: number) => req<any>('POST', `/brands/${id}/log-hours`, { hours }),
+    addDocument: (id: string, data: any) => req<any>('POST', `/brands/${id}/documents`, data),
   },
   projects: {
     list: (params?: any) => req<any[]>('GET', '/projects' + (params ? '?' + new URLSearchParams(params) : '')),
@@ -269,6 +272,7 @@ export const api = {
     create: (data: any) => req<any>('POST', '/recurring-invoices', data),
     update: (id: string, data: any) => req<any>('PATCH', `/recurring-invoices/${id}`, data),
     delete: (id: string) => req<any>('DELETE', `/recurring-invoices/${id}`),
+    runNow: () => req<any>('POST', '/recurring-invoices/run-now'),
   },
   expenses: {
     list: (params?: any) => req<any[]>('GET', '/expenses' + (params ? '?' + new URLSearchParams(params) : '')),
@@ -307,6 +311,7 @@ export const api = {
   settings: {
     get: () => req<any>('GET', '/settings'),
     update: (data: any) => req<any>('PATCH', '/settings', data),
+    testWebhook: (data: { url: string; service: string }) => req<any>('POST', '/settings/test-webhook', data),
     resetData: () => req<{ success: boolean; message: string }>('POST', '/settings/reset-data'),
   },
   holidays: {
@@ -316,5 +321,16 @@ export const api = {
   },
   auditLogs: {
     list: (params?: any) => req<any[]>('GET', '/audit-logs' + (params ? '?' + new URLSearchParams(params) : '')),
+  },
+  retention: {
+    getOverview: () => req<any>('GET', '/retention/overview'),
+    getBrandHealth: (brandId: string) => req<any>('GET', `/retention/${brandId}`),
+  },
+  portal: {
+    get: (token: string) => req<any>('GET', `/portal/${token}`),
+    submitFeedback: (token: string, data: { score: number; comment?: string }) =>
+      req<any>('POST', `/portal/${token}/feedback`, data),
+    getInvoice: (token: string, invoiceId: string) =>
+      req<any>('GET', `/portal/${token}/invoices/${invoiceId}`),
   },
 };

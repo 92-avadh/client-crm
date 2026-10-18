@@ -5,8 +5,19 @@ const genId = () => 'exp_' + crypto.randomBytes(6).toString('hex');
 const auditId = () => 'audit_' + crypto.randomBytes(6).toString('hex');
 
 const EXPENSE_CATEGORIES = [
-  'Salary', 'Rent', 'Utilities', 'Software', 'Marketing',
-  'Travel', 'Office Supplies', 'Professional Fees', 'Other',
+  'Freelancer & Contractor Fees',
+  'Ad Spend & Media Buying',
+  'Stock Assets & Specialized Tools',
+  'Client Deliverable Production',
+  'Software & Cloud Infra',
+  'Brand Expenses',
+  'Salary',
+  'Rent',
+  'Utilities',
+  'Office Supplies',
+  'Professional Fees',
+  'General Overhead',
+  'Other',
 ];
 const PAYMENT_MODES = ['Corporate Card', 'Bank Transfer', 'Cash', 'UPI', 'Cheque'];
 const PAYMENT_STATUSES = ['Paid', 'Pending'];

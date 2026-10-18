@@ -445,6 +445,7 @@ export const SettingsManager: React.FC = () => {
                   patchSettings({ whatsappClickToShareEnabled: v });
                   updateSettings({ whatsappClickToShareEnabled: v });
                 }}
+                onPatchSettings={patchSettings}
               />
             )}
 

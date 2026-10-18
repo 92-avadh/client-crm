@@ -15,6 +15,11 @@ function mapBrand(b) {
     billingAddress: b.billing_address, city: b.city, state: b.state, pincode: b.pincode,
     gstNumber: b.gst_number, pan: b.pan, serviceDetails: b.service_details,
     monthlyFee: parseFloat(b.monthly_fee || 0), billingCycleDay: b.billing_cycle_day,
+    currency: b.currency || 'INR', currencySymbol: b.currency_symbol || '₹',
+    retainerHours: parseFloat(b.retainer_hours || 40), usedHours: parseFloat(b.used_hours || 0),
+    npsScore: b.nps_score != null ? parseInt(b.nps_score, 10) : null,
+    contractStartDate: b.contract_start_date, contractEndDate: b.contract_end_date,
+    magicToken: b.magic_token,
     onboardingDate: b.onboarding_date, notes: b.notes, status: b.status,
     paymentStatus: b.payment_status || 'Paid',
     lastActivityDate: b.last_activity_date, lastPaymentDate: b.last_payment_date,
@@ -23,7 +28,18 @@ function mapBrand(b) {
 }
 
 function mapDoc(d) {
-  return { id: d.id, brandId: d.brand_id, name: d.name, size: d.size, uploadDate: d.upload_date, type: d.type };
+  return {
+    id: d.id,
+    brandId: d.brand_id,
+    name: d.name,
+    size: d.size,
+    uploadDate: d.upload_date,
+    type: d.type,
+    category: d.category || 'Contract',
+    renewalDate: d.renewal_date || null,
+    status: d.status || 'Signed',
+    fileUrl: d.file_url || null,
+  };
 }
 
 async function verifyBrandAccess(user, id) {
@@ -142,17 +158,25 @@ async function createBrand(user, data) {
     const today = data.onboardingDate || new Date().toISOString().split('T')[0];
     const status = data.status || (['Active', 'Inactive', 'Paused', 'Churned'].includes(data.paymentStatus) ? data.paymentStatus : 'Active');
     const paymentStatus = data.paymentStatus === 'Pending' ? 'Pending' : (data.paymentStatus === 'Paid' ? 'Paid' : (['Inactive', 'Paused', 'Churned'].includes(status) ? 'Pending' : 'Paid'));
+    const magicToken = 'tok_' + crypto.randomBytes(12).toString('hex');
+    const currency = data.currency || 'INR';
+    const currencySymbol = data.currencySymbol || (currency === 'USD' ? '$' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'AED' ? 'AED' : (currency === 'CAD' ? 'CA$' : '₹')))));
+    const retainerHours = parseFloat(data.retainerHours || 40);
+    const npsScore = data.npsScore != null ? parseInt(data.npsScore, 10) : 9;
 
     await client.query(
       `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,city,state,pincode,gst_number,pan,
-       service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date,owner_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20)`,
+       service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date,owner_id,
+       currency, currency_symbol, retainer_hours, used_hours, nps_score, contract_start_date, contract_end_date, magic_token)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)`,
       [
         id, data.name, data.ownerName || null, data.mobile || null, data.email || null,
         data.billingAddress || null, data.city || null, data.state || null, data.pincode || null,
         data.gstNumber || null, data.pan || null, data.serviceDetails || null,
         fee, data.billingCycleDay || 1, today, data.notes || null,
         status, paymentStatus, today, user.id,
+        currency, currencySymbol, retainerHours, 0, npsScore,
+        data.contractStartDate || today, data.contractEndDate || null, magicToken
       ]
     );
 
@@ -178,7 +202,7 @@ async function createBrand(user, data) {
     }
 
     await client.query('COMMIT');
-    return getBrandWithDetails(id);
+    return getBrandWithDetails(user, id);
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -195,8 +219,12 @@ async function updateBrand(id, data) {
      pincode=COALESCE($8,pincode), gst_number=COALESCE($9,gst_number), pan=COALESCE($10,pan),
      service_details=COALESCE($11,service_details), monthly_fee=COALESCE($12,monthly_fee),
      billing_cycle_day=COALESCE($13,billing_cycle_day), onboarding_date=COALESCE($14,onboarding_date),
-     notes=COALESCE($15,notes), status=COALESCE($16,status), payment_status=COALESCE($17,payment_status)
-     WHERE id=$18 RETURNING *`,
+     notes=COALESCE($15,notes), status=COALESCE($16,status), payment_status=COALESCE($17,payment_status),
+     currency=COALESCE($18,currency), currency_symbol=COALESCE($19,currency_symbol),
+     retainer_hours=COALESCE($20,retainer_hours), used_hours=COALESCE($21,used_hours),
+     nps_score=COALESCE($22,nps_score), contract_start_date=COALESCE($23,contract_start_date),
+     contract_end_date=COALESCE($24,contract_end_date)
+     WHERE id=$25 RETURNING *`,
     [
       data.name ?? null, data.ownerName ?? null, data.mobile ?? null,
       data.email ?? null, data.billingAddress ?? null, data.city ?? null, data.state ?? null,
@@ -204,6 +232,11 @@ async function updateBrand(id, data) {
       data.serviceDetails ?? null, data.monthlyFee ?? null,
       data.billingCycleDay ?? null, data.onboardingDate ?? null,
       data.notes ?? null, data.status ?? null, data.paymentStatus ?? null,
+      data.currency ?? null, data.currencySymbol ?? null,
+      data.retainerHours != null ? parseFloat(data.retainerHours) : null,
+      data.usedHours != null ? parseFloat(data.usedHours) : null,
+      data.npsScore != null ? parseInt(data.npsScore, 10) : null,
+      data.contractStartDate ?? null, data.contractEndDate ?? null,
       id,
     ]
   );
@@ -289,14 +322,28 @@ async function snoozeRetention(id) {
 
 async function addDocument(brandId, data) {
   const { rows } = await pool.query(
-    'INSERT INTO brand_documents (id,brand_id,name,size,type) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-    [docId(), brandId, data.name, data.size || null, data.type || 'Other']
+    `INSERT INTO brand_documents (id, brand_id, name, size, type, category, renewal_date, status, file_url)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    [
+      docId(), brandId, data.name, data.size || null, data.type || 'Other',
+      data.category || 'Contract', data.renewalDate || null, data.status || 'Signed', data.fileUrl || null
+    ]
   );
   return mapDoc(rows[0]);
+}
+
+async function logHours(id, hours) {
+  const h = parseFloat(hours) || 0;
+  const { rows } = await pool.query(
+    'UPDATE brands SET used_hours = GREATEST(0, used_hours + $1), last_activity_date = CURRENT_DATE WHERE id = $2 RETURNING *',
+    [h, id]
+  );
+  if (!rows.length) return null;
+  return mapBrand(rows[0]);
 }
 
 module.exports = {
   CLIENT_STATUSES, PAYMENT_STATUSES, DOCUMENT_TYPES,
   mapBrand, mapDoc, verifyBrandAccess, getBrandWithDetails, listBrands, createBrand,
-  updateBrand, assignMembers, logActivity, markChurned, snoozeRetention, addDocument,
+  updateBrand, assignMembers, logActivity, markChurned, snoozeRetention, addDocument, logHours,
 };

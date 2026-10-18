@@ -10,6 +10,7 @@ interface FieldProps {
   onChange: (v: string) => void;
   onBlur?: () => void;
   error?: string;
+  helper?: string;
   type?: string;
   placeholder?: string;
   mono?: boolean;
@@ -18,7 +19,7 @@ interface FieldProps {
 
 /** Labelled input that turns red and shows the message when invalid. */
 export const FormField: React.FC<FieldProps> = ({
-  label, value, onChange, onBlur, error, type = 'text', placeholder, mono, required,
+  label, value, onChange, onBlur, error, helper, type = 'text', placeholder, mono, required,
 }) => (
   <div>
     <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', fontSize: 12, marginBottom: 6 }}>
@@ -48,11 +49,15 @@ export const FormField: React.FC<FieldProps> = ({
         fontFamily: mono ? 'monospace' : 'inherit',
       }}
     />
-    {error && (
+    {error ? (
       <span style={{ fontSize: 11, color: 'var(--danger-text)', marginTop: 4, display: 'block', fontWeight: 500 }}>
         {error}
       </span>
-    )}
+    ) : helper ? (
+      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+        {helper}
+      </span>
+    ) : null}
   </div>
 );
 

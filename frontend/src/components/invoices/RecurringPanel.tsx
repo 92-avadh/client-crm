@@ -1,7 +1,9 @@
-import React from 'react';
-import { X } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Play, Loader2 } from 'lucide-react';
 import type { Brand } from '../../types';
 import { btnPrimary, btnSecondary, modalOverlay, modalCard, modalHeader } from './invoiceStyles';
+import { api } from '../../services/api';
+import { useApp } from '../../context/AppContext';
 
 interface Props {
   open: boolean;
@@ -13,8 +15,6 @@ interface Props {
   onEdit: () => void;
   onDraftInvoices: (brandIds: string[]) => void;
 }
-
-const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -38,6 +38,9 @@ function getNextDueDate(billingCycleDay: number): Date {
 export const RecurringPanel: React.FC<Props> = ({
   open, brands, recurringIds, pausedIds, onTogglePause, onClose, onEdit, onDraftInvoices,
 }) => {
+  const { showToast } = useApp();
+  const [runningJob, setRunningJob] = useState(false);
+
   if (!open) return null;
 
   const today = new Date();
@@ -49,6 +52,22 @@ export const RecurringPanel: React.FC<Props> = ({
     (brand) => !pausedIds.has(brand.id) && brand.billingCycleDay <= todayDay,
   );
 
+  const handleRunJobNow = async () => {
+    setRunningJob(true);
+    try {
+      const res = await api.recurringInvoices.runNow();
+      const count = res.data?.invoicesCreated ?? 0;
+      showToast(`Automated monthly billing completed: ${count} invoice(s) generated`, 'success');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err: any) {
+      showToast(err.response?.data?.error || 'Failed to trigger automated billing job', 'error');
+    } finally {
+      setRunningJob(false);
+    }
+  };
+
   return (
     <div style={modalOverlay} onClick={onClose}>
       <div style={{ ...modalCard, maxWidth: 768 }} onClick={(e) => e.stopPropagation()}>
@@ -56,10 +75,10 @@ export const RecurringPanel: React.FC<Props> = ({
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <span>🔄</span>
-              <span>Recurring Invoice Schedules</span>
+              <span>Recurring Invoice Schedules & Automation</span>
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, marginBottom: 0 }}>
-              Manage auto-billing schedules. Invoices are generated on the monthly billing cycle date.
+              Scheduled monthly invoicing with automated Slack/Discord notifications and per-client currency billing.
             </p>
           </div>
           <button onClick={onClose} style={{ background: 'var(--bg-raised)', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
@@ -68,16 +87,34 @@ export const RecurringPanel: React.FC<Props> = ({
         </div>
 
         <div style={{ padding: 24, maxHeight: '75vh', overflowY: 'auto', fontSize: 12 }}>
-          {dueBrands.length > 0 && (
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+            <button
+              onClick={handleRunJobNow}
+              disabled={runningJob}
+              style={{
+                ...btnSecondary,
+                fontSize: 12,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              {runningJob ? <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" /> : <Play style={{ width: 13, height: 13 }} />}
+              <span>{runningJob ? 'Processing Auto-Billing...' : '⚡ Run Auto-Billing Cron Now'}</span>
+            </button>
+
+            {dueBrands.length > 0 && (
               <button
                 onClick={() => onDraftInvoices(dueBrands.map((b) => b.id))}
                 style={{ ...btnPrimary, fontSize: 12 }}
               >
                 Draft All Due Invoices ({dueBrands.length})
               </button>
-            </div>
-          )}
+            )}
+          </div>
 
           {scheduled.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
@@ -113,8 +150,13 @@ export const RecurringPanel: React.FC<Props> = ({
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{brand.name}</div>
                         </td>
                         <td>
-                          <div className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>
-                            {inr(brand.monthlyFee)}
+                          <div className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <span>{(brand.currencySymbol || '₹')}{brand.monthlyFee.toLocaleString()}</span>
+                            {brand.currency && brand.currency !== 'INR' && (
+                              <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                                {brand.currency}
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>

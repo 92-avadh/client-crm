@@ -21,6 +21,13 @@ function validateClient(body, { requireName = false } = {}) {
     .optionalString('serviceDetails', { max: 3000, label: 'Service details' })
     .number('monthlyFee', { min: 0, label: 'Monthly fee' })
     .number('billingCycleDay', { min: 1, max: 31, label: 'Billing day' })
+    .optionalString('currency', { max: 10, label: 'Currency' })
+    .optionalString('currencySymbol', { max: 10, label: 'Currency symbol' })
+    .number('retainerHours', { min: 0, label: 'Retainer hours' })
+    .number('usedHours', { min: 0, label: 'Used hours' })
+    .number('npsScore', { min: 0, max: 10, label: 'NPS score' })
+    .optionalString('contractStartDate', { max: 20, label: 'Contract start date' })
+    .optionalString('contractEndDate', { max: 20, label: 'Contract end date' })
     .optionalString('notes', { max: 3000, label: 'Notes' })
     .oneOf('status', brands.CLIENT_STATUSES, { label: 'Status' })
     .oneOf('paymentStatus', brands.PAYMENT_STATUSES, { label: 'Payment status' })
@@ -112,9 +119,26 @@ const addDocument = asyncHandler(async (req, res) => {
     .requiredString('name', { max: 300, label: 'Document name' })
     .oneOf('type', brands.DOCUMENT_TYPES, { label: 'Document type' })
     .optionalString('size', { max: 40, label: 'File size' })
+    .optionalString('category', { max: 100, label: 'Category' })
+    .optionalString('renewalDate', { max: 20, label: 'Renewal date' })
+    .optionalString('status', { max: 50, label: 'Status' })
+    .optionalString('fileUrl', { max: 2000, label: 'File URL' })
     .validate();
 
   res.status(201).json(await brands.addDocument(req.params.id, body));
 });
 
-module.exports = { list, get, create, update, assignMembers, logActivity, churn, snoozeRetention, addDocument };
+const logHours = asyncHandler(async (req, res) => {
+  if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to log hours for this client." });
+  }
+  const body = makeValidator(req.body)
+    .number('hours', { min: 0.1, max: 500, required: true, label: 'Hours' })
+    .validate();
+
+  const updated = await brands.logHours(req.params.id, body.hours);
+  if (!updated) return res.status(404).json({ error: 'We could not find that client.' });
+  res.json(updated);
+});
+
+module.exports = { list, get, create, update, assignMembers, logActivity, churn, snoozeRetention, addDocument, logHours };

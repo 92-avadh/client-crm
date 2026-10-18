@@ -34,6 +34,10 @@ const create = asyncHandler(async (req, res) => {
     .number('sgstAmount', { min: 0, label: 'SGST' })
     .number('igstAmount', { min: 0, label: 'IGST' })
     .number('totalAmount', { min: 0, required: true, label: 'Total amount' })
+    .optionalString('currency', { max: 10, label: 'Currency' })
+    .optionalString('currencySymbol', { max: 10, label: 'Currency symbol' })
+    .optionalString('issueDate', { max: 30, label: 'Issue date' })
+    .optionalString('dueDate', { max: 30, label: 'Due date' })
     .optionalString('notes', { max: 2000, label: 'Notes' })
     .array('items', { max: 200, label: 'Line items' })
     .validate();

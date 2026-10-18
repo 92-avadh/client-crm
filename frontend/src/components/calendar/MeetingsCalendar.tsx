@@ -186,6 +186,53 @@ export const MeetingsCalendar: React.FC = () => {
         )}
       </div>
 
+      {/* 30-Day Strategic Touchpoint Cadence Banner */}
+      <div style={{
+        padding: '16px 20px', borderRadius: 12, background: 'var(--bg-card)',
+        border: '1px solid var(--border)', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', flexWrap: 'wrap', gap: 14,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--info-bg)', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+            🎯
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
+              Strategic Review Cadence (Retention Health Engine)
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              Clients with a strategic review in the last 30 days earn full health score velocity (+25 pts). Keep monthly review cadences green.
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <a
+            href="https://calendar.google.com"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              background: 'var(--bg-subtle)', border: '1px solid var(--border)',
+              color: 'var(--text-secondary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            Google Calendar
+          </a>
+          <a
+            href="https://cal.com"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              background: 'var(--bg-subtle)', border: '1px solid var(--border)',
+              color: 'var(--text-secondary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            Cal.com Sync
+          </a>
+        </div>
+      </div>
+
       {/* Two-column layout */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
 
@@ -327,7 +374,19 @@ export const MeetingsCalendar: React.FC = () => {
                     style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Meet Link / Location</label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Meet Link / Location</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const randomCode = Math.random().toString(36).substring(2, 5) + '-' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 5);
+                        setMeetingForm({ ...meetingForm, linkOrLocation: `https://meet.google.com/${randomCode}` });
+                      }}
+                      style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'var(--info-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)', cursor: 'pointer' }}
+                    >
+                      ⚡ Instant Google Meet
+                    </button>
+                  </div>
                   <input type="text" placeholder="https://meet.google.com/..." value={meetingForm.linkOrLocation} onChange={e => setMeetingForm({ ...meetingForm, linkOrLocation: e.target.value })}
                     style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)' }} />
                 </div>
