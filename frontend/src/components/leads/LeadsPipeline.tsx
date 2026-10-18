@@ -90,7 +90,7 @@ export const LeadsPipeline: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
           <button onClick={() => setShowAddLeadModal(true)} style={btnPrimary}>
             <Plus style={{ width: 14, height: 14 }} />
             <span>Add Prospective Lead</span>

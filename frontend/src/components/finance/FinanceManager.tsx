@@ -422,7 +422,7 @@ export const FinanceManager: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
           <button
             onClick={exportToCSV}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-strong)' }}
@@ -527,10 +527,10 @@ export const FinanceManager: React.FC = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div style={{ display: 'flex', gap: 4, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '4px 12px' }}>
+      <div className="no-scrollbar" style={{ display: 'flex', gap: 4, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '4px 12px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
         <button
           onClick={() => setActiveTab('payments')}
-          style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'payments' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'payments' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
+          style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'payments' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'payments' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
         >
           Client Payments Ledger ({payments.length})
         </button>
@@ -539,13 +539,13 @@ export const FinanceManager: React.FC = () => {
           <>
             <button
               onClick={() => setActiveTab('expenses')}
-              style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'expenses' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'expenses' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
+              style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'expenses' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'expenses' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
             >
               Agency Expenses ({expenses.length})
             </button>
             <button
               onClick={() => setActiveTab('profitability')}
-              style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'profitability' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'profitability' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
+              style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'profitability' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'profitability' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
             >
               Client-Wise Profitability Matrix
             </button>

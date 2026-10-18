@@ -150,7 +150,7 @@ export const ProjectsAndTasks: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
           {(role === 'admin' || role === 'hr') && (
             <button onClick={() => setShowAddProjectModal(true)} style={btnSecondary}>
               <Plus style={{ width: 14, height: 14 }} />
@@ -171,16 +171,16 @@ export const ProjectsAndTasks: React.FC = () => {
           background: 'var(--bg-card)', borderRadius: 12, padding: '6px 10px', border: '1px solid var(--border)',
         }}
       >
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div className="no-scrollbar" style={{ display: 'flex', gap: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
           <button
             onClick={() => setActiveTab('tasks')}
-            style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'tasks' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'tasks' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
+            style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'tasks' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'tasks' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
           >
             Tasks &amp; Deliverables ({relevantTasks.length})
           </button>
           <button
             onClick={() => setActiveTab('projects')}
-            style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'projects' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'projects' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
+            style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'projects' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'projects' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
           >
             Active Projects ({projects.length})
           </button>

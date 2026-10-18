@@ -332,7 +332,7 @@ export const InvoicesManager: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
           <button onClick={() => setShowRecurringPanel(true)} style={btnSecondary}>
             <span>🔄 Recurring Schedules</span>
           </button>
@@ -362,24 +362,28 @@ export const InvoicesManager: React.FC = () => {
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', maxWidth: '100%' }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginRight: 4 }}>
+        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0" style={{ maxWidth: '100%' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0, whiteSpace: 'nowrap' }}>
             <Filter style={{ width: 13, height: 13 }} /> Filter:
           </span>
-          {['All', 'Paid', 'Sent', 'Overdue'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              style={{
-                padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                background: statusFilter === status ? 'var(--solid-btn-bg)' : 'var(--bg-subtle)',
-                color: statusFilter === status ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
-                border: statusFilter === status ? '1px solid var(--border-focus)' : '1px solid var(--border)',
-              }}
-            >
-              {status}
-            </button>
-          ))}
+          <div className="no-scrollbar" style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', minWidth: 0, flex: 1, padding: '4px 0', WebkitOverflowScrolling: 'touch' }}>
+            {['All', 'Paid', 'Sent', 'Overdue'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                style={{
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  background: statusFilter === status ? 'var(--solid-btn-bg)' : 'var(--bg-subtle)',
+                  color: statusFilter === status ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
+                  border: statusFilter === status ? '1px solid var(--border-focus)' : '1px solid var(--border)',
+                }}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

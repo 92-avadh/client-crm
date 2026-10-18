@@ -326,6 +326,7 @@ export const ClientsManager: React.FC = () => {
 
         {(role === 'admin' || role === 'hr') && (
           <button onClick={openOnboard}
+            className="w-fit self-start sm:self-auto"
             style={{ padding: '9px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Plus className="w-3.5 h-3.5" />
             <span>Onboard New Client</span>
@@ -346,21 +347,25 @@ export const ClientsManager: React.FC = () => {
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', maxWidth: '100%' }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginRight: 4 }}>
+        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0" style={{ maxWidth: '100%' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0, whiteSpace: 'nowrap' }}>
             <Filter style={{ width: 13, height: 13 }} /> Filter:
           </span>
-          {['All', 'Active', 'Paid', 'Pending', 'Inactive', 'Paused', 'Churned'].map((status) => (
-            <button key={status} onClick={() => setStatusFilter(status)}
-              style={{
-                padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease',
-                background: statusFilter === status ? 'var(--solid-btn-bg)' : 'var(--bg-subtle)',
-                color: statusFilter === status ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
-                border: statusFilter === status ? '1px solid var(--border-focus)' : '1px solid var(--border)',
-              }}>
-              {status}
-            </button>
-          ))}
+          <div className="no-scrollbar" style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', minWidth: 0, flex: 1, padding: '4px 0', WebkitOverflowScrolling: 'touch' }}>
+            {['All', 'Active', 'Paid', 'Pending', 'Inactive', 'Paused', 'Churned'].map((status) => (
+              <button key={status} onClick={() => setStatusFilter(status)}
+                style={{
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease',
+                  background: statusFilter === status ? 'var(--solid-btn-bg)' : 'var(--bg-subtle)',
+                  color: statusFilter === status ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
+                  border: statusFilter === status ? '1px solid var(--border-focus)' : '1px solid var(--border)',
+                }}>
+                {status}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

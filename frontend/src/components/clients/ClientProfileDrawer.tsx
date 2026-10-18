@@ -294,7 +294,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 24px', background: 'var(--bg-subtle)', overflowX: 'auto' }}>
+        <div className="no-scrollbar" style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 24px', background: 'var(--bg-subtle)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -303,7 +303,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                 padding: '12px 16px', fontSize: 12, fontWeight: 600, border: 'none',
                 borderBottom: activeTab === tab.id ? '2px solid var(--border-focus)' : '2px solid transparent',
                 color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
-                background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap',
+                background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               }}
             >
               {tab.label}

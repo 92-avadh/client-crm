@@ -495,7 +495,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Header Action Buttons */}
-        <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
           {/* Widget toggle */}
           <div className="relative">
             <button

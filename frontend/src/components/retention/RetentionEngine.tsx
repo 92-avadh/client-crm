@@ -136,7 +136,7 @@ export const RetentionEngine: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
           <button
             onClick={fetchHealth}
             disabled={loadingHealth}
@@ -292,7 +292,7 @@ export const RetentionEngine: React.FC = () => {
       </div>
 
       {/* Interactive Tier Filter Tabs */}
-      <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+      <div className="no-scrollbar" style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
         {[
           { id: 'all', label: `All Clients (${healthData?.scores.length || 0})` },
           { id: 'churn', label: `🚨 Churn Warnings (${healthData?.overview.churnRisksCount || 0})` },
@@ -303,6 +303,8 @@ export const RetentionEngine: React.FC = () => {
             key={tab.id}
             onClick={() => setFilterTier(tab.id as any)}
             style={{
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
               padding: '8px 14px',
               borderRadius: 8,
               fontSize: 12,

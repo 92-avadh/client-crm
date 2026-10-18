@@ -251,7 +251,7 @@ export const ExpensesManager: React.FC = () => {
           </p>
         </div>
         {canManage && (
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
             <button onClick={handleExportCsv} className="btn-secondary">Export CSV</button>
             <button onClick={handleOpenAdd}
               style={{ padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>

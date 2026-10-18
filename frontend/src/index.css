@@ -327,6 +327,17 @@ input::placeholder, textarea::placeholder {
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
+/* Utility to completely hide horizontal/vertical scrollbars on carousels, chips & tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
 ::selection { background: var(--selection-bg); color: var(--selection-text); }
 
 /* ─── Cards / Panels ─────────────────────────────────────── */

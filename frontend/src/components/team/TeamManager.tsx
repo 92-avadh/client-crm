@@ -246,7 +246,7 @@ export const TeamManager: React.FC = () => {
           </p>
         </div>
         {isAdmin && (
-          <button onClick={openAddModal} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+          <button onClick={openAddModal} className="w-fit self-start sm:self-auto" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
             <UserPlus style={{ width: 16, height: 16 }} /> Add Member
           </button>
         )}
