@@ -71,6 +71,10 @@ const WA = {
     pillInactiveText: '#8696a0',
     encryptionBg: '#182229',
     quoteBg: 'rgba(0, 0, 0, 0.22)',
+    modalBg: '#111b21',
+    cardBg: '#202c33',
+    cardBorder: '#2a3942',
+    shadow: '0 20px 45px rgba(0,0,0,0.3)',
   },
   light: {
     appBg: '#f0f2f5',
@@ -97,6 +101,10 @@ const WA = {
     pillInactiveText: '#54656f',
     encryptionBg: '#ffffff',
     quoteBg: 'rgba(0, 0, 0, 0.05)',
+    modalBg: '#ffffff',
+    cardBg: '#ffffff',
+    cardBorder: '#e9edef',
+    shadow: '0 10px 30px rgba(0,0,0,0.06)',
   },
 };
 
@@ -121,7 +129,11 @@ export const ChatManager: React.FC = () => {
     clearConversation,
     isUserOnline,
     showToast,
+    theme,
   } = useApp();
+
+  const isLight = theme === 'light';
+  const t = isLight ? WA.light : WA.dark;
 
   // State management
   const [inputText, setInputText] = useState('');
@@ -674,13 +686,13 @@ export const ChatManager: React.FC = () => {
         minHeight: '620px',
         maxHeight: 'calc(100vh - 110px)',
         width: '100%',
-        background: '#111b21',
+        background: t.sidebarBg,
         borderRadius: 14,
         overflow: 'hidden',
-        border: '1px solid #222d34',
-        boxShadow: '0 20px 45px rgba(0,0,0,0.3)',
+        border: `1px solid ${t.border}`,
+        boxShadow: t.shadow,
         position: 'relative',
-        color: '#e9edef',
+        color: t.textPrimary,
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
@@ -693,8 +705,8 @@ export const ChatManager: React.FC = () => {
           width: '100%',
           maxWidth: '380px',
           height: '100%',
-          background: '#111b21',
-          borderRight: '1px solid #222d34',
+          background: t.sidebarBg,
+          borderRight: `1px solid ${t.border}`,
           flexDirection: 'column',
           flexShrink: 0,
           position: 'relative',
@@ -704,11 +716,11 @@ export const ChatManager: React.FC = () => {
         <div
           style={{
             padding: '12px 16px',
-            background: '#202c33',
+            background: t.headerBg,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid #222d34',
+            borderBottom: `1px solid ${t.border}`,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -725,7 +737,7 @@ export const ChatManager: React.FC = () => {
                 fontWeight: 800,
                 fontSize: 14,
                 overflow: 'hidden',
-                border: '1.5px solid rgba(255,255,255,0.1)',
+                border: isLight ? '1.5px solid rgba(0,0,0,0.08)' : '1.5px solid rgba(255,255,255,0.1)',
               }}
               title={currentUser.name}
             >
@@ -735,7 +747,7 @@ export const ChatManager: React.FC = () => {
                 currentUser.name.charAt(0).toUpperCase()
               )}
             </div>
-            <h2 style={{ fontSize: 19, fontWeight: 800, color: '#e9edef', margin: 0, letterSpacing: '-0.01em' }}>
+            <h2 style={{ fontSize: 19, fontWeight: 800, color: t.textPrimary, margin: 0, letterSpacing: '-0.01em' }}>
               Chats
             </h2>
           </div>
@@ -775,7 +787,7 @@ export const ChatManager: React.FC = () => {
                 height: 34,
                 borderRadius: '50%',
                 background: 'transparent',
-                color: '#8696a0',
+                color: t.textSecondary,
                 border: 'none',
                 display: 'flex',
                 alignItems: 'center',
@@ -790,19 +802,19 @@ export const ChatManager: React.FC = () => {
         </div>
 
         {/* Search Bar */}
-        <div style={{ padding: '8px 12px', background: '#111b21', borderBottom: '1px solid #222d34' }}>
+        <div style={{ padding: '8px 12px', background: t.sidebarBg, borderBottom: `1px solid ${t.border}` }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              background: '#202c33',
+              background: isLight ? '#f0f2f5' : '#202c33',
               borderRadius: 8,
               padding: '0 12px',
               height: 36,
             }}
           >
-            <Search style={{ width: 15, height: 15, color: '#8696a0', flexShrink: 0 }} />
+            <Search style={{ width: 15, height: 15, color: t.textSecondary, flexShrink: 0 }} />
             <input
               type="text"
               placeholder="Search or start a new chat"
@@ -813,14 +825,14 @@ export const ChatManager: React.FC = () => {
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                color: '#e9edef',
+                color: t.inputText,
                 fontSize: 13,
               }}
             />
             {searchConv && (
               <button
                 onClick={() => setSearchConv('')}
-                style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 0 }}
+                style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 0 }}
               >
                 <X style={{ width: 14, height: 14 }} />
               </button>
@@ -835,8 +847,8 @@ export const ChatManager: React.FC = () => {
             alignItems: 'center',
             gap: 6,
             padding: '8px 12px',
-            background: '#111b21',
-            borderBottom: '1px solid #222d34',
+            background: t.sidebarBg,
+            borderBottom: `1px solid ${t.border}`,
             overflowX: 'auto',
           }}
         >
@@ -861,8 +873,8 @@ export const ChatManager: React.FC = () => {
                   cursor: 'pointer',
                   border: 'none',
                   whiteSpace: 'nowrap',
-                  background: isActive ? '#00a884' : '#202c33',
-                  color: isActive ? '#ffffff' : '#8696a0',
+                  background: isActive ? '#00a884' : t.pillInactiveBg,
+                  color: isActive ? '#ffffff' : t.pillInactiveText,
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -873,9 +885,9 @@ export const ChatManager: React.FC = () => {
         </div>
 
         {/* Conversation List */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto', background: t.sidebarBg }}>
           {filteredConversations.length === 0 ? (
-            <div style={{ padding: '36px 20px', textAlign: 'center', color: '#8696a0', fontSize: 13 }}>
+            <div style={{ padding: '36px 20px', textAlign: 'center', color: t.textSecondary, fontSize: 13 }}>
               <MessageSquare style={{ width: 32, height: 32, margin: '0 auto 8px', opacity: 0.4 }} />
               <div>No chats found</div>
               <p style={{ fontSize: 11, marginTop: 4 }}>Try clearing search or filters</p>
@@ -906,13 +918,13 @@ export const ChatManager: React.FC = () => {
                     gap: 12,
                     padding: '12px 16px',
                     cursor: 'pointer',
-                    background: isActive ? '#2a3942' : 'transparent',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                    background: isActive ? t.itemActive : 'transparent',
+                    borderBottom: isLight ? '1px solid #f0f2f5' : '1px solid rgba(255, 255, 255, 0.05)',
                     transition: 'background 0.12s ease',
                     position: 'relative',
                   }}
                   onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.background = '#202c33';
+                    if (!isActive) e.currentTarget.style.background = t.itemHover;
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -925,15 +937,15 @@ export const ChatManager: React.FC = () => {
                         width: 46,
                         height: 46,
                         borderRadius: '50%',
-                        background: isDirect ? 'rgba(0, 168, 132, 0.2)' : '#202c33',
-                        color: isDirect ? '#00a884' : '#e9edef',
+                        background: isDirect ? 'rgba(0, 168, 132, 0.2)' : (isLight ? '#e9edef' : '#202c33'),
+                        color: isDirect ? '#00a884' : t.textPrimary,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontWeight: 800,
                         fontSize: 16,
                         overflow: 'hidden',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        border: isLight ? '1px solid rgba(0, 0, 0, 0.06)' : '1px solid rgba(255, 255, 255, 0.08)',
                       }}
                     >
                       {isDirect && other?.avatar ? (
@@ -957,7 +969,7 @@ export const ChatManager: React.FC = () => {
                           height: 10,
                           borderRadius: '50%',
                           background: '#00a884',
-                          border: '2px solid #111b21',
+                          border: `2px solid ${t.sidebarBg}`,
                         }}
                       />
                     )}
@@ -971,7 +983,7 @@ export const ChatManager: React.FC = () => {
                         style={{
                           fontSize: 14.5,
                           fontWeight: (conv.unreadCount || 0) > 0 ? 800 : 600,
-                          color: '#e9edef',
+                          color: t.textPrimary,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -979,7 +991,7 @@ export const ChatManager: React.FC = () => {
                       >
                         {isDirect && other ? other.name : conv.title}
                       </span>
-                      <span style={{ fontSize: 11, color: (conv.unreadCount || 0) > 0 ? '#00a884' : '#8696a0', flexShrink: 0, fontWeight: (conv.unreadCount || 0) > 0 ? 700 : 400 }}>
+                      <span style={{ fontSize: 11, color: (conv.unreadCount || 0) > 0 ? '#00a884' : t.textSecondary, flexShrink: 0, fontWeight: (conv.unreadCount || 0) > 0 ? 700 : 400 }}>
                         {formatMessageTime(conv.lastMessageTime) || ''}
                       </span>
                     </div>
@@ -992,13 +1004,13 @@ export const ChatManager: React.FC = () => {
                           isUserOnline(other?.id || '') ? (
                             <CheckCheck style={{ width: 14, height: 14, color: '#53bdeb', flexShrink: 0 }} />
                           ) : (
-                            <Check style={{ width: 14, height: 14, color: '#8696a0', flexShrink: 0 }} />
+                            <Check style={{ width: 14, height: 14, color: t.textSecondary, flexShrink: 0 }} />
                           )
                         )}
                         <span
                           style={{
                             fontSize: 12,
-                            color: '#8696a0',
+                            color: t.textSecondary,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -1009,8 +1021,8 @@ export const ChatManager: React.FC = () => {
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                        {isMuted && <VolumeX style={{ width: 13, height: 13, color: '#8696a0' }} />}
-                        {isPinned && <Pin style={{ width: 13, height: 13, color: '#8696a0', transform: 'rotate(45deg)' }} />}
+                        {isMuted && <VolumeX style={{ width: 13, height: 13, color: t.textSecondary }} />}
+                        {isPinned && <Pin style={{ width: 13, height: 13, color: t.textSecondary, transform: 'rotate(45deg)' }} />}
                         {(conv.unreadCount || 0) > 0 && (
                           <span
                             style={{
@@ -1049,7 +1061,7 @@ export const ChatManager: React.FC = () => {
           flex: 1,
           flexDirection: 'column',
           height: '100%',
-          background: '#0b141a',
+          background: t.chatBg,
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -1061,8 +1073,8 @@ export const ChatManager: React.FC = () => {
               style={{
                 height: 60,
                 padding: '0 16px',
-                background: '#202c33',
-                borderBottom: '1px solid #222d34',
+                background: t.headerBg,
+                borderBottom: `1px solid ${t.border}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -1075,7 +1087,7 @@ export const ChatManager: React.FC = () => {
                 <button
                   onClick={() => setShowMobileSidebar(true)}
                   className="md:hidden"
-                  style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 4 }}
+                  style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 4 }}
                 >
                   <ArrowLeft style={{ width: 18, height: 18 }} />
                 </button>
@@ -1087,14 +1099,15 @@ export const ChatManager: React.FC = () => {
                       width: 40,
                       height: 40,
                       borderRadius: '50%',
-                      background: activeConv.type === 'direct' ? 'rgba(0, 168, 132, 0.2)' : '#202c33',
-                      color: activeConv.type === 'direct' ? '#00a884' : '#e9edef',
+                      background: activeConv.type === 'direct' ? 'rgba(0, 168, 132, 0.2)' : (isLight ? '#e9edef' : '#202c33'),
+                      color: activeConv.type === 'direct' ? '#00a884' : t.textPrimary,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 800,
                       fontSize: 15,
                       overflow: 'hidden',
+                      border: isLight ? '1px solid rgba(0, 0, 0, 0.06)' : '1px solid rgba(255, 255, 255, 0.08)',
                     }}
                   >
                     {activeConv.type === 'direct' && activeConv.otherMember?.avatar ? (
@@ -1115,7 +1128,7 @@ export const ChatManager: React.FC = () => {
                         height: 10,
                         borderRadius: '50%',
                         background: '#00a884',
-                        border: '2px solid #202c33',
+                        border: `2px solid ${t.headerBg}`,
                       }}
                     />
                   )}
@@ -1123,15 +1136,15 @@ export const ChatManager: React.FC = () => {
 
                 {/* Contact Name & Status */}
                 <div>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e9edef', margin: 0, lineHeight: 1.2 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: t.textPrimary, margin: 0, lineHeight: 1.2 }}>
                     {activeConv.type === 'direct' && activeConv.otherMember ? activeConv.otherMember.name : activeConv.title}
                   </h3>
-                  <div style={{ fontSize: 11, color: '#8696a0', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: t.textSecondary, marginTop: 2 }}>
                     {activeConv.type === 'direct' ? (
                       isRecipientOnline ? (
                         <span style={{ color: '#00a884', fontWeight: 600 }}>online</span>
                       ) : (
-                        <span style={{ color: '#8696a0' }}>offline</span>
+                        <span style={{ color: t.textSecondary }}>offline</span>
                       )
                     ) : (
                       <span>tap here for group info</span>
@@ -1144,14 +1157,14 @@ export const ChatManager: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <button
                   onClick={handleStartGoogleMeet}
-                  style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center' }}
+                  style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center' }}
                   title="Start instant video call (Google Meet)"
                 >
                   <Video style={{ width: 19, height: 19 }} />
                 </button>
                 <button
                   onClick={handleStartGoogleMeet}
-                  style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center' }}
+                  style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center' }}
                   title="Audio call"
                 >
                   <Phone style={{ width: 18, height: 18 }} />
@@ -1161,7 +1174,7 @@ export const ChatManager: React.FC = () => {
                   style={{
                     background: showInChatSearch ? 'rgba(0, 168, 132, 0.15)' : 'transparent',
                     border: 'none',
-                    color: showInChatSearch ? '#00a884' : '#8696a0',
+                    color: showInChatSearch ? '#00a884' : t.textSecondary,
                     cursor: 'pointer',
                     padding: 6,
                     borderRadius: 6,
@@ -1177,7 +1190,7 @@ export const ChatManager: React.FC = () => {
                     e.stopPropagation();
                     setChatContextMenu({ convId: activeConv.id, x: e.clientX, y: e.clientY });
                   }}
-                  style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center' }}
+                  style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center' }}
                   title="More options"
                 >
                   <MoreVertical style={{ width: 18, height: 18 }} />
@@ -1190,15 +1203,15 @@ export const ChatManager: React.FC = () => {
               <div
                 style={{
                   padding: '8px 16px',
-                  background: '#202c33',
-                  borderBottom: '1px solid #222d34',
+                  background: t.headerBg,
+                  borderBottom: `1px solid ${t.border}`,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 10,
                   zIndex: 9,
                 }}
               >
-                <Search style={{ width: 15, height: 15, color: '#8696a0' }} />
+                <Search style={{ width: 15, height: 15, color: t.textSecondary }} />
                 <input
                   type="text"
                   placeholder="Search in conversation..."
@@ -1207,17 +1220,17 @@ export const ChatManager: React.FC = () => {
                   autoFocus
                   style={{
                     flex: 1,
-                    background: '#111b21',
-                    border: '1px solid #222d34',
+                    background: t.inputPillBg,
+                    border: `1px solid ${t.border}`,
                     borderRadius: 6,
                     padding: '6px 12px',
-                    color: '#e9edef',
+                    color: t.inputText,
                     fontSize: 12.5,
                     outline: 'none',
                   }}
                 />
                 {inChatSearchQuery && (
-                  <span style={{ fontSize: 11, color: '#8696a0' }}>
+                  <span style={{ fontSize: 11, color: t.textSecondary }}>
                     {visibleMessages.length} match{visibleMessages.length === 1 ? '' : 'es'}
                   </span>
                 )}
@@ -1226,7 +1239,7 @@ export const ChatManager: React.FC = () => {
                     setShowInChatSearch(false);
                     setInChatSearchQuery('');
                   }}
-                  style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer' }}
+                  style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer' }}
                 >
                   <X style={{ width: 16, height: 16 }} />
                 </button>
@@ -1243,8 +1256,10 @@ export const ChatManager: React.FC = () => {
                 flexDirection: 'column',
                 gap: 8,
                 position: 'relative',
-                background: '#0b141a',
-                backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px), radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px)`,
+                background: t.chatBg,
+                backgroundImage: isLight
+                  ? `radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px), radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px)`
+                  : `radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px), radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px)`,
                 backgroundSize: '24px 24px',
                 backgroundPosition: '0 0, 12px 12px',
               }}
@@ -1253,12 +1268,12 @@ export const ChatManager: React.FC = () => {
               <div
                 style={{
                   alignSelf: 'center',
-                  background: '#182229',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  background: t.encryptionBg,
+                  border: isLight ? '1px solid rgba(0, 0, 0, 0.08)' : '1px solid rgba(255, 255, 255, 0.06)',
                   borderRadius: 8,
                   padding: '6px 14px',
                   fontSize: 11,
-                  color: '#8696a0',
+                  color: t.textSecondary,
                   textAlign: 'center',
                   maxWidth: '85%',
                   lineHeight: 1.4,
@@ -1266,9 +1281,10 @@ export const ChatManager: React.FC = () => {
                   alignItems: 'center',
                   gap: 6,
                   marginBottom: 12,
+                  boxShadow: isLight ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                 }}
               >
-                <Lock style={{ width: 12, height: 12, color: '#e9edef', flexShrink: 0 }} />
+                <Lock style={{ width: 12, height: 12, color: t.textPrimary, flexShrink: 0 }} />
                 <span>Messages are end-to-end encrypted. No one outside of this chat can read or listen to them.</span>
               </div>
 
@@ -1276,14 +1292,15 @@ export const ChatManager: React.FC = () => {
               <div
                 style={{
                   alignSelf: 'center',
-                  background: '#182229',
+                  background: isLight ? '#ffffff' : '#182229',
                   borderRadius: 6,
                   padding: '4px 12px',
                   fontSize: 11,
                   fontWeight: 600,
-                  color: '#8696a0',
+                  color: t.textSecondary,
                   marginBottom: 10,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  boxShadow: isLight ? '0 1px 2px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.2)',
+                  border: isLight ? '1px solid rgba(0, 0, 0, 0.06)' : 'none',
                 }}
               >
                 TODAY
@@ -1333,15 +1350,15 @@ export const ChatManager: React.FC = () => {
                             position: 'absolute',
                             top: -38,
                             [isMe ? 'right' : 'left']: 0,
-                            background: '#202c33',
+                            background: isLight ? '#ffffff' : '#202c33',
                             borderRadius: 24,
                             padding: '3px 8px',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 4,
-                            boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+                            boxShadow: isLight ? '0 4px 16px rgba(0,0,0,0.15)' : '0 4px 14px rgba(0,0,0,0.4)',
                             zIndex: 20,
-                            border: '1px solid #222d34',
+                            border: `1px solid ${t.border}`,
                           }}
                         >
                           {QUICK_EMOJIS.map((emoji) => (
@@ -1371,7 +1388,7 @@ export const ChatManager: React.FC = () => {
                             style={{
                               background: 'transparent',
                               border: 'none',
-                              color: '#8696a0',
+                              color: t.textSecondary,
                               cursor: 'pointer',
                               padding: '2px 4px',
                               display: 'flex',
@@ -1391,13 +1408,13 @@ export const ChatManager: React.FC = () => {
                           setMessageContextMenu({ message: msg, x: e.clientX, y: e.clientY });
                         }}
                         style={{
-                          background: isMe ? '#005c4b' : '#202c33',
-                          color: '#e9edef',
+                          background: isMe ? t.sentBubble : t.receivedBubble,
+                          color: isMe ? t.sentText : t.receivedText,
                           padding: '6px 9px 6px 9px',
                           borderRadius: 8,
                           borderTopRightRadius: isMe ? 0 : 8,
                           borderTopLeftRadius: !isMe ? 0 : 8,
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+                          boxShadow: isLight ? '0 1px 1.5px rgba(11,20,26,0.13)' : '0 1px 2px rgba(0,0,0,0.25)',
                           fontSize: 13.5,
                           lineHeight: 1.45,
                           position: 'relative',
@@ -1415,12 +1432,12 @@ export const ChatManager: React.FC = () => {
                         {hasQuote && (
                           <div
                             style={{
-                              background: 'rgba(0, 0, 0, 0.2)',
+                              background: t.quoteBg,
                               borderLeft: '4px solid #00a884',
                               borderRadius: 4,
                               padding: '4px 8px',
                               fontSize: 12,
-                              color: '#d1d7db',
+                              color: isLight ? '#3b4a54' : '#d1d7db',
                               marginBottom: 6,
                               fontStyle: 'italic',
                             }}
@@ -1450,7 +1467,7 @@ export const ChatManager: React.FC = () => {
                                 <div
                                   key={idx}
                                   style={{
-                                    background: 'rgba(0, 0, 0, 0.25)',
+                                    background: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.25)',
                                     borderRadius: 6,
                                     padding: '8px 10px',
                                     display: 'flex',
@@ -1477,8 +1494,8 @@ export const ChatManager: React.FC = () => {
                                       PDF
                                     </div>
                                     <div>
-                                      <div style={{ fontSize: 12, fontWeight: 600, color: '#e9edef' }}>{att.name}</div>
-                                      <div style={{ fontSize: 10, color: '#8696a0' }}>{att.size}</div>
+                                      <div style={{ fontSize: 12, fontWeight: 600, color: isMe ? t.sentText : t.receivedText }}>{att.name}</div>
+                                      <div style={{ fontSize: 10, color: isLight ? '#667781' : '#8696a0' }}>{att.size}</div>
                                     </div>
                                   </div>
                                   <button
@@ -1508,7 +1525,7 @@ export const ChatManager: React.FC = () => {
                               alignSelf: 'flex-end',
                               gap: 3,
                               fontSize: 10.5,
-                              color: '#8696a0',
+                              color: isLight ? '#667781' : '#8696a0',
                               marginTop: 2,
                               userSelect: 'none',
                               flexShrink: 0,
@@ -1527,15 +1544,15 @@ export const ChatManager: React.FC = () => {
                             position: 'absolute',
                             bottom: -10,
                             [isMe ? 'right' : 'left']: 8,
-                            background: '#202c33',
-                            border: '1px solid #222d34',
+                            background: isLight ? '#ffffff' : '#202c33',
+                            border: `1px solid ${t.border}`,
                             borderRadius: 12,
                             padding: '1px 6px',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 2,
                             fontSize: 12,
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            boxShadow: isLight ? '0 2px 4px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.3)',
                             cursor: 'pointer',
                           }}
                           onClick={() => handleToggleReaction(msg.id, msgReactions[0])}
@@ -1545,7 +1562,7 @@ export const ChatManager: React.FC = () => {
                             <span key={i}>{emoji}</span>
                           ))}
                           {msgReactions.length > 1 && (
-                            <span style={{ fontSize: 10, fontWeight: 700, color: '#8696a0', marginLeft: 2 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: t.textSecondary, marginLeft: 2 }}>
                               {msgReactions.length}
                             </span>
                           )}
@@ -1561,15 +1578,17 @@ export const ChatManager: React.FC = () => {
                 <div
                   style={{
                     alignSelf: 'flex-start',
-                    background: '#202c33',
+                    background: isLight ? '#ffffff' : '#202c33',
+                    border: isLight ? `1px solid ${t.border}` : 'none',
                     borderRadius: 14,
                     padding: '6px 12px',
                     fontSize: 12,
-                    color: '#8696a0',
+                    color: t.textSecondary,
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
                     fontStyle: 'italic',
+                    boxShadow: isLight ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                   }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00a884', animation: 'pulse 1s infinite' }} />
@@ -1585,8 +1604,8 @@ export const ChatManager: React.FC = () => {
               <div
                 style={{
                   padding: '8px 16px',
-                  background: '#202c33',
-                  borderTop: '1px solid #222d34',
+                  background: t.headerBg,
+                  borderTop: `1px solid ${t.border}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -1600,14 +1619,14 @@ export const ChatManager: React.FC = () => {
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#00a884' }}>
                       Replying to {replyingTo.senderName}
                     </div>
-                    <div style={{ fontSize: 11, color: '#8696a0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 11, color: t.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {replyingTo.text}
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setReplyingTo(null)}
-                  style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 4 }}
+                  style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 4 }}
                 >
                   <X style={{ width: 16, height: 16 }} />
                 </button>
@@ -1620,8 +1639,8 @@ export const ChatManager: React.FC = () => {
               style={{
                 height: 62,
                 padding: '0 16px',
-                background: '#202c33',
-                borderTop: '1px solid #222d34',
+                background: t.headerBg,
+                borderTop: `1px solid ${t.border}`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
@@ -1638,14 +1657,14 @@ export const ChatManager: React.FC = () => {
                     position: 'absolute',
                     bottom: 68,
                     left: 16,
-                    background: '#202c33',
-                    border: '1px solid #222d34',
+                    background: isLight ? '#ffffff' : '#202c33',
+                    border: `1px solid ${t.border}`,
                     borderRadius: 12,
                     padding: 8,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 4,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                    boxShadow: isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 10px 30px rgba(0,0,0,0.5)',
                     zIndex: 50,
                     minWidth: 180,
                   }}
@@ -1660,12 +1679,12 @@ export const ChatManager: React.FC = () => {
                       padding: '8px 12px',
                       background: 'transparent',
                       border: 'none',
-                      color: '#e9edef',
+                      color: t.textPrimary,
                       fontSize: 13,
                       cursor: 'pointer',
                       borderRadius: 6,
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
                     <FileText style={{ width: 16, height: 16, color: '#7f66ff' }} />
@@ -1681,12 +1700,12 @@ export const ChatManager: React.FC = () => {
                       padding: '8px 12px',
                       background: 'transparent',
                       border: 'none',
-                      color: '#e9edef',
+                      color: t.textPrimary,
                       fontSize: 13,
                       cursor: 'pointer',
                       borderRadius: 6,
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
                     <ImageIcon style={{ width: 16, height: 16, color: '#007bfc' }} />
@@ -1705,12 +1724,12 @@ export const ChatManager: React.FC = () => {
                       padding: '8px 12px',
                       background: 'transparent',
                       border: 'none',
-                      color: '#e9edef',
+                      color: t.textPrimary,
                       fontSize: 13,
                       cursor: 'pointer',
                       borderRadius: 6,
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
                     <Users style={{ width: 16, height: 16, color: '#02a698' }} />
@@ -1727,14 +1746,14 @@ export const ChatManager: React.FC = () => {
                     position: 'absolute',
                     bottom: 68,
                     left: 50,
-                    background: '#202c33',
-                    border: '1px solid #222d34',
+                    background: isLight ? '#ffffff' : '#202c33',
+                    border: `1px solid ${t.border}`,
                     borderRadius: 12,
                     padding: 10,
                     display: 'grid',
                     gridTemplateColumns: 'repeat(8, 1fr)',
                     gap: 6,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                    boxShadow: isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 10px 30px rgba(0,0,0,0.5)',
                     zIndex: 50,
                   }}
                 >
@@ -1754,7 +1773,7 @@ export const ChatManager: React.FC = () => {
                         padding: 4,
                         borderRadius: 6,
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
                       {em}
@@ -1774,7 +1793,7 @@ export const ChatManager: React.FC = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: showAttachMenu ? '#00a884' : '#8696a0',
+                  color: showAttachMenu ? '#00a884' : t.textSecondary,
                   cursor: 'pointer',
                   padding: 4,
                   display: 'flex',
@@ -1795,7 +1814,7 @@ export const ChatManager: React.FC = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: showEmojiPicker ? '#00a884' : '#8696a0',
+                  color: showEmojiPicker ? '#00a884' : t.textSecondary,
                   cursor: 'pointer',
                   padding: 4,
                   display: 'flex',
@@ -1810,12 +1829,14 @@ export const ChatManager: React.FC = () => {
               <div
                 style={{
                   flex: 1,
-                  background: '#2a3942',
+                  background: isLight ? '#ffffff' : '#2a3942',
+                  border: isLight ? `1px solid ${t.border}` : 'none',
                   borderRadius: 24,
                   padding: '0 16px',
                   height: 42,
                   display: 'flex',
                   alignItems: 'center',
+                  boxShadow: isLight ? '0 1px 2px rgba(0,0,0,0.04)' : 'none',
                 }}
               >
                 <input
@@ -1829,7 +1850,7 @@ export const ChatManager: React.FC = () => {
                     background: 'transparent',
                     border: 'none',
                     outline: 'none',
-                    color: '#e9edef',
+                    color: t.inputText,
                     fontSize: 14,
                   }}
                 />
@@ -1877,7 +1898,7 @@ export const ChatManager: React.FC = () => {
                     height: 42,
                     borderRadius: '50%',
                     background: isRecordingAudio ? '#dc2626' : 'transparent',
-                    color: isRecordingAudio ? '#ffffff' : '#8696a0',
+                    color: isRecordingAudio ? '#ffffff' : t.textSecondary,
                     border: 'none',
                     display: 'flex',
                     alignItems: 'center',
@@ -1899,9 +1920,10 @@ export const ChatManager: React.FC = () => {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#8696a0',
+              color: t.textSecondary,
               padding: 24,
               textAlign: 'center',
+              background: t.chatBg,
             }}
           >
             <div
@@ -1909,7 +1931,9 @@ export const ChatManager: React.FC = () => {
                 width: 72,
                 height: 72,
                 borderRadius: '50%',
-                background: '#202c33',
+                background: isLight ? '#ffffff' : '#202c33',
+                border: isLight ? `1px solid ${t.border}` : 'none',
+                boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
                 color: '#00a884',
                 display: 'flex',
                 alignItems: 'center',
@@ -1919,10 +1943,10 @@ export const ChatManager: React.FC = () => {
             >
               <MessageSquare style={{ width: 36, height: 36 }} />
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 700, color: '#e9edef', marginBottom: 6 }}>
+            <h3 style={{ fontSize: 20, fontWeight: 700, color: t.textPrimary, marginBottom: 6 }}>
               WhatsApp Web for Retentio CRM
             </h3>
-            <p style={{ fontSize: 13, maxWidth: 360, lineHeight: 1.5, marginBottom: 20 }}>
+            <p style={{ fontSize: 13, maxWidth: 360, lineHeight: 1.5, marginBottom: 20, color: t.textSecondary }}>
               Send and receive messages with your agency colleagues and client teams with real-time delivery ticks and end-to-end encryption.
             </p>
             <button
@@ -1971,10 +1995,10 @@ export const ChatManager: React.FC = () => {
               alignItems: 'center',
               gap: 6,
               padding: '6px 10px',
-              background: '#202c33',
-              border: '1px solid #2a3942',
+              background: isLight ? '#ffffff' : '#202c33',
+              border: `1px solid ${t.border}`,
               borderRadius: 24,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              boxShadow: isLight ? '0 8px 24px rgba(0,0,0,0.14)' : '0 8px 24px rgba(0,0,0,0.5)',
               alignSelf: 'flex-start',
             }}
           >
@@ -2004,9 +2028,9 @@ export const ChatManager: React.FC = () => {
                 setMessageContextMenu(null);
               }}
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
+                background: isLight ? '#f0f2f5' : 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                color: '#8696a0',
+                color: t.textSecondary,
                 width: 24,
                 height: 24,
                 borderRadius: '50%',
@@ -2021,8 +2045,8 @@ export const ChatManager: React.FC = () => {
                 e.currentTarget.style.color = '#ffffff';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                e.currentTarget.style.color = '#8696a0';
+                e.currentTarget.style.background = isLight ? '#f0f2f5' : 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.color = t.textSecondary;
               }}
               title="More reactions"
             >
@@ -2033,11 +2057,11 @@ export const ChatManager: React.FC = () => {
           {/* Menu Dropdown List (Screenshot 3) */}
           <div
             style={{
-              background: '#202c33',
-              border: '1px solid #2a3942',
+              background: isLight ? '#ffffff' : '#202c33',
+              border: `1px solid ${t.border}`,
               borderRadius: 12,
               padding: '6px 0',
-              boxShadow: '0 16px 36px rgba(0,0,0,0.55)',
+              boxShadow: isLight ? '0 16px 36px rgba(0,0,0,0.14)' : '0 16px 36px rgba(0,0,0,0.55)',
               minWidth: 205,
               overflow: 'hidden',
             }}
@@ -2049,11 +2073,11 @@ export const ChatManager: React.FC = () => {
                 setMessageContextMenu(null);
                 inputRef.current?.focus();
               }}
-              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <Reply style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <Reply style={{ width: 16, height: 16, color: t.textSecondary }} />
               <span>Reply</span>
             </button>
 
@@ -2064,11 +2088,11 @@ export const ChatManager: React.FC = () => {
                 showToast('Message copied to clipboard', 'success');
                 setMessageContextMenu(null);
               }}
-              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <Copy style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <Copy style={{ width: 16, height: 16, color: t.textSecondary }} />
               <span>Copy</span>
             </button>
 
@@ -2078,11 +2102,11 @@ export const ChatManager: React.FC = () => {
                 setForwardingMessage(messageContextMenu.message);
                 setMessageContextMenu(null);
               }}
-              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <Forward style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <Forward style={{ width: 16, height: 16, color: t.textSecondary }} />
               <span>Forward</span>
             </button>
 
@@ -2092,11 +2116,11 @@ export const ChatManager: React.FC = () => {
                 togglePinMessage(messageContextMenu.message.id);
                 setMessageContextMenu(null);
               }}
-              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <Pin style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <Pin style={{ width: 16, height: 16, color: t.textSecondary }} />
               <span>{pinnedMessageIds.has(messageContextMenu.message.id) ? 'Unpin' : 'Pin'}</span>
             </button>
 
@@ -2106,8 +2130,8 @@ export const ChatManager: React.FC = () => {
                 setMetaAiMessage(messageContextMenu.message);
                 setMessageContextMenu(null);
               }}
-              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -2129,11 +2153,11 @@ export const ChatManager: React.FC = () => {
                 toggleStarMessage(messageContextMenu.message.id);
                 setMessageContextMenu(null);
               }}
-              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <Star style={{ width: 16, height: 16, color: starredMessageIds.has(messageContextMenu.message.id) ? '#eab308' : '#8696a0' }} />
+              <Star style={{ width: 16, height: 16, color: starredMessageIds.has(messageContextMenu.message.id) ? '#eab308' : t.textSecondary }} />
               <span>{starredMessageIds.has(messageContextMenu.message.id) ? 'Unstar' : 'Star'}</span>
             </button>
 
@@ -2143,11 +2167,11 @@ export const ChatManager: React.FC = () => {
                 toggleSelectMessage(messageContextMenu.message.id);
                 setMessageContextMenu(null);
               }}
-              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <CheckSquare style={{ width: 16, height: 16, color: '#8696a0' }} />
+              <CheckSquare style={{ width: 16, height: 16, color: t.textSecondary }} />
               <span>Select</span>
             </button>
 
@@ -2168,7 +2192,7 @@ export const ChatManager: React.FC = () => {
                 }
               }}
               style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#f87171', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               <Trash2 style={{ width: 16, height: 16, color: '#f87171' }} />
@@ -2188,11 +2212,11 @@ export const ChatManager: React.FC = () => {
             position: 'fixed',
             top: Math.min(chatContextMenu.y, window.innerHeight - 280),
             left: Math.min(chatContextMenu.x, window.innerWidth - 220),
-            background: '#202c33',
-            border: '1px solid #2a3942',
+            background: isLight ? '#ffffff' : '#202c33',
+            border: `1px solid ${t.border}`,
             borderRadius: 10,
             padding: '6px 0',
-            boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
+            boxShadow: isLight ? '0 12px 36px rgba(0,0,0,0.14)' : '0 12px 36px rgba(0,0,0,0.5)',
             zIndex: 100,
             minWidth: 195,
             overflow: 'hidden',
@@ -2200,31 +2224,31 @@ export const ChatManager: React.FC = () => {
         >
           <button
             onClick={() => togglePinChat(chatContextMenu.convId)}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <Pin style={{ width: 15, height: 15, color: '#8696a0' }} />
+            <Pin style={{ width: 15, height: 15, color: t.textSecondary }} />
             <span>{pinnedConvIds.has(chatContextMenu.convId) ? 'Unpin chat' : 'Pin chat'}</span>
           </button>
 
           <button
             onClick={() => toggleMuteChat(chatContextMenu.convId)}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <VolumeX style={{ width: 15, height: 15, color: '#8696a0' }} />
+            <VolumeX style={{ width: 15, height: 15, color: t.textSecondary }} />
             <span>{mutedConvIds.has(chatContextMenu.convId) ? 'Unmute notifications' : 'Mute notifications'}</span>
           </button>
 
           <button
             onClick={() => toggleFavChat(chatContextMenu.convId)}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <Star style={{ width: 15, height: 15, color: '#8696a0' }} />
+            <Star style={{ width: 15, height: 15, color: t.textSecondary }} />
             <span>{favouriteConvIds.has(chatContextMenu.convId) ? 'Remove from favourites' : 'Add to favourites'}</span>
           </button>
 
@@ -2244,11 +2268,11 @@ export const ChatManager: React.FC = () => {
                 showToast('Chat history cleared', 'success');
               }
             }}
-            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#e9edef', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+            style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: t.textPrimary, fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <MessageSquare style={{ width: 15, height: 15, color: '#8696a0' }} />
+            <MessageSquare style={{ width: 15, height: 15, color: t.textSecondary }} />
             <span>Clear chat</span>
           </button>
 
@@ -2270,7 +2294,7 @@ export const ChatManager: React.FC = () => {
               }
             }}
             style={{ width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', color: '#f87171', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a3942'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
             <Trash2 style={{ width: 15, height: 15, color: '#f87171' }} />
@@ -2290,7 +2314,7 @@ export const ChatManager: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.75)',
+            background: isLight ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.75)',
             backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
@@ -2302,25 +2326,25 @@ export const ChatManager: React.FC = () => {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#111b21',
-              border: '1px solid #222d34',
+              background: isLight ? '#ffffff' : '#111b21',
+              border: `1px solid ${t.border}`,
               borderRadius: 14,
               width: '100%',
               maxWidth: 420,
               overflow: 'hidden',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+              boxShadow: isLight ? '0 20px 50px rgba(0,0,0,0.16)' : '0 20px 50px rgba(0,0,0,0.6)',
             }}
           >
-            <div style={{ padding: '16px 20px', background: '#202c33', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #222d34' }}>
+            <div style={{ padding: '16px 20px', background: t.headerBg, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${t.border}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Forward style={{ width: 18, height: 18, color: '#00a884' }} />
-                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#e9edef' }}>Forward message to...</h4>
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: t.textPrimary }}>Forward message to...</h4>
               </div>
-              <button onClick={() => setForwardingMessage(null)} style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 4 }}>
+              <button onClick={() => setForwardingMessage(null)} style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 4 }}>
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
-            <div style={{ padding: '12px 16px', background: '#0b141a', fontSize: 12.5, color: '#8696a0', borderBottom: '1px solid #222d34', fontStyle: 'italic' }}>
+            <div style={{ padding: '12px 16px', background: isLight ? '#f0f2f5' : '#0b141a', fontSize: 12.5, color: t.textSecondary, borderBottom: `1px solid ${t.border}`, fontStyle: 'italic' }}>
               "{forwardingMessage.text.slice(0, 100)}{forwardingMessage.text.length > 100 ? '...' : ''}"
             </div>
             <div style={{ maxHeight: 320, overflowY: 'auto', padding: '8px 0' }}>
@@ -2338,12 +2362,12 @@ export const ChatManager: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    borderBottom: '1px solid rgba(255,255,255,0.03)',
+                    borderBottom: `1px solid ${t.border}`,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#202c33'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: '#e9edef' }}>{c.title}</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: t.textPrimary }}>{c.title}</span>
                   <span style={{ fontSize: 12, color: '#00a884', fontWeight: 600 }}>Send</span>
                 </div>
               ))}
@@ -2363,7 +2387,7 @@ export const ChatManager: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.75)',
+            background: isLight ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.75)',
             backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
@@ -2375,16 +2399,16 @@ export const ChatManager: React.FC = () => {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#111b21',
-              border: '1px solid #222d34',
+              background: isLight ? '#ffffff' : '#111b21',
+              border: `1px solid ${t.border}`,
               borderRadius: 14,
               width: '100%',
               maxWidth: 460,
               overflow: 'hidden',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+              boxShadow: isLight ? '0 20px 50px rgba(0,0,0,0.16)' : '0 20px 50px rgba(0,0,0,0.6)',
             }}
           >
-            <div style={{ padding: '16px 20px', background: '#202c33', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #222d34' }}>
+            <div style={{ padding: '16px 20px', background: t.headerBg, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${t.border}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
                   <circle cx="12" cy="12" r="9" stroke="url(#metaAiGradModal)" strokeWidth="2.5" />
@@ -2396,22 +2420,22 @@ export const ChatManager: React.FC = () => {
                     </linearGradient>
                   </defs>
                 </svg>
-                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#e9edef' }}>Ask Meta AI</h4>
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: t.textPrimary }}>Ask Meta AI</h4>
               </div>
-              <button onClick={() => setMetaAiMessage(null)} style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 4 }}>
+              <button onClick={() => setMetaAiMessage(null)} style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 4 }}>
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
             <div style={{ padding: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#8696a0', marginBottom: 6, letterSpacing: '0.04em' }}>SELECTED MESSAGE</div>
-              <div style={{ background: '#202c33', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#e9edef', marginBottom: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, marginBottom: 6, letterSpacing: '0.04em' }}>SELECTED MESSAGE</div>
+              <div style={{ background: isLight ? '#f0f2f5' : '#202c33', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: t.textPrimary, marginBottom: 16, border: `1px solid ${t.border}` }}>
                 {metaAiMessage.text}
               </div>
               <div style={{ fontSize: 12, color: '#00a884', fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Sparkles style={{ width: 14, height: 14 }} />
                 <span>META AI ANALYSIS & DRAFT</span>
               </div>
-              <div style={{ fontSize: 13, lineHeight: 1.5, color: '#d1d7db', background: 'rgba(0, 168, 132, 0.08)', border: '1px solid rgba(0, 168, 132, 0.25)', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, lineHeight: 1.5, color: isLight ? '#111b21' : '#d1d7db', background: 'rgba(0, 168, 132, 0.08)', border: '1px solid rgba(0, 168, 132, 0.25)', borderRadius: 8, padding: 12, marginBottom: 16 }}>
                 {metaAiMessage.text.length < 15
                   ? `Message is concise and direct. Suggested reply: "Got it, thank you for confirming!" or "Received, following up on this shortly."`
                   : `Meta AI CRM Insight: This message addresses account progress. Recommended next step: Acknowledge receipt with clear milestone deliverables.`}
@@ -2453,7 +2477,7 @@ export const ChatManager: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.75)',
+            background: isLight ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.75)',
             backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
@@ -2467,10 +2491,10 @@ export const ChatManager: React.FC = () => {
             style={{
               width: '100%',
               maxWidth: 480,
-              background: '#111b21',
-              border: '1px solid #222d34',
+              background: isLight ? '#ffffff' : '#111b21',
+              border: `1px solid ${t.border}`,
               borderRadius: 14,
-              boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+              boxShadow: isLight ? '0 24px 60px rgba(0,0,0,0.18)' : '0 24px 60px rgba(0,0,0,0.6)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -2481,43 +2505,44 @@ export const ChatManager: React.FC = () => {
             <div
               style={{
                 padding: '16px 20px',
-                background: '#202c33',
-                borderBottom: '1px solid #222d34',
+                background: t.headerBg,
+                borderBottom: `1px solid ${t.border}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
               }}
             >
               <div>
-                <h3 style={{ fontSize: 17, fontWeight: 800, color: '#e9edef', margin: 0 }}>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color: t.textPrimary, margin: 0 }}>
                   New WhatsApp Direct Chat
                 </h3>
-                <p style={{ fontSize: 12, color: '#8696a0', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 12, color: t.textSecondary, margin: '4px 0 0' }}>
                   Select an agency colleague or client manager to message.
                 </p>
               </div>
               <button
                 onClick={() => setShowNewChatModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', padding: 4 }}
+                style={{ background: 'transparent', border: 'none', color: t.textSecondary, cursor: 'pointer', padding: 4 }}
               >
                 <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
 
             {/* Search Input */}
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #222d34' }}>
+            <div style={{ padding: '12px 16px', borderBottom: `1px solid ${t.border}` }}>
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  background: '#202c33',
+                  background: isLight ? '#f0f2f5' : '#202c33',
+                  border: isLight ? `1px solid ${t.border}` : 'none',
                   borderRadius: 8,
                   padding: '0 12px',
                   height: 38,
                 }}
               >
-                <Search style={{ width: 15, height: 15, color: '#8696a0' }} />
+                <Search style={{ width: 15, height: 15, color: t.textSecondary }} />
                 <input
                   type="text"
                   placeholder="Search team member by name or role..."
@@ -2529,7 +2554,7 @@ export const ChatManager: React.FC = () => {
                     background: 'transparent',
                     border: 'none',
                     outline: 'none',
-                    color: '#e9edef',
+                    color: t.inputText,
                     fontSize: 13,
                   }}
                 />
@@ -2543,7 +2568,7 @@ export const ChatManager: React.FC = () => {
                   style={{
                     padding: '36px 20px',
                     textAlign: 'center',
-                    color: '#8696a0',
+                    color: t.textSecondary,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -2552,11 +2577,11 @@ export const ChatManager: React.FC = () => {
                 >
                   {teamSearch.trim() ? (
                     <>
-                      <Search style={{ width: 34, height: 34, margin: '0 auto 10px', opacity: 0.35, color: '#8696a0' }} />
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#e9edef', marginBottom: 4 }}>
+                      <Search style={{ width: 34, height: 34, margin: '0 auto 10px', opacity: 0.35, color: t.textSecondary }} />
+                      <div style={{ fontSize: 14, fontWeight: 700, color: t.textPrimary, marginBottom: 4 }}>
                         No colleagues found
                       </div>
-                      <div style={{ fontSize: 12, color: '#8696a0', maxWidth: 280, lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 12, color: t.textSecondary, maxWidth: 280, lineHeight: 1.5 }}>
                         No team members match &ldquo;{teamSearch}&rdquo;. Try another search term.
                       </div>
                     </>
@@ -2576,10 +2601,10 @@ export const ChatManager: React.FC = () => {
                       >
                         <CheckCheck style={{ width: 24, height: 24, color: '#00a884' }} />
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#e9edef', marginBottom: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: t.textPrimary, marginBottom: 4 }}>
                         All colleagues are in your chats
                       </div>
-                      <div style={{ fontSize: 12, color: '#8696a0', maxWidth: 300, lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 12, color: t.textSecondary, maxWidth: 300, lineHeight: 1.5 }}>
                         You already have an active direct conversation with every team member. Select them from the chats list to continue.
                       </div>
                     </>
@@ -2604,7 +2629,7 @@ export const ChatManager: React.FC = () => {
                       textAlign: 'left',
                       transition: 'background 0.12s ease',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#202c33'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = t.itemHover; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -2630,8 +2655,8 @@ export const ChatManager: React.FC = () => {
                         )}
                       </div>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#e9edef' }}>{member.name}</div>
-                        <div style={{ fontSize: 11, color: '#8696a0', marginTop: 2 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: t.textPrimary }}>{member.name}</div>
+                        <div style={{ fontSize: 11, color: t.textSecondary, marginTop: 2 }}>
                           {member.designation || member.role} • {member.email}
                         </div>
                       </div>
