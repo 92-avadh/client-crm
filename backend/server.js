@@ -39,7 +39,7 @@ app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true, preload: true }
 /*    CORS_ORIGINS=https://client-crm.pages.dev,https://app.retentio.co*/
 /* ------------------------------------------------------------------ */
 const DEFAULT_ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
-  ? 'http://localhost:5173,http://localhost:4173,https://client-crm.pages.dev'
+  ? 'http://localhost:5173,http://localhost:4173,https://client-crm.pages.dev,https://client-crm.dhameliyaavadh592.workers.dev,https://*.client-crm.dhameliyaavadh592.workers.dev'
   : 'http://localhost:5173,http://localhost:4173';
 const RAW_ORIGINS = (process.env.CORS_ORIGINS || DEFAULT_ALLOWED_ORIGINS)
   .split(',').map(s => s.trim()).filter(Boolean);
