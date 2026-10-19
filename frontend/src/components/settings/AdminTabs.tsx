@@ -114,7 +114,6 @@ export const HolidaysTab: React.FC<HolidaysProps> = ({
               style={fieldStyle} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Date</label>
             <DatePicker
               value={newHoliday.date}
               onChange={(date) => onNewHolidayChange({ ...newHoliday, date })}

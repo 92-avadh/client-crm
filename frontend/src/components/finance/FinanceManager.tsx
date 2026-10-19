@@ -1196,7 +1196,7 @@ export const FinanceManager: React.FC = () => {
       {showAddExpenseModal && isAdmin && (
         <div style={modalOverlay} onClick={() => setShowAddExpenseModal(false)}>
           <div
-            style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 448, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
+            style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 448, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ padding: 20, borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

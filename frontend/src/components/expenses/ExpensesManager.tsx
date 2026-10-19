@@ -337,10 +337,10 @@ export const ExpensesManager: React.FC = () => {
         />
 
         {dateRangePreset === 'custom' && (
-          <>
-            <DatePicker value={customStartDate} onChange={setCustomStartDate} placeholder="Start date" />
-            <DatePicker value={customEndDate} onChange={setCustomEndDate} placeholder="End date" />
-          </>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <DatePicker value={customStartDate} onChange={setCustomStartDate} placeholder="Start date" className="w-[140px]" />
+            <DatePicker value={customEndDate} onChange={setCustomEndDate} placeholder="End date" className="w-[140px]" />
+          </div>
         )}
 
         <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>

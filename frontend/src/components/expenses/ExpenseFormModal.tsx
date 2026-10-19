@@ -217,7 +217,6 @@ export const ExpenseFormModal: React.FC<Props> = ({
           {/* Date + status */}
           <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label className="form-label">Payment Date *</label>
               <DatePicker
                 value={formData.date}
                 onChange={(date) => onFormChange({ date })}

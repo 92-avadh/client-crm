@@ -4,6 +4,7 @@ import type { Brand, InvoiceItem } from '../../types';
 import { inputFieldStyle, btnPrimary, btnSecondary, modalOverlay, modalCard, modalHeader } from './invoiceStyles';
 import type { InvoiceTotals } from './useInvoiceBuilder';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { DatePicker } from '../ui/DatePicker';
 import { useApp } from '../../context/AppContext';
 
 interface Props {
@@ -72,8 +73,13 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Due Date *</label>
-              <input type="date" required value={dueDate} onChange={(e) => onDueDateChange(e.target.value)} style={inputFieldStyle} />
+              <DatePicker
+                label="Due Date"
+                required
+                value={dueDate}
+                onChange={onDueDateChange}
+                placeholder="Select due date"
+              />
             </div>
           </div>
 

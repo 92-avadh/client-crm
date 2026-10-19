@@ -4,6 +4,7 @@ import type { Invoice, AppSettings } from '../../types';
 import { inputFieldStyle, btnPrimary, btnSecondary, modalOverlay, modalCard } from './invoiceStyles';
 import { useConfirm } from '../../hooks/useConfirm';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import { DatePicker } from '../ui/DatePicker';
 
 const formatCurrency = (n: number, symbol = '₹') => `${symbol}${Number(n || 0).toLocaleString()}`;
 
@@ -167,10 +168,13 @@ export const OfflinePaymentModal: React.FC<OfflineProps> = ({
           </div>
 
           <div>
-            <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Payment Date</label>
-            <input type="date" required value={form.date}
-              onChange={(e) => onFormChange({ ...form, date: e.target.value })}
-              style={inputFieldStyle} />
+            <DatePicker
+              label="Payment Date"
+              required
+              value={form.date}
+              onChange={(date) => onFormChange({ ...form, date })}
+              placeholder="Select date"
+            />
           </div>
 
           <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

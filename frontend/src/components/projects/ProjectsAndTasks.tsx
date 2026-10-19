@@ -485,7 +485,8 @@ export const ProjectsAndTasks: React.FC = () => {
 
                 <div>
                   <DatePicker
-                    label="Due Date *"
+                    label="Due Date"
+                    required
                     value={taskForm.dueDate}
                     onChange={(date) => setTaskForm({ ...taskForm, dueDate: date })}
                     placeholder="Select due date"
@@ -588,12 +589,11 @@ export const ProjectsAndTasks: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Target End Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
+                    label="Target End Date"
                     value={projectForm.endDate}
-                    onChange={(e) => setProjectForm({ ...projectForm, endDate: e.target.value })}
-                    style={inputFieldStyle}
+                    onChange={(date) => setProjectForm({ ...projectForm, endDate: date })}
+                    placeholder="Select end date"
                   />
                 </div>
               </div>

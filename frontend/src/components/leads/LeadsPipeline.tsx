@@ -261,13 +261,12 @@ export const LeadsPipeline: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Follow-up Date</label>
                   <DatePicker
-                                      value={leadForm.followUpDate}
-                                      onChange={(date) => setLeadForm({ ...leadForm, followUpDate: date })}
-                                      label="Follow-up Date"
-                                      placeholder="Select follow-up date"
-                                    />
+                    value={leadForm.followUpDate}
+                    onChange={(date) => setLeadForm({ ...leadForm, followUpDate: date })}
+                    label="Follow-up Date"
+                    placeholder="Select follow-up date"
+                  />
                 </div>
               </div>
 
