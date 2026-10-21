@@ -19,7 +19,8 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeft,
-  X
+  X,
+  Globe
 } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
 
@@ -274,7 +275,17 @@ export const Sidebar: React.FC = () => {
             </div>
           ) : (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <a
+                href="/"
+                title="View Retentio Homepage"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                }}
+              >
                 <div
                   style={{
                     width: 32,
@@ -321,7 +332,7 @@ export const Sidebar: React.FC = () => {
                     Agency Admin
                   </span>
                 </div>
-              </div>
+              </a>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <button
                   onClick={toggleSidebar}
@@ -411,6 +422,34 @@ export const Sidebar: React.FC = () => {
           flexShrink: 0,
         }}
       >
+        <a
+          href="/"
+          title="View Retentio Public Homepage"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: sidebarCollapsed ? 0 : 10,
+            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+            padding: sidebarCollapsed ? '8px 0' : '7px 10px',
+            borderRadius: 8,
+            textDecoration: 'none',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            color: 'var(--text-secondary, #64748b)',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--brand-navy, #0A2540)';
+            e.currentTarget.style.background = 'var(--brand-navy-subtle, #F0F5FA)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-secondary, #64748b)';
+            e.currentTarget.style.background = 'none';
+          }}
+        >
+          <Globe className="w-[16px] h-[16px] shrink-0" strokeWidth={1.8} />
+          {!sidebarCollapsed && <span>View Website</span>}
+        </a>
         {!sidebarCollapsed ? (
           <div
             style={{

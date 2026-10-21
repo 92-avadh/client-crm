@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Mail, Lock, Eye, EyeOff,
   Loader2, AlertCircle, Building2, User,
   CheckCircle2, RefreshCw, ShieldCheck,
-  ArrowRight, Sparkles, Users, Receipt, BarChart3, LogIn,
+  ArrowRight, ArrowLeft, Sparkles, Users, Receipt, BarChart3, LogIn,
   KeyRound
 } from 'lucide-react';
 import { api, setToken } from '../../services/api';
@@ -308,8 +309,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         {/* ── REGISTER FORM ── */}
         <div className={`auth-form-slot slot-left ${isSignIn ? 'slot-inactive-left' : 'slot-active'}`}>
           <div className="form-inner-wrapper">
-            <div className="auth-slot-logo">
-              <img src="/retentio-logo-horizontal.png" alt="Retentio" className="brand-logo-img" />
+            <div className="auth-slot-header-row">
+              <Link to="/" title="Go to Retentio Homepage" className="brand-logo-link">
+                <img src="/retentio-logo-horizontal.png" alt="Retentio" className="brand-logo-img" />
+              </Link>
+              <Link to="/" className="btn-return-home" title="Return to public homepage">
+                <ArrowLeft size={13} />
+                <span>View Homepage</span>
+              </Link>
             </div>
 
             {errMsg && !isSignIn && (
@@ -464,8 +471,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         {/* ── SIGN IN FORM ── */}
         <div className={`auth-form-slot slot-right ${isSignIn ? 'slot-active' : 'slot-inactive-right'}`}>
           <div className="form-inner-wrapper">
-            <div className="auth-slot-logo">
-              <img src="/retentio-logo-horizontal.png" alt="Retentio" className="brand-logo-img" />
+            <div className="auth-slot-header-row">
+              <Link to="/" title="Go to Retentio Homepage" className="brand-logo-link">
+                <img src="/retentio-logo-horizontal.png" alt="Retentio" className="brand-logo-img" />
+              </Link>
+              <Link to="/" className="btn-return-home" title="Return to public homepage">
+                <ArrowLeft size={13} />
+                <span>View Homepage</span>
+              </Link>
             </div>
 
             {errMsg && isSignIn && (
@@ -653,7 +666,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <div className="hero-orb hero-orb-3" />
             <div className="hero-content-inner">
               <div className="hero-brand-header">
-                <img src="/retentio-logo-horizontal.png" alt="Retentio Logo" className="hero-logo-img" />
+                <Link to="/" title="Go to Retentio Homepage" className="hero-logo-link">
+                  <img src="/retentio-logo-horizontal.png" alt="Retentio Logo" className="hero-logo-img" />
+                </Link>
+                <Link to="/" className="hero-home-badge" title="View public website & interactive features">
+                  <ArrowLeft size={12} />
+                  <span>Explore Homepage</span>
+                </Link>
               </div>
               <div className="hero-headline-stack">
                 <div className={`hero-headline-layer ${isSignIn ? 'layer-active' : 'layer-inactive-exit'}`}>
@@ -713,8 +732,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         .slot-inactive-left { opacity: 0; transform: translate3d(-36px, -14px, 0); filter: blur(5px); pointer-events: none; transition-delay: 0s; }
         .slot-inactive-right { opacity: 0; transform: translate3d(36px, 14px, 0); filter: blur(5px); pointer-events: none; transition-delay: 0s; }
         .form-inner-wrapper { width: 100%; max-width: 420px; }
-        .auth-slot-logo { margin-bottom: 24px; }
+        .auth-slot-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 12px; }
+        .brand-logo-link { display: inline-flex; align-items: center; text-decoration: none; transition: opacity 0.15s ease; }
+        .brand-logo-link:hover { opacity: 0.85; }
         .brand-logo-img { height: 34px; width: auto; object-fit: contain; }
+        .btn-return-home { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #475569; text-decoration: none; padding: 6px 14px; border-radius: 9999px; background: #f1f5f9; border: 1px solid #e2e8f0; transition: all 0.2s ease; }
+        .btn-return-home:hover { color: #0a2540; background: #e2e8f0; border-color: #cbd5e1; transform: translateX(-2px); }
+        .hero-brand-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+        .hero-logo-link { display: inline-flex; align-items: center; text-decoration: none; transition: opacity 0.15s ease; }
+        .hero-logo-link:hover { opacity: 0.88; }
+        .hero-home-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); text-decoration: none; padding: 5px 12px; border-radius: 9999px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); transition: all 0.2s ease; }
+        .hero-home-badge:hover { color: #ffffff; background: rgba(255,255,255,0.22); transform: translateX(-2px); }
         .form-header { margin-bottom: 26px; }
         .form-title { font-size: 26px; font-weight: 800; color: #0a0a0a; margin: 0 0 6px; letter-spacing: -0.025em; }
         .form-subtitle { font-size: 13.5px; color: #64748b; margin: 0; line-height: 1.5; }

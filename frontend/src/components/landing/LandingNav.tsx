@@ -97,8 +97,15 @@ export const LandingNav: React.FC<LandingNavProps> = ({
 
         <div className="nav__end">
           <a
+            className="m-link-2 nav__login-link"
+            href={isLoggedIn ? '/dashboard' : '/login'}
+            style={{ fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none', marginRight: 14 }}
+          >
+            {isLoggedIn ? 'Dashboard' : 'Sign In'}
+          </a>
+          <a
             className="m-btn-3 nav__cta"
-            href={isLoggedIn ? '#dashboard' : '#start'}
+            href={isLoggedIn ? '/dashboard' : '#start'}
             onClick={handleCtaClick}
           >
             <span className="m-btn__label">
