@@ -29,6 +29,7 @@ const importSettings = () => import('./components/settings/SettingsManager').the
 const importTeam = () => import('./components/team/TeamManager').then(m => ({ default: m.TeamManager }));
 const importInbox = () => import('./components/inbox/InboxManager').then(m => ({ default: m.InboxManager }));
 const importPortal = () => import('./components/portal/ClientPortal').then(m => ({ default: m.ClientPortal }));
+const importLanding = () => import('./components/landing/LandingPage').then(m => ({ default: m.LandingPage }));
 
 const Dashboard = lazy(importDashboard);
 const ClientsManager = lazy(importClients);
@@ -44,6 +45,7 @@ const SettingsManager = lazy(importSettings);
 const TeamManager = lazy(importTeam);
 const InboxManager = lazy(importInbox);
 const ClientPortal = lazy(importPortal);
+const LandingPage = lazy(importLanding);
 
 export const prefetchRoute = (tab: string) => {
   switch (tab) {
@@ -387,6 +389,22 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   return (
     <Routes>
       <Route
+        path="/"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <LandingPage isLoggedIn={isLoggedIn} />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/home"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <LandingPage isLoggedIn={isLoggedIn} />
+          </Suspense>
+        }
+      />
+      <Route
         path="/portal/:token"
         element={
           <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg-app)' }} />}>
@@ -405,7 +423,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         }
       />
       <Route
-        path="/"
         element={
           isLoggedIn ? (
             <AppProvider initialUser={loginUser} initialUserId={loginUser?.id} onLogout={onLogout}>
@@ -416,7 +433,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           )
         }
       >
-        <Route index element={<Navigate to={ROUTES.dashboard} replace />} />
         <Route path={ROUTES.dashboard} element={<PermissionGate module="dashboard"><Dashboard /></PermissionGate>} />
         <Route path={ROUTES.clients} element={<PermissionGate module="clients"><ClientsManager /></PermissionGate>} />
         <Route path={ROUTES.projects} element={<PermissionGate module="projects"><ProjectsAndTasks /></PermissionGate>} />
@@ -433,7 +449,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path={ROUTES.settings} element={<PermissionGate module="settings"><SettingsManager /></PermissionGate>} />
         <Route path="*" element={<NotFound />} />
       </Route>
-      <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
