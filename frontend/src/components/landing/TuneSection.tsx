@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ScrollReveal from './ScrollReveal';
 
 export const TuneSection: React.FC = () => {
   const [themeDark, setThemeDark] = useState(true);
@@ -17,12 +18,39 @@ export const TuneSection: React.FC = () => {
             <h2 className="m-text-3" id="tune-title" data-8b-motion="captionIn">
               Retention rules, calibrated your way.
             </h2>
-            <p className="m-text-4">
+            <ScrollReveal
+              highlightColor=""
+              mode="scrub"
+              splitBy="words"
+              effect="fade"
+              stagger={0.05}
+              duration={0.8}
+              smoothing={0}
+              baseOpacity={0.1}
+              baseRotation={3}
+              baseOffset={0}
+              enableBlur
+              blurStrength={4}
+              as="p"
+              className="m-text-4"
+            >
               From urgent at-risk client alerts to gentle quarterly check-ins. Retentio adapts to your agency’s client tiers, profit margins, and communication style.
-            </p>
+            </ScrollReveal>
           </div>
 
-          <ul className="tune__settings">
+          <ScrollReveal
+            mode="enter"
+            effect="rise"
+            stagger={0.06}
+            duration={0.6}
+            baseOpacity={0.15}
+            baseRotation={0}
+            baseOffset={18}
+            enableBlur
+            blurStrength={3}
+            as="ul"
+            className="tune__settings"
+          >
             <li className="tune__row">
               <h3 className="m-text-5">Health sensitivity</h3>
               <p className="m-text-8">From conservative triggers to ultra-sensitive early warnings.</p>
@@ -125,7 +153,7 @@ export const TuneSection: React.FC = () => {
                 onClick={() => setSlackSync(!slackSync)}
               ></button>
             </li>
-          </ul>
+          </ScrollReveal>
         </div>
       </div>
     </section>

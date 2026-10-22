@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollReveal from './ScrollReveal';
 
 const StarIcon: React.FC = () => (
   <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -26,10 +27,24 @@ export const TestimonialWall: React.FC = () => {
                 decoding="async"
               />
             </div>
-            <blockquote className="voices__quote m-text-4" data-8b-motion="readAlong">
-              <p>
+            <blockquote className="voices__quote m-text-4">
+              <ScrollReveal
+                highlightColor=""
+                mode="scrub"
+                splitBy="words"
+                effect="fade"
+                stagger={0.05}
+                duration={0.8}
+                smoothing={0}
+                baseOpacity={0.1}
+                baseRotation={3}
+                baseOffset={0}
+                enableBlur
+                blurStrength={4}
+                as="p"
+              >
                 “I’ve watched our client cancellations drop from 18% down to under 2.4% within 90 days. Our account managers don’t lose sleep on Sunday nights wondering if an important client is about to leave.”
-              </p>
+              </ScrollReveal>
             </blockquote>
             <figcaption className="voices__who m-text-6">
               <span className="voices__badge" aria-hidden="true">
@@ -48,7 +63,19 @@ export const TestimonialWall: React.FC = () => {
 
           {/* 2 Review Columns */}
           <div className="voices__cols">
-            <ul className="voices__col">
+            <ScrollReveal
+              mode="enter"
+              effect="rise"
+              stagger={0.08}
+              duration={0.65}
+              baseOpacity={0.15}
+              baseRotation={0}
+              baseOffset={20}
+              enableBlur
+              blurStrength={3}
+              as="ul"
+              className="voices__col"
+            >
               <li className="m-card">
                 <p className="voices__stars" aria-label="5 out of 5 stars">
                   <StarIcon /><StarIcon /><StarIcon /><StarIcon /><StarIcon />
@@ -88,9 +115,21 @@ export const TestimonialWall: React.FC = () => {
                 </p>
                 <p className="m-text-6">Hannah W. · Client Director, Beacon Creative</p>
               </li>
-            </ul>
+            </ScrollReveal>
 
-            <ul className="voices__col">
+            <ScrollReveal
+              mode="enter"
+              effect="rise"
+              stagger={0.08}
+              duration={0.65}
+              baseOpacity={0.15}
+              baseRotation={0}
+              baseOffset={20}
+              enableBlur
+              blurStrength={3}
+              as="ul"
+              className="voices__col"
+            >
               <li className="m-card">
                 <p className="voices__stars" aria-label="5 out of 5 stars">
                   <StarIcon /><StarIcon /><StarIcon /><StarIcon /><StarIcon />
@@ -130,7 +169,7 @@ export const TestimonialWall: React.FC = () => {
                 </p>
                 <p className="m-text-6">Priya N. · Partner, North Star Advisory</p>
               </li>
-            </ul>
+            </ScrollReveal>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollReveal from './ScrollReveal';
 
 export const FaqSection: React.FC = () => {
   return (
@@ -18,7 +19,18 @@ export const FaqSection: React.FC = () => {
           </p>
         </div>
 
-        <div className="faq__list">
+        <ScrollReveal
+          mode="enter"
+          effect="rise"
+          stagger={0.06}
+          duration={0.6}
+          baseOpacity={0.15}
+          baseRotation={0}
+          baseOffset={16}
+          enableBlur
+          blurStrength={2}
+          className="faq__list"
+        >
           <details className="faq__item">
             <summary className="m-text-5">
               How does Retentio spot unhappy clients before they leave?
@@ -98,7 +110,7 @@ export const FaqSection: React.FC = () => {
               You can choose any plan that fits your agency size. If you decide not to continue, your account simply transitions to a read-only archive with zero surprise charges.
             </p>
           </details>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

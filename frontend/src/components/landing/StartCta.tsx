@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollReveal from './ScrollReveal';
 
 interface StartCtaProps {
   onStartTrial?: () => void;
@@ -30,9 +31,24 @@ export const StartCta: React.FC<StartCtaProps> = ({ onStartTrial }) => {
           <h2 className="m-text-3" id="start-title">
             Your next retainer renewal can be the easiest one yet.
           </h2>
-          <p className="m-text-4">
+          <ScrollReveal
+            highlightColor=""
+            mode="scrub"
+            splitBy="words"
+            effect="fade"
+            stagger={0.05}
+            duration={0.8}
+            smoothing={0}
+            baseOpacity={0.1}
+            baseRotation={3}
+            baseOffset={0}
+            enableBlur
+            blurStrength={4}
+            as="p"
+            className="m-text-4"
+          >
             Free 14-day trial. Zero setup fees. Live in five minutes with your current agency stack.
-          </p>
+          </ScrollReveal>
           <div className="start__actions">
             <a
               className="m-btn"

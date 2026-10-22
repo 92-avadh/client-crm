@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollReveal from './ScrollReveal';
 
 interface HeroIntersectProps {
   onStartTrial?: () => void;
@@ -70,10 +71,37 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
             Every client, invoice, and renewal in one workspace.
           </h1>
           <div className="hero__lower">
-            <p className="m-text-4 hero__lead">
+            <ScrollReveal
+              highlightColor=""
+              mode="enter"
+              splitBy="words"
+              effect="fade"
+              stagger={0.03}
+              duration={0.8}
+              smoothing={0}
+              baseOpacity={0.15}
+              baseRotation={2}
+              baseOffset={0}
+              enableBlur
+              blurStrength={3}
+              as="p"
+              className="m-text-4 hero__lead"
+            >
               Retentio is the client CRM built for agencies that bill retainers. Track client happiness, raise GST-ready invoices, collect payments, and spot at-risk accounts before you lose business.
-            </p>
-            <ul className="hero__proof m-text-6">
+            </ScrollReveal>
+            <ScrollReveal
+              mode="enter"
+              effect="rise"
+              stagger={0.1}
+              duration={0.65}
+              baseOpacity={0.15}
+              baseRotation={0}
+              baseOffset={14}
+              enableBlur
+              blurStrength={2}
+              as="ul"
+              className="hero__proof m-text-6"
+            >
               <li>
                 <svg viewBox="0 0 16 16" aria-hidden="true">
                   <path
@@ -95,7 +123,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                 </svg>
                 Client portal, WhatsApp share &amp; Slack alerts
               </li>
-            </ul>
+            </ScrollReveal>
             <div className="hero__actions">
               <a
                 className="m-btn"

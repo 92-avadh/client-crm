@@ -3759,5 +3759,32 @@ html.lenis body {
   .retentio-landing-root #nav .menu__links a::before {
     transition: none !important;
   }
+  .scroll-reveal-item,
+  .scroll-reveal-word,
+  .scroll-reveal-char,
+  .scroll-reveal-line {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
 }
+
+/* ==========================================================================
+   ScrollReveal Text & Card Animations (React Bits Pattern)
+   ========================================================================== */
+.scroll-reveal-container {
+  position: relative;
+}
+
+.scroll-reveal-item {
+  box-sizing: border-box;
+}
+
+.scroll-reveal-word {
+  display: inline-block;
+  transform-origin: 0% 50%;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
 

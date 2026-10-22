@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollReveal from './ScrollReveal';
 
 export const StickyDeck: React.FC = () => {
   return (
@@ -9,9 +10,24 @@ export const StickyDeck: React.FC = () => {
           <h2 className="m-text-3" id="setup-title" data-8b-motion="captionIn">
             Three steps, then retain automatically.
           </h2>
-          <p className="m-text-4">
+          <ScrollReveal
+            highlightColor=""
+            mode="scrub"
+            splitBy="words"
+            effect="fade"
+            stagger={0.05}
+            duration={0.8}
+            smoothing={0}
+            baseOpacity={0.1}
+            baseRotation={3}
+            baseOffset={0}
+            enableBlur
+            blurStrength={4}
+            as="p"
+            className="m-text-4"
+          >
             No months of enterprise onboarding and zero developers required. If your team uses Slack, Stripe, and email, Retentio is live before your next coffee.
-          </p>
+          </ScrollReveal>
         </div>
 
         <ol className="setup__steps">

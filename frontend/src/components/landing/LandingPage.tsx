@@ -100,17 +100,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn = false }) 
       // 0. Section Transition Sheets: Solid architectural stability without translucent bleed or clipping
       // Section content reveals smoothly via coordinated scroll triggers below
 
-      // 1. Coordinated Section Headings & Supporting Lead Copy
+      // 1. Coordinated Section Headings
       const sectionHeads = [
-        { trigger: '#listen .listen__head', targets: '#listen .listen__title, #listen .listen__lead' },
-        { trigger: '#calls .calls__head', targets: '#calls .calls__head h2, #calls .calls__lead, #calls .calls__head .m-btn' },
-        { trigger: '#tune .tune__head', targets: '#tune .tune__head > *' },
-        { trigger: '#rooms .rooms__head', targets: '#rooms .rooms__head > *' },
+        { trigger: '#listen .listen__head', targets: '#listen .listen__title' },
+        { trigger: '#calls .calls__head', targets: '#calls .calls__head h2, #calls .calls__head .m-btn' },
+        { trigger: '#tune .tune__head', targets: '#tune .tune__head h2' },
+        { trigger: '#rooms .rooms__head', targets: '#rooms .rooms__head h2' },
         { trigger: '#voices .voices__inner', targets: '#voices .voices__title' },
-        { trigger: '#setup .setup__head', targets: '#setup .setup__head > *' },
-        { trigger: '#faq .faq__head', targets: '#faq .faq__head > *' },
-        { trigger: '#start .start__copy', targets: '#start .start__copy > *' },
-        { trigger: '#contact .contact__inner', targets: '#contact .contact__info > h2, #contact .contact__info > p' },
+        { trigger: '#setup .setup__head', targets: '#setup .setup__head h2' },
+        { trigger: '#faq .faq__head', targets: '#faq .faq__head h2, #faq .faq__head p' },
+        { trigger: '#start .start__copy', targets: '#start .start__copy h2, #start .start__actions' },
+        { trigger: '#contact .contact__inner', targets: '#contact .contact__info > h2' },
       ];
 
       sectionHeads.forEach((sec, idx) => {
@@ -180,26 +180,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn = false }) 
           }
         );
 
-        if (listenRows.length > 0) {
-          gsap.fromTo(
-            listenRows,
-            { opacity: 0, y: 14 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.55,
-              stagger: 0.12,
-              ease: 'power2.out',
-              scrollTrigger: {
-                id: 'listen:rows',
-                trigger: '#listen .listen__hold',
-                start: 'top 78%',
-                once: true,
-              },
-            }
-          );
-        }
-
         if (listenBars.length > 0) {
           ScrollTrigger.create({
             id: 'listen:waves',
@@ -227,24 +207,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn = false }) 
         const itemsArr = Array.from(callItems) as HTMLElement[];
         const stepsArr = itemsArr.map((_, i) =>
           Array.from(document.querySelectorAll<HTMLElement>(`#calls .phone [data-step="${i + 1}"]`))
-        );
-
-        gsap.fromTo(
-          callItems,
-          { opacity: 0, y: 16 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            stagger: 0.08,
-            ease: 'power2.out',
-            scrollTrigger: {
-              id: 'calls:intro-items',
-              trigger: '#calls .calls__list',
-              start: 'top 82%',
-              once: true,
-            },
-          }
         );
 
         const callTimeline = gsap.timeline({
@@ -301,28 +263,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn = false }) 
       // 4. Tune Section Typography & Calibration Settings
       const tuneRoot = document.getElementById('tune');
       const tuneRows = document.querySelectorAll('#tune .tune__settings .tune__row');
-
-      if (tuneRoot) {
-        if (tuneRows.length > 0) {
-          gsap.fromTo(
-            tuneRows,
-            { opacity: 0, y: 14 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.5,
-              stagger: 0.05,
-              ease: 'power2.out',
-              scrollTrigger: {
-                id: 'tune:rows',
-                trigger: '#tune .tune__settings',
-                start: 'top 82%',
-                once: true,
-              },
-            }
-          );
-        }
-      }
 
       // 5. Rooms Horizontal Scroll Track & Gallery Stagger
       const roomsRoot = document.getElementById('rooms');
@@ -400,25 +340,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn = false }) 
           );
         }
 
-        if (reviewCards.length > 0) {
-          gsap.fromTo(
-            reviewCards,
-            { opacity: 0, y: 18 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.55,
-              stagger: 0.07,
-              ease: 'power2.out',
-              scrollTrigger: {
-                id: 'voices:cards',
-                trigger: '#voices .voices__cols',
-                start: 'top 80%',
-                once: true,
-              },
-            }
-          );
-        }
       }
 
       // 7. Setup Stacking Cards
@@ -467,28 +388,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn = false }) 
         });
       }
 
-      // 8. FAQ Accordion Items Staggered Cascade
-      const faqItems = document.querySelectorAll('#faq .faq__list .faq__item');
-      if (faqItems.length > 0) {
-        gsap.fromTo(
-          faqItems,
-          { opacity: 0, y: 16 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.5,
-            stagger: 0.06,
-            ease: 'power2.out',
-            scrollTrigger: {
-              id: 'faq:items',
-              trigger: '#faq .faq__list',
-              start: 'top 82%',
-              once: true,
-            },
-          }
-        );
-      }
-
       // 9. Start Window Inset Animation (Refined, no extreme scale)
       const startRoot = document.getElementById('start');
       if (startRoot) {
@@ -532,26 +431,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn = false }) 
                 id: 'contact:photo',
                 trigger: '#contact .contact__inner',
                 start: 'top 80%',
-                once: true,
-              },
-            }
-          );
-        }
-
-        if (ways.length > 0) {
-          gsap.fromTo(
-            ways,
-            { opacity: 0, y: 14 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.5,
-              stagger: 0.08,
-              ease: 'power2.out',
-              scrollTrigger: {
-                id: 'contact:ways',
-                trigger: '#contact .contact__ways',
-                start: 'top 82%',
                 once: true,
               },
             }

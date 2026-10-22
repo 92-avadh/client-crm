@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollReveal from './ScrollReveal';
 
 export const RoomsGallery: React.FC = () => {
   return (
@@ -8,9 +9,24 @@ export const RoomsGallery: React.FC = () => {
         <h2 className="m-text-3" id="rooms-title" data-8b-motion="captionIn">
           Retentio across every agency scenario.
         </h2>
-        <p className="m-text-4 rooms__lead" data-8b-motion="readAlong">
+        <ScrollReveal
+          highlightColor=""
+          mode="scrub"
+          splitBy="words"
+          effect="fade"
+          stagger={0.05}
+          duration={0.8}
+          smoothing={0}
+          baseOpacity={0.1}
+          baseRotation={3}
+          baseOffset={0}
+          enableBlur
+          blurStrength={4}
+          as="p"
+          className="m-text-4 rooms__lead"
+        >
           Switch to Retentio and watch your entire firm operate with total clarity — in the executive pitch, during quarterly reviews, or when a high-stakes contract renewal is on the line.
-        </p>
+        </ScrollReveal>
       </div>
 
       <div className="rooms__hold">

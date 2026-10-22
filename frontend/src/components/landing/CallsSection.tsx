@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollReveal from './ScrollReveal';
 
 interface CallsSectionProps {
   onStartTrial?: () => void;
@@ -14,9 +15,24 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
             Account touchpoints that feel effortless again.
           </h2>
           <div className="calls__head-copy">
-            <p className="m-text-4 calls__lead">
+            <ScrollReveal
+              highlightColor=""
+              mode="scrub"
+              splitBy="words"
+              effect="fade"
+              stagger={0.05}
+              duration={0.8}
+              smoothing={0}
+              baseOpacity={0.1}
+              baseRotation={3}
+              baseOffset={0}
+              enableBlur
+              blurStrength={4}
+              as="p"
+              className="m-text-4 calls__lead"
+            >
               Retainer relationships should be calm, proactive, and predictable. With Retentio you see every health indicator, payment cadence, and renewal milestone live as your agency operates.
-            </p>
+            </ScrollReveal>
             <a
               className="m-btn"
               href="#start"
@@ -38,7 +54,19 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
         </div>
 
         <div className="calls__grid">
-          <ul className="calls__list">
+          <ScrollReveal
+            mode="enter"
+            effect="rise"
+            stagger={0.1}
+            duration={0.65}
+            baseOpacity={0.15}
+            baseRotation={0}
+            baseOffset={24}
+            enableBlur
+            blurStrength={3}
+            as="ul"
+            className="calls__list"
+          >
             <li className="calls__item">
               <h3 className="m-text-5">Live health scoring, account by account</h3>
               <p className="m-text-8">
@@ -69,7 +97,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
                 Every client touchpoint, invoice status, and contract addendum is safely preserved in an encrypted audit trail you own forever.
               </p>
             </li>
-          </ul>
+          </ScrollReveal>
 
           <div className="calls__aside">
             <div className="calls__sticky">

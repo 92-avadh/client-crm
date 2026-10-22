@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollReveal from './ScrollReveal';
 
 export const ListenPanel: React.FC = () => {
   const waveHeights = [
@@ -14,9 +15,24 @@ export const ListenPanel: React.FC = () => {
         <h2 className="m-text-3 listen__title" id="listen-title">
           Spot unhappy clients before you lose their business.
         </h2>
-        <p className="m-text-4 listen__lead" data-8b-motion="readAlong">
+        <ScrollReveal
+          highlightColor=""
+          mode="scrub"
+          splitBy="words"
+          effect="fade"
+          stagger={0.05}
+          duration={0.8}
+          smoothing={0}
+          baseOpacity={0.1}
+          baseRotation={3}
+          baseOffset={0}
+          enableBlur
+          blurStrength={4}
+          as="p"
+          className="m-text-4 listen__lead"
+        >
           Retentio scores every client from four real signals — deliverable velocity, payment health, review cadence, and NPS feedback — so you know which accounts need attention and which are ready to grow.
-        </p>
+        </ScrollReveal>
       </div>
 
       <div className="listen__hold">
@@ -36,7 +52,17 @@ export const ListenPanel: React.FC = () => {
             {/* Right Panel: Retentio Flags */}
             <div className="listen__panel listen__panel--read">
               <p className="m-text-6 listen__label">Retentio Flags</p>
-              <div className="listen__track listen__track--read">
+              <ScrollReveal
+                mode="enter"
+                effect="rise"
+                stagger={0.14}
+                duration={0.65}
+                baseOpacity={0.15}
+                baseOffset={18}
+                enableBlur
+                blurStrength={3}
+                className="listen__track listen__track--read"
+              >
                 <div className="listen__row">
                   <p className="m-caption">
                     <span className="m-caption__wave" aria-hidden="true">
@@ -76,7 +102,7 @@ export const ListenPanel: React.FC = () => {
                     </span>
                   </p>
                 </div>
-              </div>
+              </ScrollReveal>
             </div>
           </div>
         </div>

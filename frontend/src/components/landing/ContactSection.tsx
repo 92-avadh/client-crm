@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ScrollReveal from './ScrollReveal';
 
 export const ContactSection: React.FC = () => {
   const [name, setName] = useState('');
@@ -26,11 +27,38 @@ export const ContactSection: React.FC = () => {
           <h2 className="m-text-3" id="contact-title" data-8b-motion="captionIn">
             Talk to an agency strategist, anytime.
           </h2>
-          <p className="m-text-4">
+          <ScrollReveal
+            highlightColor=""
+            mode="scrub"
+            splitBy="words"
+            effect="fade"
+            stagger={0.05}
+            duration={0.8}
+            smoothing={0}
+            baseOpacity={0.1}
+            baseRotation={3}
+            baseOffset={0}
+            enableBlur
+            blurStrength={4}
+            as="p"
+            className="m-text-4"
+          >
             Our solution architects answer by Slack Connect, direct email, or a 1-on-1 retention audit call — Monday to Friday, 8 am to 8 pm Eastern.
-          </p>
+          </ScrollReveal>
 
-          <ul className="contact__ways">
+          <ScrollReveal
+            mode="enter"
+            effect="rise"
+            stagger={0.08}
+            duration={0.65}
+            baseOpacity={0.15}
+            baseRotation={0}
+            baseOffset={14}
+            enableBlur
+            blurStrength={2}
+            as="ul"
+            className="contact__ways"
+          >
             <li>
               <p className="m-text-6">Direct Line</p>
               <a className="m-link m-text-5" href="tel:+18004927383">
@@ -49,7 +77,7 @@ export const ContactSection: React.FC = () => {
                 Book a 15-min audit
               </a>
             </li>
-          </ul>
+          </ScrollReveal>
         </div>
 
         <form className="contact__form" id="contact-form" onSubmit={handleSubmit} noValidate>
