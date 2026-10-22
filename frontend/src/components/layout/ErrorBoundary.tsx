@@ -86,14 +86,33 @@ export class ErrorBoundary extends React.Component<Props, State> {
           style={{
             fontSize: 14,
             color: 'var(--text-secondary)',
-            margin: '0 0 22px',
-            maxWidth: 400,
+            margin: '0 0 16px',
+            maxWidth: 420,
             lineHeight: 1.6,
           }}
         >
           This page ran into an unexpected problem. Reloading usually fixes it —
-          if it keeps happening, please contact support.
+          if it keeps happening, please reset cache or check server status.
         </p>
+
+        {this.state.message && (
+          <div
+            style={{
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: 'var(--danger-text)',
+              background: 'var(--danger-bg)',
+              border: '1px solid var(--danger-border)',
+              borderRadius: 8,
+              padding: '8px 14px',
+              maxWidth: 480,
+              margin: '0 0 20px',
+              wordBreak: 'break-word',
+            }}
+          >
+            {this.state.message}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
