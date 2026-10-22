@@ -28,7 +28,7 @@ export const TestimonialWall: React.FC = () => {
             </div>
             <blockquote className="voices__quote m-text-4" data-8b-motion="readAlong">
               <p>
-                “I’ve watched our client churn drop from 18% down to under 2.4% within 90 days. Our account directors don’t lose sleep on Sunday nights wondering if an anchor client is about to cancel.”
+                “I’ve watched our client cancellations drop from 18% down to under 2.4% within 90 days. Our account managers don’t lose sleep on Sunday nights wondering if an important client is about to leave.”
               </p>
             </blockquote>
             <figcaption className="voices__who m-text-6">
@@ -64,7 +64,7 @@ export const TestimonialWall: React.FC = () => {
                   <StarIcon /><StarIcon /><StarIcon /><StarIcon /><StarIcon />
                 </p>
                 <p className="m-text">
-                  We intercepted a $22,000/mo churn risk before the client even drafted their email. Small tool, massive revenue impact.
+                  We saved a $22,000/mo client relationship before they even thought about leaving. Small tool, massive revenue impact.
                 </p>
                 <p className="m-text-6">Tomás R. · CEO, Elevate Digital</p>
               </li>
@@ -84,7 +84,7 @@ export const TestimonialWall: React.FC = () => {
                   <StarIcon /><StarIcon /><StarIcon /><StarIcon /><StarIcon />
                 </p>
                 <p className="m-text">
-                  No lag, no manual reporting fuss, and the audit trail is right there when leadership reviews renewals.
+                  No lag, no complicated manual reporting, and the complete history is right there when leadership reviews renewals.
                 </p>
                 <p className="m-text-6">Hannah W. · Client Director, Beacon Creative</p>
               </li>

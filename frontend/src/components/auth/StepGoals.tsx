@@ -3,7 +3,7 @@ import { Target, Wallet, Users, BarChart3, MessageSquare, Calendar, Rocket, Spar
 import type { OnboardingData } from './OnboardingWizard';
 
 const GOALS = [
-  { id: 'retention', label: 'Improve client retention', desc: 'AI churn alerts & health scores', icon: Target },
+  { id: 'retention', label: 'Improve client retention', desc: 'At-risk client alerts & health scores', icon: Target },
   { id: 'invoicing', label: 'Streamline invoicing', desc: 'Auto billing & payment reminders', icon: Wallet },
   { id: 'team', label: 'Manage team better', desc: 'Task allocation & workload tracker', icon: Users },
   { id: 'analytics', label: 'Track revenue & profit', desc: 'Real-time profit margins & forecasts', icon: BarChart3 },

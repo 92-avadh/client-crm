@@ -164,13 +164,13 @@ export const RoiSimulator: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
               {/* Major Output: Revenue Saved */}
               <div className="mb-6">
                 <span className="text-xs text-slate-400 block mb-1">
-                  Projected Saved Churn Revenue (Annual)
+                  Projected Saved Client Revenue (Annual)
                 </span>
                 <div className="text-3xl sm:text-4xl md:text-5xl font-black text-emerald-400 font-mono tracking-tight">
                   +${churnSavedAnnual.toLocaleString()}
                 </div>
                 <span className="text-xs text-slate-300 mt-1 block">
-                  Based on eliminating 12% avoidable contract leakage.
+                  Based on preventing 12% avoidable client drop-offs.
                 </span>
               </div>
 

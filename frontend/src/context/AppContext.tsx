@@ -161,6 +161,24 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+export const normalizeBrandsList = (payload: any): Brand[] | null => {
+  if (!payload) return null;
+  const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : null);
+  if (!list) return null;
+  return list.map((b: any) => ({
+    ...b,
+    assignedMemberIds: Array.isArray(b.assignedMemberIds) ? b.assignedMemberIds : [],
+    monthlyFee: typeof b.monthlyFee === 'number' ? b.monthlyFee : (parseFloat(b.monthlyFee || 0) || 0),
+    documents: Array.isArray(b.documents) ? b.documents : [],
+    name: b.name || 'Unnamed Client',
+    ownerName: b.ownerName || '',
+    serviceDetails: b.serviceDetails || '',
+    paymentStatus: b.paymentStatus || 'Paid',
+    status: b.status || 'Active',
+    lastActivityDate: b.lastActivityDate || '',
+  }));
+};
+
 export const AppProvider: React.FC<{
   children: React.ReactNode;
   initialUserId?: string;
@@ -491,11 +509,17 @@ export const AppProvider: React.FC<{
   const [brands, setBrands] = useState<Brand[]>(() => {
     try {
       const userSaved = activeUserId ? localStorage.getItem(`retentio_local_brands_${activeUserId}`) : null;
-      if (userSaved) return JSON.parse(userSaved);
+      if (userSaved) {
+        const normalized = normalizeBrandsList(JSON.parse(userSaved));
+        if (normalized) return normalized;
+      }
       const saved = localStorage.getItem('retentio_local_brands');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const normalized = normalizeBrandsList(JSON.parse(saved));
+        if (normalized) return normalized;
+      }
     } catch {}
-    return isCleanTesting ? [] : DEMO_BRANDS;
+    return isCleanTesting ? [] : (normalizeBrandsList(DEMO_BRANDS) || []);
   });
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>(() => {
@@ -646,9 +670,10 @@ export const AppProvider: React.FC<{
               api.brands.list().catch(() => null),
               api.users.list().catch(() => null),
             ]);
-            if (Array.isArray(brandsData)) {
-              setBrands(brandsData);
-              try { localStorage.setItem('retentio_local_brands', JSON.stringify(brandsData)); } catch {}
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) {
+              setBrands(normalizedBrands);
+              try { localStorage.setItem('retentio_local_brands', JSON.stringify(normalizedBrands)); } catch {}
             }
             if (Array.isArray(usersData) && usersData.length > 0) {
               setAllUsers(usersData);
@@ -672,7 +697,8 @@ export const AppProvider: React.FC<{
               setTasks(tasksData);
               try { localStorage.setItem('retentio_local_tasks', JSON.stringify(tasksData)); } catch {}
             }
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
             break;
           }
@@ -690,7 +716,8 @@ export const AppProvider: React.FC<{
               setPayments(paymentsData);
               try { localStorage.setItem('retentio_local_payments', JSON.stringify(paymentsData)); } catch {}
             }
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             break;
           }
           case 'finance': {
@@ -703,7 +730,8 @@ export const AppProvider: React.FC<{
             if (Array.isArray(paymentsData)) setPayments(paymentsData);
             if (Array.isArray(expensesData)) setExpenses(expensesData);
             if (Array.isArray(invoicesData)) setInvoices(invoicesData);
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             break;
           }
           case 'expenses': {
@@ -716,7 +744,8 @@ export const AppProvider: React.FC<{
               setExpenses(expensesData);
               try { localStorage.setItem('retentio_local_expenses', JSON.stringify(expensesData)); } catch {}
             }
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
             break;
           }
@@ -725,7 +754,8 @@ export const AppProvider: React.FC<{
               api.brands.list().catch(() => null),
               api.settings.get().catch(() => null),
             ]);
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             if (settingsData) setSettings(settingsData);
             break;
           }
@@ -738,7 +768,8 @@ export const AppProvider: React.FC<{
               setLeads(leadsData);
               try { localStorage.setItem('retentio_local_leads', JSON.stringify(leadsData)); } catch {}
             }
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             break;
           }
           case 'meetings': {
@@ -752,7 +783,8 @@ export const AppProvider: React.FC<{
               setMeetings(meetingsData);
               try { localStorage.setItem('retentio_local_meetings', JSON.stringify(meetingsData)); } catch {}
             }
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
             if (Array.isArray(holidaysData)) setHolidays(holidaysData);
             break;
@@ -763,7 +795,8 @@ export const AppProvider: React.FC<{
               api.brands.list().catch(() => null),
             ]);
             if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             break;
           }
           case 'inbox': {
@@ -864,7 +897,8 @@ export const AppProvider: React.FC<{
               api.payments.list().catch(() => null),
               api.expenses.list().catch(() => null),
             ]);
-            if (Array.isArray(brandsData)) setBrands(brandsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands) setBrands(normalizedBrands);
             if (Array.isArray(invoicesData)) setInvoices(invoicesData);
             if (Array.isArray(tasksData)) setTasks(tasksData);
             if (Array.isArray(meetingsData)) setMeetings(meetingsData);
@@ -1108,7 +1142,7 @@ export const AppProvider: React.FC<{
       try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
       return next;
     });
-    showToast('Client marked as Churned', 'info');
+    showToast('Client marked as Lost / Inactive', 'info');
   };
 
   // ---- Projects & Tasks ----
@@ -1542,8 +1576,9 @@ export const AppProvider: React.FC<{
       api.brands.list().catch(() => null),
       api.leads.list().catch(() => null),
     ]);
-    if (newBrands) setBrands(newBrands);
-    if (newLeads) setLeads(newLeads);
+    const normalizedNewBrands = normalizeBrandsList(newBrands);
+    if (normalizedNewBrands) setBrands(normalizedNewBrands);
+    if (Array.isArray(newLeads)) setLeads(newLeads);
     if (result?.brand?.id) setSelectedBrandId(result.brand.id);
     setActiveTab('clients');
     showToast('🎉 Lead converted into an active Client profile!', 'success');

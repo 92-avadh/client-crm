@@ -134,13 +134,17 @@ export const ClientsManager: React.FC = () => {
   const [selectedBrandForAssign, setSelectedBrandForAssign] = useState<Brand | null>(null);
   const [draftMemberIds, setDraftMemberIds] = useState<string[]>([]);
 
-  const visibleBrands = brands.filter((brand) => {
-    if (role === 'team' && !(brand.assignedMemberIds || []).includes(currentUser.id)) return false;
-    const q = search.toLowerCase();
+  const visibleBrands = (Array.isArray(brands) ? brands : []).filter((brand) => {
+    const memberIds = Array.isArray(brand.assignedMemberIds) ? brand.assignedMemberIds : [];
+    if (role === 'team' && !memberIds.includes(currentUser.id)) return false;
+    const q = (search || '').toLowerCase();
+    const brandName = (brand.name || '').toLowerCase();
+    const ownerName = (brand.ownerName || '').toLowerCase();
+    const gst = (brand.gstNumber || '').toLowerCase();
     const matchesSearch =
-      brand.name.toLowerCase().includes(q) ||
-      brand.ownerName.toLowerCase().includes(q) ||
-      (brand.gstNumber ? brand.gstNumber.toLowerCase().includes(q) : false);
+      brandName.includes(q) ||
+      ownerName.includes(q) ||
+      gst.includes(q);
     const matchesStatus = statusFilter === 'All'
       ? true
       : (statusFilter === 'Paid' || statusFilter === 'Pending')
@@ -287,7 +291,7 @@ export const ClientsManager: React.FC = () => {
 
   const openAssignModal = (brand: Brand) => {
     setSelectedBrandForAssign(brand);
-    setDraftMemberIds([...brand.assignedMemberIds]);
+    setDraftMemberIds([...(Array.isArray(brand.assignedMemberIds) ? brand.assignedMemberIds : [])]);
     setShowAssignModal(true);
   };
 
@@ -362,7 +366,7 @@ export const ClientsManager: React.FC = () => {
                   color: statusFilter === status ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
                   border: statusFilter === status ? '1px solid var(--border-focus)' : '1px solid var(--border)',
                 }}>
-                {status}
+                {status === 'Churned' ? 'Lost / Cancelled' : status}
               </button>
             ))}
           </div>

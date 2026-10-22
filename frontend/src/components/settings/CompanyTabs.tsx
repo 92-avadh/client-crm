@@ -51,7 +51,7 @@ const TEAM_SIZES = [
 const GOALS_LIST = [
   { id: 'retain_clients', label: 'Retain High-Value Retainers' },
   { id: 'invoicing_speed', label: 'Faster Automated Invoicing' },
-  { id: 'prevent_churn', label: 'Proactive Churn Prevention' },
+  { id: 'prevent_churn', label: 'Protect & Retain At-Risk Clients' },
   { id: 'client_transparency', label: 'Direct Client Transparency' },
   { id: 'multi_currency', label: 'Multi-Currency Financials' },
 ];
@@ -261,7 +261,7 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
             >
               <option value="balanced">Balanced (Overall Operations)</option>
               <option value="financial">Financial-Heavy (Cash Flow &amp; Collections First)</option>
-              <option value="retention">Retention-First (Client Health &amp; Churn Defense)</option>
+              <option value="retention">Retention-First (Client Health &amp; Relationship Defense)</option>
             </select>
           </div>
         </div>

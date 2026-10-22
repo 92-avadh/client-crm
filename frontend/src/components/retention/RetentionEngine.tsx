@@ -125,14 +125,14 @@ export const RetentionEngine: React.FC = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <h1 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2, margin: 0 }}>
-              Algorithmic Client Health &amp; Retention Engine
+              Client Health &amp; Retention
             </h1>
             <span style={{ padding: '3px 10px', borderRadius: 20, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: 11, fontWeight: 800 }}>
-              v2.0 Algorithmic
+              Live Health Scoring
             </span>
           </div>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6, marginBottom: 0 }}>
-            Computes a dynamic 0–100 health score based on Deliverable Velocity, Payment Punctuality, Strategic Review Cadence, and Client Feedback (NPS).
+            Calculates an automatic 0–100 health score for every client based on task progress, on-time payments, meeting frequency, and client feedback.
           </p>
         </div>
 
@@ -150,7 +150,7 @@ export const RetentionEngine: React.FC = () => {
           {role === 'admin' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 8px' }}>
               <Sliders style={{ width: 14, height: 14, color: 'var(--text-muted)', marginLeft: 4 }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Lapse Trigger:</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Inactivity Alert:</span>
               {[7, 15, 30].map((days) => (
                 <button
                   key={days}
@@ -169,15 +169,15 @@ export const RetentionEngine: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Pillars Algorithmic Formula Indicator */}
+      {/* 4 Pillars Formula Indicator */}
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
             25%
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Deliverable Velocity</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tasks completed vs delayed</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Task Progress</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tasks completed on time</div>
           </div>
         </div>
 
@@ -186,8 +186,8 @@ export const RetentionEngine: React.FC = () => {
             25%
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Payment Punctuality</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Invoices cleared without overdue aging</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>On-Time Payments</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Invoices paid without delays</div>
           </div>
         </div>
 
@@ -196,8 +196,8 @@ export const RetentionEngine: React.FC = () => {
             25%
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Strategic Cadence</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Strategic review held in last 30d</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Meeting Frequency</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Check-in meeting held in last 30 days</div>
           </div>
         </div>
 
@@ -206,8 +206,8 @@ export const RetentionEngine: React.FC = () => {
             25%
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Client NPS Feedback</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>1-click quarterly satisfaction rating</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Client Feedback</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Satisfaction rating from client</div>
           </div>
         </div>
       </div>
@@ -224,7 +224,7 @@ export const RetentionEngine: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span className="metric-label" style={{ color: '#ef4444' }}>🚨 Churn Warnings (&lt;60)</span>
+            <span className="metric-label" style={{ color: '#ef4444' }}>🚨 At-Risk Clients (&lt;60)</span>
             <AlertTriangle style={{ width: 16, height: 16, color: '#ef4444' }} />
           </div>
           <div className="metric-value font-amount count-up" style={{ color: '#ef4444' }}>
@@ -243,13 +243,13 @@ export const RetentionEngine: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span className="metric-label" style={{ color: '#10b981' }}>🌟 Upsell &amp; Expansion (&gt;85)</span>
+            <span className="metric-label" style={{ color: '#10b981' }}>🌟 Ready for Growth (&gt;85)</span>
             <Sparkles style={{ width: 16, height: 16, color: '#10b981' }} />
           </div>
           <div className="metric-value font-amount count-up" style={{ color: '#10b981' }}>
             <AnimatedNumber value={healthData?.overview.expansionCount || 0} />
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Top satisfaction; pitch Q4 scope bump</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>High satisfaction; ready for retainer plan upgrade</div>
         </div>
 
         <div
@@ -295,7 +295,7 @@ export const RetentionEngine: React.FC = () => {
       <div className="no-scrollbar" style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
         {[
           { id: 'all', label: `All Clients (${healthData?.scores.length || 0})` },
-          { id: 'churn', label: `🚨 Churn Warnings (${healthData?.overview.churnRisksCount || 0})` },
+          { id: 'churn', label: `🚨 At-Risk Clients (${healthData?.overview.churnRisksCount || 0})` },
           { id: 'expansion', label: `🌟 Upsell Opportunities (${healthData?.overview.expansionCount || 0})` },
           { id: 'stable', label: `🟡 Stable Accounts (${healthData?.overview.stableCount || 0})` },
         ].map((tab) => (
@@ -368,7 +368,7 @@ export const RetentionEngine: React.FC = () => {
                           color: scoreColor,
                         }}
                       >
-                        {isDanger ? '🚨 Churn Warning' : (isExpansion ? '🌟 Expansion Opportunity' : '🟡 Stable Retainer')}
+                        {isDanger ? '🚨 Needs Attention' : (isExpansion ? '🌟 Ready to Grow' : '🟢 Healthy & Stable')}
                       </span>
                       <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                         {score.currencySymbol}{score.monthlyFee.toLocaleString()}/mo Retainer
@@ -547,7 +547,7 @@ export const RetentionEngine: React.FC = () => {
                         marginLeft: 'auto',
                       }}
                     >
-                      Archive Churned
+                      Archive as Inactive
                     </button>
                   )}
                 </div>

@@ -33,6 +33,17 @@ export class ErrorBoundary extends React.Component<Props, State> {
     window.location.reload();
   };
 
+  private handleClearAndReload = () => {
+    try {
+      localStorage.removeItem('retentio_local_brands');
+      localStorage.removeItem('retentio_local_users');
+      localStorage.removeItem('retentio_local_projects');
+      localStorage.removeItem('retentio_local_tasks');
+    } catch {}
+    this.setState({ hasError: false, message: '' });
+    window.location.reload();
+  };
+
   render() {
     if (!this.state.hasError) return this.props.children;
 
@@ -43,9 +54,12 @@ export class ErrorBoundary extends React.Component<Props, State> {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: '60vh',
+          minHeight: 'calc(100vh - 140px)',
+          width: '100%',
+          flex: 1,
           textAlign: 'center',
           padding: 24,
+          boxSizing: 'border-box',
           color: 'var(--text-primary)',
         }}
       >
@@ -81,26 +95,47 @@ export class ErrorBoundary extends React.Component<Props, State> {
           if it keeps happening, please contact support.
         </p>
 
-        <button
-          onClick={this.handleReload}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '10px 20px',
-            background: 'var(--solid-btn-bg)',
-            color: 'var(--solid-btn-text)',
-            border: 'none',
-            borderRadius: 10,
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          <RefreshCw size={15} />
-          Reload page
-        </button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button
+            onClick={this.handleReload}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 20px',
+              background: 'var(--solid-btn-bg)',
+              color: 'var(--solid-btn-text)',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            <RefreshCw size={15} />
+            Reload page
+          </button>
+          <button
+            onClick={this.handleClearAndReload}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              background: 'var(--bg-subtle)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Reset cache & reload
+          </button>
+        </div>
       </div>
     );
   }

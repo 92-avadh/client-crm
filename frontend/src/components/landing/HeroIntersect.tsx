@@ -12,7 +12,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
           src="/images/hero-executive.jpg"
           width={1600}
           height={1200}
-          alt="Agency executive reviewing client portfolio performance and health analytics"
+          alt="Agency team reviewing client health scores and invoicing in the Retentio dashboard"
           fetchPriority="high"
           decoding="async"
         />
@@ -36,7 +36,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                 <i></i>
                 <i></i>
               </span>
-              <span className="m-caption__text">Client health score: 94% · Up 12pts</span>
+              <span className="m-caption__text">Health score 0–100, scored per client</span>
             </p>
           </div>
           <div className="hero__chip hero__chip--2">
@@ -47,7 +47,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                 <i></i>
                 <i></i>
               </span>
-              <span className="m-caption__text">Acme Corp retainer auto-renewed for Q4</span>
+              <span className="m-caption__text">At-risk accounts flagged before you lose revenue</span>
             </p>
           </div>
           <div className="hero__chip hero__chip--3">
@@ -58,7 +58,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                 <i></i>
                 <i></i>
               </span>
-              <span className="m-caption__text">Risk alert intercepted: Playbook running</span>
+              <span className="m-caption__text">GST invoice raised · payment recorded</span>
             </p>
           </div>
         </div>
@@ -67,11 +67,11 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
       <div className="hero__copy l-wrap">
         <div className="hero__intro">
           <h1 className="m-text-2 hero__title" id="hero-title">
-            Every retainer, secured before it slips.
+            Every client, invoice, and renewal in one workspace.
           </h1>
           <div className="hero__lower">
             <p className="m-text-4 hero__lead">
-              Retentio turns subtle client signals, payment delays, and communication tone into live retention alerts. Keep every high-value client calm, loyal, and compounding.
+              Retentio is the client CRM built for agencies that bill retainers. Track client happiness, raise GST-ready invoices, collect payments, and spot at-risk accounts before you lose business.
             </p>
             <ul className="hero__proof m-text-6">
               <li>
@@ -81,19 +81,19 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                     d="M8 1.2l2 4.3 4.7.5-3.5 3.2 1 4.6L8 11.4l-4.2 2.4 1-4.6L1.3 6l4.7-.5z"
                   />
                 </svg>
-                4.9 from 1,400+ agencies
+                Health scoring across deliverables, payments, reviews &amp; NPS
               </li>
               <li>
                 <svg viewBox="0 0 16 16" aria-hidden="true">
                   <path className="hero__tick" d="M3 8.5l3 3 7-7" />
                 </svg>
-                14-day free trial
+                GST invoicing, recurring billing &amp; Razorpay collection
               </li>
               <li>
                 <svg viewBox="0 0 16 16" aria-hidden="true">
                   <path className="hero__tick" d="M3 8.5l3 3 7-7" />
                 </svg>
-                Zero setup fees
+                Client portal, WhatsApp share &amp; Slack alerts
               </li>
             </ul>
             <div className="hero__actions">
@@ -107,7 +107,9 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                   }
                 }}
               >
-                <span className="m-btn__label">Start Retaining Free</span>
+                <span className="m-btn__label">
+                  Get started with your workspace
+                </span>
                 <span className="m-btn__wave" aria-hidden="true">
                   <i></i>
                   <i></i>

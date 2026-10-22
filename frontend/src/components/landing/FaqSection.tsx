@@ -21,11 +21,11 @@ export const FaqSection: React.FC = () => {
         <div className="faq__list">
           <details className="faq__item">
             <summary className="m-text-5">
-              How does Retentio detect client churn before they tell us?
+              How does Retentio spot unhappy clients before they leave?
               <span className="faq__icon" aria-hidden="true"></span>
             </summary>
             <p className="m-text">
-              Retentio continuously analyzes communication rhythms (response latency spikes), executive attendance shifts in scheduled meetings, and invoice payment cadences. Our predictive model correlates these patterns with historical agency churn data to surface actionable risk warnings weeks before an anchor client sends an offboarding notice.
+              Retentio continuously monitors meeting attendance, response delays, and payment patterns. It connects these signals to give you clear warnings weeks before a client decides to cancel their contract.
             </p>
           </details>
 
@@ -55,7 +55,7 @@ export const FaqSection: React.FC = () => {
               <span className="faq__icon" aria-hidden="true"></span>
             </summary>
             <p className="m-text">
-              Yes. Retentio provides a bespoke client portal hosted on your custom domain with your logo, color palette, and favicon. Clients can review deliverables, approve scopes, access invoices, and chat directly with your team.
+              Yes. Retentio provides a bespoke client portal hosted on your custom domain with your logo, color palette, and favicon. Clients can review deliverables, approve project milestones, access invoices, and chat directly with your team.
             </p>
           </details>
 

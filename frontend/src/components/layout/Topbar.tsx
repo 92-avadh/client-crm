@@ -613,7 +613,7 @@ export const Topbar: React.FC = () => {
             }}
           >
             <AlertTriangle style={{ width: 15, height: 15 }} />
-            {retentionAlerts.length} Churn Risk
+            {retentionAlerts.length} At Risk
           </button>
         )}
 

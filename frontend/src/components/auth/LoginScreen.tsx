@@ -21,7 +21,7 @@ type RegStep = 'details' | 'otp' | 'success';
 type ForgotStep = 'email' | 'code' | 'newpassword' | 'done';
 
 const features = [
-  { icon: <Sparkles size={16} />, title: 'Client Retention Intelligence', desc: 'AI-powered churn prediction & alerts' },
+  { icon: <Sparkles size={16} />, title: 'Client Retention Intelligence', desc: 'Proactive at-risk alerts & relationship health' },
   { icon: <Users size={16} />, title: 'Team & Brand Management', desc: 'Assign roles, track performance' },
   { icon: <Receipt size={16} />, title: 'Invoicing & Payments', desc: 'Automated billing, UPI, net banking' },
   { icon: <BarChart3 size={16} />, title: 'Real-time Analytics', desc: 'Revenue, profit & growth insights' },
@@ -690,7 +690,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     <span className="hero-gradient-text">Retain with confidence.</span>
                   </h1>
                   <p className="hero-description">
-                    Automate onboarding, predict churn, track performance, and deliver client excellence on auto-pilot.
+                    Automate onboarding, protect client relationships, track performance, and deliver client excellence on auto-pilot.
                   </p>
                 </div>
               </div>

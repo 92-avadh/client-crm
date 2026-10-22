@@ -49,7 +49,7 @@ export const RoomsGallery: React.FC = () => {
                     <i></i>
                     <i></i>
                   </span>
-                  <span className="m-caption__text">Scope approved & billing locked?</span>
+                  <span className="m-caption__text">Project plan approved & payment scheduled?</span>
                 </p>
                 <p className="m-caption-2">
                   <span className="m-caption__wave" aria-hidden="true">

@@ -15,10 +15,11 @@ interface Props {
 }
 
 /** Shows how long a client has been inactive. */
-export const InactivityBadge: React.FC<{ lastActivityDate: string }> = ({ lastActivityDate }) => {
-  const days = Math.floor(
-    (Date.now() - new Date(lastActivityDate).getTime()) / (1000 * 60 * 60 * 24)
-  );
+export const InactivityBadge: React.FC<{ lastActivityDate?: string | null }> = ({ lastActivityDate }) => {
+  if (!lastActivityDate) return null;
+  const time = new Date(lastActivityDate).getTime();
+  if (isNaN(time)) return null;
+  const days = Math.floor((Date.now() - time) / (1000 * 60 * 60 * 24));
   if (days < 7) return null;
 
   const urgent = days >= 15;
@@ -55,7 +56,8 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 20 }}>
       {brands.map((brand) => {
-        const assignedUsers = allUsers.filter((u) => brand.assignedMemberIds.includes(u.id));
+        const memberIds = Array.isArray(brand.assignedMemberIds) ? brand.assignedMemberIds : [];
+        const assignedUsers = allUsers.filter((u) => memberIds.includes(u.id));
 
         return (
           <div
@@ -129,7 +131,7 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                   </span>
                   {role !== 'team' && (
                     <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <span>{(brand.currencySymbol || '₹')}{brand.monthlyFee.toLocaleString()}</span>
+                      <span>{(brand.currencySymbol || '₹')}{Number(brand.monthlyFee || 0).toLocaleString()}</span>
                       <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>/mo</span>
                       {brand.currency && brand.currency !== 'INR' && (
                         <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>

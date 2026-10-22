@@ -46,14 +46,14 @@ const STATUS_OPTIONS = [
   { value: 'Active', label: 'Active' },
   { value: 'Inactive', label: 'Inactive' },
   { value: 'Paused', label: 'Paused' },
-  { value: 'Churned', label: 'Churned' },
+  { value: 'Churned', label: 'Lost / Cancelled' },
 ];
 
 export const INITIAL_STATUS_OPTIONS = [
   { value: 'Active', label: 'Active' },
   { value: 'Inactive', label: 'Inactive' },
   { value: 'Paused', label: 'Paused' },
-  { value: 'Churned', label: 'Churned' },
+  { value: 'Churned', label: 'Lost / Cancelled' },
 ];
 
 export const SERVICE_OPTIONS = [
@@ -347,11 +347,11 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
 
             <FieldRow>
               <FormField
-                label="Retainer Hours Quota"
+                label="Monthly Included Hours"
                 value={formData.retainerHours != null ? String(formData.retainerHours) : '40'}
                 type="number"
                 placeholder="40"
-                helper="Monthly quota for anti-scope creep tracking"
+                helper="Included hours per month in this client's retainer"
                 onChange={(v) => onFormChange({ retainerHours: v })}
               />
               <div>
@@ -634,11 +634,11 @@ export const EditClientModal: React.FC<EditProps> = ({
 
             <FieldRow>
               <FormField
-                label="Retainer Hours Quota"
+                label="Monthly Included Hours"
                 value={formData.retainerHours != null ? String(formData.retainerHours) : '40'}
                 type="number"
                 placeholder="40"
-                helper="Monthly quota for anti-scope creep tracking"
+                helper="Included hours per month in this client's retainer"
                 onChange={(v) => onFormChange({ retainerHours: v })}
               />
               <div>

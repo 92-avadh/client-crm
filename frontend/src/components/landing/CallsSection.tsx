@@ -60,7 +60,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
             <li className="calls__item">
               <h3 className="m-text-5">See sentiment drift before renewals arrive</h3>
               <p className="m-text-8">
-                Tone analysis, response latency spikes, and executive sponsor changes are flagged weeks before they turn into cancellation notices.
+                Communication changes, slow response times, and payment delays are flagged weeks before they turn into cancellation notices.
               </p>
             </li>
             <li className="calls__item">
@@ -160,8 +160,8 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
                           <strong>12 mins</strong>
                         </div>
                         <div className="phone__telemetry-pill">
-                          <span>Sentiment</span>
-                          <strong className="text-emerald-500">0.94 (Optimal)</strong>
+                          <span>Satisfaction</span>
+                          <strong className="text-emerald-500">Positive (High)</strong>
                         </div>
                         <div className="phone__telemetry-pill">
                           <span>Renewal</span>
@@ -187,7 +187,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
                       <li className="phone__cue" data-step="4">
                         <span className="phone__cue-icon">✨</span>
                         <span className="phone__cue-text">
-                          AI Pulse · Positive tone detected (0.94) · Upsell opportunity
+                          Client Alert · High satisfaction detected · Ready for plan upgrade
                         </span>
                       </li>
 

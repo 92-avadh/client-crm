@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { PortalData } from '../../types';
+import { PremiumLogoLoader } from '../common/PremiumLogoLoader';
 import {
   CheckCircle,
   Clock,
@@ -87,12 +88,11 @@ export const ClientPortal: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-app, #f9fafb)', color: 'var(--text-secondary, #6b7280)', fontFamily: 'system-ui, sans-serif' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid var(--border, #e5e7eb)', borderTopColor: 'var(--text-primary, #111827)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ fontWeight: 600 }}>Loading secure client portal...</p>
-        </div>
-      </div>
+      <PremiumLogoLoader
+        variant="fullscreen"
+        message="Loading secure client portal..."
+        size="lg"
+      />
     );
   }
 
@@ -182,7 +182,7 @@ export const ClientPortal: React.FC = () => {
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary, #f8fafc)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Clock style={{ width: 18, height: 18, color: '#38bdf8' }} />
-                <span>Monthly Retainer Scope &amp; Hours Tracker</span>
+                <span>Monthly Retainer Hours Tracker</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-muted, #94a3b8)', marginTop: 4 }}>
                 Transparent deliverable hours allocation for the active monthly cycle.
@@ -216,7 +216,7 @@ export const ClientPortal: React.FC = () => {
             <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontSize: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
               <AlertTriangle style={{ width: 16, height: 16, flexShrink: 0 }} />
               <span>
-                <strong>Scope Notice:</strong> Retainer quota reached. Any extra ad-hoc requests outside the contracted scope will be billed under standard overage terms or rolled into next month.
+                <strong>Hours Notice:</strong> Monthly included hours reached. Any extra work requested will be billed as additional hours or scheduled for next month.
               </span>
             </div>
           )}

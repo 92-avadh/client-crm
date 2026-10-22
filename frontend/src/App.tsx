@@ -11,6 +11,7 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { Check, AlertCircle, Info, X } from 'lucide-react';
 import { ROUTES, DEFAULT_ROUTE } from './routes';
 import { getDefaultPermissionsForRole } from './components/team/permissionsConfig';
+import { PremiumLogoLoader } from './components/common/PremiumLogoLoader';
 
 /* ------------------------------------------------------------------ */
 /*  Lazy-loaded route components — code splitting for smaller bundle    */
@@ -142,22 +143,7 @@ const ScrollToTop: React.FC = () => {
 /*  Page loading fallback for lazy components                          */
 /* ------------------------------------------------------------------ */
 const PageLoader: React.FC = () => (
-  <div style={{
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '40vh',
-  }}>
-    <div style={{
-      width: 32,
-      height: 32,
-      border: '3px solid var(--border, #e2e2e2)',
-      borderTopColor: 'var(--text-primary, #0a0a0a)',
-      borderRadius: '50%',
-      animation: 'spin 0.8s linear infinite',
-    }} />
-    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-  </div>
+  <PremiumLogoLoader variant="page" message="Loading..." size="md" />
 );
 
 /* ------------------------------------------------------------------ */
@@ -166,23 +152,7 @@ const PageLoader: React.FC = () => (
 /*  redirect away from the URL the user actually opened.               */
 /* ------------------------------------------------------------------ */
 const Splash: React.FC = () => (
-  <div style={{
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    background: 'var(--bg, #ffffff)',
-  }}>
-    <div style={{
-      width: 34,
-      height: 34,
-      border: '3px solid var(--border, #e2e2e2)',
-      borderTopColor: 'var(--text-primary, #0a0a0a)',
-      borderRadius: '50%',
-      animation: 'spin 0.8s linear infinite',
-    }} />
-    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-  </div>
+  <PremiumLogoLoader variant="fullscreen" message="Restoring secure workspace..." size="lg" />
 );
 
 /* ------------------------------------------------------------------ */

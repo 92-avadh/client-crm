@@ -609,7 +609,7 @@ export const Dashboard: React.FC = () => {
               }}
             >
               <Target size={13} className="text-emerald-600" />
-              <span>Workspace Focus: Client Retention & Churn Intelligence Priority</span>
+              <span>Workspace Focus: Client Retention & Account Health Priority</span>
             </div>
           )}
 

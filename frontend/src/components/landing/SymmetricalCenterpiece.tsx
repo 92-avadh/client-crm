@@ -14,7 +14,7 @@ export const SymmetricalCenterpiece: React.FC = () => {
           Benefits of Using Retentio
         </h2>
         <p className="editorial-lead">
-          Discover how our platform transforms client retention. From automated retainer invoicing to predictive sentiment alerts, it is your agency's unfair retention advantage.
+          Discover how our platform transforms client retention. From automated retainer invoicing to early client health alerts, it is your agency's unfair retention advantage.
         </p>
       </div>
 
@@ -28,10 +28,10 @@ export const SymmetricalCenterpiece: React.FC = () => {
               <ShieldAlert size={26} />
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-[var(--land-text-title)] mb-3">
-              AI Churn Sentinel
+              Client Health Monitor
             </h3>
             <p className="text-sm sm:text-base text-[var(--land-text-body)] leading-relaxed mb-4">
-              Real-time sentiment monitoring across client communications. Detects disengagement and meeting latency 60 days before contract expiry.
+              Continuous activity monitoring across client projects. Detects inactive clients and delayed responses weeks before renewal dates.
             </p>
             <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
               <Check size={16} />
@@ -90,14 +90,14 @@ export const SymmetricalCenterpiece: React.FC = () => {
               <Activity size={26} />
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-[var(--land-text-title)] mb-3">
-              Predictive Telemetry
+              Automated Health Scoring
             </h3>
             <p className="text-sm sm:text-base text-[var(--land-text-body)] leading-relaxed mb-4">
-              Synthesizes invoice payment speed, milestone approval velocity, and meeting cadence into a single 0-100 retention score for every account.
+              Combines payment speed, milestone approvals, and communication frequency into a single clear 0–100 health score for every client.
             </p>
             <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
               <Check size={16} />
-              <span>Real-Time Churn Triage</span>
+              <span>Live Account Health Alerts</span>
             </div>
           </div>
         </div>

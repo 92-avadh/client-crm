@@ -96,20 +96,22 @@ export const LandingNav: React.FC<LandingNavProps> = ({
         </div>
 
         <div className="nav__end">
-          <a
-            className="m-link-2 nav__login-link"
-            href={isLoggedIn ? '/dashboard' : '/login'}
-            style={{ fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none', marginRight: 14 }}
-          >
-            {isLoggedIn ? 'Dashboard' : 'Sign In'}
-          </a>
+          {!isLoggedIn && (
+            <a
+              className="m-link-2 nav__login-link"
+              href="/login"
+              style={{ fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none', marginRight: 14 }}
+            >
+              Sign In
+            </a>
+          )}
           <a
             className="m-btn-3 nav__cta"
             href={isLoggedIn ? '/dashboard' : '#start'}
             onClick={handleCtaClick}
           >
             <span className="m-btn__label">
-              {isLoggedIn ? 'Open Workspace' : 'Get Retentio Free'}
+              {isLoggedIn ? 'Dashboard' : 'Get Retentio Free'}
             </span>
             <span className="m-btn__wave" aria-hidden="true">
               <i></i>
@@ -201,7 +203,7 @@ export const LandingNav: React.FC<LandingNavProps> = ({
           }}
         >
           <span className="m-btn__label">
-            {isLoggedIn ? 'Open Workspace' : 'Get Retentio Free'}
+            {isLoggedIn ? 'Dashboard' : 'Get Retentio Free'}
           </span>
           <span className="m-btn__wave" aria-hidden="true">
             <i></i>

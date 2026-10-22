@@ -18,7 +18,7 @@ export const TuneSection: React.FC = () => {
               Retention rules, calibrated your way.
             </h2>
             <p className="m-text-4">
-              From aggressive churn alarms to gentle quarterly check-ins. Retentio adapts to your agency’s client tiers, profit margins, and communication culture.
+              From urgent at-risk client alerts to gentle quarterly check-ins. Retentio adapts to your agency’s client tiers, profit margins, and communication style.
             </p>
           </div>
 

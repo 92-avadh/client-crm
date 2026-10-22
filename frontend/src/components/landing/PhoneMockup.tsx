@@ -109,15 +109,15 @@ export const PhoneMockup: React.FC<PhoneMockupProps> = ({
             <div className="flex flex-col h-full justify-between">
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2">
-                  Client Sentiment Radar
+                  Client Health Overview
                 </div>
                 <div className="p-4 rounded-2xl bg-[var(--land-forest-base)] text-white text-center mb-4">
                   <div className="text-3xl font-black mb-1">98 / 100</div>
-                  <div className="text-xs text-emerald-300 font-semibold">Satisfaction Index: Optimal</div>
+                  <div className="text-xs text-emerald-300 font-semibold">Health Score: Excellent</div>
                 </div>
                 <div className="space-y-2">
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-black/5 text-xs flex justify-between">
-                    <span className="text-slate-700">Response Latency</span>
+                    <span className="text-slate-700">Response Time</span>
                     <strong className="text-emerald-700">24 mins (Fast)</strong>
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-black/5 text-xs flex justify-between">

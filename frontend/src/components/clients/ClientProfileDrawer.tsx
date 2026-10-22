@@ -102,7 +102,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
     try {
       await api.brands.logHours(brand.id, h);
       await updateBrand(brand.id, { usedHours: usedHours + h });
-      showToast(`Successfully logged ${h} hours against retainer scope!`, 'success');
+      showToast(`Successfully logged ${h} hours for this client!`, 'success');
       setShowLogHoursModal(false);
       setHoursToAdd('');
     } catch (err: any) {
@@ -239,12 +239,12 @@ export const ClientProfileDrawer: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Retainer Scope & Anti-Scope Creep Tracker Banner */}
+        {/* Retainer Hours Limit Tracker Banner */}
         <div style={{ padding: '14px 24px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Clock style={{ width: 14, height: 14, color: isOverScope ? '#ef4444' : '#38bdf8' }} />
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Monthly Retainer Scope Quota</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Monthly Included Retainer Hours</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: isOverScope ? '#ef4444' : (isNearScope ? '#f59e0b' : 'var(--text-secondary)') }}>
@@ -287,7 +287,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
             <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'var(--danger-bg)', color: 'var(--danger-text)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0 }} />
               <span>
-                <strong>Anti-Scope Creep Alert:</strong> Retainer limit exceeded ({usedHours}/{retainerHours} hrs). Bill extra deliverable hours as overage or prompt client for retainer expansion.
+                <strong>Hours Limit Reached:</strong> Monthly agreement hours exceeded ({usedHours}/{retainerHours} hrs). You can invoice extra hours separately or increase their monthly retainer plan.
               </span>
             </div>
           )}
@@ -394,7 +394,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
               )}
 
               <div style={cardStyle}>
-                <span style={capStyle}>Contracted Deliverable Scope</span>
+                <span style={capStyle}>Agreed Services &amp; Deliverables</span>
                 <p style={{ color: 'var(--text-primary)', marginTop: 6, lineHeight: 1.5 }}>{brand.serviceDetails}</p>
               </div>
             </div>
@@ -648,7 +648,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, maxWidth: 420, width: '100%' }}>
             <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>Log Retainer Hours</h3>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 16px' }}>
-              Record billable deliverable time for {brand.name} against their monthly scope quota of {retainerHours} hrs.
+              Record billable time for {brand.name} against their monthly included {retainerHours} hrs.
             </p>
             <form onSubmit={handleLogHoursSubmit}>
               <div style={{ marginBottom: 16 }}>
@@ -668,7 +668,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                 <button type="button" onClick={() => setShowLogHoursModal(false)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-raised)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
                 <button type="submit" disabled={loggingHours} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', cursor: 'pointer', fontWeight: 700 }}>
-                  {loggingHours ? 'Saving...' : 'Add to Retainer Scope'}
+                  {loggingHours ? 'Saving...' : 'Log Hours'}
                 </button>
               </div>
             </form>

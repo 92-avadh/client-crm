@@ -5,7 +5,7 @@ const METRICS = [
   {
     value: '500k+',
     label: 'Client Deliverables Managed',
-    description: 'Tracked across global client accounts with zero forgotten scope items.',
+    description: 'Tracked across global client accounts with zero forgotten tasks or missed deliverables.',
     icon: Zap,
   },
   {
@@ -17,7 +17,7 @@ const METRICS = [
   {
     value: '$84M+',
     label: 'Client ARR Protected',
-    description: 'Safeguarded against avoidable churn via proactive early-warning radar.',
+    description: 'Safeguarded against avoidable client loss with proactive early warnings.',
     icon: DollarSign,
   },
   {

@@ -50,8 +50,8 @@ export const AVAILABLE_PERMISSIONS: ModulePermission[] = [
   },
   {
     id: 'retention',
-    label: 'Retention Engine',
-    description: 'Client inactivity monitoring, health alerts & churn protection',
+    label: 'Client Health & Retention',
+    description: 'Client inactivity monitoring, health alerts & account protection',
     category: 'core',
   },
   {

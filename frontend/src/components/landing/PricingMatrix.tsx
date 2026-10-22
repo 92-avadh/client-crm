@@ -25,10 +25,10 @@ export const PricingMatrix: React.FC<{ onSelectPlan?: (tier: string) => void }> 
       name: 'Agency Pro',
       kicker: 'High-Growth Agencies',
       price: billingCycle === 'annual' ? 99 : 129,
-      description: 'Everything an ambitious creative or engineering agency needs to eliminate churn and scale retainers.',
+      description: 'Everything an ambitious creative or engineering agency needs to keep clients happy and grow monthly retainers.',
       features: [
         'Unlimited Active Retainer Clients',
-        'AI Churn Sentinel (60-day early warnings)',
+        'Early Warning System (60-day at-risk alerts)',
         'White-Label Portal on Custom Domain',
         'Team Capacity & Sprint Milestone Tracking',
         'Automated Late Payment Sequences',

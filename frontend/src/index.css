@@ -595,6 +595,10 @@ button {
 /* ─── App Main Layout Spacing (Guaranteed padding on mobile & desktop) ─── */
 .app-main {
   width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: calc(100vh - 64px) !important;
   padding: 16px !important;
   box-sizing: border-box !important;
 }

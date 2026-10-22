@@ -12,19 +12,19 @@ export const ListenPanel: React.FC = () => {
       <div className="listen__sheet m-band" aria-hidden="true"></div>
       <div className="listen__head l-wrap">
         <h2 className="m-text-3 listen__title" id="listen-title">
-          Nothing lost between a client signal and your revenue.
+          Spot unhappy clients before you lose their business.
         </h2>
         <p className="m-text-4 listen__lead" data-8b-motion="readAlong">
-          No silent churn, no dropped balls, no blindsided cancellations. Retentio monitors engagement rhythms, payment cadences, and communication sentiment so agency teams protect every recurring dollar before risks escalate.
+          Retentio scores every client from four real signals — deliverable velocity, payment health, review cadence, and NPS feedback — so you know which accounts need attention and which are ready to grow.
         </p>
       </div>
 
       <div className="listen__hold">
         <div className="listen__stage l-wrap">
           <div className="listen__panels">
-            {/* Left Panel: Churn Signals */}
+            {/* Left Panel: What the score is built from */}
             <div className="listen__panel listen__panel--voice">
-              <p className="m-text-6 listen__label">Client Signals</p>
+              <p className="m-text-6 listen__label">Health Score Inputs</p>
               <div className="listen__wave" aria-hidden="true">
                 {waveHeights.map((h, i) => (
                   <i key={i} style={{ '--h': h } as React.CSSProperties}></i>
@@ -33,9 +33,9 @@ export const ListenPanel: React.FC = () => {
               <div className="listen__track listen__track--voice" aria-hidden="true"></div>
             </div>
 
-            {/* Right Panel: Retentio Intercepts */}
+            {/* Right Panel: Retentio Flags */}
             <div className="listen__panel listen__panel--read">
-              <p className="m-text-6 listen__label">Retentio Acts</p>
+              <p className="m-text-6 listen__label">Retentio Flags</p>
               <div className="listen__track listen__track--read">
                 <div className="listen__row">
                   <p className="m-caption">
@@ -46,7 +46,7 @@ export const ListenPanel: React.FC = () => {
                       <i></i>
                     </span>
                     <span className="m-caption__text">
-                      Warning: Client response latency exceeded 48h on Acme Corp
+                      At-risk alert: health score 42 · 31 days since last activity
                     </span>
                   </p>
                 </div>
@@ -59,7 +59,7 @@ export const ListenPanel: React.FC = () => {
                       <i></i>
                     </span>
                     <span className="m-caption__text">
-                      AI Alert: Negative sentiment detected in project feedback
+                      Invoice INV-2026-041 is 6 days overdue · payment health dropping
                     </span>
                   </p>
                 </div>
@@ -72,7 +72,7 @@ export const ListenPanel: React.FC = () => {
                       <i></i>
                     </span>
                     <span className="m-caption__text">
-                      Playbook running: Executive check-in call queued for 2:00 PM
+                      Growth opportunity: score 91 · NPS 10 · ready for plan upgrade
                     </span>
                   </p>
                 </div>

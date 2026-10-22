@@ -89,7 +89,7 @@ export const Sidebar: React.FC = () => {
       badge: unpaidCount || undefined, badgeVariant: 'warn' },
     { id: 'finance',      label: role === 'admin' ? 'Finance' : 'Payments', icon: Wallet, roles: ['admin','hr'] },
     { id: 'expenses',     label: 'Expenses',            icon: CreditCard,      roles: ['admin','hr'] },
-    { id: 'retention',    label: 'Retention Engine',    icon: Activity,        roles: ['admin','hr','team'],
+    { id: 'retention',    label: 'Client Health',       icon: Activity,        roles: ['admin','hr','team'],
       badge: retentionAlerts.length > 0 ? retentionAlerts.length : undefined, badgeVariant: 'danger' },
     { id: 'team',         label: 'Team',                icon: Users,           roles: ['admin','hr'] },
     { id: 'inbox',        label: 'Inbox',               icon: Inbox,           roles: ['admin','hr','team','brand'],

@@ -195,18 +195,50 @@
     color: color-mix(in srgb, currentColor 76%, transparent);
   }
 
-  /* Button styles */
-  .retentio-landing-root .m-btn {
+  /* Button styles — Vibrand CSS Button Hover Style 01 (Capsule Curtain Shutter) */
+  .retentio-landing-root .m-btn,
+  .retentio-landing-root .m-btn-3,
+  .retentio-landing-root .nav__cta {
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-height: 3.25rem;
     padding: 0.875rem 1.625rem;
-    border: 0;
+    border: 1px solid var(--color-4);
+    border-radius: var(--radius-3);
+    background: var(--color-1);
+    color: var(--color-1);
+    font-family: var(--font-1);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+    text-decoration: none;
+    box-shadow: 0 0.5rem 1.5rem -0.25rem color-mix(in srgb, var(--color-4) 25%, transparent);
+    cursor: pointer;
+    overflow: hidden;
+    isolation: isolate;
+    transition: box-shadow 0.32s cubic-bezier(0.7, 0, 0.2, 1),
+                border-color 0.32s cubic-bezier(0.7, 0, 0.2, 1);
+  }
+  .retentio-landing-root .m-btn-3,
+  .retentio-landing-root .nav__cta {
+    min-height: 2.75rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+  .retentio-landing-root .m-btn-2 {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.25rem;
+    padding: 0.875rem 1.625rem;
+    border: 1px solid var(--color-1);
     border-radius: var(--radius-3);
     background: var(--color-4);
-    color: var(--color-1);
+    color: var(--color-2);
     font-family: var(--font-1);
     font-size: 1rem;
     font-weight: 600;
@@ -216,61 +248,63 @@
     box-shadow: var(--shadow-2);
     cursor: pointer;
     overflow: hidden;
+    isolation: isolate;
+    transition: box-shadow 0.32s cubic-bezier(0.7, 0, 0.2, 1),
+                border-color 0.32s cubic-bezier(0.7, 0, 0.2, 1);
   }
-  .retentio-landing-root .m-btn-2 {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 3.25rem;
-    padding: 0.875rem 1.625rem;
-    border: 0;
-    border-radius: var(--radius-3);
-    background: var(--color-1);
-    color: var(--color-2);
-    font-family: var(--font-1);
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: -0.005em;
-    text-decoration: none;
-    cursor: pointer;
-  }
-  .retentio-landing-root .m-btn-3 {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 2.75rem;
-    padding: 0.625rem 1.25rem;
-    border: 0;
-    border-radius: var(--radius-3);
+
+  /* Vibrand Shutter Curtain Layer (::before) */
+  .retentio-landing-root .m-btn::before,
+  .retentio-landing-root .m-btn-3::before,
+  .retentio-landing-root .nav__cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     background: var(--color-4);
-    color: var(--color-1);
-    font-family: var(--font-1);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: -0.005em;
-    text-decoration: none;
-    cursor: pointer;
+    z-index: 1;
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.32s cubic-bezier(0.7, 0, 0.2, 1);
+    pointer-events: none;
   }
+
+  .retentio-landing-root .m-btn-2::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--color-1);
+    z-index: 1;
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.32s cubic-bezier(0.7, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
   .retentio-landing-root .m-btn__label {
+    position: relative;
+    z-index: 2;
     display: block;
-    transition: translate 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+    color: inherit;
+    transition: transform 0.32s cubic-bezier(0.7, 0, 0.2, 1),
+                color 0.32s cubic-bezier(0.7, 0, 0.2, 1);
   }
+
   .retentio-landing-root .m-btn__wave {
     position: absolute;
     top: 50%;
     right: 1rem;
+    z-index: 2;
     display: flex;
     align-items: center;
     gap: 0.125rem;
     height: 0.875rem;
     translate: 0 -50%;
     opacity: 0;
-    transition: opacity 0.3s;
+    color: inherit;
+    pointer-events: none;
+    transition: opacity 0.3s ease, color 0.32s cubic-bezier(0.7, 0, 0.2, 1);
   }
+
   .retentio-landing-root .m-btn__wave i {
     width: 0.1875rem;
     height: 100%;
@@ -279,17 +313,64 @@
     transform-origin: 50% 50%;
     scale: 1 0.35;
   }
+
   @media (hover: hover) {
+    /* Shutter Wipe UP on Hover */
+    .retentio-landing-root .m-btn:hover::before,
+    .retentio-landing-root .m-btn:focus-visible::before,
+    .retentio-landing-root .m-btn-3:hover::before,
+    .retentio-landing-root .m-btn-3:focus-visible::before,
+    .retentio-landing-root .nav__cta:hover::before,
+    .retentio-landing-root .nav__cta:focus-visible::before,
+    .retentio-landing-root .m-btn-2:hover::before,
+    .retentio-landing-root .m-btn-2:focus-visible::before {
+      transform: translate3d(0, -100%, 0);
+    }
+
+    /* Glow and color transition on hover */
+    .retentio-landing-root .m-btn:hover,
+    .retentio-landing-root .m-btn:focus-visible,
+    .retentio-landing-root .m-btn-3:hover,
+    .retentio-landing-root .m-btn-3:focus-visible,
+    .retentio-landing-root .nav__cta:hover,
+    .retentio-landing-root .nav__cta:focus-visible {
+      border-color: var(--color-4);
+      box-shadow: 0 0.75rem 2.25rem -0.25rem color-mix(in srgb, var(--color-4) 55%, transparent),
+                  0 0 0 1px var(--color-4);
+    }
     .retentio-landing-root .m-btn:hover .m-btn__label,
+    .retentio-landing-root .m-btn:focus-visible .m-btn__label,
+    .retentio-landing-root .m-btn-3:hover .m-btn__label,
+    .retentio-landing-root .m-btn-3:focus-visible .m-btn__label,
+    .retentio-landing-root .nav__cta:hover .m-btn__label,
+    .retentio-landing-root .nav__cta:focus-visible .m-btn__label {
+      color: var(--color-4);
+      transform: translate3d(-0.45rem, 0, 0);
+    }
+
+    .retentio-landing-root .m-btn-2:hover,
+    .retentio-landing-root .m-btn-2:focus-visible {
+      box-shadow: 0 0.75rem 2.25rem -0.25rem color-mix(in srgb, var(--color-4) 50%, transparent);
+    }
     .retentio-landing-root .m-btn-2:hover .m-btn__label,
-    .retentio-landing-root .m-btn-3:hover .m-btn__label {
-      translate: -0.5rem 0;
+    .retentio-landing-root .m-btn-2:focus-visible .m-btn__label {
+      color: var(--color-1);
+      transform: translate3d(-0.45rem, 0, 0);
     }
+
     .retentio-landing-root .m-btn:hover .m-btn__wave,
-    .retentio-landing-root .m-btn-2:hover .m-btn__wave,
-    .retentio-landing-root .m-btn-3:hover .m-btn__wave {
+    .retentio-landing-root .m-btn:focus-visible .m-btn__wave,
+    .retentio-landing-root .m-btn-3:hover .m-btn__wave,
+    .retentio-landing-root .m-btn-3:focus-visible .m-btn__wave {
       opacity: 1;
+      color: var(--color-4);
     }
+    .retentio-landing-root .m-btn-2:hover .m-btn__wave,
+    .retentio-landing-root .m-btn-2:focus-visible .m-btn__wave {
+      opacity: 1;
+      color: var(--color-1);
+    }
+
     .retentio-landing-root .m-btn:hover .m-btn__wave i,
     .retentio-landing-root .m-btn-2:hover .m-btn__wave i,
     .retentio-landing-root .m-btn-3:hover .m-btn__wave i {
@@ -306,41 +387,39 @@
       animation-delay: -0.6s;
     }
   }
+
   @keyframes m-btn-talk {
     from { scale: 1 0.3; }
     to { scale: 1 1; }
   }
 
-  /* Link underline animation */
+  /* Clickable Link Animations — Clean Color Accent (No Underline) */
   .retentio-landing-root .m-link {
     color: inherit;
     font-weight: 600;
     text-decoration: none;
-    background-image: linear-gradient(currentColor, currentColor),
-      linear-gradient(color-mix(in srgb, currentColor 34%, transparent), color-mix(in srgb, currentColor 34%, transparent));
-    background-repeat: no-repeat;
-    background-position: 0 100%, 0 100%;
-    background-size: 0% 0.125rem, 100% 0.0625rem;
-    padding-bottom: 0.125rem;
-    transition: background-size 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+    background: none;
+    transition: color 0.25s cubic-bezier(0.7, 0, 0.2, 1), opacity 0.25s ease;
   }
   .retentio-landing-root .m-link-2 {
     color: inherit;
     font-weight: 500;
     text-decoration: none;
-    background-image: linear-gradient(currentColor, currentColor);
-    background-repeat: no-repeat;
-    background-position: 0 100%;
-    background-size: 0% 0.125rem;
-    padding-bottom: 0.125rem;
-    transition: background-size 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+    background: none;
+    transition: color 0.25s cubic-bezier(0.7, 0, 0.2, 1), opacity 0.25s ease;
   }
   @media (hover: hover) {
-    .retentio-landing-root .m-link:hover {
-      background-size: 100% 0.125rem, 100% 0.0625rem;
+    .retentio-landing-root .m-link:hover,
+    .retentio-landing-root .m-link:focus-visible {
+      color: var(--color-4);
+      text-decoration: none;
+      background: none;
     }
-    .retentio-landing-root .m-link-2:hover {
-      background-size: 100% 0.125rem;
+    .retentio-landing-root .m-link-2:hover,
+    .retentio-landing-root .m-link-2:focus-visible {
+      color: var(--color-4);
+      text-decoration: none;
+      background: none;
     }
   }
 
@@ -699,19 +778,60 @@
   padding: 0;
 }
 
-.retentio-landing-root #nav .nav__links a {
-  display: inline-block;
+.retentio-landing-root #nav .nav__links a,
+.retentio-landing-root #nav .nav__login-link,
+.retentio-landing-root #nav .menu__links a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
-  padding: 0.3125rem clamp(0.125rem, 0.25vw, 0.25rem);
+  padding: 0.35rem clamp(0.5rem, 0.75vw, 0.85rem);
+  border-radius: var(--radius-3, 9999px);
+  overflow: hidden;
   font-size: clamp(0.8125rem, 0.85vw, 0.9375rem);
   font-weight: 500;
   line-height: 1.2;
   color: color-mix(in srgb, var(--color-2, #faf5f0) 88%, transparent);
-  transition: color 0.2s ease, opacity 0.2s ease;
+  text-decoration: none;
+  isolation: isolate;
+  transition: color 0.32s cubic-bezier(0.7, 0, 0.2, 1);
 }
 
-.retentio-landing-root #nav .nav__links a:hover {
-  color: var(--color-2, #faf5f0);
+.retentio-landing-root #nav .nav__links a::before,
+.retentio-landing-root #nav .nav__login-link::before,
+.retentio-landing-root #nav .menu__links a::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--color-4, #33cc7a) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-4, #33cc7a) 36%, transparent);
+  box-sizing: border-box;
+  transform: translate3d(0, 102%, 0);
+  transition: transform 0.32s cubic-bezier(0.7, 0, 0.2, 1);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .retentio-landing-root #nav .nav__links a:hover::before,
+  .retentio-landing-root #nav .nav__links a:focus-visible::before,
+  .retentio-landing-root #nav .nav__login-link:hover::before,
+  .retentio-landing-root #nav .nav__login-link:focus-visible::before,
+  .retentio-landing-root #nav .menu__links a:hover::before,
+  .retentio-landing-root #nav .menu__links a:focus-visible::before {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .retentio-landing-root #nav .nav__links a:hover,
+  .retentio-landing-root #nav .nav__links a:focus-visible,
+  .retentio-landing-root #nav .nav__login-link:hover,
+  .retentio-landing-root #nav .nav__login-link:focus-visible,
+  .retentio-landing-root #nav .menu__links a:hover,
+  .retentio-landing-root #nav .menu__links a:focus-visible {
+    color: var(--color-4, #33cc7a);
+  }
 }
 
 .retentio-landing-root #nav .nav__end {
@@ -3192,10 +3312,29 @@ html.lenis body {
     display: grid;
     gap: 0.75rem;
   }
-  .retentio-landing-root #footer .footer__col .m-link-2 {
+  .retentio-landing-root #footer a,
+  .retentio-landing-root #footer .m-link,
+  .retentio-landing-root #footer .m-link-2 {
     color: var(--color-2);
     font-size: 0.9375rem;
     line-height: 1.5;
+    text-decoration: none !important;
+    background: none !important;
+    background-image: none !important;
+    transition: color 0.25s cubic-bezier(0.7, 0, 0.2, 1), opacity 0.25s ease;
+  }
+  @media (hover: hover) {
+    .retentio-landing-root #footer a:hover,
+    .retentio-landing-root #footer a:focus-visible,
+    .retentio-landing-root #footer .m-link:hover,
+    .retentio-landing-root #footer .m-link:focus-visible,
+    .retentio-landing-root #footer .m-link-2:hover,
+    .retentio-landing-root #footer .m-link-2:focus-visible {
+      color: var(--color-4) !important;
+      text-decoration: none !important;
+      background: none !important;
+      background-image: none !important;
+    }
   }
   .retentio-landing-root #footer .footer__brand {
     display: flex;
@@ -3342,3 +3481,16 @@ html.lenis body {
     }
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .retentio-landing-root .m-btn::before,
+  .retentio-landing-root .m-btn-2::before,
+  .retentio-landing-root .m-btn-3::before,
+  .retentio-landing-root .nav__cta::before,
+  .retentio-landing-root #nav .nav__links a::before,
+  .retentio-landing-root #nav .nav__login-link::before,
+  .retentio-landing-root #nav .menu__links a::before {
+    transition: none !important;
+  }
+}
+

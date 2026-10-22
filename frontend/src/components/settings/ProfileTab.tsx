@@ -665,7 +665,7 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
         {isAdmin && (
           <div style={{ padding: '18px 20px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Inactivity Churn Threshold (Days)</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Inactivity Warning Threshold (Days)</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                 Trigger warning when no chat, task, meeting or payment is detected for this many days:
               </div>
@@ -710,7 +710,7 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
                 <span>External Notification Webhooks (Slack & Discord)</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                Receive automated alerts for recurring invoices, overdue retainers, and churn warnings directly in your agency channels.
+                Receive automated alerts for recurring invoices, overdue retainers, and at-risk client warnings directly in your agency channels.
               </div>
             </div>
 
