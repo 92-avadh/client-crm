@@ -313,9 +313,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <Link to="/" title="Go to Retentio Homepage" className="brand-logo-link">
                 <img src="/retentio-logo-horizontal.png" alt="Retentio" className="brand-logo-img" />
               </Link>
-              <Link to="/" className="btn-return-home" title="Return to public homepage">
+              <Link to="/" className="btn-return-home" title="Back to home">
                 <ArrowLeft size={13} />
-                <span>View Homepage</span>
+                <span>Back to Home</span>
               </Link>
             </div>
 
@@ -475,9 +475,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <Link to="/" title="Go to Retentio Homepage" className="brand-logo-link">
                 <img src="/retentio-logo-horizontal.png" alt="Retentio" className="brand-logo-img" />
               </Link>
-              <Link to="/" className="btn-return-home" title="Return to public homepage">
+              <Link to="/" className="btn-return-home" title="Back to home">
                 <ArrowLeft size={13} />
-                <span>View Homepage</span>
+                <span>Back to Home</span>
               </Link>
             </div>
 
@@ -666,13 +666,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <div className="hero-orb hero-orb-3" />
             <div className="hero-content-inner">
               <div className="hero-brand-header">
-                <Link to="/" title="Go to Retentio Homepage" className="hero-logo-link">
+                <div className="hero-logo-link">
                   <img src="/retentio-logo-horizontal.png" alt="Retentio Logo" className="hero-logo-img" />
-                </Link>
-                <Link to="/" className="hero-home-badge" title="View public website & interactive features">
-                  <ArrowLeft size={12} />
-                  <span>Explore Homepage</span>
-                </Link>
+                </div>
               </div>
               <div className="hero-headline-stack">
                 <div className={`hero-headline-layer ${isSignIn ? 'layer-active' : 'layer-inactive-exit'}`}>

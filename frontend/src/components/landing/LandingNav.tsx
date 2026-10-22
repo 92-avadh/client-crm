@@ -13,6 +13,11 @@ export const LandingNav: React.FC<LandingNavProps> = ({
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Guarantee responsive & accurate auth status across prop and persistent storage
+  const isAuth = isLoggedIn || (typeof window !== 'undefined' && Boolean(
+    localStorage.getItem('retentio_user') && (localStorage.getItem('retentio_token') || localStorage.getItem('retentio_bypass_mode') === 'true')
+  ));
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && menuOpen) {
@@ -32,11 +37,15 @@ export const LandingNav: React.FC<LandingNavProps> = ({
   };
 
   const handleCtaClick = (e: React.MouseEvent) => {
-    if (isLoggedIn && onNavigateWorkspace) {
-      e.preventDefault();
-      onNavigateWorkspace();
-    } else if (onNavigateLogin) {
-      // Allow navigation or jump to start
+    e.preventDefault();
+    if (isAuth) {
+      if (onNavigateWorkspace) {
+        onNavigateWorkspace();
+      }
+    } else {
+      if (onNavigateLogin) {
+        onNavigateLogin();
+      }
     }
   };
 
@@ -96,22 +105,13 @@ export const LandingNav: React.FC<LandingNavProps> = ({
         </div>
 
         <div className="nav__end">
-          {!isLoggedIn && (
-            <a
-              className="m-link-2 nav__login-link"
-              href="/login"
-              style={{ fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none', marginRight: 14 }}
-            >
-              Sign In
-            </a>
-          )}
           <a
             className="m-btn-3 nav__cta"
-            href={isLoggedIn ? '/dashboard' : '#start'}
+            href={isAuth ? '/dashboard' : '/login'}
             onClick={handleCtaClick}
           >
             <span className="m-btn__label">
-              {isLoggedIn ? 'Dashboard' : 'Get Retentio Free'}
+              {isAuth ? 'Dashboard' : 'Sign In / Sign Up'}
             </span>
             <span className="m-btn__wave" aria-hidden="true">
               <i></i>
@@ -196,14 +196,14 @@ export const LandingNav: React.FC<LandingNavProps> = ({
         </ul>
         <a
           className="m-btn"
-          href={isLoggedIn ? '#dashboard' : '#start'}
+          href={isAuth ? '/dashboard' : '/login'}
           onClick={(e) => {
             closeMenu();
             handleCtaClick(e);
           }}
         >
           <span className="m-btn__label">
-            {isLoggedIn ? 'Dashboard' : 'Get Retentio Free'}
+            {isAuth ? 'Dashboard' : 'Sign In / Sign Up'}
           </span>
           <span className="m-btn__wave" aria-hidden="true">
             <i></i>

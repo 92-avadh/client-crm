@@ -23,9 +23,13 @@ interface LandingPageProps {
   isLoggedIn?: boolean;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn = false }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedInProp = false }) => {
   const navigate = useNavigate();
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const isLoggedIn = isLoggedInProp || (typeof window !== 'undefined' && Boolean(
+    localStorage.getItem('retentio_user') && (localStorage.getItem('retentio_token') || localStorage.getItem('retentio_bypass_mode') === 'true')
+  ));
 
   useEffect(() => {
     const prevTitle = document.title;
