@@ -68,7 +68,7 @@ export const InvoiceTable: React.FC<Props> = ({
               </td>
             </tr>
           ) : (
-            invoices.map((inv) => {
+            (invoices || []).filter(Boolean).map((inv) => {
               const isSelected = Boolean(selectedIds?.has(inv.id));
               return (
                 <tr
@@ -114,7 +114,7 @@ export const InvoiceTable: React.FC<Props> = ({
                     </div>
                   </td>
                   <td>
-                    <span style={getStatusBadgeStyle(inv.status)}>{inv.status}</span>
+                    <span style={getStatusBadgeStyle(inv?.status || 'Draft')}>{inv?.status || 'Draft'}</span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
@@ -123,7 +123,7 @@ export const InvoiceTable: React.FC<Props> = ({
                         <Eye style={{ width: 14, height: 14 }} />
                       </button>
 
-                      {inv.status !== 'Paid' && (
+                      {inv?.status !== 'Paid' && (
                         <button onClick={() => onPay(inv)} title="Simulate Razorpay Payment"
                           style={{ padding: '4px 8px', borderRadius: 8, background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
                           <CreditCard style={{ width: 12, height: 12 }} />

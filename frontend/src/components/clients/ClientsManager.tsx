@@ -134,9 +134,9 @@ export const ClientsManager: React.FC = () => {
   const [selectedBrandForAssign, setSelectedBrandForAssign] = useState<Brand | null>(null);
   const [draftMemberIds, setDraftMemberIds] = useState<string[]>([]);
 
-  const visibleBrands = (Array.isArray(brands) ? brands : []).filter((brand) => {
+  const visibleBrands = (Array.isArray(brands) ? brands : []).filter(Boolean).filter((brand) => {
     const memberIds = Array.isArray(brand.assignedMemberIds) ? brand.assignedMemberIds : [];
-    if (role === 'team' && !memberIds.includes(currentUser.id)) return false;
+    if (role === 'team' && currentUser && !memberIds.includes(currentUser.id)) return false;
     const q = (search || '').toLowerCase();
     const brandName = (brand.name || '').toLowerCase();
     const ownerName = (brand.ownerName || '').toLowerCase();
@@ -149,11 +149,11 @@ export const ClientsManager: React.FC = () => {
       ? true
       : (statusFilter === 'Paid' || statusFilter === 'Pending')
         ? (brand.paymentStatus || 'Paid') === statusFilter
-        : brand.status === statusFilter;
+        : (brand?.status || 'Active') === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const selectedBrand = brands.find((b) => b.id === selectedBrandId) || null;
+  const selectedBrand = (brands || []).find((b) => b && b.id === selectedBrandId) || null;
 
   /* ── Handlers ────────────────────────────────────────────────── */
 

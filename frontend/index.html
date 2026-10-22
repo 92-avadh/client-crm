@@ -27,25 +27,10 @@
   </head>
   <body class="bg-dark text-slate" style="background-color: #090d16; margin: 0; min-height: 100vh;">
     <div id="root">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#090d16;color:#ffffff;font-family:system-ui,-apple-system,sans-serif;position:relative;overflow:hidden;">
-        <div style="position:absolute;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,0.25) 0%,rgba(16,185,129,0.1) 40%,transparent 70%);filter:blur(40px);"></div>
-        <div style="position:relative;width:124px;height:124px;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;inset:0;border-radius:50%;padding:2px;background:conic-gradient(from 0deg,transparent 0%,rgba(34,197,94,0.1) 40%,#4ade80 85%,#ffffff 98%,transparent 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#fff calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#fff calc(100% - 2px));animation:retentioSpin 1.6s linear infinite;filter:drop-shadow(0 0 8px rgba(74,222,128,0.6));"></div>
-          <div style="position:relative;width:76px;height:76px;border-radius:20px;display:flex;align-items:center;justify-content:center;animation:retentioFloat 2.6s ease-in-out infinite;filter:drop-shadow(0 8px 20px rgba(34,197,94,0.5));">
-            <img src="/retentio-icon.png" alt="Retentio Logo" style="width:100%;height:100%;object-fit:contain;" />
-          </div>
-        </div>
-        <div style="margin-top:24px;display:flex;flex-direction:column;align-items:center;z-index:2;">
-          <div style="font-size:13px;font-weight:800;letter-spacing:0.35em;text-transform:uppercase;background:linear-gradient(135deg,#fff,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">RETENTIO</div>
-          <div style="font-size:12px;color:#94a3b8;margin-top:6px;">Loading workspace...</div>
-          <div style="width:140px;height:3px;border-radius:99px;background:rgba(255,255,255,0.08);margin-top:14px;position:relative;overflow:hidden;">
-            <div style="position:absolute;top:0;bottom:0;width:45%;border-radius:99px;background:linear-gradient(90deg,transparent,#22c55e,#4ade80,#fff);animation:retentioBar 1.5s cubic-bezier(0.4,0,0.2,1) infinite;"></div>
-          </div>
-        </div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100svh;width:100%;margin:0;background-color:#090d16;">
+        <div style="width:38px;height:38px;border:3px solid rgba(255,255,255,0.12);border-top-color:#22c55e;border-radius:50%;animation:retentioSpin 0.75s linear infinite;box-sizing:border-box;"></div>
         <style>
-          @keyframes retentioSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-          @keyframes retentioFloat { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.05); } }
-          @keyframes retentioBar { 0% { left: -45%; } 100% { left: 100%; } }
+          @keyframes retentioSpin { to { transform: rotate(360deg); } }
         </style>
       </div>
     </div>

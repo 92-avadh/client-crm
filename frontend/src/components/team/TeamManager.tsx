@@ -68,16 +68,16 @@ export const TeamManager: React.FC = () => {
   const [form, setForm] = useState<AddMemberForm>(emptyForm);
   const [editForm, setEditForm] = useState<EditMemberForm>(emptyEditForm);
 
-  const teamUsers = (allUsers as User[]).filter((u) => u.role !== 'brand');
+  const teamUsers = ((allUsers as User[]) || []).filter(Boolean).filter((u: User) => u.role !== 'brand');
   const totalMembers = teamUsers.length;
-  const activeMembers = teamUsers.filter((u: any) => u.isActive !== false && u.status !== 'inactive').length;
-  const adminHrCount = teamUsers.filter((u) => u.role === 'admin' || u.role === 'hr').length;
-  const teamMemberCount = teamUsers.filter((u) => u.role !== 'admin' && u.role !== 'hr').length;
+  const activeMembers = teamUsers.filter((u: any) => u && u.isActive !== false && u?.status !== 'inactive').length;
+  const adminHrCount = teamUsers.filter((u: User) => u && (u.role === 'admin' || u.role === 'hr')).length;
+  const teamMemberCount = teamUsers.filter((u: User) => u && u.role !== 'admin' && u.role !== 'hr').length;
 
   const getBrandCount = (userId: string) =>
-    brands.filter((b: any) => b.assignedMemberIds?.includes(userId)).length;
+    (brands || []).filter(Boolean).filter((b: any) => b.assignedMemberIds?.includes(userId)).length;
   const getAssignedBrands = (userId: string) =>
-    brands.filter((b: any) => b.assignedMemberIds?.includes(userId));
+    (brands || []).filter(Boolean).filter((b: any) => b.assignedMemberIds?.includes(userId));
 
   /* ── Photo handling ──────────────────────────────────────────── */
 

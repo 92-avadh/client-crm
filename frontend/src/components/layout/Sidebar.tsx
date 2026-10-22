@@ -56,14 +56,14 @@ export const Sidebar: React.FC = () => {
   const role = currentUser.role;
 
   const unpaidCount = useMemo(
-    () => invoices.filter(i => i.status === 'Sent' || i.status === 'Overdue').length,
+    () => (invoices || []).filter(i => i && (i.status === 'Sent' || i.status === 'Overdue')).length,
     [invoices]
   );
   const pendingTaskCount = useMemo(
-    () => tasks.filter(
-      t => (role === 'admin' || role === 'hr' || t.assigneeId === currentUser.id) && t.status !== 'Completed'
+    () => (tasks || []).filter(
+      t => t && (role === 'admin' || role === 'hr' || (currentUser && t.assigneeId === currentUser.id)) && t.status !== 'Completed'
     ).length,
-    [tasks, role, currentUser.id]
+    [tasks, role, currentUser?.id]
   );
   const unreadChat = useMemo(
     () => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0),

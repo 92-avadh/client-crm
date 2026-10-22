@@ -165,17 +165,17 @@ export const normalizeBrandsList = (payload: any): Brand[] | null => {
   if (!payload) return null;
   const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : null);
   if (!list) return null;
-  return list.map((b: any) => ({
+  return list.filter(Boolean).map((b: any) => ({
     ...b,
-    assignedMemberIds: Array.isArray(b.assignedMemberIds) ? b.assignedMemberIds : [],
-    monthlyFee: typeof b.monthlyFee === 'number' ? b.monthlyFee : (parseFloat(b.monthlyFee || 0) || 0),
-    documents: Array.isArray(b.documents) ? b.documents : [],
-    name: b.name || 'Unnamed Client',
-    ownerName: b.ownerName || '',
-    serviceDetails: b.serviceDetails || '',
-    paymentStatus: b.paymentStatus || 'Paid',
-    status: b.status || 'Active',
-    lastActivityDate: b.lastActivityDate || '',
+    assignedMemberIds: Array.isArray(b?.assignedMemberIds) ? b.assignedMemberIds : [],
+    monthlyFee: typeof b?.monthlyFee === 'number' ? b.monthlyFee : (parseFloat(b?.monthlyFee || 0) || 0),
+    documents: Array.isArray(b?.documents) ? b.documents : [],
+    name: b?.name || 'Unnamed Client',
+    ownerName: b?.ownerName || '',
+    serviceDetails: b?.serviceDetails || '',
+    paymentStatus: b?.paymentStatus || 'Paid',
+    status: b?.status || 'Active',
+    lastActivityDate: b?.lastActivityDate || '',
   }));
 };
 
@@ -506,6 +506,17 @@ export const AppProvider: React.FC<{
 
   const isCleanTesting = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_clean_testing') === 'true';
 
+  const safeParseArray = <T,>(raw: string | null): T[] | null => {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is T => item != null && typeof item === 'object');
+      }
+    } catch {}
+    return null;
+  };
+
   const [brands, setBrands] = useState<Brand[]>(() => {
     try {
       const userSaved = activeUserId ? localStorage.getItem(`retentio_local_brands_${activeUserId}`) : null;
@@ -524,67 +535,67 @@ export const AppProvider: React.FC<{
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
-      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_projects_${activeUserId}`) : null;
-      if (userSaved) return JSON.parse(userSaved);
-      const saved = localStorage.getItem('retentio_local_projects');
-      if (saved) return JSON.parse(saved);
+      const userSaved = activeUserId ? safeParseArray<Project>(localStorage.getItem(`retentio_local_projects_${activeUserId}`)) : null;
+      if (userSaved) return userSaved;
+      const saved = safeParseArray<Project>(localStorage.getItem('retentio_local_projects'));
+      if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : DEMO_PROJECTS;
+    return isCleanTesting ? [] : (DEMO_PROJECTS || []).filter(Boolean);
   });
   const [tasks, setTasks] = useState<Task[]>(() => {
     try {
-      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_tasks_${activeUserId}`) : null;
-      if (userSaved) return JSON.parse(userSaved);
-      const saved = localStorage.getItem('retentio_local_tasks');
-      if (saved) return JSON.parse(saved);
+      const userSaved = activeUserId ? safeParseArray<Task>(localStorage.getItem(`retentio_local_tasks_${activeUserId}`)) : null;
+      if (userSaved) return userSaved;
+      const saved = safeParseArray<Task>(localStorage.getItem('retentio_local_tasks'));
+      if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : DEMO_TASKS;
+    return isCleanTesting ? [] : (DEMO_TASKS || []).filter(Boolean);
   });
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
     try {
-      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_invoices_${activeUserId}`) : null;
-      if (userSaved) return JSON.parse(userSaved);
-      const saved = localStorage.getItem('retentio_local_invoices');
-      if (saved) return JSON.parse(saved);
+      const userSaved = activeUserId ? safeParseArray<Invoice>(localStorage.getItem(`retentio_local_invoices_${activeUserId}`)) : null;
+      if (userSaved) return userSaved;
+      const saved = safeParseArray<Invoice>(localStorage.getItem('retentio_local_invoices'));
+      if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : DEMO_INVOICES;
+    return isCleanTesting ? [] : (DEMO_INVOICES || []).filter(Boolean);
   });
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [payments, setPayments] = useState<Payment[]>(() => {
     try {
-      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_payments_${activeUserId}`) : null;
-      if (userSaved) return JSON.parse(userSaved);
-      const saved = localStorage.getItem('retentio_local_payments');
-      if (saved) return JSON.parse(saved);
+      const userSaved = activeUserId ? safeParseArray<Payment>(localStorage.getItem(`retentio_local_payments_${activeUserId}`)) : null;
+      if (userSaved) return userSaved;
+      const saved = safeParseArray<Payment>(localStorage.getItem('retentio_local_payments'));
+      if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : DEMO_PAYMENTS;
+    return isCleanTesting ? [] : (DEMO_PAYMENTS || []).filter(Boolean);
   });
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     try {
-      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_expenses_${activeUserId}`) : null;
-      if (userSaved) return JSON.parse(userSaved);
-      const saved = localStorage.getItem('retentio_local_expenses');
-      if (saved) return JSON.parse(saved);
+      const userSaved = activeUserId ? safeParseArray<Expense>(localStorage.getItem(`retentio_local_expenses_${activeUserId}`)) : null;
+      if (userSaved) return userSaved;
+      const saved = safeParseArray<Expense>(localStorage.getItem('retentio_local_expenses'));
+      if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : DEMO_EXPENSES;
+    return isCleanTesting ? [] : (DEMO_EXPENSES || []).filter(Boolean);
   });
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
     try {
-      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_meetings_${activeUserId}`) : null;
-      if (userSaved) return JSON.parse(userSaved);
-      const saved = localStorage.getItem('retentio_local_meetings');
-      if (saved) return JSON.parse(saved);
+      const userSaved = activeUserId ? safeParseArray<Meeting>(localStorage.getItem(`retentio_local_meetings_${activeUserId}`)) : null;
+      if (userSaved) return userSaved;
+      const saved = safeParseArray<Meeting>(localStorage.getItem('retentio_local_meetings'));
+      if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : DEMO_MEETINGS;
+    return isCleanTesting ? [] : (DEMO_MEETINGS || []).filter(Boolean);
   });
   const [leads, setLeads] = useState<Lead[]>(() => {
     try {
-      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_leads_${activeUserId}`) : null;
-      if (userSaved) return JSON.parse(userSaved);
-      const saved = localStorage.getItem('retentio_local_leads');
-      if (saved) return JSON.parse(saved);
+      const userSaved = activeUserId ? safeParseArray<Lead>(localStorage.getItem(`retentio_local_leads_${activeUserId}`)) : null;
+      if (userSaved) return userSaved;
+      const saved = safeParseArray<Lead>(localStorage.getItem('retentio_local_leads'));
+      if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : DEMO_LEADS;
+    return isCleanTesting ? [] : (DEMO_LEADS || []).filter(Boolean);
   });
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -690,16 +701,18 @@ export const AppProvider: React.FC<{
               api.users.list().catch(() => null),
             ]);
             if (Array.isArray(projectsData)) {
-              setProjects(projectsData);
-              try { localStorage.setItem('retentio_local_projects', JSON.stringify(projectsData)); } catch {}
+              const clean = projectsData.filter(Boolean);
+              setProjects(clean);
+              try { localStorage.setItem('retentio_local_projects', JSON.stringify(clean)); } catch {}
             }
             if (Array.isArray(tasksData)) {
-              setTasks(tasksData);
-              try { localStorage.setItem('retentio_local_tasks', JSON.stringify(tasksData)); } catch {}
+              const clean = tasksData.filter(Boolean);
+              setTasks(clean);
+              try { localStorage.setItem('retentio_local_tasks', JSON.stringify(clean)); } catch {}
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
-            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
+            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData.filter(Boolean));
             break;
           }
           case 'invoices': {
@@ -709,12 +722,14 @@ export const AppProvider: React.FC<{
               api.brands.list().catch(() => null),
             ]);
             if (Array.isArray(invoicesData)) {
-              setInvoices(invoicesData);
-              try { localStorage.setItem('retentio_local_invoices', JSON.stringify(invoicesData)); } catch {}
+              const clean = invoicesData.filter(Boolean);
+              setInvoices(clean);
+              try { localStorage.setItem('retentio_local_invoices', JSON.stringify(clean)); } catch {}
             }
             if (Array.isArray(paymentsData)) {
-              setPayments(paymentsData);
-              try { localStorage.setItem('retentio_local_payments', JSON.stringify(paymentsData)); } catch {}
+              const clean = paymentsData.filter(Boolean);
+              setPayments(clean);
+              try { localStorage.setItem('retentio_local_payments', JSON.stringify(clean)); } catch {}
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
@@ -727,9 +742,9 @@ export const AppProvider: React.FC<{
               api.invoices.list().catch(() => null),
               api.brands.list().catch(() => null),
             ]);
-            if (Array.isArray(paymentsData)) setPayments(paymentsData);
-            if (Array.isArray(expensesData)) setExpenses(expensesData);
-            if (Array.isArray(invoicesData)) setInvoices(invoicesData);
+            if (Array.isArray(paymentsData)) setPayments(paymentsData.filter(Boolean));
+            if (Array.isArray(expensesData)) setExpenses(expensesData.filter(Boolean));
+            if (Array.isArray(invoicesData)) setInvoices(invoicesData.filter(Boolean));
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
             break;
@@ -838,7 +853,7 @@ export const AppProvider: React.FC<{
 
             // Ensure every active agency colleague has a visible direct chat channel without manual addition
             if (currentUser && currentUser.role !== 'brand') {
-              const colleagues = allU.filter((u: any) => u.id !== currentUser.id && u.role !== 'brand' && u.status !== 'inactive');
+              const colleagues = (allU || []).filter((u: any) => u && currentUser && u.id !== currentUser.id && u.role !== 'brand' && u?.status !== 'inactive');
               for (const col of colleagues) {
                 const exists = enriched.some((c: any) =>
                   c.type === 'direct' && (
@@ -899,11 +914,11 @@ export const AppProvider: React.FC<{
             ]);
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
-            if (Array.isArray(invoicesData)) setInvoices(invoicesData);
-            if (Array.isArray(tasksData)) setTasks(tasksData);
-            if (Array.isArray(meetingsData)) setMeetings(meetingsData);
-            if (Array.isArray(paymentsData)) setPayments(paymentsData);
-            if (Array.isArray(expensesData)) setExpenses(expensesData);
+            if (Array.isArray(invoicesData)) setInvoices(invoicesData.filter(Boolean));
+            if (Array.isArray(tasksData)) setTasks(tasksData.filter(Boolean));
+            if (Array.isArray(meetingsData)) setMeetings(meetingsData.filter(Boolean));
+            if (Array.isArray(paymentsData)) setPayments(paymentsData.filter(Boolean));
+            if (Array.isArray(expensesData)) setExpenses(expensesData.filter(Boolean));
             break;
           }
           default:
@@ -966,14 +981,15 @@ export const AppProvider: React.FC<{
     if (pathTab) loadDomain(pathTab);
   }, [location.pathname, loadDomain]);
 
-  const retentionAlerts = brands
+  const retentionAlerts = (brands || [])
+    .filter(Boolean)
     .map(brand => {
-      const last = new Date(brand.lastActivityDate);
+      const last = new Date(brand?.lastActivityDate || Date.now());
       const now = new Date(today);
       const daysInactive = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
-      return { brand, daysInactive, isUrgent: daysInactive >= settings.retentionThresholdDays };
+      return { brand, daysInactive, isUrgent: daysInactive >= (settings?.retentionThresholdDays ?? 14) };
     })
-    .filter(item => item.isUrgent && item.brand.status !== 'Churned');
+    .filter(item => item.isUrgent && item.brand && item.brand?.status !== 'Churned');
 
   const switchUser = (userId: string) => {
     const user = allUsers.find(u => u.id === userId);
@@ -1761,8 +1777,8 @@ export const AppProvider: React.FC<{
   const isUserOnline = useCallback((userId: string) => {
     if (!userId) return false;
     if (onlineUserIds.has(userId)) return true;
-    const target = allUsers.find(u => u.id === userId);
-    return target ? (target as any).status !== 'inactive' && (target as any).isActive !== false : false;
+    const target = (allUsers || []).find(u => u && u.id === userId);
+    return target ? (target as any)?.status !== 'inactive' && (target as any)?.isActive !== false : false;
   }, [onlineUserIds, allUsers]);
 
   // Join/leave conversation room when active conversation changes

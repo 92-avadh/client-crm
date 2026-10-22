@@ -1,7 +1,7 @@
 import React from 'react';
 import './premium-loader.css';
 
-interface PremiumLogoLoaderProps {
+export interface PremiumLogoLoaderProps {
   variant?: 'fullscreen' | 'page' | 'inline';
   message?: string;
   showBrandName?: boolean;
@@ -12,20 +12,18 @@ interface PremiumLogoLoaderProps {
 }
 
 /**
- * Premium cinematic motion-style logo loader.
- * Uses the Retentio continuous-arrow green ribbon logo with concentric orbital comet tracks,
- * bioluminescent aura, sonar pulse rings, and a luminous progress glider.
+ * Clean, lightweight, perfectly centered round circular spinner.
+ * Replaces heavy logo/video loader with hardware-accelerated 360-degree rotation.
  */
 export const PremiumLogoLoader: React.FC<PremiumLogoLoaderProps> = ({
   variant = 'page',
-  message = 'Loading workspace...',
-  showBrandName = true,
-  showProgress = true,
+  message,
   size = 'md',
   className = '',
   style = {},
 }) => {
-  const scale = size === 'sm' ? 0.75 : size === 'lg' ? 1.25 : 1;
+  const spinnerSize = size === 'sm' ? 24 : size === 'lg' ? 44 : 34;
+  const borderWidth = size === 'sm' ? 2.5 : size === 'lg' ? 3.5 : 3;
 
   return (
     <div
@@ -33,62 +31,18 @@ export const PremiumLogoLoader: React.FC<PremiumLogoLoaderProps> = ({
       style={style}
       role="status"
       aria-live="polite"
-      aria-label="Loading"
+      aria-label={message || 'Loading'}
     >
-      {/* Ambient Radial Backlight Glow */}
-      <div className="retentio-loader-aura" style={{ transform: `scale(${scale}) translateZ(0)` }} />
-
-      {/* Main Animated Stage */}
       <div
-        className="retentio-loader-stage"
+        className="retentio-round-spinner"
         style={{
-          transform: `scale(${scale})`,
-          transition: 'transform 0.3s ease',
+          width: spinnerSize,
+          height: spinnerSize,
+          borderWidth,
         }}
-      >
-        {/* Concentric Sonar Pulse Wave Rings */}
-        <div className="retentio-sonar-ring ring-1" />
-        <div className="retentio-sonar-ring ring-2" />
-
-        {/* Counter-Rotating Precision Dashed Track */}
-        <div className="retentio-orbit-track retentio-orbit-inner" />
-
-        {/* Outer Orbital Neon Comet Track */}
-        <div className="retentio-orbit-track retentio-orbit-outer" />
-
-        {/* Floating Logo Capsule with Specular Light Sweep */}
-        <div className="retentio-logo-capsule">
-          <img
-            src="/retentio-icon.png"
-            alt="Retentio Logo"
-            className="retentio-logo-img"
-            loading="eager"
-            decoding="async"
-          />
-          {/* Specular Studio Light Shimmer */}
-          <div className="retentio-sheen-shimmer" />
-        </div>
-      </div>
-
-      {/* Brand Title, Status Caption & Glowing Progress Bar */}
-      {(showBrandName || message || showProgress) && (
-        <div className="retentio-loader-text-wrap">
-          {showBrandName && (
-            <div className="retentio-loader-brand-title">
-              RETENTIO
-            </div>
-          )}
-          {message && (
-            <div className="retentio-loader-subtext">
-              {message}
-            </div>
-          )}
-          {showProgress && (
-            <div className="retentio-loader-progress-track">
-              <div className="retentio-loader-progress-fill" />
-            </div>
-          )}
-        </div>
+      />
+      {message && (
+        <span className="retentio-loader-subtext">{message}</span>
       )}
     </div>
   );

@@ -207,6 +207,7 @@ export const FinanceManager: React.FC = () => {
 
   // Filtered payments list — strictly scoped to active user
   const filteredPayments = scopedPayments.filter(p => {
+    if (!p) return false;
     if (paymentFilterStatus !== 'all' && p.status !== paymentFilterStatus) return false;
     if (paymentSearch.trim()) {
       const q = paymentSearch.toLowerCase();
@@ -285,7 +286,7 @@ export const FinanceManager: React.FC = () => {
 
   const exportToCSV = () => {
     const headers = ['Date', 'Client', 'Amount', 'Mode', 'Reference', 'Status'];
-    const rows = payments.map(p => [p.paymentDate, p.brandName, p.amount, p.mode, p.referenceNo, p.status]);
+    const rows = payments.filter(Boolean).map(p => [p.paymentDate, p.brandName, p.amount, p.mode, p.referenceNo, p.status]);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -761,8 +762,9 @@ export const FinanceManager: React.FC = () => {
                   </tr>
                 ) : (
                   filteredPayments.map((p) => {
-                    const isSuccess = p.status === 'Success';
-                    const isPending = p.status === 'Pending';
+                    if (!p) return null;
+                    const isSuccess = p?.status === 'Success';
+                    const isPending = p?.status === 'Pending';
                     const isSelected = selectedPaymentIds.has(p.id);
 
                     return (

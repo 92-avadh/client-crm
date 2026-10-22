@@ -127,10 +127,11 @@ export const ProjectsAndTasks: React.FC = () => {
     }
   };
 
+  const safeTasks = (tasks || []).filter(Boolean);
   const relevantTasks =
     role === 'team'
-      ? tasks.filter((t) => t.assigneeId === currentUser.id)
-      : tasks;
+      ? safeTasks.filter((t) => t && currentUser && t.assigneeId === currentUser.id)
+      : safeTasks;
 
   const kanbanColumns: TaskStatus[] = ['To Do', 'In Progress', 'In Review', 'Completed'];
 
@@ -208,7 +209,7 @@ export const ProjectsAndTasks: React.FC = () => {
       {activeTab === 'tasks' && taskView === 'kanban' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
           {kanbanColumns.map((column) => {
-            const colTasks = relevantTasks.filter((t) => t.status === column);
+            const colTasks = relevantTasks.filter((t) => t && t.status === column);
 
             return (
               <div
@@ -226,8 +227,8 @@ export const ProjectsAndTasks: React.FC = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto' }}>
                   {colTasks.map((task) => {
-                    const brand = brands.find((b) => b.id === task.brandId);
-                    const assignee = allUsers.find((u) => u.id === task.assigneeId);
+                    const brand = (brands || []).find((b) => b && b.id === task?.brandId);
+                    const assignee = (allUsers || []).find((u) => u && u.id === task?.assigneeId);
 
                     return (
                       <div
@@ -278,7 +279,7 @@ export const ProjectsAndTasks: React.FC = () => {
                             )}
 
                             <select
-                              value={task.status}
+                              value={task?.status || 'To Do'}
                               onChange={(e) => updateTaskStatus(task.id, e.target.value as TaskStatus)}
                               style={{ fontSize: 10, background: 'var(--bg-subtle)', color: 'var(--text-primary)', borderRadius: 4, border: '1px solid var(--border)', padding: '2px 4px', outline: 'none', cursor: 'pointer' }}
                             >
@@ -343,7 +344,7 @@ export const ProjectsAndTasks: React.FC = () => {
                     </td>
                     <td>
                       <select
-                        value={t.status}
+                        value={t?.status || 'To Do'}
                         onChange={(e) => updateTaskStatus(t.id, e.target.value as TaskStatus)}
                         style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
                       >
@@ -363,8 +364,8 @@ export const ProjectsAndTasks: React.FC = () => {
       {/* Projects Tab */}
       {activeTab === 'projects' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 16 }}>
-          {projects.map((proj) => {
-            const brand = brands.find((b) => b.id === proj.brandId);
+          {(projects || []).filter(Boolean).map((proj) => {
+            const brand = (brands || []).find((b) => b && b.id === proj?.brandId);
             return (
               <div
                 key={proj.id}
@@ -386,7 +387,7 @@ export const ProjectsAndTasks: React.FC = () => {
                     <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2, marginBottom: 0 }}>{proj.name}</h3>
                   </div>
                   <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'var(--bg-raised)', color: 'var(--text-primary)' }}>
-                    {proj.status}
+                    {proj?.status || 'In progress'}
                   </span>
                 </div>
 

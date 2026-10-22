@@ -51,7 +51,7 @@ export const MeetingsCalendar: React.FC = () => {
   });
 
   const availableMembers = React.useMemo(() => {
-    return ((allUsers as any[]) || []).filter((u: any) => u.role !== 'brand' && u.status !== 'inactive');
+    return ((allUsers as any[]) || []).filter(Boolean).filter((u: any) => u.role !== 'brand' && u?.status !== 'inactive');
   }, [allUsers]);
 
   const toggleAttendee = (userId: string) => {

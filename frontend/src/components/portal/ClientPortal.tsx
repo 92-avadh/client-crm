@@ -246,7 +246,7 @@ export const ClientPortal: React.FC = () => {
                   No deliverables currently scheduled.
                 </div>
               ) : (
-                deliverables.items.map((task) => (
+                (deliverables.items || []).filter(Boolean).map((task) => (
                   <div
                     key={task.id}
                     style={{
@@ -265,7 +265,7 @@ export const ClientPortal: React.FC = () => {
                         style={{
                           width: 16,
                           height: 16,
-                          color: task.status === 'Completed' ? '#10b981' : 'var(--text-muted, #64748b)',
+                          color: task?.status === 'Completed' ? '#10b981' : 'var(--text-muted, #64748b)',
                           flexShrink: 0,
                         }}
                       />
@@ -286,12 +286,12 @@ export const ClientPortal: React.FC = () => {
                         borderRadius: 6,
                         fontSize: 10,
                         fontWeight: 700,
-                        background: task.status === 'Completed' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)',
-                        color: task.status === 'Completed' ? '#10b981' : 'var(--text-secondary, #cbd5e1)',
+                        background: task?.status === 'Completed' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)',
+                        color: task?.status === 'Completed' ? '#10b981' : 'var(--text-secondary, #cbd5e1)',
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {task.status}
+                      {task?.status || 'Active'}
                     </span>
                   </div>
                 ))
@@ -516,7 +516,7 @@ export const ClientPortal: React.FC = () => {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: '#e2e8f0', color: '#334155' }}>
-                  {selectedInvoice.invoice.status}
+                  {selectedInvoice?.invoice?.status || 'Draft'}
                 </span>
                 <div style={{ fontSize: 16, fontWeight: 900, color: '#0f172a', marginTop: 6, fontFamily: 'monospace' }}>
                   {selectedInvoice.invoice.invoice_number}

@@ -88,14 +88,14 @@ export const InvoicesManager: React.FC = () => {
     return () => clearTimeout(timer);
   }, [invoices]);
 
-  const activeInvoice = invoices.find((i) => i.id === selectedInvoiceId) || null;
+  const activeInvoice = (invoices || []).find((i) => i && i.id === selectedInvoiceId) || null;
 
   const filteredInvoices = useMemo(() => {
-    const q = search.toLowerCase();
-    return invoices.filter((inv) => {
-      const matchesSearch =
-        inv.invoiceNumber.toLowerCase().includes(q) ||
-        inv.brandName.toLowerCase().includes(q);
+    const q = (search || '').toLowerCase();
+    return (invoices || []).filter(Boolean).filter((inv) => {
+      const invNum = (inv.invoiceNumber || '').toLowerCase();
+      const bName = (inv.brandName || '').toLowerCase();
+      const matchesSearch = invNum.includes(q) || bName.includes(q);
       const matchesStatus = statusFilter === 'All' || inv.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -103,7 +103,7 @@ export const InvoicesManager: React.FC = () => {
 
     const dueBrands = useMemo(() => {
       const todayDay = new Date().getDate();
-      return brands.filter(b => b.status === 'Active' && b.billingCycleDay <= todayDay);
+      return (brands || []).filter(Boolean).filter(b => b.status === 'Active' && Number(b.billingCycleDay || 0) <= todayDay);
     }, [brands]);
 
     /* ── Handlers ────────────────────────────────────────────────── */

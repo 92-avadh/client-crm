@@ -166,45 +166,45 @@ export const Topbar: React.FC = () => {
 
   const matchedBrands = useMemo(() => {
     if (!query) return [];
-    return brands.filter(
+    return (brands || []).filter(Boolean).filter(
       b =>
-        b.name.toLowerCase().includes(query) ||
-        b.ownerName.toLowerCase().includes(query) ||
+        (b.name || '').toLowerCase().includes(query) ||
+        (b.ownerName || '').toLowerCase().includes(query) ||
         (b.gstNumber && b.gstNumber.toLowerCase().includes(query))
     ).slice(0, 3);
   }, [query, brands]);
 
   const matchedInvoices = useMemo(() => {
     if (!query) return [];
-    return invoices.filter(
+    return (invoices || []).filter(Boolean).filter(
       inv =>
-        inv.invoiceNumber.toLowerCase().includes(query) ||
-        inv.brandName.toLowerCase().includes(query) ||
-        inv.totalAmount.toString().includes(query)
+        (inv.invoiceNumber || '').toLowerCase().includes(query) ||
+        (inv.brandName || '').toLowerCase().includes(query) ||
+        (inv.totalAmount != null && inv.totalAmount.toString().includes(query))
     ).slice(0, 3);
   }, [query, invoices]);
 
   const matchedTasks = useMemo(() => {
     if (!query) return [];
-    return tasks.filter(
+    return (tasks || []).filter(Boolean).filter(
       t =>
-        t.title.toLowerCase().includes(query) ||
+        (t.title || '').toLowerCase().includes(query) ||
         (t.description && t.description.toLowerCase().includes(query))
     ).slice(0, 3);
   }, [query, tasks]);
 
   const matchedProjects = useMemo(() => {
     if (!query) return [];
-    return projects.filter(
+    return (projects || []).filter(Boolean).filter(
       p =>
-        p.name.toLowerCase().includes(query) ||
+        (p.name || '').toLowerCase().includes(query) ||
         (p.scope && p.scope.toLowerCase().includes(query))
     ).slice(0, 3);
   }, [query, projects]);
 
   const matchedLeads = useMemo(() => {
     if (!query) return [];
-    return leads.filter(
+    return (leads || []).filter(Boolean).filter(
       l =>
         (l.name && l.name.toLowerCase().includes(query)) ||
         (l.company && l.company.toLowerCase().includes(query)) ||
@@ -432,7 +432,7 @@ export const Topbar: React.FC = () => {
                         icon={<Building2 style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />}
                         title={b.name}
                         subtitle={b.ownerName}
-                        meta={b.status}
+                        meta={b?.status || 'Active'}
                         onClick={() => {
                           setSelectedBrandId(b.id);
                           setActiveTab('clients');
@@ -474,8 +474,8 @@ export const Topbar: React.FC = () => {
                           setIsSearchFocused(false);
                           setSearch('');
                         }}
-                        amount={`₹${inv.totalAmount.toLocaleString('en-IN')}`}
-                        status={inv.status}
+                        amount={inv.totalAmount != null ? `₹${Number(inv.totalAmount).toLocaleString('en-IN')}` : '₹0'}
+                        status={inv?.status || 'Draft'}
                       />
                     ))}
                   </div>
@@ -504,7 +504,7 @@ export const Topbar: React.FC = () => {
                         item={t}
                         icon={<CheckSquare style={{ width: 14, height: 14, color: 'var(--text-primary)' }} />}
                         title={t.title}
-                        meta={t.status}
+                        meta={t?.status || 'To Do'}
                         onClick={() => {
                           setActiveTab('tasks');
                           setIsSearchFocused(false);

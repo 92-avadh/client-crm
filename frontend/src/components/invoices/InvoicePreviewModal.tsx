@@ -74,7 +74,7 @@ export const InvoicePreviewModal: React.FC<Props> = ({ invoice, settings, onClos
             <div style={{ textAlign: 'right' }}>
               <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' as const, fontWeight: 700 }}>Payment Status</span>
               <div style={{ marginTop: 4 }}>
-                <span style={getStatusBadgeStyle(invoice.status)}>{invoice.status}</span>
+                <span style={getStatusBadgeStyle(invoice?.status || 'Draft')}>{invoice?.status || 'Draft'}</span>
               </div>
             </div>
           </div>

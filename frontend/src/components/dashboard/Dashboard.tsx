@@ -186,61 +186,69 @@ export const Dashboard: React.FC = () => {
 
   const role = currentUser?.role;
 
-  // ── Financial Calculations ─────────────────────────────────
-  const paymentsTotal = payments
-    .filter(p => p.status === 'Success')
-    .reduce((a, p) => a + (Number(p.amount) || 0), 0);
+  // ── Safe Data References (Guards against null entries from API or local cache) ──
+  const safePayments = (payments || []).filter(Boolean);
+  const safeBrands = (brands || []).filter(Boolean);
+  const safeInvoices = (invoices || []).filter(Boolean);
+  const safeExpenses = (expenses || []).filter(Boolean);
+  const safeTasks = (tasks || []).filter(Boolean);
+  const safeMeetings = (meetings || []).filter(Boolean);
 
-  const unrecordedBrandFees = brands
+  // ── Financial Calculations ─────────────────────────────────
+  const paymentsTotal = safePayments
+    .filter(p => p?.status === 'Success')
+    .reduce((a, p) => a + (Number(p?.amount) || 0), 0);
+
+  const unrecordedBrandFees = safeBrands
     .filter(
       b =>
-        b.status === 'Active' &&
-        (Number(b.monthlyFee) || 0) > 0 &&
-        b.paymentStatus === 'Paid' &&
-        !payments.some(p => p.brandId === b.id && p.status === 'Success')
+        b?.status === 'Active' &&
+        (Number(b?.monthlyFee) || 0) > 0 &&
+        b?.paymentStatus === 'Paid' &&
+        !safePayments.some(p => p && p.brandId === b.id && p.status === 'Success')
     )
-    .reduce((a, b) => a + (Number(b.monthlyFee) || 0), 0);
+    .reduce((a, b) => a + (Number(b?.monthlyFee) || 0), 0);
 
   const totalReceived = paymentsTotal + unrecordedBrandFees;
 
-  const paidExpenses = expenses.filter(e => (e.paymentStatus || 'Paid') === 'Paid');
-  const pendingExpenses = expenses.filter(e => e.paymentStatus === 'Pending');
-  const totalExpenses = paidExpenses.reduce((a, e) => a + (Number(e.amount) || 0), 0);
-  const pendingExpensesTotal = pendingExpenses.reduce((a, e) => a + (Number(e.amount) || 0), 0);
+  const paidExpenses = safeExpenses.filter(e => (e?.paymentStatus || 'Paid') === 'Paid');
+  const pendingExpenses = safeExpenses.filter(e => e?.paymentStatus === 'Pending');
+  const totalExpenses = paidExpenses.reduce((a, e) => a + (Number(e?.amount) || 0), 0);
+  const pendingExpensesTotal = pendingExpenses.reduce((a, e) => a + (Number(e?.amount) || 0), 0);
   const netProfit = totalReceived - totalExpenses;
   const netMargin = totalReceived > 0 ? Math.round((netProfit / totalReceived) * 100) : 0;
 
-  const pendingPayments = payments
-    .filter(p => p.status === 'Pending')
-    .reduce((a, p) => a + (Number(p.amount) || 0), 0);
+  const pendingPayments = safePayments
+    .filter(p => p?.status === 'Pending')
+    .reduce((a, p) => a + (Number(p?.amount) || 0), 0);
 
-  const pendingBrandFees = brands
+  const pendingBrandFees = safeBrands
     .filter(
       b =>
-        b.status === 'Active' &&
-        (Number(b.monthlyFee) || 0) > 0 &&
-        b.paymentStatus === 'Pending' &&
-        !payments.some(p => p.brandId === b.id && p.status === 'Success') &&
-        !invoices.some(i => i.brandId === b.id && i.status !== 'Draft' && i.status !== 'Cancelled')
+        b?.status === 'Active' &&
+        (Number(b?.monthlyFee) || 0) > 0 &&
+        b?.paymentStatus === 'Pending' &&
+        !safePayments.some(p => p && p.brandId === b.id && p.status === 'Success') &&
+        !safeInvoices.some(i => i && i.brandId === b.id && i.status !== 'Draft' && i.status !== 'Cancelled')
     )
-    .reduce((a, b) => a + (Number(b.monthlyFee) || 0), 0);
+    .reduce((a, b) => a + (Number(b?.monthlyFee) || 0), 0);
 
-  const overdueInvoices = invoices.filter(i => i.status === 'Overdue');
-  const unpaidInvoicesBalance = invoices
-    .filter(i => i.status === 'Sent' || i.status === 'Overdue')
-    .reduce((a, i) => a + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0);
+  const overdueInvoices = safeInvoices.filter(i => i?.status === 'Overdue');
+  const unpaidInvoicesBalance = safeInvoices
+    .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue'))
+    .reduce((a, i) => a + Math.max(0, (Number(i?.totalAmount) || 0) - (Number(i?.paidAmount) || 0)), 0);
 
   const totalPending = unpaidInvoicesBalance + pendingBrandFees;
 
-  const activeBrands = brands.filter(b => b.status === 'Active');
-  const relevantTasks = role === 'team' ? tasks.filter(t => t.assigneeId === currentUser?.id) : tasks;
-  const pendingTasks = relevantTasks.filter(t => t.status !== 'Completed');
-  const myMeetings = meetings.filter(m => (role === 'team' ? (m.attendeeIds || []).includes(currentUser?.id) : true));
+  const activeBrands = safeBrands.filter(b => b?.status === 'Active');
+  const relevantTasks = role === 'team' ? safeTasks.filter(t => t?.assigneeId === currentUser?.id) : safeTasks;
+  const pendingTasks = relevantTasks.filter(t => t?.status !== 'Completed');
+  const myMeetings = safeMeetings.filter(m => (role === 'team' ? (m?.attendeeIds || []).includes(currentUser?.id) : true));
 
   // ── Monthly Revenue / Expense Maps ─────────────────────────
   const monthlyIncomeMap: Record<string, number> = {};
-  payments.forEach(p => {
-    if (p.paymentDate && p.status === 'Success') {
+  safePayments.forEach(p => {
+    if (p && p.paymentDate && p.status === 'Success') {
       const key = String(p.paymentDate).slice(0, 7);
       monthlyIncomeMap[key] = (monthlyIncomeMap[key] || 0) + (Number(p.amount) || 0);
     }
@@ -252,8 +260,8 @@ export const Dashboard: React.FC = () => {
   }
 
   const monthlyExpenseMap: Record<string, number> = {};
-  expenses.forEach(e => {
-    if (e.date && (e.paymentStatus || 'Paid') === 'Paid') {
+  safeExpenses.forEach(e => {
+    if (e && e.date && (e.paymentStatus || 'Paid') === 'Paid') {
       const key = String(e.date).slice(0, 7);
       monthlyExpenseMap[key] = (monthlyExpenseMap[key] || 0) + Number(e.amount || 0);
     }
@@ -358,19 +366,20 @@ export const Dashboard: React.FC = () => {
 
   // ── Recent Invoices ────────────────────────────────────────
   const recentInvoices = useMemo(() => {
-    return [...invoices]
-      .sort((a, b) => (b.issueDate || '').localeCompare(a.issueDate || ''))
+    return [...safeInvoices]
+      .sort((a, b) => (b?.issueDate || '').localeCompare(a?.issueDate || ''))
       .slice(0, 5);
-  }, [invoices]);
+  }, [safeInvoices]);
 
   // ── Activity Feed ──────────────────────────────────────────
   const activityFeed = useMemo(() => {
     const items: { id: string; icon: React.ReactNode; text: string; time: string; color: string }[] = [];
 
-    payments
-      .filter(p => p.status === 'Success')
+    safePayments
+      .filter(p => p?.status === 'Success')
       .slice(0, 3)
       .forEach(p => {
+        if (!p) return;
         items.push({
           id: `pay_${p.id}`,
           icon: <DollarSign size={14} />,
@@ -380,48 +389,52 @@ export const Dashboard: React.FC = () => {
         });
       });
 
-    invoices.slice(0, 2).forEach(inv => {
+    safeInvoices.slice(0, 2).forEach(inv => {
+      if (!inv) return;
       items.push({
         id: `inv_${inv.id}`,
         icon: <Receipt size={14} />,
-        text: `Invoice #${inv.invoiceNumber} (${inv.status}) for ${inv.brandName || 'Client'}`,
+        text: `Invoice #${inv.invoiceNumber} (${inv.status || 'Draft'}) for ${inv.brandName || 'Client'}`,
         time: inv.issueDate ? formatDateDisplay(inv.issueDate) : 'Recent',
         color: inv.status === 'Paid' ? BRAND.green : BRAND.navy,
       });
     });
 
-    brands.slice(0, 2).forEach(b => {
+    safeBrands.slice(0, 2).forEach(b => {
+      if (!b) return;
       items.push({
         id: `brand_${b.id}`,
         icon: <Building2 size={14} />,
-        text: `Client onboarded: ${b.name}`,
+        text: `Client onboarded: ${b.name || 'Client'}`,
         time: b.onboardingDate ? formatDateDisplay(b.onboardingDate) : 'Recent',
         color: BRAND.navy,
       });
     });
 
     pendingTasks.slice(0, 2).forEach(t => {
+      if (!t) return;
       items.push({
         id: `task_${t.id}`,
         icon: <CheckSquare size={14} />,
-        text: `Task pending: ${t.title}`,
+        text: `Task pending: ${t.title || 'Untitled task'}`,
         time: t.dueDate ? formatDateDisplay(t.dueDate) : 'No due date',
         color: BRAND.amber,
       });
     });
 
     myMeetings.slice(0, 2).forEach(m => {
+      if (!m) return;
       items.push({
         id: `meet_${m.id}`,
         icon: <Calendar size={14} />,
-        text: `Meeting scheduled: ${m.title}`,
+        text: `Meeting scheduled: ${m.title || 'Meeting'}`,
         time: m.date ? (m.time ? `${formatDateDisplay(m.date)} · ${m.time}` : formatDateDisplay(m.date)) : 'Scheduled',
         color: BRAND.green,
       });
     });
 
     return items.slice(0, 6);
-  }, [payments, invoices, brands, pendingTasks, myMeetings]);
+  }, [safePayments, safeInvoices, safeBrands, pendingTasks, myMeetings, formatCurrency]);
 
   const formattedCurrentDate = new Date().toLocaleDateString('en-IN', {
     weekday: 'long',
@@ -790,7 +803,7 @@ export const Dashboard: React.FC = () => {
             {
               label: 'Total Tasks',
               value: animatedTasks,
-              sub: `${tasks.filter(t => t.status === 'Completed').length} completed`,
+              sub: `${safeTasks.filter(t => t?.status === 'Completed').length} completed`,
               icon: <CheckSquare className="w-4 h-4" />,
               color: BRAND.navy,
               bg: BRAND.navySubtle,
@@ -800,7 +813,7 @@ export const Dashboard: React.FC = () => {
             {
               label: 'Pending Tasks',
               value: animatedPendingTasks,
-              sub: `${relevantTasks.filter(t => t.priority === 'Urgent' || t.priority === 'High').length} urgent / high`,
+              sub: `${relevantTasks.filter(t => t && (t.priority === 'Urgent' || t.priority === 'High')).length} urgent / high`,
               icon: <Clock className="w-4 h-4" />,
               color: pendingTasks.length > 0 ? BRAND.amber : BRAND.navyMuted,
               bg: pendingTasks.length > 0 ? BRAND.amberSubtle : BRAND.navySubtle,
@@ -1203,9 +1216,9 @@ export const Dashboard: React.FC = () => {
                     No clients added yet.
                   </div>
                 ) : (
-                  brands.slice(0, 5).map(b => {
-                    const total = brands.reduce((a, x) => a + (Number(x.monthlyFee) || 0), 0);
-                    const fee = Number(b.monthlyFee) || 0;
+                  safeBrands.slice(0, 5).map(b => {
+                    const total = safeBrands.reduce((a, x) => a + (Number(x?.monthlyFee) || 0), 0);
+                    const fee = Number(b?.monthlyFee) || 0;
                     const pct = total > 0 ? Math.round((fee / total) * 100) : 0;
                     return (
                       <div key={b.id}>
@@ -1459,10 +1472,10 @@ export const Dashboard: React.FC = () => {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {t.title}
+                          {t?.title || 'Untitled task'}
                         </div>
                         <div style={{ fontSize: 11.5, color: BRAND.navyMuted, marginTop: 2 }}>
-                          {brands.find(b => b.id === t.brandId)?.name ? `${brands.find(b => b.id === t.brandId)?.name} · ` : ''}Due {formatDateDisplay(t.dueDate)} · {t.priority}
+                          {safeBrands.find(b => b && b.id === t?.brandId)?.name ? `${safeBrands.find(b => b && b.id === t?.brandId)?.name} · ` : ''}Due {formatDateDisplay(t?.dueDate)} · {t?.priority || 'Normal'}
                         </div>
                       </div>
                     </div>
@@ -1479,7 +1492,7 @@ export const Dashboard: React.FC = () => {
                         border: `1px solid var(--border)`,
                       }}
                     >
-                      {t.status}
+                      {t?.status || 'To Do'}
                     </span>
                   </div>
                 ))}
@@ -1643,7 +1656,8 @@ export const Dashboard: React.FC = () => {
                     },
                   };
 
-                  const s = statusStyles[inv.status] || statusStyles.Draft;
+                  if (!inv) return null;
+                  const s = statusStyles[inv?.status || 'Draft'] || statusStyles.Draft;
 
                   return (
                     <div
@@ -1717,7 +1731,7 @@ export const Dashboard: React.FC = () => {
                           }}
                         >
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.text }} />
-                          {inv.status}
+                          {inv?.status || 'Draft'}
                         </span>
                       </div>
                     </div>

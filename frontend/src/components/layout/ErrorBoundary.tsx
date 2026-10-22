@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { RefreshCw, RotateCcw, Home, Sparkles } from 'lucide-react';
 
 interface Props {
   children: React.ReactNode;
@@ -8,11 +8,13 @@ interface Props {
 interface State {
   hasError: boolean;
   message: string;
+  errorInfo?: string;
 }
 
 /**
- * Catches render-time crashes so the user sees a recoverable message
- * instead of a blank white screen. The real error is logged for developers.
+ * Friendly, resilient Error Boundary.
+ * Catches render crashes, displays comforting human-centric messaging with high contrast,
+ * and tucks technical stack traces inside a collapsed details disclosure.
  */
 export class ErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false, message: '' };
@@ -25,7 +27,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: unknown, info: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Uncaught render error:', error, info);
+    console.error('[ErrorBoundary] Caught render error:', error, info);
+    this.setState({
+      errorInfo: info?.componentStack || undefined,
+    });
   }
 
   private handleReload = () => {
@@ -33,15 +38,24 @@ export class ErrorBoundary extends React.Component<Props, State> {
     window.location.reload();
   };
 
+  private handleGoDashboard = () => {
+    this.setState({ hasError: false, message: '' });
+    window.location.href = '/dashboard';
+  };
+
   private handleClearAndReload = () => {
     try {
-      localStorage.removeItem('retentio_local_brands');
-      localStorage.removeItem('retentio_local_users');
-      localStorage.removeItem('retentio_local_projects');
-      localStorage.removeItem('retentio_local_tasks');
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('retentio_local_') || k.startsWith('retentio_clean_') || k.includes('cache'))) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
     } catch {}
     this.setState({ hasError: false, message: '' });
-    window.location.reload();
+    window.location.href = '/dashboard';
   };
 
   render() {
@@ -56,104 +70,202 @@ export class ErrorBoundary extends React.Component<Props, State> {
           justifyContent: 'center',
           minHeight: '100vh',
           width: '100%',
-          flex: 1,
-          textAlign: 'center',
-          padding: 24,
+          padding: '24px 16px',
           boxSizing: 'border-box',
-          color: 'var(--text-primary)',
+          background: 'var(--bg, #090d16)',
+          color: 'var(--text-primary, #ffffff)',
+          fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
         }}
       >
         <div
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            background: 'var(--danger-bg)',
-            border: '1px solid var(--danger-border)',
+            maxWidth: 520,
+            width: '100%',
+            background: 'var(--bg-card, #111827)',
+            border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+            borderRadius: 20,
+            padding: '36px 28px',
+            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.4)',
+            textAlign: 'center',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 18,
+            boxSizing: 'border-box',
           }}
         >
-          <AlertTriangle size={26} style={{ color: 'var(--danger-text)' }} />
-        </div>
-
-        <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>
-          Something went wrong
-        </h2>
-        <p
-          style={{
-            fontSize: 14,
-            color: 'var(--text-secondary)',
-            margin: '0 0 16px',
-            maxWidth: 420,
-            lineHeight: 1.6,
-          }}
-        >
-          This page ran into an unexpected problem. Reloading usually fixes it —
-          if it keeps happening, please reset cache or check server status.
-        </p>
-
-        {this.state.message && (
+          {/* Calm friendly icon badge */}
           <div
             style={{
-              fontSize: 12,
-              fontFamily: 'monospace',
-              color: 'var(--danger-text)',
-              background: 'var(--danger-bg)',
-              border: '1px solid var(--danger-border)',
-              borderRadius: 8,
-              padding: '8px 14px',
-              maxWidth: 480,
-              margin: '0 0 20px',
-              wordBreak: 'break-word',
+              width: 58,
+              height: 58,
+              borderRadius: '50%',
+              background: 'rgba(34, 197, 94, 0.12)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 20,
+              color: '#22c55e',
             }}
           >
-            {this.state.message}
+            <Sparkles size={28} />
           </div>
-        )}
 
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button
-            onClick={this.handleReload}
+          {/* High-contrast empathetic headline */}
+          <h2
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '10px 20px',
-              background: 'var(--solid-btn-bg)',
-              color: 'var(--solid-btn-text)',
-              border: 'none',
-              borderRadius: 10,
+              fontSize: 22,
+              fontWeight: 800,
+              color: 'var(--text-primary, #ffffff)',
+              margin: '0 0 10px',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Workspace Encountered a Quick Pause
+          </h2>
+
+          {/* Reassuring human-centric copy */}
+          <p
+            style={{
               fontSize: 14,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
+              color: 'var(--text-secondary, #94a3b8)',
+              margin: '0 0 24px',
+              lineHeight: 1.6,
+              maxWidth: 420,
             }}
           >
-            <RefreshCw size={15} />
-            Reload page
-          </button>
-          <button
-            onClick={this.handleClearAndReload}
+            Don't worry — your data and configurations are completely safe. A quick reload
+            or returning to the dashboard will restore your session seamlessly.
+          </p>
+
+          {/* Recovery Actions */}
+          <div
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '10px 16px',
-              background: 'var(--bg-subtle)',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
+              display: 'flex',
+              gap: 10,
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              width: '100%',
+              marginBottom: 20,
             }}
           >
-            Reset cache & reload
-          </button>
+            <button
+              onClick={this.handleReload}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '11px 22px',
+                background: 'var(--solid-btn-bg, #22c55e)',
+                color: 'var(--solid-btn-text, #ffffff)',
+                border: 'none',
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'transform 0.15s ease, opacity 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.92')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+            >
+              <RefreshCw size={15} />
+              Reload Workspace
+            </button>
+
+            <button
+              onClick={this.handleGoDashboard}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '11px 18px',
+                background: 'var(--bg-subtle, rgba(255, 255, 255, 0.05))',
+                color: 'var(--text-primary, #ffffff)',
+                border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-raised, rgba(255, 255, 255, 0.1))')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-subtle, rgba(255, 255, 255, 0.05))')}
+            >
+              <Home size={15} />
+              Dashboard
+            </button>
+
+            <button
+              onClick={this.handleClearAndReload}
+              title="Clears cached local data and re-syncs fresh state"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '11px 16px',
+                background: 'transparent',
+                color: 'var(--text-muted, #64748b)',
+                border: '1px solid transparent',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'color 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary, #94a3b8)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted, #64748b)')}
+            >
+              <RotateCcw size={14} />
+              Reset Cache & Sync
+            </button>
+          </div>
+
+          {/* Technical Diagnostics (Collapsible for Developers, hidden by default from users) */}
+          {this.state.message && (
+            <details
+              style={{
+                width: '100%',
+                marginTop: 8,
+                textAlign: 'left',
+                borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+                paddingTop: 14,
+                fontSize: 12,
+                color: 'var(--text-muted, #64748b)',
+              }}
+            >
+              <summary
+                style={{
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--text-muted, #94a3b8)',
+                  outline: 'none',
+                }}
+              >
+                Technical diagnostics
+              </summary>
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontSize: 11,
+                  color: 'var(--text-secondary, #cbd5e1)',
+                  wordBreak: 'break-word',
+                  whiteSpace: 'pre-wrap',
+                  maxHeight: 180,
+                  overflowY: 'auto',
+                }}
+              >
+                {this.state.message}
+                {this.state.errorInfo && `\n\nComponent Stack:${this.state.errorInfo}`}
+              </div>
+            </details>
+          )}
         </div>
       </div>
     );

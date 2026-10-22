@@ -67,12 +67,12 @@ export const ClientProfileDrawer: React.FC<Props> = ({
   const [newDocRenewal, setNewDocRenewal] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
-  const assignedUsers = allUsers.filter((u) => (brand.assignedMemberIds || []).includes(u.id));
-  const brandInvoices = invoices.filter((i) => i.brandId === brand.id);
-  const brandTasks = tasks.filter((t) => t.brandId === brand.id);
+  const assignedUsers = (allUsers || []).filter(Boolean).filter((u) => (brand?.assignedMemberIds || []).includes(u.id));
+  const brandInvoices = (invoices || []).filter(Boolean).filter((i) => i.brandId === brand?.id);
+  const brandTasks = (tasks || []).filter(Boolean).filter((t) => t.brandId === brand?.id);
 
   // Client Deliverable / Contractor Expenses & Gross Margin Calculation
-  const clientExpenses = expenses.filter((e) => e.brandId === brand.id);
+  const clientExpenses = (expenses || []).filter(Boolean).filter((e) => e.brandId === brand?.id);
   const totalClientExpenses = clientExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   const monthlyRetainer = Number(brand.monthlyFee || 0);
   const grossProfit = monthlyRetainer - totalClientExpenses;
@@ -553,7 +553,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                           <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{inv.issueDate}</td>
                           <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{inv.dueDate}</td>
                           <td className="font-amount" style={{ textAlign: 'right', fontWeight: 800 }}>{formatAmt(inv.totalAmount)}</td>
-                          <td style={{ fontSize: 12 }}>{inv.status}</td>
+                          <td style={{ fontSize: 12 }}>{inv?.status || 'Draft'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -574,10 +574,10 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                 brandTasks.map((t) => (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <CheckCircle style={{ width: 15, height: 15, color: t.status === 'Completed' ? 'var(--success-text)' : 'var(--text-muted)' }} />
+                      <CheckCircle style={{ width: 15, height: 15, color: t?.status === 'Completed' ? 'var(--success-text)' : 'var(--text-muted)' }} />
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{t.title}</span>
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t.status}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t?.status || 'To Do'}</span>
                   </div>
                 ))
               )}

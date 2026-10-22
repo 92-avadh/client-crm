@@ -27,9 +27,9 @@ export const TeamTable: React.FC<Props> = ({
       <span style={{ textAlign: 'right' }}>Actions</span><span />
     </div>
 
-    {users.map((user: any, idx: number) => {
-      const isActive = user.isActive !== false && user.status !== 'inactive';
-      const brandCount = getBrandCount(user.id);
+    {(users || []).filter(Boolean).map((user: any, idx: number) => {
+      const isActive = user?.isActive !== false && user?.status !== 'inactive';
+      const brandCount = getBrandCount(user?.id);
 
       return (
         <div
