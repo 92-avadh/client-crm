@@ -55,10 +55,13 @@ export const ListenPanel: React.FC = () => {
               <ScrollReveal
                 mode="enter"
                 effect="rise"
-                stagger={0.14}
-                duration={0.65}
+                splitBy="none"
+                stagger={0.12}
+                duration={0.6}
                 baseOpacity={0.15}
-                baseOffset={18}
+                baseRotation={0}
+                baseOffset={16}
+                scrollStart="top 90%"
                 enableBlur
                 blurStrength={3}
                 className="listen__track listen__track--read"
