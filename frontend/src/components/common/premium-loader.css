@@ -28,7 +28,8 @@
 
 .retentio-loader-overlay.page {
   flex: 1;
-  min-height: calc(100vh - 140px);
+  min-height: 100vh;
+  min-height: 100svh;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -36,6 +37,8 @@
   justify-content: center;
   padding: 20px;
   box-sizing: border-box;
+  background: radial-gradient(circle at 50% 50%, var(--bg-card, #121824) 0%, var(--bg, #090d16) 100%);
+  color: #ffffff;
 }
 
 .retentio-loader-overlay.inline {

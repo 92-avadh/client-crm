@@ -143,7 +143,7 @@ const ScrollToTop: React.FC = () => {
 /*  Page loading fallback for lazy components                          */
 /* ------------------------------------------------------------------ */
 const PageLoader: React.FC = () => (
-  <PremiumLogoLoader variant="page" message="Loading..." size="md" />
+  <PremiumLogoLoader variant="fullscreen" message="Loading workspace..." size="md" />
 );
 
 /* ------------------------------------------------------------------ */

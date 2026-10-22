@@ -54,7 +54,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: 'calc(100vh - 140px)',
+          minHeight: '100vh',
           width: '100%',
           flex: 1,
           textAlign: 'center',
