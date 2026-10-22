@@ -1227,9 +1227,11 @@
 
 @media (max-width: 47.99rem) {
   .retentio-landing-root #hero {
-    min-height: auto;
-    min-height: 100svh;
+    min-height: auto !important;
+    height: auto !important;
     justify-content: flex-start;
+    padding-bottom: 2.75rem;
+    overflow-x: hidden !important;
   }
   .retentio-landing-root #hero .hero__media {
     left: 0;
@@ -1237,72 +1239,141 @@
     top: 0;
     bottom: 0;
     width: 100%;
-    opacity: 0.26;
-    mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0.2) 100%);
-    -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0.2) 100%);
+    opacity: 0.22;
+    mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.6) 25%, rgba(0, 0, 0, 0.15) 100%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.6) 25%, rgba(0, 0, 0, 0.15) 100%);
   }
   .retentio-landing-root #hero .hero__copy {
-    padding-top: 5.75rem;
-    padding-bottom: 3.5rem;
+    padding-top: clamp(4.75rem, 11vh, 5.75rem);
+    padding-bottom: 0;
+    order: 1;
   }
   .retentio-landing-root #hero .hero__intro {
     max-width: 100%;
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
   .retentio-landing-root #hero .hero__title {
-    font-size: clamp(2.125rem, 8.5vw, 2.875rem);
+    font-size: clamp(1.875rem, 7.2vw, 2.375rem);
     max-width: 100%;
-    line-height: 1.1;
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+  }
+  .retentio-landing-root #hero .hero__lower {
+    gap: 1.125rem;
+    max-width: 100%;
   }
   .retentio-landing-root #hero .hero__lead {
-    font-size: 1.0625rem;
-    line-height: 1.5;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: color-mix(in srgb, var(--color-2, #faf5f0) 88%, transparent);
+  }
+  .retentio-landing-root #hero .hero__proof {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+  }
+  .retentio-landing-root #hero .hero__proof li {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    white-space: normal;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .retentio-landing-root #hero .hero__proof svg {
+    margin-top: 0.125rem;
+    flex-shrink: 0;
   }
   .retentio-landing-root #hero .hero__actions {
-    gap: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 24rem;
+    margin-top: 0.5rem;
+  }
+  .retentio-landing-root #hero .hero__actions .m-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.9375rem;
+    border-radius: 9999px;
+    box-sizing: border-box;
+  }
+  .retentio-landing-root #hero .hero__actions .m-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    text-align: center;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    color: color-mix(in srgb, var(--color-2, #faf5f0) 80%, transparent);
+    min-height: 2.75rem;
   }
   .retentio-landing-root #hero .hero__talk {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 3;
+    order: 2;
+    position: relative;
+    inset: auto;
+    pointer-events: auto;
+    z-index: 2;
+    width: 100%;
+    max-width: 84rem;
+    margin: 1.5rem auto 0;
+    padding-inline: var(--space-1, clamp(1.25rem, 4vw, 3.5rem));
+    box-sizing: border-box;
     opacity: 1;
+  }
+  .retentio-landing-root #hero .hero__draw {
+    position: relative;
+    inset: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    width: 100%;
+    max-width: 26rem;
   }
   .retentio-landing-root #hero .hero__lines {
     display: none;
   }
   .retentio-landing-root #hero .hero__chip {
-    position: absolute;
+    position: relative;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
     offset-path: none !important;
-    animation: hero-chip-float 4.5s ease-in-out infinite alternate !important;
-    z-index: 4;
+    transform: none !important;
+    animation: none !important;
+    width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
   }
-  .retentio-landing-root #hero .hero__chip--1 {
-    top: auto;
-    bottom: 3.5rem;
-    left: 1rem;
-    right: auto;
+  .retentio-landing-root #hero .hero__chip--1,
+  .retentio-landing-root #hero .hero__chip--3 {
+    display: block !important;
   }
   .retentio-landing-root #hero .hero__chip--2 {
     display: none !important;
   }
-  .retentio-landing-root #hero .hero__chip--3 {
-    top: auto;
-    bottom: 1.25rem;
-    right: 1rem;
-    left: auto;
-    animation-delay: -2.25s !important;
-  }
   .retentio-landing-root #hero .hero__chip .m-caption,
   .retentio-landing-root #hero .hero__chip .m-caption-2 {
     font-size: 0.75rem;
-    padding: 0.4375rem 0.8125rem;
-    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45);
-  }
-
-  @keyframes hero-chip-float {
-    from { transform: translateY(0); }
-    to { transform: translateY(-4px); }
+    padding: 0.4rem 0.8125rem;
+    border-radius: 9999px;
+    box-shadow: 0 0.35rem 1.25rem rgba(0, 0, 0, 0.35);
+    white-space: normal;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
+    line-height: 1.35;
   }
 }
 
@@ -2319,12 +2390,43 @@ html.lenis body {
     margin: 0.35rem auto 0.05rem;
   }
   @media (max-width: 47.99rem) {
-    .retentio-landing-root #calls .calls__head { grid-template-columns: 1fr; }
+    .retentio-landing-root #calls {
+      padding-top: clamp(2.75rem, 6vh, 3.75rem);
+      padding-bottom: clamp(3rem, 7vh, 4.25rem);
+      overflow-x: hidden !important;
+    }
+    .retentio-landing-root #calls .calls__head {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    .retentio-landing-root #calls .calls__head h2 {
+      font-size: clamp(1.75rem, 6.5vw, 2.25rem);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+    .retentio-landing-root #calls .calls__head-copy {
+      gap: 1.25rem;
+      width: 100%;
+    }
+    .retentio-landing-root #calls .calls__lead {
+      font-size: 0.9375rem;
+      line-height: 1.55;
+    }
+    .retentio-landing-root #calls .calls__head-copy .m-btn {
+      width: 100%;
+      max-width: 22rem;
+      justify-content: center;
+      text-align: center;
+      padding: 0.8125rem 1.5rem;
+      font-size: 0.9375rem;
+      border-radius: 9999px;
+      box-sizing: border-box;
+    }
     .retentio-landing-root #calls .calls__grid {
       display: flex;
       flex-direction: column;
-      gap: 2.5rem;
-      margin-top: 2.5rem;
+      gap: 2rem;
+      margin-top: 1.75rem;
     }
     .retentio-landing-root #calls .calls__aside {
       order: 1;
@@ -2332,25 +2434,154 @@ html.lenis body {
       pointer-events: auto;
       margin: 0 auto;
       width: 100%;
-      max-width: 22rem;
+      display: flex;
+      justify-content: center;
     }
     .retentio-landing-root #calls .calls__sticky {
       position: relative;
       top: auto;
       bottom: auto;
-    }
-    .retentio-landing-root #calls .phone {
-      font-size: 0.8125rem;
       width: 100%;
-      max-width: 20em;
+      display: flex;
+      justify-content: center;
+    }
+    .retentio-landing-root #calls .calls__device {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      transform: none !important;
+      opacity: 1 !important;
+    }
+    /* Phone chassis - proportional iPhone dimensions */
+    .retentio-landing-root #calls .phone {
+      font-size: 1rem;
+      width: clamp(18.5rem, 86vw, 21.5rem);
+      max-width: 100%;
       height: auto;
-      min-height: 28em;
+      min-height: auto;
+      padding: 0.5rem;
+      border-radius: 2.5rem;
       margin: 0 auto;
+      box-shadow:
+        0 1.5rem 3.5rem -0.75rem rgba(0, 0, 0, 0.75),
+        0 0 0 1px rgba(0, 0, 0, 0.9),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+    .retentio-landing-root #calls .phone__screen {
+      gap: 0.45rem;
+      padding: 0.875rem 0.75rem 0.75rem;
+      border-radius: 2.125rem;
+    }
+    .retentio-landing-root #calls .phone__island {
+      width: 5.5rem;
+      height: 1.35rem;
+      margin: 0 auto 0.25rem;
+    }
+    .retentio-landing-root #calls .phone__status {
+      padding: 0 0.35rem 0.15rem;
+      font-size: 0.72rem;
+    }
+    .retentio-landing-root #calls .phone__top {
+      padding-bottom: 0.35rem;
+    }
+    .retentio-landing-root #calls .phone__avatar {
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.75rem;
+    }
+    .retentio-landing-root #calls .phone__who {
+      font-size: 0.8125rem;
+    }
+    .retentio-landing-root #calls .phone__tier-badge {
+      font-size: 0.58rem;
+      padding: 0.12rem 0.38rem;
+    }
+    .retentio-landing-root #calls .phone__state {
+      font-size: 0.65rem;
+    }
+    .retentio-landing-root #calls .phone__call-btn {
+      width: 1.85rem;
+      height: 1.85rem;
+    }
+    .retentio-landing-root #calls .phone__call-btn svg {
+      width: 0.95rem;
+      height: 0.95rem;
+    }
+    .retentio-landing-root #calls .phone__number {
+      padding: 0.4rem 0.65rem;
+      border-radius: 0.65rem;
+      margin-bottom: 0.25rem;
+    }
+    .retentio-landing-root #calls .phone__number strong {
+      font-size: 0.78rem;
+    }
+    .retentio-landing-root #calls .phone__number-status {
+      font-size: 0.62rem;
+    }
+    .retentio-landing-root #calls .phone__log {
+      gap: 0.38rem;
+      padding: 0.1rem 0;
+    }
+    .retentio-landing-root #calls .phone__bubble {
+      padding: 0.45rem 0.65rem;
+      font-size: 0.74rem;
+      line-height: 1.34;
+      border-radius: 0.875rem;
+    }
+    .retentio-landing-root #calls .phone__bubble-author {
+      font-size: 0.6rem;
+      margin-bottom: 0.1rem;
+    }
+    .retentio-landing-root #calls .phone__bubble-foot {
+      margin-top: 0.2rem;
+      gap: 0.3rem;
+    }
+    .retentio-landing-root #calls .phone__bubble-time {
+      font-size: 0.58rem;
+    }
+    .retentio-landing-root #calls .phone__telemetry-bar {
+      padding: 0.3rem 0.45rem;
+      border-radius: 0.65rem;
+      margin: 0.1rem 0;
+    }
+    .retentio-landing-root #calls .phone__telemetry-pill span {
+      font-size: 0.54rem;
+    }
+    .retentio-landing-root #calls .phone__telemetry-pill strong {
+      font-size: 0.66rem;
+    }
+    .retentio-landing-root #calls .phone__cue {
+      padding: 0.35rem 0.55rem;
+      border-radius: 0.75rem;
+      font-size: 0.66rem;
+      margin: 0.1rem 0;
+    }
+    .retentio-landing-root #calls .phone__saved {
+      padding: 0.35rem 0.55rem;
+      border-radius: 0.75rem;
+      margin: 0.1rem 0;
+    }
+    .retentio-landing-root #calls .phone__saved-icon {
+      width: 1.35rem;
+      height: 1.35rem;
+    }
+    .retentio-landing-root #calls .phone__saved-info strong {
+      font-size: 0.66rem;
+    }
+    .retentio-landing-root #calls .phone__saved-info span {
+      font-size: 0.58rem;
+    }
+    .retentio-landing-root #calls .phone__saved-badge {
+      font-size: 0.56rem;
+      padding: 0.12rem 0.35rem;
     }
     .retentio-landing-root #calls .phone__bar { display: none; }
-    .retentio-landing-root #calls .phone__screen { gap: 0.65em; padding: 1.25em 1em 1em; }
-    .retentio-landing-root #calls .phone__log { gap: 0.5em; }
     .retentio-landing-root #calls .phone__note { display: none; }
+    .retentio-landing-root #calls .phone__home-indicator {
+      width: 5.5rem;
+      height: 0.22rem;
+      margin: 0.35rem auto 0.1rem;
+    }
     .retentio-landing-root #calls .phone [data-step] {
       opacity: 1 !important;
       transform: none !important;
@@ -2360,15 +2591,31 @@ html.lenis body {
       padding-bottom: 0;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 0.875rem;
+      margin-top: 0.5rem;
     }
     .retentio-landing-root #calls .calls__item {
       min-height: auto;
       justify-content: flex-start;
-      padding-block: 1.25rem;
-      padding-left: 1.25rem;
+      padding: 1.125rem 1.25rem;
+      border-radius: 1rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid var(--color-4, #33cc7a);
       opacity: 1 !important;
-      border-left: 0.125rem solid color-mix(in srgb, var(--color-2) 24%, transparent);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+    .retentio-landing-root #calls .calls__item h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #FAF5F0;
+      margin: 0 0 0.375rem;
+    }
+    .retentio-landing-root #calls .calls__item .m-text-8 {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: var(--color-7, #bacde0);
+      margin: 0;
     }
   }
 
