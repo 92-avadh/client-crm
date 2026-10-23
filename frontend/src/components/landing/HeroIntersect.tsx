@@ -148,6 +148,40 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                 See how it works
               </a>
             </div>
+
+            {/* Mobile Hero Visual Showcase Card (shown on mobile, hidden on desktop) */}
+            <div className="hero__mobile-showcase" aria-label="Retentio agency workspace overview">
+              <div className="hero__mobile-card">
+                <img
+                  src="/images/hero-executive.jpg"
+                  width={1000}
+                  height={750}
+                  alt="Agency team managing client retention and billing in Retentio"
+                  className="hero__mobile-photo"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+                <div className="hero__mobile-shade" aria-hidden="true" />
+                <div className="hero__mobile-chips">
+                  <div className="hero__chip hero__chip--mob-1">
+                    <p className="m-caption">
+                      <span className="m-caption__wave" aria-hidden="true">
+                        <i></i><i></i><i></i><i></i>
+                      </span>
+                      <span className="m-caption__text">Health score 98 · Live Client 360</span>
+                    </p>
+                  </div>
+                  <div className="hero__chip hero__chip--mob-2">
+                    <p className="m-caption-2">
+                      <span className="m-caption__wave" aria-hidden="true">
+                        <i></i><i></i><i></i><i></i>
+                      </span>
+                      <span className="m-caption__text">GST invoice raised · payment recorded</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

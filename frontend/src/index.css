@@ -1828,3 +1828,14 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   }
 }
 
+/* ─── Mobile Form Zoom Prevention & Touch Optimization ───── */
+@media screen and (max-width: 980px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+}
+

@@ -253,11 +253,75 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
   };
 
+  // ── Mobile active input centering to keep in middle & avoid keyboard obstruction ──
+  const centerTargetInput = (target: HTMLElement) => {
+    if (!target) return;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 980;
+    if (!isMobile) return;
+
+    const performCenter = () => {
+      const fieldBox = (target.closest('.field-input-box') || target.closest('.otp-inputs-row') || target) as HTMLElement;
+      if (!fieldBox) return;
+
+      if (window.visualViewport) {
+        const vh = window.visualViewport.height;
+        const rect = fieldBox.getBoundingClientRect();
+        const currentCenter = rect.top + rect.height / 2;
+        const targetCenter = vh / 2;
+        const delta = currentCenter - targetCenter;
+        
+        if (Math.abs(delta) > 4) {
+          window.scrollBy({
+            top: delta,
+            behavior: 'smooth'
+          });
+        }
+      } else {
+        fieldBox.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+    };
+
+    performCenter();
+    setTimeout(performCenter, 120);
+    setTimeout(performCenter, 320);
+  };
+
+  const handleInputInteraction = (e: React.FocusEvent<HTMLElement> | React.MouseEvent<HTMLElement>) => {
+    const el = e.target as HTMLElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+      centerTargetInput(el);
+    }
+  };
+
+  useEffect(() => {
+    const handleViewportResize = () => {
+      const active = document.activeElement as HTMLElement | null;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        centerTargetInput(active);
+      }
+    };
+
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', handleViewportResize);
+      return () => {
+        vv.removeEventListener('resize', handleViewportResize);
+      };
+    }
+  }, []);
+
   const switchToRegister = () => {
     setError('');
     setRegStep('details');
     setForgotStep(null);
     setMode('register');
+    if (typeof window !== 'undefined' && window.innerWidth <= 980) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const switchToSignIn = () => {
@@ -266,6 +330,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setForgotStep(null);
     if (regEmail) setSiEmail(regEmail);
     setMode('signin');
+    if (typeof window !== 'undefined' && window.innerWidth <= 980) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const switchToForgot = () => {
+    setForgotStep('email');
+    setForgotEmail(siEmail);
+    setError('');
+    if (typeof window !== 'undefined' && window.innerWidth <= 980) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const isSignIn = mode === 'signin';
@@ -304,7 +380,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         </defs>
       </svg>
 
-      <div className={`auth-slider-container ${isSignIn ? 'mode-signin' : 'mode-register'}`}>
+      <div
+        className={`auth-slider-container ${isSignIn ? 'mode-signin' : 'mode-register'}`}
+        onFocus={handleInputInteraction}
+        onClick={handleInputInteraction}
+      >
 
         {/* ── REGISTER FORM ── */}
         <div className={`auth-form-slot slot-left ${isSignIn ? 'slot-inactive-left' : 'slot-active'}`}>
@@ -615,7 +695,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <div>
                     <div className="field-label-between">
                       <label className="field-label">Password</label>
-                      <button type="button" onClick={() => { setForgotStep('email'); setForgotEmail(siEmail); setError(''); }} className="forgot-pwd-btn">
+                      <button type="button" onClick={switchToForgot} className="forgot-pwd-btn">
                         Forgot password?
                       </button>
                     </div>
@@ -754,7 +834,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         .forgot-pwd-btn { background: none; border: none; padding: 0; font-size: 12px; font-weight: 600; color: #059639; cursor: pointer; font-family: inherit; }
         .field-input-box { position: relative; display: flex; align-items: center; }
         .field-icon { position: absolute; left: 14px; color: #94a3b8; pointer-events: none; }
-        .text-input { width: 100%; padding: 11px 14px 11px 42px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 14px; color: #0f172a; font-family: inherit; outline: none; transition: all 0.2s ease; box-sizing: border-box; }
+        .text-input { width: 100%; padding: 12px 14px 12px 42px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 15px; color: #0f172a; font-family: inherit; outline: none; transition: all 0.2s ease; box-sizing: border-box; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
         .text-input:focus { border-color: #059639; box-shadow: 0 0 0 3px rgba(5, 150, 57, 0.12); }
         .text-input.input-error { border-color: #ef4444; background: #fef2f2; }
         .toggle-pwd-btn { position: absolute; right: 12px; background: none; border: none; padding: 4px; color: #94a3b8; cursor: pointer; display: flex; align-items: center; transition: color 0.15s; }
@@ -826,18 +906,148 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .form-fade-in { animation: fadeSlideUp 0.35s ease forwards; }
         @media (max-width: 980px) {
-          .auth-slider-container { flex-direction: column; min-height: auto; }
-          .auth-hero-wrapper { position: relative; width: 100%; height: auto; transform: none !important; filter: none !important; }
-          .auth-hero-overlay { clip-path: none !important; -webkit-clip-path: none !important; padding: 40px 24px; }
-          .auth-form-slot { width: 100%; min-height: auto; padding: 36px 20px 48px; transform: none !important; opacity: 1 !important; filter: none !important; }
-          .slot-left { display: none; }
-          .slot-right { display: block; }
-          .auth-slider-container.mode-register .slot-left { display: block; }
-          .auth-slider-container.mode-register .slot-right { display: none; }
-          .hero-features-list { display: none; }
-          .hero-headline-stack { min-height: auto; margin-bottom: 12px; }
-          .hero-headline-layer { position: relative; }
-          .hero-main-title { font-size: 26px; }
+          .auth-root {
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .auth-slider-container {
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+            background: #ffffff;
+          }
+
+          /* Hide hero overlay completely on mobile so login/register form is instantly in screen without scrolling */
+          .auth-hero-wrapper {
+            display: none !important;
+          }
+
+          .auth-form-slot {
+            width: 100%;
+            max-width: 440px;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 24px 20px 32px;
+            padding-top: max(24px, env(safe-area-inset-top));
+            padding-bottom: max(32px, env(safe-area-inset-bottom));
+            transform: none !important;
+            opacity: 1 !important;
+            filter: none !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+          }
+
+          .slot-left {
+            display: none;
+            order: 1;
+          }
+
+          .slot-right {
+            display: flex;
+            order: 1;
+          }
+
+          .auth-slider-container.mode-register .slot-left {
+            display: flex;
+          }
+
+          .auth-slider-container.mode-register .slot-right {
+            display: none;
+          }
+
+          .form-inner-wrapper {
+            width: 100%;
+            max-width: 100%;
+            margin: auto 0;
+          }
+
+          .auth-slot-header-row {
+            margin-bottom: 20px;
+          }
+
+          .brand-logo-img {
+            height: 32px;
+          }
+
+          .form-header {
+            margin-bottom: 20px;
+          }
+
+          .form-title {
+            font-size: 24px;
+            margin-bottom: 4px;
+          }
+
+          .form-subtitle {
+            font-size: 13px;
+          }
+
+          .form-fields {
+            gap: 14px;
+          }
+
+          /* CRITICAL: 16px minimum font size prevents iOS Safari / Android mobile browsers from zooming in */
+          .text-input,
+          input[type="text"],
+          input[type="email"],
+          input[type="password"] {
+            font-size: 16px !important;
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
+          }
+
+          .btn-primary-action {
+            padding: 13px 18px;
+            font-size: 15px;
+            touch-action: manipulation;
+          }
+
+          .switch-prompt {
+            margin-top: 18px;
+            font-size: 13px;
+          }
+
+          .security-tagline {
+            margin-top: 18px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .auth-form-slot {
+            padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+          }
+
+          .grid-two-cols {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+
+          .form-title {
+            font-size: 22px;
+          }
+
+          .otp-digit-box {
+            width: 44px;
+            height: 52px;
+            font-size: 20px;
+          }
         }
       `}</style>
     </div>

@@ -48,14 +48,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
     measureNav();
     window.addEventListener('resize', measureNav);
 
-    // Check user preference for reduced motion
+    // Check user preference for reduced motion or touch mobile device
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isTouchMobile = typeof window !== 'undefined' && (
+      window.innerWidth <= 980 ||
+      window.matchMedia('(pointer: coarse)').matches
+    );
 
-    // Initialize Lenis smooth scroll only if user does not prefer reduced motion
+    // Initialize Lenis smooth scroll on desktop mouse devices only
+    // Mobile touch devices use native 120Hz momentum scrolling to prevent stuck scroll / gesture traps
     let lenis: Lenis | null = null;
     let tickerCb: ((time: number) => void) | null = null;
 
-    if (!prefersReducedMotion) {
+    if (!prefersReducedMotion && !isTouchMobile) {
       lenis = new Lenis({
         lerp: 0.14,         // Responsive and natural - eliminates sluggish artificial scrolling delays
         smoothWheel: true,
@@ -77,6 +82,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
       };
       gsap.ticker.add(tickerCb);
       gsap.ticker.lagSmoothing(0);
+    } else {
+      // Passive native scroll listener so ScrollTrigger updates smoothly on touch mobile
+      ScrollTrigger.config({ limitCallbacks: true });
+      const handleNativeScroll = () => {
+        ScrollTrigger.update();
+      };
+      window.addEventListener('scroll', handleNativeScroll, { passive: true });
     }
 
     // Intercept in-page anchor links for seamless coordinated Lenis scrolling
