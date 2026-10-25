@@ -66,8 +66,8 @@ export const SERVICE_OPTIONS = [
 ];
 
 const PAYMENT_OPTIONS = [
-  { value: 'Paid', label: 'Paid' },
-  { value: 'Pending', label: 'Pending' },
+  { value: 'Pending', label: 'Pending - Awaiting Payment' },
+  { value: 'Paid', label: 'Paid - Verified Upfront' },
 ];
 
 const BILLING_CYCLE_OPTIONS = [
@@ -391,7 +391,7 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
               />
               <FormSelect
                 label="Initial Payment Status"
-                value={formData.paymentStatus || 'Paid'}
+                value={formData.paymentStatus || 'Pending'}
                 options={PAYMENT_OPTIONS}
                 onChange={(v) => onFormChange({ paymentStatus: v as any })}
               />

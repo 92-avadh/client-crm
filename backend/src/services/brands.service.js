@@ -159,25 +159,28 @@ async function createBrand(user, data) {
     const id = genId();
     const fee = parseFloat(data.monthlyFee) || 0;
     const today = data.onboardingDate || new Date().toISOString().split('T')[0];
-    const status = data.status || (['Active', 'Inactive', 'Paused', 'Churned'].includes(data.paymentStatus) ? data.paymentStatus : 'Active');
-    const paymentStatus = data.paymentStatus === 'Pending' ? 'Pending' : (data.paymentStatus === 'Paid' ? 'Paid' : (['Inactive', 'Paused', 'Churned'].includes(status) ? 'Pending' : 'Paid'));
+    const status = data.status || 'Active';
+    // Default to 'Pending' — payment must be explicitly confirmed by user before marking Paid
+    const paymentStatus = data.paymentStatus === 'Paid' ? 'Paid' : 'Pending';
+    const lastPaymentDate = paymentStatus === 'Paid' ? today : null;
     const magicToken = 'tok_' + crypto.randomBytes(12).toString('hex');
     const currency = data.currency || 'INR';
     const currencySymbol = data.currencySymbol || (currency === 'USD' ? '$' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'AED' ? 'AED' : (currency === 'CAD' ? 'CA$' : '₹')))));
     const retainerHours = parseFloat(data.retainerHours || 40);
-    const npsScore = data.npsScore != null ? parseInt(data.npsScore, 10) : 9;
+    // NPS score must be null until client submits rating in portal — never default to 9
+    const npsScore = data.npsScore != null ? parseInt(data.npsScore, 10) : null;
 
     await client.query(
       `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,city,state,pincode,gst_number,pan,
        service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date,owner_id,
        currency, currency_symbol, retainer_hours, used_hours, nps_score, contract_start_date, contract_end_date, magic_token)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)`,
       [
         id, data.name, data.ownerName || null, data.mobile || null, data.email || null,
         data.billingAddress || null, data.city || null, data.state || null, data.pincode || null,
         data.gstNumber || null, data.pan || null, data.serviceDetails || null,
         fee, data.billingCycleDay || 1, today, data.notes || null,
-        status, paymentStatus, today, user.id,
+        status, paymentStatus, lastPaymentDate, today, user.id,
         currency, currencySymbol, retainerHours, 0, npsScore,
         data.contractStartDate || today, data.contractEndDate || null, magicToken
       ]
@@ -190,15 +193,15 @@ async function createBrand(user, data) {
       );
     }
 
-    // Record the onboarding retainer so billing starts in sync.
-    if (fee > 0) {
+    // Only record an initial payment if the user explicitly marked it Paid upfront.
+    // Never fabricate an unconfirmed payment for a pending client.
+    if (fee > 0 && paymentStatus === 'Paid') {
       await client.query(
         `INSERT INTO payments (id, invoice_id, brand_id, brand_name, amount, payment_date, mode, reference_no, status, owner_id)
-         VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, $7, $8)`,
+         VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, 'Success', $7)`,
         [
           payId(), id, data.name, fee, today,
           'RET-' + id.replace('brand_', '').toUpperCase(),
-          paymentStatus === 'Paid' ? 'Success' : 'Pending',
           user.id,
         ]
       );

@@ -34,7 +34,7 @@ const emptyOnboard = (): ClientFormData => ({
   monthlyFee: '',
   billingCycleDay: '' as any,
   status: 'Active',
-  paymentStatus: 'Paid',
+  paymentStatus: 'Pending',
   notes: '',
 });
 
@@ -303,6 +303,7 @@ export const ClientsManager: React.FC = () => {
     const nextStatus = brand.paymentStatus === 'Paid' ? 'Pending' : 'Paid';
     try {
       await updateBrand(brand.id, { paymentStatus: nextStatus });
+      showToast(`Payment status for "${brand.name}" set to ${nextStatus}`, 'success');
     } catch (err: any) {
       showToast(getNaturalErrorMessage(err), 'error');
     }

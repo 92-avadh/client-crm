@@ -202,10 +202,25 @@ export const ClientProfileDrawer: React.FC<Props> = ({
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, background: 'var(--bg-subtle)' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: 19, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>{brand.name}</h2>
               <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                 {brand.currency || 'INR'}
+              </span>
+              <span style={{
+                padding: '2px 8px',
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 700,
+                background: brand.paymentStatus === 'Paid' ? 'var(--success-bg)' : 'var(--warn-bg)',
+                border: `1px solid ${brand.paymentStatus === 'Paid' ? 'var(--success-border)' : 'var(--warn-border)'}`,
+                color: brand.paymentStatus === 'Paid' ? 'var(--success-text)' : 'var(--warn-text)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: brand.paymentStatus === 'Paid' ? 'var(--success-text)' : 'var(--warn-text)' }} />
+                {brand.paymentStatus === 'Paid' ? 'Paid' : 'Payment Pending'}
               </span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>

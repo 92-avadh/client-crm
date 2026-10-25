@@ -1163,8 +1163,8 @@ export const AppProvider: React.FC<{
 
   // ---- Brand CRUD ----
   const addBrand = async (brandData: any): Promise<Brand> => {
-    const selectedStatus = brandData.status || (['Active', 'Inactive', 'Paused', 'Churned'].includes(brandData.paymentStatus) ? brandData.paymentStatus : 'Active');
-    const payStatus = brandData.paymentStatus === 'Pending' ? 'Pending' : (brandData.paymentStatus === 'Paid' ? 'Paid' : (['Inactive', 'Paused', 'Churned'].includes(selectedStatus) ? 'Pending' : 'Paid'));
+    const selectedStatus = brandData.status || 'Active';
+    const payStatus = brandData.paymentStatus === 'Paid' ? 'Paid' : 'Pending';
     const fee = Number(brandData.monthlyFee) || 0;
 
     let created: Brand;
@@ -1203,7 +1203,8 @@ export const AppProvider: React.FC<{
       return next;
     });
 
-    if (fee > 0) {
+    // Only add an initial payment to the ledger if explicitly verified as Paid upfront!
+    if (fee > 0 && payStatus === 'Paid') {
       const initialPayment: Payment = {
         id: 'pay_' + Date.now(),
         brandId: created.id,
@@ -1212,7 +1213,7 @@ export const AppProvider: React.FC<{
         paymentDate: today,
         mode: 'Bank Transfer',
         referenceNo: 'RET-' + created.id.replace('brand_', '').toUpperCase(),
-        status: payStatus === 'Paid' ? 'Success' : 'Pending'
+        status: 'Success'
       };
       setPayments(prev => {
         const next = [initialPayment, ...prev];

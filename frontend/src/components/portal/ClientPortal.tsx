@@ -43,17 +43,36 @@ export const ClientPortal: React.FC = () => {
       return;
     }
 
-    api.portal.get(token)
-      .then((res: PortalData) => {
+    let isMounted = true;
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    const fetchPortal = async () => {
+      try {
+        const res = await api.portal.get(token);
+        if (!isMounted) return;
         setData(res);
-        if (res.client.npsScore) {
+        if (res.client?.npsScore) {
           setRating(res.client.npsScore);
         }
-      })
-      .catch((err: any) => {
-        setError(err.message || 'Unable to load client portal. The link may have expired.');
-      })
-      .finally(() => setLoading(false));
+        setLoading(false);
+      } catch (err: any) {
+        if (!isMounted) return;
+        if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(fetchPortal, 2500);
+        } else {
+          setError(err.message || 'Unable to connect to the client portal. Please try again shortly.');
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchPortal();
+
+    return () => {
+      isMounted = false;
+    };
   }, [token]);
 
   const handleSubmitNps = async (e: React.FormEvent) => {
@@ -130,11 +149,30 @@ export const ClientPortal: React.FC = () => {
             <AlertTriangle style={{ width: 28, height: 28 }} />
           </div>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f8fafc', margin: '0 0 10px', letterSpacing: '-0.01em' }}>
-            Portal Link Expired or Invalid
+            Portal Session Unavailable
           </h2>
           <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, margin: '0 0 24px' }}>
-            {error || 'This passwordless portal session could not be authenticated. Please request a fresh magic link from your agency account lead.'}
+            {error || 'Unable to load the client portal session. Please check your connection or request a fresh link from your agency.'}
           </p>
+          <div style={{ marginBottom: 20 }}>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '9px 22px',
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+              }}
+            >
+              ↻ Reload Portal
+            </button>
+          </div>
           <div style={{ fontSize: 11, color: '#64748b' }}>
             Protected by Retentio Zero-Trust Client Portal Infrastructure
           </div>

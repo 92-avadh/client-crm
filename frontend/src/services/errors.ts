@@ -9,9 +9,9 @@
 const RULES: Array<[RegExp, string]> = [
   // ── Network / connectivity ───────────────────────────────
   [/failed to fetch|networkerror|network request failed|load failed/i,
-   'Unable to reach the server. The backend may be waking up — please try again in a moment.'],
+   'Unable to connect to the server. Please check your internet connection or try again shortly.'],
   [/timeout|timed out|etimedout|aborted/i,
-   'The request took too long. Please try again.'],
+   'The request took too long to complete. Please try again.'],
   [/cors|blocked by cors/i,
    'Connection issue with server. Please try again in a few moments.'],
 

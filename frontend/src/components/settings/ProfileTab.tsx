@@ -267,7 +267,7 @@ export const ProfileTab: React.FC<ProfileProps> = ({
               }}
             >
               {isBusy
-                ? 'Please wait until backend update completes before dropping another photo'
+                ? 'Please wait until the update completes before uploading another photo'
                 : 'Drop your photo (JPG, PNG or WebP) anywhere to update profile picture'}
             </p>
           </div>
