@@ -6,7 +6,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "seed": "node src/db/seed.js",
-    "clear-users": "node src/db/clear-users.js",
+    "reset-data": "node src/db/reset.js",
     "audit": "npm audit --production",
     "start:prod": "node server.js"
   },

@@ -27,8 +27,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
   const navigate = useNavigate();
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // A session counts as authenticated only when a real token is present.
+  // Bypass mode no longer exists, so there is nothing else to accept here.
   const isLoggedIn = isLoggedInProp || (typeof window !== 'undefined' && Boolean(
-    localStorage.getItem('retentio_user') && (localStorage.getItem('retentio_token') || localStorage.getItem('retentio_bypass_mode') === 'true')
+    localStorage.getItem('retentio_user') && localStorage.getItem('retentio_token')
   ));
 
   useEffect(() => {

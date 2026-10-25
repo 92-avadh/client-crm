@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import type { Brand, BrandStatus } from '../../types';
@@ -9,6 +9,7 @@ import { ClientProfileDrawer, type ProfileTab } from './ClientProfileDrawer';
 import { OnboardClientModal, EditClientModal, type ClientFormData } from './ClientFormModals';
 import { AssignMembersModal } from './AssignMembersModal';
 import { COUNTRIES, parsePhoneAndCountry } from '../ui/CountryCodePicker';
+import Pagination from '../ui/Pagination';
 
 const todayIso = () => new Date().toISOString().split('T')[0];
 
@@ -154,6 +155,24 @@ export const ClientsManager: React.FC = () => {
   });
 
   const selectedBrand = (brands || []).find((b) => b && b.id === selectedBrandId) || null;
+
+  /* ── Pagination (client-side; the full collection is already loaded) ── */
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(12);
+
+  const visibleCount = visibleBrands.length;
+  const pageCount = Math.max(1, Math.ceil(visibleCount / pageSize));
+  // Clamp inside an effect: calling setState directly during render is a React
+  // rules-of-hooks violation and triggers "Cannot update a component while
+  // rendering a different component".
+  useEffect(() => {
+    if (page > pageCount - 1) setPage(pageCount - 1);
+  }, [page, pageCount]);
+
+  const pagedBrands = useMemo(
+    () => visibleBrands.slice(page * pageSize, (page + 1) * pageSize),
+    [visibleBrands, page, pageSize]
+  );
 
   /* ── Handlers ────────────────────────────────────────────────── */
 
@@ -375,13 +394,24 @@ export const ClientsManager: React.FC = () => {
 
       {/* Grid */}
       <ClientGrid
-        brands={visibleBrands}
+        brands={pagedBrands}
         allUsers={allUsers}
         role={role as any}
         onView={(b) => { setSelectedBrandId(b.id); setActiveProfileTab('overview'); }}
         onEdit={openEditModal}
         onAssign={openAssignModal}
         onTogglePaymentStatus={handleTogglePaymentStatus}
+      />
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={visibleCount}
+        onPageChange={setPage}
+        onPageSizeChange={(n) => {
+          setPageSize(n);
+          setPage(0);
+        }}
       />
 
       {/* Drawer */}

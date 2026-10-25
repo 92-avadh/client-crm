@@ -24,6 +24,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { useCountUp } from '../../hooks/useCountUp';
+import { getDefaultPermissionsForRole } from '../team/permissionsConfig';
 
 // ─── Retentio Brand Identity Palette ──────────────────────────────────────────
 const BRAND = {
@@ -59,15 +60,17 @@ const BRAND = {
 const WidgetTogglePanel: React.FC<{
   visibility: Record<string, boolean>;
   onToggle: (key: string) => void;
-}> = ({ visibility, onToggle }) => {
-  const widgets = [
-    { key: 'financial', label: 'Financial Overview', icon: <DollarSign size={14} /> },
+  hasFinanceAccess: boolean;
+}> = ({ visibility, onToggle, hasFinanceAccess }) => {
+  const allWidgets = [
+    { key: 'financial', label: 'Financial Overview', icon: <DollarSign size={14} />, financeOnly: true },
     { key: 'operational', label: 'Operational Metrics', icon: <Activity size={14} /> },
-    { key: 'revenue', label: 'Revenue & Overhead', icon: <TrendingUp size={14} /> },
+    { key: 'revenue', label: 'Revenue & Overhead', icon: <TrendingUp size={14} />, financeOnly: true },
     { key: 'tasks', label: 'Pending Tasks', icon: <CheckSquare size={14} /> },
-    { key: 'invoices', label: 'Recent Invoices', icon: <Receipt size={14} /> },
+    { key: 'invoices', label: 'Recent Invoices', icon: <Receipt size={14} />, financeOnly: true },
     { key: 'activity', label: 'Recent Activity Feed', icon: <CheckCircle2 size={14} /> },
   ];
+  const widgets = allWidgets.filter(w => !w.financeOnly || hasFinanceAccess);
 
   return (
     <div
@@ -185,6 +188,12 @@ export const Dashboard: React.FC = () => {
   } = useApp();
 
   const role = currentUser?.role;
+  const isFullAdmin = role === 'admin';
+  const userPerms = Array.isArray(currentUser?.permissions) && currentUser.permissions.length > 0
+    ? currentUser.permissions
+    : (role ? getDefaultPermissionsForRole(role) : []);
+
+  const hasFinanceAccess = isFullAdmin || userPerms.includes('finance') || userPerms.includes('invoices') || userPerms.includes('expenses');
 
   // ── Safe Data References (Guards against null entries from API or local cache) ──
   const safePayments = (payments || []).filter(Boolean);
@@ -531,32 +540,34 @@ export const Dashboard: React.FC = () => {
               <Settings2 size={14} /> Customize
             </button>
             {showWidgetPanel && (
-              <WidgetTogglePanel visibility={widgetVisibility} onToggle={toggleWidget} />
+              <WidgetTogglePanel visibility={widgetVisibility} onToggle={toggleWidget} hasFinanceAccess={hasFinanceAccess} />
             )}
           </div>
 
-          {(role === 'admin' || role === 'hr') && (
+          {hasFinanceAccess ? (
             <>
-              <button
-                onClick={() => setActiveTab('clients')}
-                style={{
-                  padding: '9px 16px',
-                  background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyHover} 100%)`,
-                  color: 'var(--solid-btn-text)',
-                  border: `1px solid ${BRAND.navy}`,
-                  borderRadius: 9,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  boxShadow: '0 2px 8px rgba(10, 37, 64, 0.16)',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <Plus className="w-4 h-4" style={{ color: BRAND.greenBright }} /> Onboard Client
-              </button>
+              {(role === 'admin' || role === 'hr') && (
+                <button
+                  onClick={() => setActiveTab('clients')}
+                  style={{
+                    padding: '9px 16px',
+                    background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyHover} 100%)`,
+                    color: 'var(--solid-btn-text)',
+                    border: `1px solid ${BRAND.navy}`,
+                    borderRadius: 9,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    boxShadow: '0 2px 8px rgba(10, 37, 64, 0.16)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Plus className="w-4 h-4" style={{ color: BRAND.greenBright }} /> Onboard Client
+                </button>
+              )}
               <button
                 onClick={() => setActiveTab('invoices')}
                 style={{
@@ -578,12 +589,33 @@ export const Dashboard: React.FC = () => {
                 <Plus className="w-4 h-4" style={{ color: BRAND.green }} /> Create Invoice
               </button>
             </>
+          ) : (
+            <button
+              onClick={() => setActiveTab('tasks')}
+              style={{
+                padding: '9px 16px',
+                background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyHover} 100%)`,
+                color: 'var(--solid-btn-text)',
+                border: `1px solid ${BRAND.navy}`,
+                borderRadius: 9,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                boxShadow: '0 2px 8px rgba(10, 37, 64, 0.16)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <CheckSquare className="w-4 h-4" style={{ color: BRAND.greenBright }} /> View My Tasks
+            </button>
           )}
         </div>
       </div>
 
       {/* ══ SECTION A: FINANCIAL OVERVIEW ═════════════════════ */}
-      {role === 'admin' && widgetVisibility.financial !== false && (
+      {hasFinanceAccess && widgetVisibility.financial !== false && (
         <div>
           {dashboardFocus === 'financial' && (
             <div
@@ -903,9 +935,9 @@ export const Dashboard: React.FC = () => {
       )}
 
       {/* ══ SECTION C: MAIN CONTENT AREA ══════════════════════ */}
-      <div className="dashboard-grid-main">
+      <div className="dashboard-grid-main" style={!hasFinanceAccess ? { gridTemplateColumns: '1fr' } : undefined}>
         {/* Left Column: Revenue & Overhead / Client Distribution */}
-        {widgetVisibility.revenue !== false && (
+        {hasFinanceAccess && widgetVisibility.revenue !== false && (
           <div
             className="card"
             style={{
@@ -1503,9 +1535,9 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ══ SECTION D: SECONDARY CONTENT ══════════════════════ */}
-      <div className="dashboard-grid-secondary">
+      <div className="dashboard-grid-secondary" style={!hasFinanceAccess ? { gridTemplateColumns: '1fr' } : undefined}>
         {/* Left Column: Recent Invoices */}
-        {widgetVisibility.invoices !== false && (
+        {hasFinanceAccess && widgetVisibility.invoices !== false && (
           <div
             className="card"
             style={{

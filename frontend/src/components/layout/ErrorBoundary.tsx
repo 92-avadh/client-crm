@@ -34,6 +34,21 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   private handleReload = () => {
+    try {
+      const keys = ['retentio_local_expenses', 'retentio_local_invoices', 'retentio_local_payments'];
+      keys.forEach((key) => {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          try {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) {
+              const clean = arr.filter((item) => item != null && typeof item === 'object' && item.id);
+              localStorage.setItem(key, JSON.stringify(clean));
+            }
+          } catch {}
+        }
+      });
+    } catch {}
     this.setState({ hasError: false, message: '' });
     window.location.reload();
   };

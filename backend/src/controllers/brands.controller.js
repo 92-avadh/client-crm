@@ -39,8 +39,8 @@ const list = asyncHandler(async (req, res) => {
   res.json(await brands.listBrands(req.user, {
     status: req.query.status,
     search: req.query.search,
-    page: req.query.page,
-    pageSize: req.query.pageSize,
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(1000, parseInt(req.query.pageSize, 10) || 50)),
   }));
 });
 

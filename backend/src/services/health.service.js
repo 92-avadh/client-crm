@@ -200,7 +200,7 @@ async function getAgencyHealthOverview(user) {
   if (user && user.role === 'brand') {
     query += ' AND id = $1';
     params.push(user.brandId || '');
-  } else if (user && user.id !== 'usr_admin' && user.role !== 'admin' && user.role !== 'hr') {
+  } else if (user && user.role !== 'admin' && user.role !== 'hr') {
     query += ' AND id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $1)';
     params.push(user.id);
   }

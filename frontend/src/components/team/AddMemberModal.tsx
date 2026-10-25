@@ -6,13 +6,13 @@ import { isDirty } from '../../hooks/isDirty';
 import { RoleSelector } from './RoleSelector';
 
 import { PermissionsSelector } from './PermissionsSelector';
-import { getDefaultPermissionsForRole } from './permissionsConfig';
+import { getDefaultPermissionsForRole, CORPORATE_ROLES } from './permissionsConfig';
 
 export interface AddMemberForm {
   name: string;
   email: string;
   phone: string;
-  designation: string;
+  designation?: string;
   role: string;
   password: string;
   avatar: string;
@@ -209,17 +209,14 @@ export const AddMemberModal: React.FC<Props> = ({
                   role={form.role}
                   allowAdmin={false}
                   onChange={(newRole) => {
+                    const roleLabel = CORPORATE_ROLES.find((r) => r.value === newRole)?.label || 'Team Member';
                     onFormChange({
                       role: newRole,
+                      designation: roleLabel,
                       permissions: getDefaultPermissionsForRole(newRole),
                     });
                   }}
                 />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={labelStyle}>Designation</label>
-                <input type="text" value={form.designation} placeholder="e.g. Senior Account Manager"
-                  onChange={(e) => onFormChange({ designation: e.target.value })} style={inputStyle} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={labelStyle}>Temporary Password *</label>

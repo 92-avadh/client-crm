@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import type { Invoice } from '../../types';
 import confetti from 'canvas-confetti';
@@ -6,6 +6,7 @@ import { Plus, Search, Filter, Trash2, Loader2 } from 'lucide-react';
 import { btnPrimary, btnSecondary } from './invoiceStyles';
 import { useInvoiceBuilder } from './useInvoiceBuilder';
 import { InvoiceTable } from './InvoiceTable';
+import Pagination from '../ui/Pagination';
 import { InvoiceBuilderModal } from './InvoiceBuilderModal';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { RazorpayModal, OfflinePaymentModal, type OfflineForm } from './PaymentModals';
@@ -101,6 +102,21 @@ export const InvoicesManager: React.FC = () => {
     });
   }, [invoices, search, statusFilter]);
 
+  /* ── Pagination (client-side; the full collection is already loaded) ── */
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+
+  const filteredCount = filteredInvoices.length;
+  const pageCount = Math.max(1, Math.ceil(filteredCount / pageSize));
+  useEffect(() => {
+    if (page > pageCount - 1) setPage(pageCount - 1);
+  }, [page, pageCount]);
+
+  const pagedInvoices = useMemo(
+    () => filteredInvoices.slice(page * pageSize, (page + 1) * pageSize),
+    [filteredInvoices, page, pageSize]
+  );
+
     const dueBrands = useMemo(() => {
       const todayDay = new Date().getDate();
       return (brands || []).filter(Boolean).filter(b => b.status === 'Active' && Number(b.billingCycleDay || 0) <= todayDay);
@@ -108,9 +124,20 @@ export const InvoicesManager: React.FC = () => {
 
     /* ── Handlers ────────────────────────────────────────────────── */
 
-  const handleGenerateInvoice = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!builder.selectedBrand) return;
+  const handleGenerateInvoice = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!builder.selectedBrand) {
+      showToast('Please select a client to generate the invoice', 'error');
+      return;
+    }
+    if (!builder.dueDate) {
+      showToast('Please select an invoice due date', 'error');
+      return;
+    }
+    if (!builder.items || builder.items.length === 0 || !builder.items[0]?.description) {
+      showToast('Please specify at least one invoice service line item', 'error');
+      return;
+    }
 
     setIsCreatingInvoice(true);
     try {
@@ -137,6 +164,8 @@ export const InvoicesManager: React.FC = () => {
       setIsRecurring(false);
       builder.reset();
       setShowCreateModal(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to generate invoice. Please try again.', 'error');
     } finally {
       setIsCreatingInvoice(false);
     }
@@ -469,7 +498,7 @@ export const InvoicesManager: React.FC = () => {
       )}
 
       <InvoiceTable
-        invoices={filteredInvoices}
+        invoices={pagedInvoices}
         recurringIds={recurringInvoiceIds}
         onView={setSelectedInvoiceId}
         onPay={(inv) => { setPayingInvoice(inv); setShowPayModal(true); }}
@@ -480,6 +509,17 @@ export const InvoicesManager: React.FC = () => {
         selectedIds={selectedInvoiceIds}
         onToggleSelect={handleToggleSelectInvoice}
         onSelectAll={handleSelectAllInvoices}
+      />
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={filteredCount}
+        onPageChange={setPage}
+        onPageSizeChange={(n) => {
+          setPageSize(n);
+          setPage(0);
+        }}
       />
 
       {/* ── Modals ──────────────────────────────────────────────── */}

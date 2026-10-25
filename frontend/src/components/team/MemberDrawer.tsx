@@ -188,7 +188,7 @@ export const MemberDrawer: React.FC<Props> = ({
               {assignedBrands.map((brand: any) => (
                 <div key={brand.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--bg-raised)', borderRadius: 10, border: '1px solid var(--border)' }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: brandColor(brand.name), display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--solid-btn-text)', fontSize: 15, fontWeight: 800, flexShrink: 0 }}>
-                    {brand.name.charAt(0).toUpperCase()}
+                    {(brand.name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{brand.name}</div>

@@ -743,7 +743,7 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   border-collapse: separate;
   border-spacing: 0;
 }
-.data-table th, th {
+.data-table th {
   background: var(--bg-subtle);
   color: var(--text-muted);
   font-family: var(--font-sans);
@@ -756,7 +756,7 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   padding: 0.85rem 1.1rem;
   border-bottom: 1px solid var(--border);
 }
-.data-table td, td {
+.data-table td {
   padding: 0.95rem 1.1rem;
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
@@ -968,11 +968,11 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   .metric-value {
     font-size: 1.375rem;
   }
-  .data-table th, th {
+  .data-table th {
     padding: 0.65rem 0.75rem;
     font-size: 0.65rem;
   }
-  .data-table td, td {
+  .data-table td {
     padding: 0.75rem 0.75rem;
   }
 }
@@ -1312,17 +1312,17 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   border-color: var(--border) !important;
 }
 
-.dark table thead th {
+.dark .data-table thead th {
   background-color: var(--bg-subtle) !important;
   color: var(--text-secondary) !important;
   border-color: var(--border) !important;
 }
 
-.dark table tbody td {
+.dark .data-table tbody td {
   border-color: var(--border) !important;
 }
 
-.dark table tbody tr:hover {
+.dark .data-table tbody tr:hover {
   background-color: var(--bg-raised) !important;
 }
 

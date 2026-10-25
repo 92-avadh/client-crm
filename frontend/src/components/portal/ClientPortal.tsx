@@ -120,7 +120,7 @@ export const ClientPortal: React.FC = () => {
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--solid-btn-bg, #3b82f6)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16 }}>
-              {agency.companyName.charAt(0).toUpperCase()}
+              {(agency.companyName || '?').charAt(0).toUpperCase()}
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary, #f8fafc)' }}>{agency.companyName}</div>

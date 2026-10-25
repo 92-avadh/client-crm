@@ -32,13 +32,10 @@ function scopeForUser(user) {
     return { sql: ' AND brand_id = $1', params: [user.brandId || ''] };
   }
   if (user.role === 'admin') {
-    if (user.id !== 'usr_admin') {
-      return {
-        sql: ' AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $1) OR brand_id IS NULL)',
-        params: [user.id],
-      };
-    }
-    return { sql: '', params: [] };
+    // The built-in owner sees everything. Every other admin must always be
+    // able to see tasks assigned directly to them, otherwise a task handed to
+    // a co-admin vanishes from their own board.
+    return { sql: ' AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $1) OR brand_id IS NULL OR assignee_id = $1)', params: [user.id] };
   }
   // Internal team members (standard, corporate presets, or custom roles)
   return {
@@ -123,7 +120,7 @@ async function updateTask(id, data) {
 
 async function verifyTaskAccess(user, id) {
   if (!user) return false;
-  if (['admin', 'hr', 'manager'].includes(user.role) || user.id === 'usr_admin') return true;
+  if (['admin', 'hr', 'manager'].includes(user.role)) return true;
   const { rows } = await pool.query('SELECT brand_id, assignee_id, owner_id FROM tasks WHERE id=$1', [id]);
   if (!rows.length) return false;
   const task = rows[0];

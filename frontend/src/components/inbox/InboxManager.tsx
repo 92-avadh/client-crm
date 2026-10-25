@@ -654,7 +654,7 @@ export const InboxManager: React.FC = () => {
                         fontWeight: 700,
                       }}
                     >
-                      {conv.title.charAt(0).toUpperCase()}
+                      {(conv.title || '?').charAt(0).toUpperCase()}
                     </div>
 
                     {/* Content */}

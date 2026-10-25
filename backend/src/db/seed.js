@@ -1,11 +1,15 @@
 /**
- * RETENTIO DATABASE SEED SCRIPT (CLEAN / BLANK STATE)
+ * RETENTIO DATABASE SEED SCHEMA SCRIPT
  *
- * Seeds core schema, baseline application settings, and the default admin user:
- *   ADMIN:  alex@retentio.co  /  Admin@1234  (usr_admin)
+ * Applies the schema and baseline application settings ONLY.
  *
- * All demo brands, projects, tasks, invoices, payments, expenses,
- * meetings, and audit logs are omitted to ensure a fresh, empty workspace.
+ * No users are seeded. The first account is created through the normal
+ * self-registration flow (`POST /auth/verify-otp`), which promotes the first
+ * registered user to admin and blocks every registration after that.
+ *
+ * Seeding fake users was removed because it silently granted real access to
+ * accounts the owner never created, and an "auto-seed when the users table is
+ * empty" job re-created an admin after the workspace was wiped.
  *
  * Usage: node src/db/seed.js
  */
@@ -14,7 +18,6 @@ require('dotenv').config();
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcryptjs');
 const pool = require('./index');
 
 async function runSchema() {
@@ -25,21 +28,6 @@ async function runSchema() {
 
 async function seed(closePool = false) {
   await runSchema();
-
-  const passwordHash = await bcrypt.hash('Admin@1234', 10);
-
-  // Admin User
-  await pool.query(`
-    INSERT INTO users (id, name, email, phone, password_hash, role, designation, is_active) VALUES
-    ('usr_admin', 'Alex Rivera', 'alex@retentio.co', '+91 98765 43210', $1, 'admin', 'Agency Founder & Managing Director', true)
-    ON CONFLICT (id) DO UPDATE SET
-      name = EXCLUDED.name,
-      email = EXCLUDED.email,
-      phone = EXCLUDED.phone,
-      designation = EXCLUDED.designation,
-      is_active = true
-  `, [passwordHash]);
-  console.log('Admin user seeded (alex@retentio.co).');
 
   // Core Settings
   await pool.query(`
@@ -64,7 +52,7 @@ async function seed(closePool = false) {
   `);
   console.log('Core settings seeded.');
 
-  console.log('\n✅ Blank database seed completed successfully (admin user and core settings preserved).');
+  console.log('\n✅ Schema seed completed. No users seeded — register the first account in the app.');
   if (closePool) {
     await pool.end();
   }

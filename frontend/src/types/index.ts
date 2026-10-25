@@ -263,6 +263,7 @@ export interface ChatMessage {
   isRead?: boolean;
   isDeletedForEveryone?: boolean;
   deletedForUserIds?: string[];
+  failed?: boolean;
 }
 
 export interface Conversation {

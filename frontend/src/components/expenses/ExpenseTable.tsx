@@ -157,8 +157,8 @@ export const ExpenseTable: React.FC<Props> = ({
                     type="button"
                     onClick={() => onToggleStatus(exp)}
                     disabled={!canManage}
-                    title={canManage ? `Click to toggle status: currently ${isPaid ? 'Paid' : 'Pending'}` : undefined}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 750, background: isPaid ? 'var(--success-bg)' : 'var(--warn-bg)', color: isPaid ? 'var(--success-text)' : 'var(--warn-text)', border: `1px solid ${isPaid ? 'var(--success-border)' : 'var(--warn-border)'}`, whiteSpace: 'nowrap', cursor: canManage ? 'pointer' : 'default', transition: 'all 0.15s ease' }}
+                    title={canManage ? `Click to toggle status: currently ${isPaid ? 'Paid' : 'Pending'}` : 'Only admins and HR can change payment status'}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 750, background: isPaid ? 'var(--success-bg)' : 'var(--warn-bg)', color: isPaid ? 'var(--success-text)' : 'var(--warn-text)', border: `1px solid ${isPaid ? 'var(--success-border)' : 'var(--warn-border)'}`, whiteSpace: 'nowrap', cursor: canManage ? 'pointer' : 'not-allowed', opacity: canManage ? 1 : 0.6, transition: 'all 0.15s ease' }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: isPaid ? 'var(--success-text)' : 'var(--warn-text)' }} />
                     {isPaid ? 'Paid' : 'Pending'}
@@ -173,26 +173,26 @@ export const ExpenseTable: React.FC<Props> = ({
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
                       {!isPaid ? (
-                        <button onClick={() => onToggleStatus(exp)} title="Mark as Paid to reflect in Dashboard"
-                          style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--success-bg)', border: '1px solid var(--success-border)', color: 'var(--success-text)', fontSize: 11, fontWeight: 750, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <button onClick={() => onToggleStatus(exp)} disabled={!canManage} title={canManage ? "Mark as Paid to reflect in Dashboard" : 'Only admins and HR can change payment status'}
+                          style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--success-bg)', border: '1px solid var(--success-border)', color: 'var(--success-text)', fontSize: 11, fontWeight: 750, cursor: canManage ? 'pointer' : 'not-allowed', opacity: canManage ? 1 : 0.6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                           <CheckCircle2 style={{ width: 12, height: 12 }} />
                           Mark Paid
                         </button>
                       ) : (
-                        <button onClick={() => onToggleStatus(exp)} title="Mark as Pending (removes from Dashboard)"
-                          style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 650, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        <button onClick={() => onToggleStatus(exp)} disabled={!canManage} title={canManage ? 'Mark as Pending (removes from Dashboard)' : 'Only admins and HR can change payment status'}
+                          style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 650, cursor: canManage ? 'pointer' : 'not-allowed', opacity: canManage ? 1 : 0.6, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                           Mark Pending
                         </button>
                       )}
 
-                      <button onClick={() => onEdit(exp)}
-                        style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <button onClick={() => onEdit(exp)} disabled={!canManage}
+                        style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 11, fontWeight: 700, cursor: canManage ? 'pointer' : 'not-allowed', opacity: canManage ? 1 : 0.6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <Edit3 style={{ width: 12, height: 12 }} />
                         Edit
                       </button>
 
-                      <button onClick={() => onDelete(exp)}
-                        style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--bg-card)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <button onClick={() => onDelete(exp)} disabled={!canManage}
+                        style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--bg-card)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', fontSize: 11, fontWeight: 700, cursor: canManage ? 'pointer' : 'not-allowed', opacity: canManage ? 1 : 0.6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <Trash2 style={{ width: 12, height: 12 }} />
                         Delete
                       </button>

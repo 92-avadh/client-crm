@@ -43,8 +43,6 @@ export const clearToken = () => {
 let sessionExpiredDebounceTimer: any = null;
 
 export function handleSessionExpired(message = 'Your session has expired. Please sign in again.') {
-  const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
-  if (isBypass) return;
   isCircuitBroken = true;
   clearToken();
   try {
@@ -84,6 +82,67 @@ export const clearApiCache = (pattern?: string) => {
   }
 };
 
+/**
+ * Hard ceiling on how many rows a single "fetch everything" call may pull.
+ * Every list endpoint caps `pageSize`, so the only way to keep dashboard
+ * aggregation honest is to page through the collection until it is drained.
+ */
+const MAX_ROWS_PER_REQUEST = 5000;
+
+/**
+ * Fetch an entire audit-log collection.
+ *
+ * `/audit-logs` uses `limit`/`offset` (capped at 200) rather than
+ * `page`/`pageSize`, so `fetchAll` does not fit it.
+ */
+export async function fetchAllAuditLogs(pageSize = 200): Promise<any[]> {
+  const out: any[] = [];
+  let offset = 0;
+  for (let i = 0; i < 25; i += 1) {
+    const res = await req<any>('GET', `/audit-logs?limit=${pageSize}&offset=${offset}`);
+    const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+    out.push(...list);
+    const total = typeof res?.total === 'number' ? res.total : out.length;
+    if (list.length === 0 || out.length >= total) break;
+    offset += pageSize;
+  }
+  return out;
+}
+
+/**
+ * Fetch an entire collection across as many pages as it takes.
+ *
+ * List endpoints return `{ data, total, page, pageSize }` and cap each page at
+ * `pageSize`, so a single unparameterised call silently truncates. Aggregations
+ * (totals, KPI cards, profit) computed from that slice under-report. This
+ * drains the collection and returns a flat array, which keeps aggregation
+ * correct while individual pages paginate on the client.
+ */
+export async function fetchAll<T>(path: string, pageSize = 200): Promise<T[]> {
+  const first = await req<any>('GET', `${path}${path.includes('?') ? '&' : '?'}page=1&pageSize=${pageSize}`);
+  const firstPage = Array.isArray(first) ? first : Array.isArray(first?.data) ? first.data : [];
+  const total = typeof first?.total === 'number' ? first.total : firstPage.length;
+
+  if (firstPage.length >= total || firstPage.length === 0) {
+    return firstPage as T[];
+  }
+
+  const pages = Math.min(Math.ceil(total / pageSize), Math.ceil(MAX_ROWS_PER_REQUEST / pageSize));
+  const rest: any[] = await Promise.all(
+    Array.from({ length: pages - 1 }, (_, i) =>
+      req<any>('GET', `${path}${path.includes('?') ? '&' : '?'}page=${i + 2}&pageSize=${pageSize}`)
+    )
+  );
+
+  const out: T[] = [...firstPage];
+  for (const r of rest) {
+    const list = Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : [];
+    out.push(...list);
+    if (out.length >= MAX_ROWS_PER_REQUEST) break;
+  }
+  return out;
+}
+
 const isPublicRoute = (path: string) =>
   path.startsWith('/auth/login') ||
   path.startsWith('/auth/send-otp') ||
@@ -97,13 +156,11 @@ const isPublicRoute = (path: string) =>
 // Core fetch wrapper with circuit breaker, deduplication, and cache
 async function req<T>(method: string, path: string, body?: any): Promise<T> {
   const isPublic = isPublicRoute(path);
-  const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
   const token = getToken();
 
-  // If in bypass/demo mode, do not spam remote server with protected calls that will 401
-  if (!isPublic && isBypass) {
-    return (Array.isArray(body) ? [] : undefined) as unknown as T;
-  }
+  // There is no offline/demo fallback. A protected request without a valid
+  // token is rejected loudly so the UI shows a real error instead of silently
+  // rendering empty lists — which is what made earlier bugs look like "no data".
 
   // If no token exists on protected routes or circuit breaker has tripped, short-circuit immediately
   if (!isPublic && (!token || isCircuitBroken)) {
@@ -163,9 +220,7 @@ async function req<T>(method: string, path: string, body?: any): Promise<T> {
       // If session expired or unauthorized on protected route, trip circuit breaker and trigger single logout
       if (res.status === 401 && !isPublic) {
         isCircuitBroken = true;
-        if (!isBypass) {
-          handleSessionExpired(friendlyMsg);
-        }
+        handleSessionExpired(friendlyMsg);
       }
 
       throw new Error(friendlyMsg);
@@ -221,6 +276,7 @@ export const api = {
   },
   users: {
     list: () => req<any[]>('GET', '/users'),
+    listAll: () => fetchAll<any>('/users'),
     get: (id: string) => req<any>('GET', `/users/${id}`),
     create: (data: any) => req<any>('POST', '/users', data),
     update: (id: string, data: any) => req<any>('PATCH', `/users/${id}`, data),
@@ -228,6 +284,8 @@ export const api = {
   },
   brands: {
     list: (params?: any) => req<any[]>('GET', '/brands' + (params ? '?' + new URLSearchParams(params) : '')),
+    /** Full collection across every page — used by aggregating screens. */
+    listAll: () => fetchAll<any>('/brands'),
     get: (id: string) => req<any>('GET', `/brands/${id}`),
     create: (data: any) => req<any>('POST', '/brands', data),
     update: (id: string, data: any) => req<any>('PATCH', `/brands/${id}`, data),
@@ -240,17 +298,20 @@ export const api = {
   },
   projects: {
     list: (params?: any) => req<any[]>('GET', '/projects' + (params ? '?' + new URLSearchParams(params) : '')),
+    listAll: () => fetchAll<any>('/projects'),
     create: (data: any) => req<any>('POST', '/projects', data),
     update: (id: string, data: any) => req<any>('PATCH', `/projects/${id}`, data),
   },
   tasks: {
     list: (params?: any) => req<any[]>('GET', '/tasks' + (params ? '?' + new URLSearchParams(params) : '')),
+    listAll: () => fetchAll<any>('/tasks'),
     create: (data: any) => req<any>('POST', '/tasks', data),
     updateStatus: (id: string, status: string) => req<any>('PATCH', `/tasks/${id}/status`, { status }),
     update: (id: string, data: any) => req<any>('PATCH', `/tasks/${id}`, data),
   },
   invoices: {
     list: (params?: any) => req<any[]>('GET', '/invoices' + (params ? '?' + new URLSearchParams(params) : '')),
+    listAll: () => fetchAll<any>('/invoices'),
     get: (id: string) => req<any>('GET', `/invoices/${id}`),
     create: (data: any) => req<any>('POST', '/invoices', data),
     updateStatus: (id: string, status: string) => req<any>('PATCH', `/invoices/${id}/status`, { status }),
@@ -259,6 +320,7 @@ export const api = {
   },
   payments: {
     list: (params?: any) => req<any[]>('GET', '/payments' + (params ? '?' + new URLSearchParams(params) : '')),
+    listAll: () => fetchAll<any>('/payments'),
     record: (data: any) => req<any>('POST', '/payments', data),
     update: (id: string, data: any) => req<any>('PATCH', `/payments/${id}`, data),
     delete: (id: string) => req<any>('DELETE', `/payments/${id}`),
@@ -276,6 +338,7 @@ export const api = {
   },
   expenses: {
     list: (params?: any) => req<any[]>('GET', '/expenses' + (params ? '?' + new URLSearchParams(params) : '')),
+    listAll: () => fetchAll<any>('/expenses'),
     create: (data: any) => req<any>('POST', '/expenses', data),
     update: (id: string, data: any) => req<any>('PATCH', `/expenses/${id}`, data),
     delete: (id: string) => req<any>('DELETE', `/expenses/${id}`),
@@ -283,12 +346,14 @@ export const api = {
   },
   meetings: {
     list: (params?: any) => req<any[]>('GET', '/meetings' + (params ? '?' + new URLSearchParams(params) : '')),
+    listAll: () => fetchAll<any>('/meetings'),
     create: (data: any) => req<any>('POST', '/meetings', data),
     update: (id: string, data: any) => req<any>('PATCH', `/meetings/${id}`, data),
     delete: (id: string) => req<any>('DELETE', `/meetings/${id}`),
   },
   leads: {
     list: (params?: any) => req<any[]>('GET', '/leads' + (params ? '?' + new URLSearchParams(params) : '')),
+    listAll: () => fetchAll<any>('/leads'),
     create: (data: any) => req<any>('POST', '/leads', data),
     updateStage: (id: string, stage: string) => req<any>('PATCH', `/leads/${id}/stage`, { stage }),
     convert: (id: string) => req<any>('POST', `/leads/${id}/convert`),

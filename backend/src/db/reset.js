@@ -47,8 +47,10 @@ async function reset() {
     await client.query('DELETE FROM brand_documents');
     await client.query('DELETE FROM brands');
 
-    // Remove all users EXCEPT the built-in admin account so you can still log in
-    await client.query("DELETE FROM users WHERE id <> 'usr_admin'");
+    // Remove every user. No account is seeded with a reserved id any more, so
+    // the workspace genuinely starts empty and the owner re-registers through
+    // the normal self-registration flow.
+    await client.query('DELETE FROM users');
 
     // Reset settings to defaults (keep the row so the app does not error)
     await client.query(`

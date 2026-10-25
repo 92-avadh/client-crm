@@ -54,11 +54,12 @@ export function useFilteredExpenses(
   } = filters;
 
   return useMemo(() => {
-    return expenses
+    const validExpenses = (expenses || []).filter((e): e is Expense => Boolean(e && typeof e === 'object' && e.id));
+    return validExpenses
       .filter((e) => {
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          const linked = brands.find((b: any) => b.id === e.brandId);
+          const linked = (brands || []).find((b: any) => b && b.id === e.brandId);
           const haystack = [
             e.title, e.description, e.note, e.category, e.paymentMode, e.employeeName,
             linked?.name,
@@ -134,12 +135,13 @@ export interface ExpenseMetrics {
  */
 export function useExpenseMetrics(expenses: Expense[], brands: Brand[]): ExpenseMetrics {
   return useMemo(() => {
-    const paid = expenses.filter((e) => (e.paymentStatus || 'Paid') === 'Paid');
-    const pending = expenses.filter((e) => e.paymentStatus === 'Pending');
-    const sum = (list: Expense[]) => list.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const validExpenses = (expenses || []).filter((e): e is Expense => Boolean(e && typeof e === 'object' && e.id));
+    const paid = validExpenses.filter((e) => (e.paymentStatus || 'Paid') === 'Paid');
+    const pending = validExpenses.filter((e) => e.paymentStatus === 'Pending');
+    const sum = (list: Expense[]) => list.reduce((s, e) => s + (Number(e?.amount) || 0), 0);
 
     const total = sum(paid);
-    const grossTotal = sum(expenses);
+    const grossTotal = sum(validExpenses);
 
     const now = new Date();
     const thisMonth = paid.filter((e) => {
@@ -150,7 +152,7 @@ export function useExpenseMetrics(expenses: Expense[], brands: Brand[]): Expense
 
     const brandExpenses = paid.filter((e) => Boolean(e.brandId) && e.brandId !== 'other');
 
-    const salaryExpenses = expenses.filter(
+    const salaryExpenses = validExpenses.filter(
       (e) => e.category === 'Employee Salaries' || e.category === 'Salary' || Boolean(e.employeeName)
     );
     const paidSalaries = salaryExpenses.filter((e) => (e.paymentStatus || 'Paid') === 'Paid');
@@ -166,12 +168,12 @@ export function useExpenseMetrics(expenses: Expense[], brands: Brand[]): Expense
     let otherBrandTotal = 0;
     let otherBrandCount = 0;
 
-    expenses.forEach((e) => {
+    validExpenses.forEach((e) => {
       const amt = Number(e.amount) || 0;
       const isPaid = (e.paymentStatus || 'Paid') === 'Paid';
 
       if (e.brandId && e.brandId !== 'other') {
-        const linked = brands.find((b: any) => b.id === e.brandId);
+        const linked = (brands || []).find((b: any) => b && b.id === e.brandId);
         if (!brandTotals[e.brandId]) {
           brandTotals[e.brandId] = {
             total: 0, count: 0,

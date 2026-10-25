@@ -14,7 +14,7 @@ interface Props {
   onTogglePaymentStatus?: (brand: Brand) => void;
 }
 
-/** Shows how long a client has been inactive. */
+/** Shows how long a client has had no touchpoint. Distinct from account status. */
 export const InactivityBadge: React.FC<{ lastActivityDate?: string | null }> = ({ lastActivityDate }) => {
   if (!lastActivityDate) return null;
   const time = new Date(lastActivityDate).getTime();
@@ -24,13 +24,37 @@ export const InactivityBadge: React.FC<{ lastActivityDate?: string | null }> = (
 
   const urgent = days >= 15;
   return (
-    <span style={{
-      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
-      background: urgent ? 'var(--danger-bg)' : 'var(--warn-bg)',
-      color: urgent ? 'var(--danger-text)' : 'var(--warn-text)',
-      border: `1px solid ${urgent ? 'var(--danger-border)' : 'var(--warn-border)'}`,
-    }}>
-      {days}d inactive
+    <span
+      title={`No touchpoint recorded for ${days} days`}
+      style={{
+        fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
+        background: urgent ? 'var(--danger-bg)' : 'var(--warn-bg)',
+        color: urgent ? 'var(--danger-text)' : 'var(--warn-text)',
+        border: `1px solid ${urgent ? 'var(--danger-border)' : 'var(--warn-border)'}`,
+      }}
+    >
+      {days}d no touchpoint
+    </span>
+  );
+};
+
+/** Account status pill — the client's actual lifecycle state. */
+export const ClientStatusBadge: React.FC<{ status?: string }> = ({ status }) => {
+  const s = (status || 'Active').toLowerCase();
+  const tone =
+    s === 'active' ? { bg: 'var(--success-bg)', fg: 'var(--success-text)', bd: 'var(--success-border)' }
+    : s === 'churned' ? { bg: 'var(--danger-bg)', fg: 'var(--danger-text)', bd: 'var(--danger-border)' }
+    : s === 'paused' || s === 'on hold' ? { bg: 'var(--warn-bg)', fg: 'var(--warn-text)', bd: 'var(--warn-border)' }
+    : { bg: 'var(--bg-raised)', fg: 'var(--text-muted)', bd: 'var(--border)' };
+  return (
+    <span
+      title="Account status"
+      style={{
+        fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
+        background: tone.bg, color: tone.fg, border: `1px solid ${tone.bd}`,
+      }}
+    >
+      {status || 'Active'}
     </span>
   );
 };
@@ -82,6 +106,7 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                  <ClientStatusBadge status={brand.status} />
                   <InactivityBadge lastActivityDate={brand.lastActivityDate} />
                   <button
                     type="button"

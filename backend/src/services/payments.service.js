@@ -97,11 +97,14 @@ async function listPayments(user, { brandId, invoiceId } = {}) {
     query += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.id !== 'usr_admin') {
-    // Isolate payments strictly to brands owned by this user
+  } else if (user.role === 'admin') {
+    // Admins see payments for the clients they own.
     query += ` AND brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx})`;
     params.push(user.id);
     idx += 1;
+  } else {
+    // Team members must not read agency-wide financial records.
+    return [];
   }
   if (brandId) {
     query += ` AND brand_id=$${idx}`;
@@ -111,6 +114,7 @@ async function listPayments(user, { brandId, invoiceId } = {}) {
   if (invoiceId) {
     query += ` AND invoice_id=$${idx}`;
     params.push(invoiceId);
+    idx += 1;
   }
   query += ' ORDER BY created_at DESC';
 

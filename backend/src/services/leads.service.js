@@ -21,7 +21,14 @@ async function listLeads(user, { stage } = {}) {
   const params = [];
   let idx = 1;
 
-  if (user && user.role !== 'admin') {
+  // Scope by role, never by a hardcoded user id. Keying off a specific id
+  // meant every other internal user (including team members) could read every
+  // lead in the workspace.
+  if (user && user.role === 'brand') {
+    query += ` AND owner_id = $${idx}`;
+    params.push(user.brandId || user.id);
+    idx += 1;
+  } else if (user && user.role !== 'admin') {
     query += ` AND owner_id = $${idx}`;
     params.push(user.id);
     idx += 1;

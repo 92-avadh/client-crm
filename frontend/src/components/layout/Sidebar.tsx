@@ -100,10 +100,13 @@ export const Sidebar: React.FC = () => {
   ];
 
   const items = allItems.filter((i) => {
-    if (role === 'admin') return true;
-    if (currentUser.permissions && currentUser.permissions.length > 0) {
+    // An explicit permission list always wins, even for admins. Without this,
+    // every admin saw all 14 modules no matter what their role config said.
+    if (Array.isArray(currentUser.permissions) && currentUser.permissions.length > 0) {
       return currentUser.permissions.includes(i.id);
     }
+    // No permission list at all (e.g. the built-in owner account) falls back to
+    // the role-based defaults.
     return i.roles.includes(role) || (role !== 'brand' && i.roles.includes('team'));
   });
   const coreItems = items.filter(i => !['chat','meetings','leads','settings'].includes(i.id));

@@ -441,7 +441,7 @@ export const App: React.FC = () => {
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('retentio_local_') || key === 'retentio_active_user_id' || key === 'retentio_bypass_mode')) {
+        if (key && (key.startsWith('retentio_local_') || key === 'retentio_active_user_id')) {
           keysToRemove.push(key);
         }
       }
@@ -450,13 +450,10 @@ export const App: React.FC = () => {
   }, []);
 
   const handleForceLogout = useCallback((msg: string = 'Your session has expired. Please sign in again.') => {
-    const isBypass = typeof localStorage !== 'undefined' && localStorage.getItem('retentio_bypass_mode') === 'true';
-    if (isBypass) return;
     api.auth.logout().catch(() => {});
     clearToken();
     try {
       localStorage.removeItem('retentio_user');
-      localStorage.removeItem('retentio_bypass_mode');
     } catch {}
     purgeAllWorkspaceCache();
     setLoginUser(null);
@@ -479,11 +476,10 @@ export const App: React.FC = () => {
   // Restore authenticated session from saved user on mount
   React.useEffect(() => {
     const savedUser = localStorage.getItem('retentio_user');
-    const isBypass = localStorage.getItem('retentio_bypass_mode') === 'true';
     if (savedUser) {
       try {
         const token = localStorage.getItem('retentio_token');
-        if (!isBypass && !token) {
+        if (!token) {
           // No valid auth token found — clear stale user state and prompt clean login
           localStorage.removeItem('retentio_user');
           setLoginUser(null);
@@ -496,24 +492,23 @@ export const App: React.FC = () => {
         setLoginUser(user);
         setIsLoggedIn(true);
 
-        if (!isBypass) {
-          // Verify session validity with backend /auth/me
-          api.auth.me()
-            .then((res) => {
-              if (res?.user) {
-                setLoginUser(res.user);
-                try {
-                  localStorage.setItem('retentio_user', JSON.stringify(res.user));
-                } catch {}
-              }
-            })
-            .catch((err: any) => {
-              const msg = err?.message || '';
-              if (/session has expired|unauthorized|invalid token/i.test(msg) || err?.status === 401) {
-                handleForceLogout('Your session has expired. Please sign in again.');
-              }
-            });
-        }
+        // Verify session validity with backend /auth/me. A restored session is
+        // never trusted blindly: an invalid or expired token forces a re-login.
+        api.auth.me()
+          .then((res) => {
+            if (res?.user) {
+              setLoginUser(res.user);
+              try {
+                localStorage.setItem('retentio_user', JSON.stringify(res.user));
+              } catch {}
+            }
+          })
+          .catch((err: any) => {
+            const msg = err?.message || '';
+            if (/session has expired|unauthorized|invalid token/i.test(msg) || err?.status === 401) {
+              handleForceLogout('Your session has expired. Please sign in again.');
+            }
+          });
 
         const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
         if (!onboardingDone) {
@@ -522,7 +517,6 @@ export const App: React.FC = () => {
       } catch (_) {
         clearToken();
         localStorage.removeItem('retentio_user');
-        localStorage.removeItem('retentio_bypass_mode');
         setLoginUser(null);
         setIsLoggedIn(false);
       }
@@ -603,38 +597,24 @@ export const App: React.FC = () => {
           setToken(res.token);
         }
         localStorage.setItem('retentio_user', JSON.stringify(res.user));
-        localStorage.removeItem('retentio_bypass_mode');
         setLoginUser(res.user);
         setIsLoggedIn(true);
         return;
       }
     } catch (_err: any) {
-      // Backend rejected or network unavailable -> Bypass login kicks in with ANY credentials!
+      // Backend rejected the credentials or the network failed. Either way we
+      // fall through to the explicit rejection below — there is no bypass.
     } finally {
       setLoginLoading(false);
     }
 
-    // Bypass login: Allow access with ANY credentials entered
     const emailNorm = email.trim().toLowerCase();
-    const namePart = emailNorm.split('@')[0] || 'Agency Admin';
-    const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-    const bypassUser = {
-      id: 'usr_bypass_' + Math.random().toString(36).slice(2, 9),
-      name: formattedName,
-      email: emailNorm,
-      phone: '+91 98765 43210',
-      role: 'admin',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      company: 'Agency Workspace',
-      designation: 'Agency Owner & Managing Director',
-      status: 'active',
-    };
-    try {
-      localStorage.setItem('retentio_user', JSON.stringify(bypassUser));
-      localStorage.setItem('retentio_bypass_mode', 'true');
-    } catch {}
-    setLoginUser(bypassUser);
-    setIsLoggedIn(true);
+
+    // No local fallback. If the backend rejected the credentials, reject them
+    // here too. The previous fallback matched localStorage users and DEMO_USERS
+    // and flipped on bypass mode, which granted a real session to accounts that
+    // exist only in the browser and made the app look "empty but signed in".
+    setLoginError('Invalid email or password. Please verify the credentials provided.');
   };
 
   const handleLogout = useCallback(() => {
@@ -642,7 +622,6 @@ export const App: React.FC = () => {
     clearToken();
     try {
       localStorage.removeItem('retentio_user');
-      localStorage.removeItem('retentio_bypass_mode');
       localStorage.removeItem('retentio_token');
     } catch {}
     purgeAllWorkspaceCache();

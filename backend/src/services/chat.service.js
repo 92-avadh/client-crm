@@ -257,19 +257,27 @@ async function listMessages(conversationId, { page = 1, pageSize = 100 } = {}) {
   );
   const total = parseInt(countRows[0].count, 10);
 
-  // Paginated query
-  const offset = (page - 1) * pageSize;
+  // Newest-first paging. A chat opens on the most recent messages, so page 1
+  // must be the tail of the thread. Ordering ASC with a large offset silently
+  // showed the oldest 100 messages instead of the current conversation.
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const offset = (totalPages - safePage) * pageSize;
+
   const { rows } = await pool.query(
-    'SELECT * FROM chat_messages WHERE conversation_id=$1 ORDER BY created_at ASC LIMIT $2 OFFSET $3',
+    'SELECT * FROM chat_messages WHERE conversation_id=$1 ORDER BY created_at DESC, id DESC LIMIT $2 OFFSET $3',
     [conversationId, pageSize, offset]
   );
+
+  // Present oldest-first so the UI reads top-to-bottom.
+  rows.reverse();
 
   // Batch fetch read receipts and attachments
   const readByMap = await getReadByForMessages(rows.map(m => m.id));
   const attachmentsMap = await getAttachmentsForMessages(rows.map(m => m.id));
   const data = rows.map(m => mapMsg(m, readByMap.get(m.id) || [], attachmentsMap.get(m.id) || []));
 
-  return { data, total, page, pageSize };
+  return { data, total, page: safePage, pageSize, totalPages };
 }
 
 async function sendMessage(conversationId, user, { text, attachments = [] }) {

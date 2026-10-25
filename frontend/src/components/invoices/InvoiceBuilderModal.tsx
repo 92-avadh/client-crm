@@ -193,11 +193,31 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
           </div>
 
           <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-            <button type="button" onClick={onClose} disabled={submitting} style={{ ...btnSecondary, fontSize: 12, opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}>Cancel</button>
-            <button type="submit" disabled={submitting} style={{ ...btnPrimary, fontSize: 12, opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              style={{ ...btnSecondary, fontSize: 13, opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              id="btn-generate-send-invoice"
+              style={{
+                ...btnPrimary,
+                fontSize: 13,
+                padding: '10px 22px',
+                opacity: submitting ? 0.7 : 1,
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                position: 'relative',
+                zIndex: 5,
+              }}
+            >
               {submitting ? (
                 <>
-                  <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                  <Loader2 style={{ width: 15, height: 15, animation: 'spin 1s linear infinite' }} />
                   <span>Generating &amp; Sending...</span>
                 </>
               ) : (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import { getNaturalErrorMessage } from '../../services/errors';
@@ -21,10 +21,11 @@ import {
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
 
-import { getDefaultPermissionsForRole } from './permissionsConfig';
+import { getDefaultPermissionsForRole, CORPORATE_ROLES } from './permissionsConfig';
+import Pagination from '../ui/Pagination';
 
 const emptyForm = (): AddMemberForm => ({
-  name: '', email: '', phone: '', designation: '', role: 'team', password: '', avatar: '',
+  name: '', email: '', phone: '', designation: 'Team Member', role: 'team', password: '', avatar: '',
   permissions: getDefaultPermissionsForRole('team'),
 });
 
@@ -79,6 +80,21 @@ export const TeamManager: React.FC = () => {
   const getAssignedBrands = (userId: string) =>
     (brands || []).filter(Boolean).filter((b: any) => b.assignedMemberIds?.includes(userId));
 
+  /* ── Pagination (client-side; the full collection is already loaded) ── */
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
+  const teamCount = teamUsers.length;
+  const teamPageCount = Math.max(1, Math.ceil(teamCount / pageSize));
+  useEffect(() => {
+    if (page > teamPageCount - 1) setPage(teamPageCount - 1);
+  }, [page, teamPageCount]);
+
+  const pagedTeamUsers = useMemo(
+    () => teamUsers.slice(page * pageSize, (page + 1) * pageSize),
+    [teamUsers, page, pageSize]
+  );
+
   /* ── Photo handling ──────────────────────────────────────────── */
 
   const pickPhoto = async (file: File, apply: (dataUrl: string) => void) => {
@@ -131,15 +147,21 @@ export const TeamManager: React.FC = () => {
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.designation || !form.password) {
+    if (!form.name || !form.email || !form.password) {
       showToast('Please fill all required fields', 'error');
       return;
     }
     try {
       setSubmitting(true);
+      const roleLabel = CORPORATE_ROLES.find((r) => r.value === form.role)?.label || 'Team Member';
+      const finalDesignation = form.designation || roleLabel;
       await addTeamMember({
-        name: form.name, email: form.email, phone: form.phone,
-        designation: form.designation, role: form.role, password: form.password,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone ? form.phone.trim() : '',
+        designation: finalDesignation,
+        role: form.role,
+        password: form.password,
         avatar: form.avatar || undefined,
         permissions: form.permissions ?? getDefaultPermissionsForRole(form.role),
       });
@@ -262,7 +284,7 @@ export const TeamManager: React.FC = () => {
 
       {/* Table */}
       <TeamTable
-        users={teamUsers}
+        users={pagedTeamUsers}
         currentUserId={currentUser.id}
         isAdmin={isAdmin}
         deactivatingId={deactivating}
@@ -271,6 +293,17 @@ export const TeamManager: React.FC = () => {
         onEdit={openEditModal}
         onDeactivate={handleDeactivate}
         onDirectChat={startDirectChat}
+      />
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={teamCount}
+        onPageChange={setPage}
+        onPageSizeChange={(n) => {
+          setPageSize(n);
+          setPage(0);
+        }}
       />
 
       {/* Drawer */}

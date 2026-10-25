@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { ROUTES } from '../../routes';
@@ -11,6 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import Pagination from '../ui/Pagination';
 import DatePicker from '@/components/ui/DatePicker';
 
 const getDefaultDueDate = () => new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
@@ -132,6 +133,31 @@ export const ProjectsAndTasks: React.FC = () => {
     role === 'team'
       ? safeTasks.filter((t) => t && currentUser && t.assigneeId === currentUser.id)
       : safeTasks;
+
+  /* ── Pagination for the list view (kanban shows every card) ── */
+  const [taskPage, setTaskPage] = useState(0);
+  const [taskPageSize, setTaskPageSize] = useState(20);
+  const taskPageCount = Math.max(1, Math.ceil(relevantTasks.length / taskPageSize));
+  useEffect(() => {
+    if (taskPage > taskPageCount - 1) setTaskPage(taskPageCount - 1);
+  }, [taskPage, taskPageCount]);
+  const pagedTasks = useMemo(
+    () => relevantTasks.slice(taskPage * taskPageSize, (taskPage + 1) * taskPageSize),
+    [relevantTasks, taskPage, taskPageSize]
+  );
+
+  /* ── Pagination for the projects grid ── */
+  const [projectPage, setProjectPage] = useState(0);
+  const [projectPageSize, setProjectPageSize] = useState(12);
+  const safeProjects = (projects || []).filter(Boolean);
+  const projectPageCount = Math.max(1, Math.ceil(safeProjects.length / projectPageSize));
+  useEffect(() => {
+    if (projectPage > projectPageCount - 1) setProjectPage(projectPageCount - 1);
+  }, [projectPage, projectPageCount]);
+  const pagedProjects = useMemo(
+    () => safeProjects.slice(projectPage * projectPageSize, (projectPage + 1) * projectPageSize),
+    [safeProjects, projectPage, projectPageSize]
+  );
 
   const kanbanColumns: TaskStatus[] = ['To Do', 'In Progress', 'In Review', 'Completed'];
 
@@ -314,7 +340,7 @@ export const ProjectsAndTasks: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {relevantTasks.map((t) => {
+              {pagedTasks.map((t) => {
                 const brand = brands.find((b) => b.id === t.brandId);
                 const assignee = allUsers.find((u) => u.id === t.assigneeId);
                 return (
@@ -358,13 +384,24 @@ export const ProjectsAndTasks: React.FC = () => {
               })}
             </tbody>
           </table>
+
+          <Pagination
+            page={taskPage}
+            pageSize={taskPageSize}
+            total={relevantTasks.length}
+            onPageChange={setTaskPage}
+            onPageSizeChange={(n) => {
+              setTaskPageSize(n);
+              setTaskPage(0);
+            }}
+          />
         </div>
       )}
 
       {/* Projects Tab */}
       {activeTab === 'projects' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 16 }}>
-          {(projects || []).filter(Boolean).map((proj) => {
+          {(pagedProjects || []).map((proj) => {
             const brand = (brands || []).find((b) => b && b.id === proj?.brandId);
             return (
               <div
@@ -417,6 +454,19 @@ export const ProjectsAndTasks: React.FC = () => {
             );
           })}
         </div>
+      )}
+
+      {activeTab === 'projects' && safeProjects.length > 0 && (
+        <Pagination
+          page={projectPage}
+          pageSize={projectPageSize}
+          total={safeProjects.length}
+          onPageChange={setProjectPage}
+          onPageSizeChange={(n) => {
+            setProjectPageSize(n);
+            setProjectPage(0);
+          }}
+        />
       )}
 
       {/* Add Task Modal */}
@@ -500,7 +550,7 @@ export const ProjectsAndTasks: React.FC = () => {
                 value={taskForm.assigneeId}
                 onChange={(val) => setTaskForm({ ...taskForm, assigneeId: val })}
                 options={allUsers
-                  .filter((u) => u.role !== 'brand')
+                  .filter((u) => u.role !== 'brand' && u.isActive !== false && u.status !== 'inactive')
                   .map((u) => ({
                     value: u.id,
                     label: `${u.name} (${u.role})`,

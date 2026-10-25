@@ -13,6 +13,7 @@ import {
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
 import { DatePicker } from '@/components/ui/DatePicker';
+import Pagination from '@/components/ui/Pagination';
 
 interface Props {
   formData: AppSettings;
@@ -22,11 +23,6 @@ interface Props {
 
 /** Platform subscription & billing history (admin, read-only). */
 export const SubscriptionTab: React.FC<{ formData: AppSettings }> = ({ formData }) => {
-  const receipts = [
-    { id: 'RET-SUB-2026-09', date: 'Sep 01, 2026', method: 'Razorpay Mandate', amount: '₹3,499', status: 'Paid' },
-    { id: 'RET-SUB-2026-08', date: 'Aug 01, 2026', method: 'Razorpay Mandate', amount: '₹3,499', status: 'Paid' },
-  ];
-
   return (
     <div style={tabBodyStyle}>
       <TabHeader
@@ -61,18 +57,10 @@ export const SubscriptionTab: React.FC<{ formData: AppSettings }> = ({ formData 
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Subscription Payment History</div>
-        {receipts.map((rcpt) => (
-          <div key={rcpt.id} style={{ padding: '14px 18px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Receipt #{rcpt.id}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{rcpt.date} · {rcpt.method}</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span className="font-amount" style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>{rcpt.amount}</span>
-              <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--bg-raised)', color: 'var(--text-secondary)' }}>{rcpt.status}</span>
-            </div>
-          </div>
-        ))}
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+          Receipts are issued by Razorpay and are not stored in this workspace. Download them from your
+          Razorpay merchant dashboard.
+        </p>
       </div>
     </div>
   );
@@ -214,8 +202,18 @@ export const HolidaysTab: React.FC<HolidaysProps> = ({
 export const SecurityTab: React.FC<{
   isAdmin: boolean;
   auditLogs: any[];
-  onResetWorkspace?: (mode: 'empty' | 'demo') => void;
-}> = ({ isAdmin, auditLogs, onResetWorkspace }) => (
+  onResetWorkspace?: (mode?: 'empty') => void;
+}> = ({ isAdmin, auditLogs, onResetWorkspace }) => {
+  const [auditPage, setAuditPage] = React.useState(0);
+  const [auditPageSize, setAuditPageSize] = React.useState(10);
+
+  // The audit trail grows without bound, so page it rather than rendering
+  // every entry at once — hundreds of styled cards would lag the tab.
+  const pageCount = Math.max(1, Math.ceil(auditLogs.length / auditPageSize));
+  const safePage = Math.min(auditPage, pageCount - 1);
+  const pagedAuditLogs = auditLogs.slice(safePage * auditPageSize, (safePage + 1) * auditPageSize);
+
+  return (
   <div style={tabBodyStyle}>
     <TabHeader
       title="Two-Factor Authentication & Audit Trail"
@@ -241,7 +239,7 @@ export const SecurityTab: React.FC<{
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Recent System Audit Logs</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {auditLogs.map((log) => (
+          {pagedAuditLogs.map((log) => (
             <div key={log.id} style={{ padding: '14px 18px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -256,6 +254,15 @@ export const SecurityTab: React.FC<{
             </div>
           ))}
         </div>
+        {auditLogs.length > 0 && (
+          <Pagination
+            page={safePage}
+            pageSize={auditPageSize}
+            total={auditLogs.length}
+            onPageChange={setAuditPage}
+            onPageSizeChange={setAuditPageSize}
+          />
+        )}
       </div>
     )}
 
@@ -263,10 +270,11 @@ export const SecurityTab: React.FC<{
       <div style={{ marginTop: 12, padding: '20px 24px', borderRadius: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>🛠️ Workspace Data &amp; Testing Management</span>
+            <span>🛠️ Workspace Data Management</span>
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>
-            Reset your database and browser storage for testing. Wipe all current records to test from a clean blank slate, or restore fresh seed data anytime.
+            Permanently removes all workspace records from the database and clears cached browser data.
+            This cannot be undone. You will need to sign in again afterwards.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -287,29 +295,14 @@ export const SecurityTab: React.FC<{
               gap: 6,
             }}
           >
-            Clear All Current Data (Blank Testing State)
-          </button>
-          <button
-            type="button"
-            onClick={() => onResetWorkspace?.('demo')}
-            style={{
-              padding: '9px 16px',
-              borderRadius: 8,
-              border: '1px solid var(--border)',
-              background: 'var(--bg-card)',
-              color: 'var(--text-primary)',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            Seed Demo Dataset
+            Clear All Current Data
           </button>
         </div>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>
+          There is no demo dataset — the workspace runs on real records only.
+        </p>
       </div>
     )}
   </div>
-);
+  );
+};

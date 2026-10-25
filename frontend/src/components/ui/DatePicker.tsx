@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { CalendarIcon, X } from "lucide-react";
+import { CalendarIcon, X, Check } from "lucide-react";
 import { format, parse } from "date-fns";
 import { Calendar } from "./calendar";
 import { cn } from "@/lib/utils";
@@ -76,18 +76,18 @@ export function DatePicker({
     const viewportHeight = window.innerHeight;
 
     // Measured or fallback dimensions
-    const popoverWidth = popoverRef.current?.offsetWidth || 292;
-    const popoverHeight = popoverRef.current?.offsetHeight || 320;
+    const popoverWidth = popoverRef.current?.offsetWidth || 270;
+    const popoverHeight = popoverRef.current?.offsetHeight || 260;
 
-    // Vertical placement
+    // Vertical placement: prefer below unless space below is tight
     const spaceBelow = viewportHeight - rect.bottom;
     const spaceAbove = rect.top;
     let top: number;
 
     if (spaceBelow >= popoverHeight + 8 || spaceBelow >= spaceAbove) {
-      top = rect.bottom + 6;
+      top = Math.min(rect.bottom + 4, viewportHeight - popoverHeight - 8);
     } else {
-      top = Math.max(8, rect.top - popoverHeight - 6);
+      top = Math.max(8, rect.top - popoverHeight - 4);
     }
 
     // Horizontal placement with viewport clamping
@@ -95,7 +95,6 @@ export function DatePicker({
     let left = rect.left;
 
     if (left > maxLeft) {
-      // Align to right edge of trigger button
       left = Math.max(8, rect.right - popoverWidth);
       if (left > maxLeft) {
         left = maxLeft;
@@ -173,6 +172,13 @@ export function DatePicker({
     [onChange]
   );
 
+  const handleSelectToday = React.useCallback(() => {
+    if (onChange) {
+      onChange(format(new Date(), "yyyy-MM-dd"));
+    }
+    setOpen(false);
+  }, [onChange]);
+
   const triggerText = selectedDate ? format(selectedDate, "dd MMM yyyy") : placeholder;
   const showClear = (allowClear || (!required && Boolean(value))) && !disabled && Boolean(value);
 
@@ -181,10 +187,16 @@ export function DatePicker({
       {label && (
         <label
           htmlFor={inputId}
-          className="mb-1.5 block text-xs font-bold text-[var(--text-primary)]"
+          style={{
+            display: "block",
+            fontWeight: 600,
+            color: "var(--text-primary)",
+            fontSize: 12,
+            marginBottom: 6,
+          }}
         >
           {label}
-          {required && <span className="ml-0.5 text-[var(--danger-text)]">*</span>}
+          {required && <span style={{ color: "var(--danger-text, #ef4444)", marginLeft: 2 }}>*</span>}
         </label>
       )}
 
@@ -205,18 +217,33 @@ export function DatePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-lg border bg-[var(--bg-card)] px-3 py-2 text-left text-sm text-[var(--text-primary)] transition-colors",
-          error
-            ? "border-red-500 hover:border-red-500"
-            : "border-[var(--border)] hover:border-[var(--border-focus)]",
-          "focus:outline-none focus:ring-2 focus:ring-[var(--border-focus)]/20",
-          disabled && "cursor-not-allowed opacity-50"
-        )}
+        style={{
+          width: "100%",
+          padding: "9px 14px",
+          border: error
+            ? "1px solid var(--danger-border, #ef4444)"
+            : open
+            ? "1px solid var(--brand-green, #059639)"
+            : "1px solid var(--border)",
+          borderRadius: 10,
+          fontSize: 13,
+          color: selectedDate ? "var(--text-primary)" : "var(--text-muted)",
+          background: error ? "var(--danger-bg, #fef2f2)" : "var(--bg-subtle)",
+          boxShadow: open ? "0 0 0 3px rgba(5, 150, 57, 0.12)" : "none",
+          outline: "none",
+          boxSizing: "border-box",
+          cursor: disabled ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontFamily: "inherit",
+          textAlign: "left",
+          transition: "border-color 0.15s, box-shadow 0.15s",
+        }}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <CalendarIcon className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
-          <span className={cn("truncate", !selectedDate && "text-[var(--text-muted)]")}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+          <CalendarIcon style={{ width: 15, height: 15, color: "var(--text-muted)", flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: selectedDate ? 600 : 400 }}>
             {triggerText}
           </span>
         </div>
@@ -226,15 +253,35 @@ export function DatePicker({
             role="button"
             tabIndex={0}
             onClick={handleClear}
-            className="rounded p-0.5 text-[var(--text-muted)] hover:bg-[var(--bg-raised)] hover:text-[var(--text-primary)] transition-colors"
+            style={{
+              borderRadius: 6,
+              padding: 3,
+              color: "var(--text-muted)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
             title="Clear date"
           >
-            <X className="h-3.5 w-3.5" />
+            <X style={{ width: 14, height: 14 }} />
           </span>
         )}
       </button>
 
-      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+      {error && (
+        <span
+          style={{
+            fontSize: 11,
+            color: "var(--danger-text, #ef4444)",
+            marginTop: 4,
+            display: "block",
+            fontWeight: 500,
+          }}
+        >
+          {error}
+        </span>
+      )}
 
       {open && typeof document !== "undefined" &&
         createPortal(
@@ -247,14 +294,92 @@ export function DatePicker({
               visibility: coords ? "visible" : "hidden",
               zIndex: 99999,
               maxWidth: "calc(100vw - 16px)",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 12,
+              boxShadow: "0 18px 38px -8px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--border)",
+              padding: "8px 10px",
             }}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-1.5 sm:p-2 shadow-2xl backdrop-blur-md animate-fade-in"
+            className="animate-fade-in"
           >
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={handleSelect}
             />
+
+            {/* Quick action bar */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingTop: 6,
+                marginTop: 4,
+                borderTop: "1px solid var(--border)",
+                fontSize: 11,
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleSelectToday}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--brand-green, #059639)",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  padding: "3px 6px",
+                  borderRadius: 6,
+                  fontSize: 11,
+                }}
+              >
+                Today
+              </button>
+
+              <div style={{ display: "flex", gap: 4 }}>
+                {Boolean(value) && !required && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onChange) onChange("");
+                      setOpen(false);
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      padding: "3px 6px",
+                      borderRadius: 6,
+                      fontSize: 11,
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  style={{
+                    background: "var(--bg-subtle)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    padding: "3px 8px",
+                    borderRadius: 6,
+                    fontSize: 11,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <Check style={{ width: 11, height: 11 }} />
+                  Done
+                </button>
+              </div>
+            </div>
           </div>,
           document.body
         )}

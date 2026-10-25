@@ -128,10 +128,15 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
     throw err;
   }
 
+  const defaultAdminPerms = JSON.stringify([
+    'dashboard', 'clients', 'projects', 'tasks', 'invoices', 'finance',
+    'expenses', 'retention', 'chat', 'meetings', 'leads', 'team', 'inbox', 'settings'
+  ]);
+
   const { rows: userRows } = await pool.query(
-    `INSERT INTO users (id, name, email, password_hash, role, designation, is_active)
-     VALUES ($1, $2, $3, $4, 'admin', $5, true) RETURNING *`,
-    [id, name, email.toLowerCase(), hash, `Founder, ${company}`]
+    `INSERT INTO users (id, name, email, password_hash, role, designation, is_active, permissions)
+     VALUES ($1, $2, $3, $4, 'admin', $5, true, $6::jsonb) RETURNING *`,
+    [id, name, email.toLowerCase(), hash, `Founder, ${company}`, defaultAdminPerms]
   );
   const user = userRows[0];
 
@@ -148,14 +153,16 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
     user: {
       id: user.id, name: user.name, email: user.email,
       role: user.role, designation: user.designation,
+      permissions: JSON.parse(defaultAdminPerms),
     },
   };
 }
 
 async function login({ email, password }) {
+  const emailNorm = email.toLowerCase().trim();
   const { rows } = await pool.query(
-    'SELECT * FROM users WHERE email = $1 AND is_active = true',
-    [email.toLowerCase()]
+    'SELECT * FROM users WHERE LOWER(email) = $1 AND is_active = true',
+    [emailNorm]
   );
   const user = rows[0];
 

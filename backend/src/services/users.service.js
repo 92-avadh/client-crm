@@ -34,14 +34,25 @@ async function listUsers(user, { page = 1, pageSize = 50, includeInactive = fals
   const params = [];
   let idx = 1;
 
-  if (user && user.role !== 'admin') {
-    if (user.role === 'brand') {
+  if (user) {
+    if (user.role === 'admin') {
+      where += ` AND (id = $${idx} OR created_by = $${idx})`;
+      params.push(user.id);
+      idx += 1;
+    } else if (user.role === 'brand') {
       where += ` AND (id = $${idx} OR brand_id = $${idx + 1} OR id IN (SELECT member_id FROM brand_assignments WHERE brand_id = $${idx + 1}))`;
       params.push(user.id, user.brandId || 'none');
       idx += 2;
     } else {
-      // All team members across the agency can discover and communicate with their colleagues
-      where += ` AND role != 'brand'`;
+      // Team members only discover colleagues in their own agency (same admin or assigned)
+      where += ` AND role != 'brand' AND (
+        id = $${idx} OR
+        created_by = (SELECT created_by FROM users WHERE id = $${idx}) OR
+        id = (SELECT created_by FROM users WHERE id = $${idx}) OR
+        created_by = $${idx}
+      )`;
+      params.push(user.id);
+      idx += 1;
     }
   }
 
@@ -78,19 +89,24 @@ async function getUser(id) {
 }
 
 async function createUser(actor, data) {
-  // A caller-supplied password is hashed; otherwise a default is issued and
-  // the user is expected to reset it.
-  const hash = await bcrypt.hash(data.password || 'Change@1234', 10);
+  // A password must be supplied by the caller. Previously a hardcoded default
+  // ('Change@1234') was issued when none was given, which left a known
+  // credential on every account created without one.
+  if (!data.password || String(data.password).trim().length === 0) {
+    return { error: 'password_required' };
+  }
+  const hash = await bcrypt.hash(String(data.password).trim(), 10);
   const id = genId();
   const permissionsJson = JSON.stringify(Array.isArray(data.permissions) ? data.permissions : []);
+  const actorId = actor ? actor.id : null;
 
   const { rows } = await pool.query(
-    `INSERT INTO users (id,name,email,phone,password_hash,role,designation,avatar,brand_id,created_by,permissions)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb) RETURNING *`,
+    `INSERT INTO users (id,name,email,phone,password_hash,role,designation,avatar,brand_id,permissions,created_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11) RETURNING *`,
     [
       id, data.name, data.email.toLowerCase(), data.phone || null, hash,
-      data.role, data.designation || null, data.avatar || null,
-      data.brandId || null, actor.id, permissionsJson,
+      data.role || 'team', data.designation || null, data.avatar || null,
+      data.brandId || null, permissionsJson, actorId
     ]
   );
   return mapUser(rows[0], []);

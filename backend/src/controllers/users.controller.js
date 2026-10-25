@@ -4,8 +4,8 @@ const users = require('../services/users.service');
 
 const list = asyncHandler(async (req, res) => {
   res.json(await users.listUsers(req.user, {
-    page: req.query.page,
-    pageSize: req.query.pageSize,
+    page: Math.max(1, parseInt(req.query.page, 10) || 1),
+    pageSize: Math.max(1, Math.min(1000, parseInt(req.query.pageSize, 10) || 50)),
   }));
 });
 
@@ -32,7 +32,11 @@ const create = asyncHandler(async (req, res) => {
     )
     .validate();
 
-  res.status(201).json(await users.createUser(req.user, body));
+  const result = await users.createUser(req.user, body);
+  if (result.error === 'password_required') {
+    return res.status(400).json({ error: 'Please set a password for this team member.' });
+  }
+  res.status(201).json(result);
 });
 
 const update = asyncHandler(async (req, res) => {
@@ -47,6 +51,12 @@ const update = asyncHandler(async (req, res) => {
     .optionalString('designation', { max: 200, label: 'Designation' })
     .optionalString('role', { max: 100, label: 'Role' })
     .array('permissions', { ofStrings: true, max: 50, label: 'Permissions' })
+    // Avatar is stored as a data URL, so the cap has to accommodate a base64
+    // payload (~1.33x the binary size) rather than a plain filename.
+    .check(
+      !req.body?.avatar || String(req.body.avatar).length <= 2_000_000,
+      'That photo is too large. Please choose an image under 2MB.'
+    )
     .check(
       !req.body?.password || String(req.body.password).length >= 8,
       'Password must be at least 8 characters.'
@@ -66,6 +76,18 @@ const update = asyncHandler(async (req, res) => {
 const deactivate = asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: "You don't have permission to deactivate team members." });
+  }
+  if (req.params.id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot deactivate your own account.' });
+  }
+  const target = await users.getUser(req.params.id);
+  if (target && target.role === 'admin') {
+    const { rows } = await require('../db').query(
+      "SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin' AND is_active = true"
+    );
+    if (rows[0].n <= 1) {
+      return res.status(400).json({ error: 'You cannot deactivate the last active admin account.' });
+    }
   }
   const user = await users.deactivateUser(req.params.id);
   if (!user) return res.status(404).json({ error: 'We could not find that team member.' });

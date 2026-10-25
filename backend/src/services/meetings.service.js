@@ -53,8 +53,12 @@ async function listMeetings(user, { brandId, leadId, page = 1, pageSize = 50 } =
       whereClause += ` AND brand_id = $${idx}`;
       params.push(user.brandId || 'none');
       idx += 1;
-    } else if (user.role !== 'admin') {
-      whereClause += ` AND (owner_id = $${idx} OR id IN (SELECT meeting_id FROM meeting_attendees WHERE user_id = $${idx}) OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx}) OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
+    } else if (user.role === 'admin') {
+      whereClause += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
+      params.push(user.id);
+      idx += 1;
+    } else {
+      whereClause += ` AND (owner_id = $${idx} OR id IN (SELECT meeting_id FROM meeting_attendees WHERE user_id = $${idx}) OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx}))`;
       params.push(user.id);
       idx += 1;
     }

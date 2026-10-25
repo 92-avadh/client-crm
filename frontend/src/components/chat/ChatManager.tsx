@@ -111,6 +111,20 @@ const WA = {
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 const EXTENDED_EMOJIS = ['😊', '😂', '❤️', '👍', '🔥', '🎉', '🚀', '🙏', '👏', '💡', '💯', '🤝', '🙌', '✨', '☕', '💪'];
 
+/**
+ * Safe initials fallback for an avatar.
+ *
+ * Conversation titles are nullable in the database and `otherMember` can be
+ * null when the other participant was removed, so `(a || b).charAt(0)` throws
+ * a TypeError and takes down the whole chat page with it.
+ */
+const initialOf = (...candidates: Array<string | null | undefined>): string => {
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) return c.trim().charAt(0).toUpperCase();
+  }
+  return '?';
+};
+
 export const ChatManager: React.FC = () => {
   const { confirm, element: confirmDialog } = useConfirm();
   const {
@@ -750,7 +764,7 @@ export const ChatManager: React.FC = () => {
               {currentUser.avatar ? (
                 <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                currentUser.name.charAt(0).toUpperCase()
+                <>{initialOf(currentUser.name)}</>
               )}
             </div>
             <h2 style={{ fontSize: 19, fontWeight: 800, color: t.textPrimary, margin: 0, letterSpacing: '-0.01em' }}>
@@ -957,7 +971,7 @@ export const ChatManager: React.FC = () => {
                       {isDirect && other?.avatar ? (
                         <img src={other.avatar} alt={other.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : isDirect ? (
-                        (other?.name || conv.title).charAt(0).toUpperCase()
+                        <>{initialOf(other?.name, conv.title)}</>
                       ) : conv.type === 'brand' ? (
                         <Building2 style={{ width: 20, height: 20 }} />
                       ) : (
@@ -1119,7 +1133,7 @@ export const ChatManager: React.FC = () => {
                     {activeConv.type === 'direct' && activeConv.otherMember?.avatar ? (
                       <img src={activeConv.otherMember.avatar} alt={activeConv.otherMember.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : activeConv.type === 'direct' ? (
-                      (activeConv.otherMember?.name || activeConv.title).charAt(0).toUpperCase()
+                      <>{initialOf(activeConv.otherMember?.name, activeConv.title)}</>
                     ) : (
                       <Users style={{ width: 18, height: 18 }} />
                     )}
@@ -1143,7 +1157,9 @@ export const ChatManager: React.FC = () => {
                 {/* Contact Name & Status */}
                 <div>
                   <h3 style={{ fontSize: 15, fontWeight: 700, color: t.textPrimary, margin: 0, lineHeight: 1.2 }}>
-                    {activeConv.type === 'direct' && activeConv.otherMember ? activeConv.otherMember.name : activeConv.title}
+                    {activeConv.type === 'direct' && activeConv.otherMember
+                      ? (activeConv.otherMember.name || 'Chat')
+                      : (activeConv.title || 'Chat')}
                   </h3>
                   <div style={{ fontSize: 11, color: t.textSecondary, marginTop: 2 }}>
                     {activeConv.type === 'direct' ? (
@@ -1465,6 +1481,20 @@ export const ChatManager: React.FC = () => {
                           >
                             {msg.isDeletedForEveryone ? '🚫 This message was deleted' : actualText}
                           </div>
+
+                          {/* Unsent marker — the server rejected this send */}
+                          {msg.failed && (
+                            <div
+                              style={{
+                                marginTop: 2,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                color: isLight ? '#dc2626' : '#f87171',
+                              }}
+                            >
+                              ⚠ Not sent
+                            </div>
+                          )}
 
                           {/* Document Attachment Preview Card */}
                           {msg.attachments && msg.attachments.length > 0 && (
@@ -2661,7 +2691,7 @@ export const ChatManager: React.FC = () => {
                         {member.avatar ? (
                           <img src={member.avatar} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          member.name.charAt(0).toUpperCase()
+                          <>{initialOf(member.name)}</>
                         )}
                       </div>
                       <div>

@@ -59,8 +59,12 @@ async function listInvoices(user, { brandId, status, search, page = 1, pageSize 
     whereClause += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.id !== 'usr_admin') {
+  } else if (user.role === 'admin') {
     whereClause += ` AND brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx})`;
+    params.push(user.id);
+    idx += 1;
+  } else {
+    whereClause += ` AND brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx})`;
     params.push(user.id);
     idx += 1;
   }
@@ -104,7 +108,7 @@ async function getInvoice(user, id) {
   const inv = rows[0];
 
   // BOLA authorization check
-  if (user && user.role !== 'admin' && user.id !== 'usr_admin') {
+  if (user && user.role !== 'admin') {
     if (user.role === 'brand') {
       if (user.brandId !== inv.brand_id) return { error: 'forbidden' };
     } else {
@@ -156,6 +160,7 @@ async function createInvoice(user, data) {
   try {
     await client.query('BEGIN');
 
+    const id = genId();
     const invoiceNumber = await nextInvoiceNumber();
     const currency = data.currency || 'INR';
     const currencySymbol = data.currencySymbol || (currency === 'USD' ? '$' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'AED' ? 'AED' : (currency === 'CAD' ? 'CA$' : '₹')))));
@@ -190,7 +195,7 @@ async function createInvoice(user, data) {
     }
 
     await client.query('COMMIT');
-    return getInvoice(id);
+    return getInvoice(user, id);
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

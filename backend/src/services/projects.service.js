@@ -32,14 +32,19 @@ async function listProjects(user, { brandId, page = 1, pageSize = 50 } = {}) {
     where += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin' && user.id !== 'usr_admin') {
-    where += ` AND brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx})`;
+  } else if (user.role === 'admin') {
+    where += ` AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}) OR brand_id IS NULL)`;
+    params.push(user.id);
+    idx += 1;
+  } else {
+    where += ` AND (brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx}) OR id IN (SELECT project_id FROM project_assignments WHERE member_id = $${idx}))`;
     params.push(user.id);
     idx += 1;
   }
   if (brandId) {
     where += ` AND brand_id=$${idx}`;
     params.push(brandId);
+    idx += 1;
   }
 
   // Count total

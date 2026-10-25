@@ -44,7 +44,13 @@ function mapDoc(d) {
 
 async function verifyBrandAccess(user, id) {
   if (!user) return false;
-  if (['admin', 'hr'].includes(user.role) || user.id === 'usr_admin') return true;
+  if (user.role === 'admin') {
+    const ownerCheck = await pool.query(
+      'SELECT 1 FROM brands WHERE id = $1 AND (owner_id = $2 OR owner_id IS NULL)',
+      [id, user.id]
+    );
+    return ownerCheck.rows.length > 0;
+  }
   if (user.role === 'brand') return user.brandId === id;
   const assignCheck = await pool.query(
     'SELECT 1 FROM brand_assignments WHERE brand_id = $1 AND member_id = $2',
@@ -53,11 +59,13 @@ async function verifyBrandAccess(user, id) {
   return assignCheck.rows.length > 0;
 }
 
-async function getBrandWithDetails(user, id) {
+async function getBrandWithDetails(userOrId, maybeId) {
+  const id = maybeId !== undefined ? maybeId : userOrId;
+  const user = maybeId !== undefined ? userOrId : null;
   const { rows } = await pool.query('SELECT * FROM brands WHERE id=$1', [id]);
   if (!rows.length) return null;
 
-  if (user && !await verifyBrandAccess(user, id)) {
+  if (user && typeof user === 'object' && !await verifyBrandAccess(user, id)) {
     return { error: 'forbidden' };
   }
 
@@ -81,14 +89,9 @@ async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}
     baseWhere = `id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.id === 'usr_admin') {
-    alias = '';
-    baseWhere = `(owner_id = $${idx} OR owner_id IS NULL)`;
-    params.push(user.id);
-    idx += 1;
   } else if (user.role === 'admin') {
     alias = '';
-    baseWhere = `owner_id = $${idx}`;
+    baseWhere = `(owner_id = $${idx} OR owner_id IS NULL)`;
     params.push(user.id);
     idx += 1;
   } else {

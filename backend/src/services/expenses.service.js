@@ -19,7 +19,7 @@ const EXPENSE_CATEGORIES = [
   'General Overhead',
   'Other',
 ];
-const PAYMENT_MODES = ['Corporate Card', 'Bank Transfer', 'Cash', 'UPI', 'Cheque'];
+const PAYMENT_MODES = ['Corporate Card', 'Bank Transfer', 'Cash', 'UPI', 'Cheque', 'Company NetBanking'];
 const PAYMENT_STATUSES = ['Paid', 'Pending'];
 
 function mapExpense(e) {
@@ -68,8 +68,12 @@ async function listExpenses(user, filters = {}) {
   const params = [];
   let idx = 1;
 
-  if (user && user.id !== 'usr_admin') {
+  if (user && user.role === 'admin') {
     whereClause += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
+    params.push(user.id);
+    idx += 1;
+  } else if (user && user.role !== 'admin') {
+    whereClause += ` AND (owner_id = $${idx} OR employee_id = $${idx} OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx}))`;
     params.push(user.id);
     idx += 1;
   }

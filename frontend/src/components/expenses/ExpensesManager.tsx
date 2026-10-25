@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getNaturalErrorMessage } from '../../services/errors';
@@ -9,6 +9,7 @@ import { exportExpensesToCsv } from './exportCsv';
 import { ExpenseTable } from './ExpenseTable';
 import { ExpenseFormModal, DeleteExpenseModal, type ExpenseFormData } from './ExpenseFormModal';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
+import Pagination from '../ui/Pagination';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 
@@ -70,7 +71,7 @@ export const ExpensesManager: React.FC = () => {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
 
   const teamMemberList = useMemo(
-    () => (allUsers || []).filter((u: any) => u.role !== 'brand'),
+    () => (allUsers || []).filter((u: any) => u.role !== 'brand' && u.isActive !== false && u.status !== 'inactive'),
     [allUsers]
   );
 
@@ -81,6 +82,23 @@ export const ExpensesManager: React.FC = () => {
 
   const filteredExpenses = useFilteredExpenses(expenses, brands, filters);
   const metrics = useExpenseMetrics(expenses, brands);
+
+  /* ── Pagination (client-side; the full collection is already loaded) ── */
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+
+  // Bring the requested page back in range when the result set shrinks, so the
+  // user is never left on an empty page that no longer exists.
+  const filteredCount = filteredExpenses.length;
+  const pageCount = Math.max(1, Math.ceil(filteredCount / pageSize));
+  useEffect(() => {
+    if (page > pageCount - 1) setPage(pageCount - 1);
+  }, [page, pageCount]);
+
+  const pagedExpenses = useMemo(
+    () => filteredExpenses.slice(page * pageSize, (page + 1) * pageSize),
+    [filteredExpenses, page, pageSize]
+  );
 
   const hasActiveFilters =
     searchQuery !== '' || categoryFilter !== 'all' || brandFilter !== 'all' ||
@@ -363,11 +381,11 @@ export const ExpensesManager: React.FC = () => {
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
         <div style={{ padding: '14px 20px', background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
-            Showing {filteredExpenses.length} of {expenses.length} Records
+            Showing {filteredExpenses.length} of {(expenses || []).filter(Boolean).length} Records
             {hasActiveFilters && (
               <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
                 (Total: <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
-                  ₹{filteredExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0).toLocaleString('en-IN')}
+                  ₹{filteredExpenses.filter(Boolean).reduce((s, e) => s + (Number(e?.amount) || 0), 0).toLocaleString('en-IN')}
                 </span>)
               </span>
             )}
@@ -425,8 +443,8 @@ export const ExpensesManager: React.FC = () => {
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 (₹{filteredExpenses
-                  .filter((e) => selectedExpenseIds.has(e.id))
-                  .reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+                  .filter((e) => e && selectedExpenseIds.has(e.id))
+                  .reduce((sum, e) => sum + (Number(e?.amount) || 0), 0)
                   .toLocaleString('en-IN')})
               </span>
             </div>
@@ -466,15 +484,17 @@ export const ExpensesManager: React.FC = () => {
           </div>
         )}
 
-        {filteredExpenses.length === 0 ? (
+        {pagedExpenses.length === 0 ? (
           <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px' }}>
-              No expenses match the selected filters
+              {filteredCount === 0 ? 'No expenses match the selected filters' : 'No records on this page'}
             </h4>
             <p style={{ fontSize: 13, maxWidth: 400, margin: '0 auto 16px' }}>
-              Try adjusting your category, brand, employee, or date filters to view more records.
+              {filteredCount === 0
+                ? 'Try adjusting your category, brand, employee, or date filters to view more records.'
+                : 'This page no longer has records. Use the page controls below to move to another page.'}
             </p>
-            {hasActiveFilters && (
+            {filteredCount === 0 && hasActiveFilters && (
               <button onClick={resetAllFilters} className="btn-secondary" style={{ display: 'inline-flex', margin: '0 auto' }}>
                 Reset all filters
               </button>
@@ -482,7 +502,7 @@ export const ExpensesManager: React.FC = () => {
           </div>
         ) : (
           <ExpenseTable
-            expenses={filteredExpenses}
+            expenses={pagedExpenses}
             brands={brands}
             canManage={canManage}
             selectedIds={selectedExpenseIds}
@@ -499,6 +519,17 @@ export const ExpensesManager: React.FC = () => {
             onEmployeeClick={(name) => setEmployeeFilter(name)}
           />
         )}
+
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={filteredCount}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => {
+            setPageSize(n);
+            setPage(0);
+          }}
+        />
       </div>
 
       {/* Modals */}

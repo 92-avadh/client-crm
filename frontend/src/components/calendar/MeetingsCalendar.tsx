@@ -155,7 +155,7 @@ export const MeetingsCalendar: React.FC = () => {
                   color: 'var(--solid-btn-text)', fontSize: 10, fontWeight: 700, display: 'flex',
                   alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
-                  {att.name.charAt(0).toUpperCase()}
+                  {(att.name || '?').charAt(0).toUpperCase()}
                 </div>
               ))}
             </div>
@@ -420,7 +420,7 @@ export const MeetingsCalendar: React.FC = () => {
                         }}
                       >
                         <span style={{ width: 16, height: 16, borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--bg-raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700 }}>
-                          {u.name.charAt(0)}
+                          {(u.name || '?').charAt(0)}
                         </span>
                         <span>{u.name}</span>
                         {u.id === currentUser.id && <span style={{ opacity: 0.7, fontSize: 9 }}>(You)</span>}

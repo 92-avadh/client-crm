@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, fetchAll, fetchAllAuditLogs } from '../services/api';
 import { getNaturalErrorMessage } from '../services/errors';
 import {
   connectSocket,
@@ -31,18 +31,9 @@ import type {
 } from '../types';
 import { DEFAULT_SETTINGS } from '../data/defaults';
 import { formatCurrency as formatCurrencyUtil, getCurrencyConfig } from '../utils/currency';
-import {
-  DEMO_USERS,
-  DEMO_BRANDS,
-  DEMO_PROJECTS,
-  DEMO_TASKS,
-  DEMO_INVOICES,
-  DEMO_PAYMENTS,
-  DEMO_EXPENSES,
-  DEMO_MEETINGS,
-  DEMO_LEADS,
-} from '../data/demoData';
+// No demo data is imported. Every record must come from the database.
 import { ROUTES, PATH_TO_TAB, DEFAULT_ROUTE } from '../routes';
+import { getDefaultPermissionsForRole } from '../components/team/permissionsConfig';
 
 interface Toast {
   id: string;
@@ -156,10 +147,21 @@ interface AppContextType {
   theme: 'light' | 'dark';
   toggleTheme: (eventOrTarget?: React.MouseEvent | MouseEvent | { clientX: number; clientY: number } | HTMLElement) => void;
   setTheme: (theme: 'light' | 'dark') => void;
-  resetWorkspaceData: (mode?: 'empty' | 'demo') => Promise<void>;
+  resetWorkspaceData: (mode?: 'empty') => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+/**
+ * Whether a user sees the whole workspace.
+ *
+ * Admins see everything. The reserved `usr_admin` id is retained only for
+ * legacy rows created before user seeding was removed — no account is created
+ * with that id any more.
+ */
+const WORKSPACE_OWNER_ID = 'usr_admin';
+const isWorkspaceOwner = (user: User | null | undefined): boolean =>
+  !!user && (user.role === 'admin' || (user as any).id === WORKSPACE_OWNER_ID);
 
 export const normalizeBrandsList = (payload: any): Brand[] | null => {
   if (!payload) return null;
@@ -427,8 +429,12 @@ export const AppProvider: React.FC<{
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    if (initialUser) return [initialUser, ...DEMO_USERS.filter(u => u.id !== initialUser.id && u.email !== initialUser.email)];
-    return DEMO_USERS;
+    // Only the signed-in user is known at mount. The real roster arrives from
+    // GET /users. Previously this concatenated DEMO_USERS, which injected four
+    // accounts that exist nowhere in the database — and re-appeared on every
+    // reload, undoing any deactivation.
+    if (initialUser) return [initialUser];
+    return [];
   });
   const navigate = useNavigate();
   const location = useLocation();
@@ -478,9 +484,11 @@ export const AppProvider: React.FC<{
       localStorage.setItem('retentio_local_expenses', emptyArr);
       localStorage.setItem('retentio_local_meetings', emptyArr);
       localStorage.setItem('retentio_local_leads', emptyArr);
-      localStorage.setItem('retentio_local_users', JSON.stringify(DEMO_USERS));
       localStorage.removeItem('retentio_onboarding_completed');
       localStorage.removeItem('retentio_onboarding_data');
+      // Clear stale mock roster entries left by earlier builds. Never write
+      // DEMO_USERS here — that re-injected phantom members on every load.
+      localStorage.removeItem('retentio_local_users');
     } catch {}
   }
 
@@ -517,12 +525,30 @@ export const AppProvider: React.FC<{
     return null;
   };
 
+  /**
+   * Safely unpacks both raw array payloads and paginated { data: T[] } objects,
+   * stripping out any nullish or malformed entries.
+   */
+  const extractDataArray = <T,>(res: any): T[] | null => {
+    if (!res) return null;
+    if (Array.isArray(res)) return res.filter((item): item is T => item != null && typeof item === 'object');
+    if (typeof res === 'object' && Array.isArray(res.data)) {
+      return res.data.filter((item: any): item is T => item != null && typeof item === 'object');
+    }
+    return null;
+  };
+
+  const userKey = useCallback((base: string) => activeUserId ? `${base}_${activeUserId}` : base, [activeUserId]);
+
   const [brands, setBrands] = useState<Brand[]>(() => {
     try {
-      const userSaved = activeUserId ? localStorage.getItem(`retentio_local_brands_${activeUserId}`) : null;
-      if (userSaved) {
-        const normalized = normalizeBrandsList(JSON.parse(userSaved));
-        if (normalized) return normalized;
+      if (activeUserId) {
+        const userSaved = localStorage.getItem(`retentio_local_brands_${activeUserId}`);
+        if (userSaved) {
+          const normalized = normalizeBrandsList(JSON.parse(userSaved));
+          if (normalized) return normalized;
+        }
+        return [];
       }
       const saved = localStorage.getItem('retentio_local_brands');
       if (saved) {
@@ -530,72 +556,93 @@ export const AppProvider: React.FC<{
         if (normalized) return normalized;
       }
     } catch {}
-    return isCleanTesting ? [] : (normalizeBrandsList(DEMO_BRANDS) || []);
+    return [];
   });
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
-      const userSaved = activeUserId ? safeParseArray<Project>(localStorage.getItem(`retentio_local_projects_${activeUserId}`)) : null;
-      if (userSaved) return userSaved;
+      if (activeUserId) {
+        const userSaved = safeParseArray<Project>(localStorage.getItem(`retentio_local_projects_${activeUserId}`));
+        if (userSaved) return userSaved;
+        return [];
+      }
       const saved = safeParseArray<Project>(localStorage.getItem('retentio_local_projects'));
       if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : (DEMO_PROJECTS || []).filter(Boolean);
+    return [];
   });
   const [tasks, setTasks] = useState<Task[]>(() => {
     try {
-      const userSaved = activeUserId ? safeParseArray<Task>(localStorage.getItem(`retentio_local_tasks_${activeUserId}`)) : null;
-      if (userSaved) return userSaved;
+      if (activeUserId) {
+        const userSaved = safeParseArray<Task>(localStorage.getItem(`retentio_local_tasks_${activeUserId}`));
+        if (userSaved) return userSaved;
+        return [];
+      }
       const saved = safeParseArray<Task>(localStorage.getItem('retentio_local_tasks'));
       if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : (DEMO_TASKS || []).filter(Boolean);
+    return [];
   });
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
     try {
-      const userSaved = activeUserId ? safeParseArray<Invoice>(localStorage.getItem(`retentio_local_invoices_${activeUserId}`)) : null;
-      if (userSaved) return userSaved;
+      if (activeUserId) {
+        const userSaved = safeParseArray<Invoice>(localStorage.getItem(`retentio_local_invoices_${activeUserId}`));
+        if (userSaved) return userSaved;
+        return [];
+      }
       const saved = safeParseArray<Invoice>(localStorage.getItem('retentio_local_invoices'));
       if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : (DEMO_INVOICES || []).filter(Boolean);
+    return [];
   });
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [payments, setPayments] = useState<Payment[]>(() => {
     try {
-      const userSaved = activeUserId ? safeParseArray<Payment>(localStorage.getItem(`retentio_local_payments_${activeUserId}`)) : null;
-      if (userSaved) return userSaved;
+      if (activeUserId) {
+        const userSaved = safeParseArray<Payment>(localStorage.getItem(`retentio_local_payments_${activeUserId}`));
+        if (userSaved) return userSaved;
+        return [];
+      }
       const saved = safeParseArray<Payment>(localStorage.getItem('retentio_local_payments'));
       if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : (DEMO_PAYMENTS || []).filter(Boolean);
+    return [];
   });
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     try {
-      const userSaved = activeUserId ? safeParseArray<Expense>(localStorage.getItem(`retentio_local_expenses_${activeUserId}`)) : null;
-      if (userSaved) return userSaved;
+      if (activeUserId) {
+        const userSaved = safeParseArray<Expense>(localStorage.getItem(`retentio_local_expenses_${activeUserId}`));
+        if (userSaved) return userSaved;
+        return [];
+      }
       const saved = safeParseArray<Expense>(localStorage.getItem('retentio_local_expenses'));
       if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : (DEMO_EXPENSES || []).filter(Boolean);
+    return [];
   });
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
     try {
-      const userSaved = activeUserId ? safeParseArray<Meeting>(localStorage.getItem(`retentio_local_meetings_${activeUserId}`)) : null;
-      if (userSaved) return userSaved;
+      if (activeUserId) {
+        const userSaved = safeParseArray<Meeting>(localStorage.getItem(`retentio_local_meetings_${activeUserId}`));
+        if (userSaved) return userSaved;
+        return [];
+      }
       const saved = safeParseArray<Meeting>(localStorage.getItem('retentio_local_meetings'));
       if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : (DEMO_MEETINGS || []).filter(Boolean);
+    return [];
   });
   const [leads, setLeads] = useState<Lead[]>(() => {
     try {
-      const userSaved = activeUserId ? safeParseArray<Lead>(localStorage.getItem(`retentio_local_leads_${activeUserId}`)) : null;
-      if (userSaved) return userSaved;
+      if (activeUserId) {
+        const userSaved = safeParseArray<Lead>(localStorage.getItem(`retentio_local_leads_${activeUserId}`));
+        if (userSaved) return userSaved;
+        return [];
+      }
       const saved = safeParseArray<Lead>(localStorage.getItem('retentio_local_leads'));
       if (saved) return saved;
     } catch {}
-    return isCleanTesting ? [] : (DEMO_LEADS || []).filter(Boolean);
+    return [];
   });
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -662,6 +709,49 @@ export const AppProvider: React.FC<{
   const failedRef = useRef<Set<string>>(new Set());
   const inflightRef = useRef<Map<string, Promise<void>>>(new Map());
 
+  /** Which domain is currently loading, so `req` can tag failures to it. */
+  const domainLabelRef = useRef<string>('');
+  /** Per-endpoint failures for the in-flight load, grouped by message. */
+  const loadFailuresRef = useRef<Map<string, string[]>>(new Map());
+
+  /**
+   * Awaits one collection request and records a failure instead of hiding it.
+   *
+   * The loaders deliberately keep going when a single endpoint fails, so one
+   * bad request cannot blank a whole page. But that only helps if the failure
+   * is reported: previously every call was `.catch(() => null)`, which turned a
+   * server error into an empty list with no indication anything went wrong —
+   * the page simply looked empty. This returns `null` on failure *and* notes
+   * the module so the load can surface a real message.
+   */
+  const req = useCallback(async <T,>(label: string, p: Promise<T>): Promise<T | null> => {
+    try {
+      return await p;
+    } catch (err) {
+      const domain = domainLabelRef.current;
+      if (domain) failedRef.current.add(domain);
+      const msg = getNaturalErrorMessage(err);
+      const prev = loadFailuresRef.current;
+      const next = new Map(prev);
+      const existing = next.get(msg);
+      next.set(msg, existing ? Array.from(new Set([...existing, label])) : [label]);
+      loadFailuresRef.current = next;
+      return null;
+    }
+  }, []);
+
+  /** Turns the recorded per-endpoint failures into one readable banner line. */
+  const flushLoadFailures = useCallback(() => {
+    const failures = loadFailuresRef.current;
+    if (failures.size === 0) return;
+    const parts: string[] = [];
+    failures.forEach((modules, msg) => {
+      parts.push(modules.length > 1 ? `${msg} (${modules.join(', ')})` : msg);
+    });
+    setApiError(`${parts.join(' · ')}. Your other data is unaffected — retry from the reload button.`);
+    loadFailuresRef.current = new Map();
+  }, []);
+
   const loadDomain = useCallback(async (domain: string) => {
     if (!currentUser) return;
     // Only skip if successfully loaded before; failed domains are retried on revisit
@@ -674,62 +764,69 @@ export const AppProvider: React.FC<{
 
     const task = (async () => {
       try {
+        domainLabelRef.current = domain;
+        loadFailuresRef.current = new Map();
         setApiError(null);
         switch (domain) {
           case 'clients': {
             const [brandsData, usersData] = await Promise.all([
-              api.brands.list().catch(() => null),
-              api.users.list().catch(() => null),
+              req('clients', api.brands.listAll()),
+              req('team', api.users.listAll()),
             ]);
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) {
               setBrands(normalizedBrands);
-              try { localStorage.setItem('retentio_local_brands', JSON.stringify(normalizedBrands)); } catch {}
+              try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(normalizedBrands)); } catch {}
             }
-            if (Array.isArray(usersData) && usersData.length > 0) {
-              setAllUsers(usersData);
-              try { localStorage.setItem('retentio_local_users', JSON.stringify(usersData)); } catch {}
+            const usersList = extractDataArray<User>(usersData);
+            if (usersList && usersList.length > 0) {
+              setAllUsers(usersList);
+              try {
+                localStorage.setItem('retentio_local_users', JSON.stringify(usersList));
+                localStorage.setItem(userKey('retentio_local_users'), JSON.stringify(usersList));
+              } catch {}
             }
             break;
           }
           case 'projects':
           case 'tasks': {
             const [projectsData, tasksData, brandsData, usersData] = await Promise.all([
-              api.projects.list().catch(() => null),
-              api.tasks.list().catch(() => null),
-              api.brands.list().catch(() => null),
-              api.users.list().catch(() => null),
+              req('projects', api.projects.listAll()),
+              req('tasks', api.tasks.listAll()),
+              req('clients', api.brands.listAll()),
+              req('team', api.users.listAll()),
             ]);
-            if (Array.isArray(projectsData)) {
-              const clean = projectsData.filter(Boolean);
-              setProjects(clean);
-              try { localStorage.setItem('retentio_local_projects', JSON.stringify(clean)); } catch {}
+            const projectsList = extractDataArray<Project>(projectsData);
+            if (projectsList) {
+              setProjects(projectsList);
+              try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(projectsList)); } catch {}
             }
-            if (Array.isArray(tasksData)) {
-              const clean = tasksData.filter(Boolean);
-              setTasks(clean);
-              try { localStorage.setItem('retentio_local_tasks', JSON.stringify(clean)); } catch {}
+            const tasksList = extractDataArray<Task>(tasksData);
+            if (tasksList) {
+              setTasks(tasksList);
+              try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(tasksList)); } catch {}
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
-            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData.filter(Boolean));
+            const usersList = extractDataArray<User>(usersData);
+            if (usersList && usersList.length > 0) setAllUsers(usersList);
             break;
           }
           case 'invoices': {
             const [invoicesData, paymentsData, brandsData] = await Promise.all([
-              api.invoices.list().catch(() => null),
-              api.payments.list().catch(() => null),
-              api.brands.list().catch(() => null),
+              req('invoices', api.invoices.listAll()),
+              req('payments', api.payments.listAll()),
+              req('clients', api.brands.listAll()),
             ]);
-            if (Array.isArray(invoicesData)) {
-              const clean = invoicesData.filter(Boolean);
-              setInvoices(clean);
-              try { localStorage.setItem('retentio_local_invoices', JSON.stringify(clean)); } catch {}
+            const invoicesList = extractDataArray<Invoice>(invoicesData);
+            if (invoicesList) {
+              setInvoices(invoicesList);
+              try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(invoicesList)); } catch {}
             }
-            if (Array.isArray(paymentsData)) {
-              const clean = paymentsData.filter(Boolean);
-              setPayments(clean);
-              try { localStorage.setItem('retentio_local_payments', JSON.stringify(clean)); } catch {}
+            const paymentsList = extractDataArray<Payment>(paymentsData);
+            if (paymentsList) {
+              setPayments(paymentsList);
+              try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(paymentsList)); } catch {}
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
@@ -737,37 +834,42 @@ export const AppProvider: React.FC<{
           }
           case 'finance': {
             const [paymentsData, expensesData, invoicesData, brandsData] = await Promise.all([
-              api.payments.list().catch(() => null),
-              api.expenses.list().catch(() => null),
-              api.invoices.list().catch(() => null),
-              api.brands.list().catch(() => null),
+              req('payments', api.payments.listAll()),
+              req('expenses', api.expenses.listAll()),
+              req('invoices', api.invoices.listAll()),
+              req('clients', api.brands.listAll()),
             ]);
-            if (Array.isArray(paymentsData)) setPayments(paymentsData.filter(Boolean));
-            if (Array.isArray(expensesData)) setExpenses(expensesData.filter(Boolean));
-            if (Array.isArray(invoicesData)) setInvoices(invoicesData.filter(Boolean));
+            const paymentsList = extractDataArray<Payment>(paymentsData);
+            if (paymentsList) setPayments(paymentsList);
+            const expensesList = extractDataArray<Expense>(expensesData);
+            if (expensesList) setExpenses(expensesList);
+            const invoicesList = extractDataArray<Invoice>(invoicesData);
+            if (invoicesList) setInvoices(invoicesList);
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
             break;
           }
           case 'expenses': {
             const [expensesData, brandsData, usersData] = await Promise.all([
-              api.expenses.list().catch(() => null),
-              api.brands.list().catch(() => null),
-              api.users.list().catch(() => null),
+              req('expenses', api.expenses.listAll()),
+              req('clients', api.brands.listAll()),
+              req('team', api.users.listAll()),
             ]);
-            if (Array.isArray(expensesData)) {
-              setExpenses(expensesData);
-              try { localStorage.setItem('retentio_local_expenses', JSON.stringify(expensesData)); } catch {}
+            const expensesList = extractDataArray<Expense>(expensesData);
+            if (expensesList) {
+              setExpenses(expensesList);
+              try { localStorage.setItem(userKey('retentio_local_expenses'), JSON.stringify(expensesList)); } catch {}
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
-            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
+            const usersList = extractDataArray<User>(usersData);
+            if (usersList && usersList.length > 0) setAllUsers(usersList);
             break;
           }
           case 'retention': {
             const [brandsData, settingsData] = await Promise.all([
-              api.brands.list().catch(() => null),
-              api.settings.get().catch(() => null),
+              req('clients', api.brands.listAll()),
+              req('settings', api.settings.get()),
             ]);
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
@@ -776,12 +878,13 @@ export const AppProvider: React.FC<{
           }
           case 'leads': {
             const [leadsData, brandsData] = await Promise.all([
-              api.leads.list().catch(() => null),
-              api.brands.list().catch(() => null),
+              req('leads', api.leads.listAll()),
+              req('clients', api.brands.listAll()),
             ]);
-            if (Array.isArray(leadsData)) {
-              setLeads(leadsData);
-              try { localStorage.setItem('retentio_local_leads', JSON.stringify(leadsData)); } catch {}
+            const leadsList = extractDataArray<Lead>(leadsData);
+            if (leadsList) {
+              setLeads(leadsList);
+              try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(leadsList)); } catch {}
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
@@ -789,45 +892,51 @@ export const AppProvider: React.FC<{
           }
           case 'meetings': {
             const [meetingsData, brandsData, usersData, holidaysData] = await Promise.all([
-              api.meetings.list().catch(() => null),
-              api.brands.list().catch(() => null),
-              api.users.list().catch(() => null),
-              api.holidays.list().catch(() => null),
+              req('meetings', api.meetings.listAll()),
+              req('clients', api.brands.listAll()),
+              req('team', api.users.listAll()),
+              req('holidays', api.holidays.list()),
             ]);
-            if (Array.isArray(meetingsData)) {
-              setMeetings(meetingsData);
-              try { localStorage.setItem('retentio_local_meetings', JSON.stringify(meetingsData)); } catch {}
+            const meetingsList = extractDataArray<Meeting>(meetingsData);
+            if (meetingsList) {
+              setMeetings(meetingsList);
+              try { localStorage.setItem(userKey('retentio_local_meetings'), JSON.stringify(meetingsList)); } catch {}
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
-            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
-            if (Array.isArray(holidaysData)) setHolidays(holidaysData);
+            const usersList = extractDataArray<User>(usersData);
+            if (usersList && usersList.length > 0) setAllUsers(usersList);
+            const holidaysList = extractDataArray<Holiday>(holidaysData);
+            if (holidaysList) setHolidays(holidaysList);
             break;
           }
           case 'team': {
             const [usersData, brandsData] = await Promise.all([
-              api.users.list().catch(() => null),
-              api.brands.list().catch(() => null),
+              req('team', api.users.listAll()),
+              req('clients', api.brands.listAll()),
             ]);
-            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
+            const usersList = extractDataArray<User>(usersData);
+            if (usersList && usersList.length > 0) setAllUsers(usersList);
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
             break;
           }
           case 'inbox': {
-            const notifData = await api.notifications.list().catch(() => null);
-            if (Array.isArray(notifData)) setNotifications(notifData);
+            const notifData = await req('notifications', api.notifications.list());
+            const notifList = extractDataArray<AppNotification>(notifData);
+            if (notifList) setNotifications(notifList);
             break;
           }
           case 'chat': {
             const [convsData, usersData] = await Promise.all([
-              api.chat.conversations().catch(() => null),
-              api.users.list().catch(() => null),
+              req('chat', api.chat.conversations()),
+              req('team', api.users.listAll()),
             ]);
-            const allU = usersData && usersData.length > 0 ? usersData : allUsers;
-            if (Array.isArray(usersData) && usersData.length > 0) setAllUsers(usersData);
+            const usersList = extractDataArray<User>(usersData);
+            if (usersList && usersList.length > 0) setAllUsers(usersList);
+            const allU = usersList && usersList.length > 0 ? usersList : allUsers;
 
-            const baseConvs = Array.isArray(convsData) ? convsData : [];
+            const baseConvs = extractDataArray<any>(convsData) || [];
             const enriched = baseConvs.map((c: any) => {
               if (c.type === 'direct') {
                 const otherId = c.participantIds?.find((id: any) => String(id) !== String(currentUser.id));
@@ -891,39 +1000,50 @@ export const AppProvider: React.FC<{
           }
           case 'settings': {
             const [settingsData, holidaysData] = await Promise.all([
-              api.settings.get().catch(() => null),
-              api.holidays.list().catch(() => null),
+              req('settings', api.settings.get()),
+              req('holidays', api.holidays.list()),
             ]);
             if (settingsData) setSettings(settingsData);
-            if (Array.isArray(holidaysData)) setHolidays(holidaysData);
+            const holidaysList = extractDataArray<Holiday>(holidaysData);
+            if (holidaysList) setHolidays(holidaysList);
             break;
           }
           case 'audit': {
-            const auditData = await api.auditLogs.list().catch(() => null);
-            if (Array.isArray(auditData)) setAuditLogs(auditData);
+            // /audit-logs is capped at 200 rows per call, so drain the whole
+            // trail instead of truncating the history view.
+            const auditList = await req('audit log', fetchAllAuditLogs());
+            if (auditList && auditList.length > 0) setAuditLogs(auditList);
             break;
           }
           case 'dashboard': {
             const [brandsData, invoicesData, tasksData, meetingsData, paymentsData, expensesData] = await Promise.all([
-              api.brands.list().catch(() => null),
-              api.invoices.list().catch(() => null),
-              api.tasks.list().catch(() => null),
-              api.meetings.list().catch(() => null),
-              api.payments.list().catch(() => null),
-              api.expenses.list().catch(() => null),
+              req('clients', api.brands.listAll()),
+              req('invoices', api.invoices.listAll()),
+              req('tasks', api.tasks.listAll()),
+              req('meetings', api.meetings.listAll()),
+              req('payments', api.payments.listAll()),
+              req('expenses', api.expenses.listAll()),
             ]);
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
-            if (Array.isArray(invoicesData)) setInvoices(invoicesData.filter(Boolean));
-            if (Array.isArray(tasksData)) setTasks(tasksData.filter(Boolean));
-            if (Array.isArray(meetingsData)) setMeetings(meetingsData.filter(Boolean));
-            if (Array.isArray(paymentsData)) setPayments(paymentsData.filter(Boolean));
-            if (Array.isArray(expensesData)) setExpenses(expensesData.filter(Boolean));
+            const invoicesList = extractDataArray<Invoice>(invoicesData);
+            if (invoicesList) setInvoices(invoicesList);
+            const tasksList = extractDataArray<Task>(tasksData);
+            if (tasksList) setTasks(tasksList);
+            const meetingsList = extractDataArray<Meeting>(meetingsData);
+            if (meetingsList) setMeetings(meetingsList);
+            const paymentsList = extractDataArray<Payment>(paymentsData);
+            if (paymentsList) setPayments(paymentsList);
+            const expensesList = extractDataArray<Expense>(expensesData);
+            if (expensesList) setExpenses(expensesList);
             break;
           }
           default:
             break;
         }
+        // Surface any per-endpoint failures that did not throw. The page still
+        // renders with whatever loaded, but the user is told what is missing.
+        flushLoadFailures();
         loadedRef.current.add(domain);
       } catch (e: any) {
         failedRef.current.add(domain);
@@ -934,12 +1054,13 @@ export const AppProvider: React.FC<{
         }
       } finally {
         inflightRef.current.delete(domain);
+        domainLabelRef.current = '';
       }
     })();
 
     inflightRef.current.set(domain, task);
     return task;
-  }, [currentUser]);
+  }, [currentUser, flushLoadFailures, req]);
 
   /** Explicit full refresh — used by the manual "reload" affordance. */
   const reloadAll = useCallback(async () => {
@@ -966,7 +1087,8 @@ export const AppProvider: React.FC<{
     (async () => {
       try {
         const notifData = await api.notifications.list();
-        if (notifData && notifData.length > 0) setNotifications(notifData);
+        const notifList = extractDataArray<AppNotification>(notifData);
+        if (notifList && notifList.length > 0) setNotifications(notifList);
       } catch {
         /* badge is non-critical — stay silent */
       }
@@ -995,7 +1117,21 @@ export const AppProvider: React.FC<{
     const user = allUsers.find(u => u.id === userId);
     if (user) {
       setCurrentUser(user);
-      if (user.role === 'brand') setActiveTab('inbox');
+      try {
+        localStorage.setItem('retentio_user', JSON.stringify(user));
+      } catch {}
+
+      const userPerms = Array.isArray(user.permissions) && user.permissions.length > 0
+        ? user.permissions
+        : getDefaultPermissionsForRole(user.role);
+
+      if (user.role !== 'admin' && !userPerms.includes(activeTab)) {
+        const firstTab = userPerms[0] || 'tasks';
+        setActiveTab(firstTab);
+      } else if (user.role === 'brand') {
+        setActiveTab('inbox');
+      }
+
       showToast(`Switched persona to ${user.name} (${user.role.toUpperCase()})`, 'info');
     }
   };
@@ -1038,7 +1174,7 @@ export const AppProvider: React.FC<{
 
     setBrands(prev => {
       const next = [created, ...prev];
-      try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
       return next;
     });
 
@@ -1055,7 +1191,7 @@ export const AppProvider: React.FC<{
       };
       setPayments(prev => {
         const next = [initialPayment, ...prev];
-        try { localStorage.setItem('retentio_local_payments', JSON.stringify(next)); } catch {}
+        try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
         return next;
       });
     }
@@ -1073,7 +1209,7 @@ export const AppProvider: React.FC<{
 
     setBrands(prev => {
       const next = prev.map(b => (b.id === id ? { ...b, ...updates } : b));
-      try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
       return next;
     });
 
@@ -1106,7 +1242,7 @@ export const AppProvider: React.FC<{
         } else {
           next = prev;
         }
-        try { localStorage.setItem('retentio_local_payments', JSON.stringify(next)); } catch {}
+        try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
         return next;
       });
     }
@@ -1122,7 +1258,7 @@ export const AppProvider: React.FC<{
     }
     setBrands(prev => {
       const next = prev.map(b => (b.id === brandId ? { ...b, assignedMemberIds: memberIds } : b));
-      try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
       return next;
     });
     const brand = brands.find(b => b.id === brandId);
@@ -1135,7 +1271,7 @@ export const AppProvider: React.FC<{
     } catch (_err) {}
     setBrands(prev => {
       const next = prev.map(b => (b.id === brandId ? { ...b, lastActivityDate: today } : b));
-      try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
       return next;
     });
   };
@@ -1155,7 +1291,7 @@ export const AppProvider: React.FC<{
     } catch (_err) {}
     setBrands(prev => {
       const next = prev.map(b => (b.id === brandId ? { ...b, status: 'Churned' as const } : b));
-      try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Client marked as Lost / Inactive', 'info');
@@ -1175,7 +1311,7 @@ export const AppProvider: React.FC<{
     }
     setProjects(prev => {
       const next = [created, ...prev];
-      try { localStorage.setItem('retentio_local_projects', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(`Project "${created.name}" created`, 'success');
@@ -1193,7 +1329,7 @@ export const AppProvider: React.FC<{
     }
     setTasks(prev => {
       const next = [created, ...prev];
-      try { localStorage.setItem('retentio_local_tasks', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Task added', 'success');
@@ -1204,13 +1340,13 @@ export const AppProvider: React.FC<{
       const updated = await api.tasks.updateStatus(taskId, status);
       setTasks(prev => {
         const next = prev.map(t => (t.id === taskId ? { ...t, ...updated } : t));
-        try { localStorage.setItem('retentio_local_tasks', JSON.stringify(next)); } catch {}
+        try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
         return next;
       });
     } catch {
       setTasks(prev => {
         const next = prev.map(t => (t.id === taskId ? { ...t, status } : t));
-        try { localStorage.setItem('retentio_local_tasks', JSON.stringify(next)); } catch {}
+        try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
         return next;
       });
     }
@@ -1220,9 +1356,14 @@ export const AppProvider: React.FC<{
   const createInvoice = async (invoiceData: any): Promise<Invoice> => {
     let created: Invoice;
     try {
-      created = await api.invoices.create(invoiceData);
+      const res = await api.invoices.create(invoiceData);
+      if (res && typeof res === 'object' && res.id) {
+        created = res;
+      } else {
+        throw new Error('Fallback to local');
+      }
     } catch {
-      const subtotal = (invoiceData.items || []).reduce((acc: number, it: any) => acc + (it.amount || 0), 0);
+      const subtotal = (invoiceData.items || []).reduce((acc: number, it: any) => acc + (Number(it?.amount) || 0), 0);
       const gst = invoiceData.hasGst ? Math.round(subtotal * 0.18) : 0;
       created = {
         id: 'inv_' + Date.now(),
@@ -1238,11 +1379,11 @@ export const AppProvider: React.FC<{
       };
     }
     setInvoices(prev => {
-      const next = [created, ...prev];
-      try { localStorage.setItem('retentio_local_invoices', JSON.stringify(next)); } catch {}
+      const next = [created, ...(prev || []).filter(Boolean)];
+      try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
       return next;
     });
-    showToast(`Invoice ${created.invoiceNumber} generated for ${created.brandName}`, 'success');
+    showToast(`Invoice ${created.invoiceNumber || 'Record'} generated for ${created.brandName || 'Client'}`, 'success');
     return created;
   };
 
@@ -1250,7 +1391,7 @@ export const AppProvider: React.FC<{
     try { await api.invoices.updateStatus(id, status); } catch {}
     setInvoices(prev => {
       const next = prev.map(inv => (inv.id === id ? { ...inv, status } : inv));
-      try { localStorage.setItem('retentio_local_invoices', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
       return next;
     });
   };
@@ -1268,7 +1409,7 @@ export const AppProvider: React.FC<{
     }
     setInvoices(prev => {
       const next = prev.filter(inv => inv.id !== id);
-      try { localStorage.setItem('retentio_local_invoices', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Invoice deleted successfully', 'success');
@@ -1285,7 +1426,7 @@ export const AppProvider: React.FC<{
     const idSet = new Set(ids);
     setInvoices(prev => {
       const next = prev.filter(inv => !idSet.has(inv.id));
-      try { localStorage.setItem('retentio_local_invoices', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(`${ids.length} invoice${ids.length > 1 ? 's' : ''} deleted successfully`, 'success');
@@ -1294,17 +1435,24 @@ export const AppProvider: React.FC<{
   const recordPayment = async (paymentData: Omit<Payment, 'id' | 'status'>) => {
     let created: Payment;
     try {
-      created = await api.payments.record(paymentData);
+      const res = await api.payments.record(paymentData);
+      const payObj = res?.payment || (res && res.id ? res : null);
+      if (payObj && payObj.id) {
+        created = payObj;
+      } else {
+        throw new Error('Fallback to local');
+      }
     } catch {
       created = {
         id: 'pay_' + Date.now(),
         status: 'Success',
         ...paymentData,
+        amount: Number(paymentData.amount) || 0,
       };
     }
     setPayments(prev => {
-      const next = [created, ...prev];
-      try { localStorage.setItem('retentio_local_payments', JSON.stringify(next)); } catch {}
+      const next = [created, ...(prev || []).filter(Boolean)];
+      try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
       return next;
     });
     // Update invoice if linked
@@ -1318,7 +1466,7 @@ export const AppProvider: React.FC<{
           }
           return inv;
         });
-        try { localStorage.setItem('retentio_local_invoices', JSON.stringify(next)); } catch {}
+        try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
         return next;
       });
     }
@@ -1328,7 +1476,7 @@ export const AppProvider: React.FC<{
           ? { ...b, lastPaymentDate: paymentData.paymentDate, lastActivityDate: today, paymentStatus: 'Paid' as const }
           : b
       );
-      try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(`Payment of ${formatCurrency(paymentData.amount)} successfully recorded!`, 'success');
@@ -1340,7 +1488,7 @@ export const AppProvider: React.FC<{
     } catch (_err) {}
     setPayments(prev => {
       const next = prev.map(p => (p.id === id ? { ...p, status } : p));
-      try { localStorage.setItem('retentio_local_payments', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(
@@ -1362,7 +1510,7 @@ export const AppProvider: React.FC<{
     } catch (_err) {}
     setPayments(prev => {
       const next = prev.filter(p => p.id !== id);
-      try { localStorage.setItem('retentio_local_payments', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Payment record deleted', 'success');
@@ -1379,7 +1527,7 @@ export const AppProvider: React.FC<{
     const idSet = new Set(ids);
     setPayments(prev => {
       const next = prev.filter(p => !idSet.has(p.id));
-      try { localStorage.setItem('retentio_local_payments', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(`${ids.length} payment record${ids.length > 1 ? 's' : ''} deleted`, 'info');
@@ -1412,19 +1560,26 @@ export const AppProvider: React.FC<{
     }
     let created: Expense;
     try {
-      created = await api.expenses.create(expenseData);
+      const res = await api.expenses.create(expenseData);
+      const expObj = res && typeof res === 'object' && ('id' in res ? res : res.data);
+      if (expObj && expObj.id) {
+        created = expObj;
+      } else {
+        throw new Error('Fallback to local');
+      }
     } catch {
       created = {
         id: 'exp_' + Date.now(),
         ...expenseData,
+        amount: Number(expenseData.amount) || 0,
       };
     }
     setExpenses(prev => {
-      const next = [created, ...prev];
-      try { localStorage.setItem('retentio_local_expenses', JSON.stringify(next)); } catch {}
+      const next = [created, ...(prev || []).filter(Boolean)];
+      try { localStorage.setItem(userKey('retentio_local_expenses'), JSON.stringify(next)); } catch {}
       return next;
     });
-    showToast(`Expense of ${formatCurrency(created.amount)} added`, 'success');
+    showToast(`Expense of ${formatCurrency(created.amount || 0)} added`, 'success');
   };
 
   const updateExpense = async (id: string, data: Partial<Expense>) => {
@@ -1438,7 +1593,7 @@ export const AppProvider: React.FC<{
     } catch (_err) {}
     setExpenses(prev => {
       const next = prev.map(e => (e.id === id ? { ...e, ...data } : e));
-      try { localStorage.setItem('retentio_local_expenses', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_expenses'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Expense updated successfully', 'success');
@@ -1453,7 +1608,7 @@ export const AppProvider: React.FC<{
     try { await api.expenses.delete(id); } catch {}
     setExpenses(prev => {
       const next = prev.filter(e => e.id !== id);
-      try { localStorage.setItem('retentio_local_expenses', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_expenses'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Expense deleted', 'info');
@@ -1470,7 +1625,7 @@ export const AppProvider: React.FC<{
     const idSet = new Set(ids);
     setExpenses(prev => {
       const next = prev.filter(e => !idSet.has(e.id));
-      try { localStorage.setItem('retentio_local_expenses', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_expenses'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(`${ids.length} expense record${ids.length > 1 ? 's' : ''} deleted`, 'info');
@@ -1489,7 +1644,7 @@ export const AppProvider: React.FC<{
     }
     setMeetings(prev => {
       const next = [created, ...prev];
-      try { localStorage.setItem('retentio_local_meetings', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_meetings'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(`Meeting "${created.title}" scheduled`, 'success');
@@ -1499,7 +1654,7 @@ export const AppProvider: React.FC<{
     try { await api.meetings.update(id, data); } catch {}
     setMeetings(prev => {
       const next = prev.map(m => (m.id === id ? { ...m, ...data } : m));
-      try { localStorage.setItem('retentio_local_meetings', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_meetings'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Meeting updated', 'success');
@@ -1509,7 +1664,7 @@ export const AppProvider: React.FC<{
     try { await api.meetings.delete(id); } catch {}
     setMeetings(prev => {
       const next = prev.filter(m => m.id !== id);
-      try { localStorage.setItem('retentio_local_meetings', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_meetings'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Meeting deleted', 'info');
@@ -1528,7 +1683,7 @@ export const AppProvider: React.FC<{
     }
     setLeads(prev => {
       const next = [created, ...prev];
-      try { localStorage.setItem('retentio_local_leads', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(`Lead "${created.company}" added to pipeline`, 'success');
@@ -1538,7 +1693,7 @@ export const AppProvider: React.FC<{
     try { await api.leads.updateStage(id, stage); } catch {}
     setLeads(prev => {
       const next = prev.map(l => (l.id === id ? { ...l, stage } : l));
-      try { localStorage.setItem('retentio_local_leads', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(next)); } catch {}
       return next;
     });
     showToast(`Lead moved to ${stage}`, 'info');
@@ -1577,20 +1732,20 @@ export const AppProvider: React.FC<{
         result = { brand: newBrand };
         setBrands(prev => {
           const next = [newBrand, ...prev];
-          try { localStorage.setItem('retentio_local_brands', JSON.stringify(next)); } catch {}
+          try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
           return next;
         });
         setLeads(prev => {
           const next = prev.filter(l => l.id !== leadId);
-          try { localStorage.setItem('retentio_local_leads', JSON.stringify(next)); } catch {}
+          try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(next)); } catch {}
           return next;
         });
       }
     }
     // Reload from API if backend is connected
     const [newBrands, newLeads] = await Promise.all([
-      api.brands.list().catch(() => null),
-      api.leads.list().catch(() => null),
+      api.brands.listAll().catch(() => null),
+      api.leads.listAll().catch(() => null),
     ]);
     const normalizedNewBrands = normalizeBrandsList(newBrands);
     if (normalizedNewBrands) setBrands(normalizedNewBrands);
@@ -1801,8 +1956,10 @@ export const AppProvider: React.FC<{
   // ---- Chat ----
   const loadMessages = async (convId: string) => {
     try {
-      const msgs = await api.chat.messages(convId);
-      if (Array.isArray(msgs)) {
+      // Drains every page of the thread. A single call only returns the newest
+      // 100 messages, so a longer conversation was silently truncated.
+      const msgs = await fetchAll<any>(`/chat/conversations/${convId}/messages`, 100);
+      if (msgs && msgs.length > 0) {
         setMessages(prev => ({ ...prev, [convId]: msgs }));
       }
     } catch (err: any) {
@@ -1923,19 +2080,26 @@ export const AppProvider: React.FC<{
         });
       }
     } catch (err: any) {
-      console.warn('API chat.sendMessage failed, keeping optimistic message:', err);
+      // The message was never persisted. Keep the bubble but flag it as failed
+      // so it is visibly not a confirmed send, and tell the user.
+      console.warn('API chat.sendMessage failed, marking optimistic message as unsent:', err);
+      setMessages(prev => ({
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).map(m =>
+          m.id === optimisticMsg.id ? { ...m, failed: true } : m
+        )
+      }));
+      showToast('Message could not be sent. Check your connection.', 'error');
     }
   };
 
   const deleteMessage = async (conversationId: string, messageId: string, deleteType: 'forEveryone' | 'forMe') => {
     if (!currentUser) return;
-    try {
-      emitDeleteMessage(conversationId, messageId, deleteType, currentUser.id);
-      await api.chat.deleteMessage(conversationId, messageId, deleteType).catch(() => {});
-    } catch (err) {
-      console.warn('API chat.deleteMessage failed, applying local update:', err);
-    }
-
+    // Apply the local update only after the server confirms it. Swallowing the
+    // error made a failed delete look successful and the message "disappeared"
+    // only until the next reload.
+    await api.chat.deleteMessage(conversationId, messageId, deleteType);
+    emitDeleteMessage(conversationId, messageId, deleteType, currentUser.id);
     setMessages(prev => {
       const list = prev[conversationId] || [];
       if (deleteType === 'forEveryone') {
@@ -1955,11 +2119,9 @@ export const AppProvider: React.FC<{
   };
 
   const deleteConversation = async (convId: string) => {
-    try {
-      await api.chat.deleteConversation(convId).catch(() => {});
-    } catch (err) {
-      console.warn('API chat.deleteConversation failed, updating local state:', err);
-    }
+    // Await the delete so a failure does not silently drop the conversation
+    // from local state while it still exists on the server.
+    await api.chat.deleteConversation(convId);
     setConversations(prev => prev.filter(c => c.id !== convId));
     setMessages(prev => {
       const next = { ...prev };
@@ -1973,11 +2135,9 @@ export const AppProvider: React.FC<{
   };
 
   const clearConversation = async (convId: string) => {
-    try {
-      await api.chat.clearConversation(convId).catch(() => {});
-    } catch (err) {
-      console.warn('API chat.clearConversation failed, updating local state:', err);
-    }
+    // Await the clear so a failure does not wipe the local view of a
+    // conversation whose messages are still on the server.
+    await api.chat.clearConversation(convId);
     setMessages(prev => ({ ...prev, [convId]: [] }));
     setConversations(prev =>
       prev.map(c =>
@@ -2034,29 +2194,17 @@ export const AppProvider: React.FC<{
 
   // ---- Team ----
   const addTeamMember = async (data: any) => {
-    let created: any;
-    try {
-      created = await api.users.create(data);
-    } catch (err: any) {
-      console.warn('API users.create failed, falling back to local user:', err);
-      created = {
-        id: `user-${Date.now()}`,
-        name: data.name || 'New Member',
-        email: data.email || '',
-        phone: data.phone || '',
-        designation: data.designation || '',
-        role: data.role || 'team',
-        avatar: data.avatar || '',
-        permissions: data.permissions || [],
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        ...data,
-      };
-    }
+    // Never fall back to a locally-fabricated user. Doing so created records
+    // that looked real in the UI but existed only in the browser, so the member
+    // could not sign in and vanished on reload.
+    const created = await api.users.create({ ...data, createdBy: currentUser?.id });
     setAllUsers(prev => {
-      const next = [...prev, created];
+      const next = [...prev.filter(u => u.id !== created.id), created];
       try {
         localStorage.setItem('retentio_local_users', JSON.stringify(next));
+        if (activeUserId) {
+          localStorage.setItem(`retentio_local_users_${activeUserId}`, JSON.stringify(next));
+        }
       } catch {}
       return next;
     });
@@ -2064,13 +2212,10 @@ export const AppProvider: React.FC<{
   };
 
   const updateTeamMember = async (id: string, data: any) => {
-    let updated: any;
-    try {
-      updated = await api.users.update(id, data);
-    } catch (err: any) {
-      console.warn('API users.update failed, updating local user:', err);
-      updated = data;
-    }
+    // Never swallow this error. Swallowing it let the caller show a success
+    // toast while the change was silently discarded, so a profile photo looked
+    // saved until the next reload. A failed save must reach the caller.
+    const updated = await api.users.update(id, data);
     setAllUsers(prev => {
       const exists = prev.some(u => u.id === id);
       const next = exists
@@ -2094,11 +2239,10 @@ export const AppProvider: React.FC<{
   };
 
   const deactivateTeamMember = async (id: string) => {
-    try {
-      await api.users.deactivate(id);
-    } catch (err: any) {
-      console.warn('API users.deactivate failed, updating local state:', err);
-    }
+    // Propagate the failure. Swallowing it marked the member inactive in the UI
+    // while the database row stayed active, so they could still sign in after a
+    // refresh.
+    await api.users.deactivate(id);
     setAllUsers(prev => {
       const next = prev.map(u => (u.id === id ? { ...u, status: 'inactive' as const, isActive: false } : u));
       try {
@@ -2108,7 +2252,7 @@ export const AppProvider: React.FC<{
     });
   };
 
-  const resetWorkspaceData = useCallback(async (mode: 'empty' | 'demo' = 'empty') => {
+  const resetWorkspaceData = useCallback(async (mode: 'empty' = 'empty') => {
     setIsLoading(true);
     try {
       if (mode === 'empty') {
@@ -2119,13 +2263,21 @@ export const AppProvider: React.FC<{
         const emptyArr = JSON.stringify([]);
         localStorage.setItem('retentio_clean_testing', 'true');
         localStorage.setItem('retentio_local_brands', emptyArr);
+        localStorage.setItem(userKey('retentio_local_brands'), emptyArr);
         localStorage.setItem('retentio_local_projects', emptyArr);
+        localStorage.setItem(userKey('retentio_local_projects'), emptyArr);
         localStorage.setItem('retentio_local_tasks', emptyArr);
+        localStorage.setItem(userKey('retentio_local_tasks'), emptyArr);
         localStorage.setItem('retentio_local_invoices', emptyArr);
+        localStorage.setItem(userKey('retentio_local_invoices'), emptyArr);
         localStorage.setItem('retentio_local_payments', emptyArr);
+        localStorage.setItem(userKey('retentio_local_payments'), emptyArr);
         localStorage.setItem('retentio_local_expenses', emptyArr);
+        localStorage.setItem(userKey('retentio_local_expenses'), emptyArr);
         localStorage.setItem('retentio_local_meetings', emptyArr);
+        localStorage.setItem(userKey('retentio_local_meetings'), emptyArr);
         localStorage.setItem('retentio_local_leads', emptyArr);
+        localStorage.setItem(userKey('retentio_local_leads'), emptyArr);
         localStorage.removeItem('retentio_onboarding_completed');
         localStorage.removeItem('retentio_onboarding_data');
 
@@ -2147,40 +2299,107 @@ export const AppProvider: React.FC<{
 
         showToast('All current data removed! Clean testing state ready.', 'success');
       } else {
+        // The 'demo' branch was removed. It loaded DEMO_USERS and empty DEMO_*
+        // arrays into state, which put accounts that exist only in the browser
+        // into the workspace and broke the zero-mock-data rule. There is no
+        // in-app demo dataset — test against real database records.
         localStorage.removeItem('retentio_clean_testing');
-        localStorage.setItem('retentio_local_brands', JSON.stringify(DEMO_BRANDS));
-        localStorage.setItem('retentio_local_projects', JSON.stringify(DEMO_PROJECTS));
-        localStorage.setItem('retentio_local_tasks', JSON.stringify(DEMO_TASKS));
-        localStorage.setItem('retentio_local_invoices', JSON.stringify(DEMO_INVOICES));
-        localStorage.setItem('retentio_local_payments', JSON.stringify(DEMO_PAYMENTS));
-        localStorage.setItem('retentio_local_expenses', JSON.stringify(DEMO_EXPENSES));
-        localStorage.setItem('retentio_local_meetings', JSON.stringify(DEMO_MEETINGS));
-        localStorage.setItem('retentio_local_leads', JSON.stringify(DEMO_LEADS));
-        localStorage.setItem('retentio_local_users', JSON.stringify(DEMO_USERS));
-
-        setBrands(DEMO_BRANDS);
-        setProjects(DEMO_PROJECTS);
-        setTasks(DEMO_TASKS);
-        setInvoices(DEMO_INVOICES);
-        setPayments(DEMO_PAYMENTS);
-        setExpenses(DEMO_EXPENSES);
-        setMeetings(DEMO_MEETINGS);
-        setLeads(DEMO_LEADS);
-        setAllUsers(DEMO_USERS);
 
         loadedRef.current.clear();
         failedRef.current.clear();
 
-        showToast('Fresh demo test dataset loaded successfully!', 'success');
+        showToast('No demo dataset is available. Use real records.', 'info');
       }
     } finally {
       setIsLoading(false);
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    (window as any).resetRetentioWorkspace = resetWorkspaceData;
-  }, [resetWorkspaceData]);
+  // Strict user association & access control filtering
+  const visibleBrands = useMemo((): Brand[] => {
+    if (!currentUser || isWorkspaceOwner(currentUser)) {
+      return brands;
+    }
+    // Team members only access clients explicitly assigned to them
+    return brands.filter((b: Brand) => Array.isArray(b.assignedMemberIds) && b.assignedMemberIds.includes(currentUser.id));
+  }, [brands, currentUser]);
+
+  const visibleTasks = useMemo((): Task[] => {
+    if (!currentUser || isWorkspaceOwner(currentUser)) {
+      return tasks;
+    }
+    const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
+    return tasks.filter((t: Task) => t.assigneeId === currentUser.id || (t.brandId && myBrandIds.has(t.brandId)));
+  }, [tasks, visibleBrands, currentUser]);
+
+  const visibleProjects = useMemo((): Project[] => {
+    if (!currentUser || isWorkspaceOwner(currentUser)) {
+      return projects;
+    }
+    const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
+    return projects.filter((p: Project) => (p.brandId && myBrandIds.has(p.brandId)) || (Array.isArray(p.assignedMemberIds) && p.assignedMemberIds.includes(currentUser.id)));
+  }, [projects, visibleBrands, currentUser]);
+
+  const visibleInvoices = useMemo((): Invoice[] => {
+    if (!currentUser || isWorkspaceOwner(currentUser)) {
+      return invoices;
+    }
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (!perms.includes('invoices') && !perms.includes('finance')) return [];
+    const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
+    return invoices.filter((i: Invoice) => Boolean(i.brandId && myBrandIds.has(i.brandId)));
+  }, [invoices, visibleBrands, currentUser]);
+
+  const visiblePayments = useMemo((): Payment[] => {
+    if (!currentUser || isWorkspaceOwner(currentUser)) {
+      return payments;
+    }
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (!perms.includes('finance') && !perms.includes('invoices')) return [];
+    const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
+    return payments.filter((p: Payment) => Boolean(p.brandId && myBrandIds.has(p.brandId)));
+  }, [payments, visibleBrands, currentUser]);
+
+  const visibleExpenses = useMemo((): Expense[] => {
+    if (!currentUser || isWorkspaceOwner(currentUser)) {
+      return expenses;
+    }
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (!perms.includes('expenses') && !perms.includes('finance')) return [];
+    const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
+    return expenses.filter((e: Expense) => Boolean((e.brandId && myBrandIds.has(e.brandId)) || (e.employeeId === currentUser.id)));
+  }, [expenses, visibleBrands, currentUser]);
+
+  const visibleMeetings = useMemo((): Meeting[] => {
+    if (!currentUser || isWorkspaceOwner(currentUser)) {
+      return meetings;
+    }
+    const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
+    return meetings.filter((m: Meeting) => Boolean((Array.isArray(m.attendeeIds) && m.attendeeIds.includes(currentUser.id)) || (m.brandId && myBrandIds.has(m.brandId))));
+  }, [meetings, visibleBrands, currentUser]);
+
+  const visibleLeads = useMemo((): Lead[] => {
+    if (!currentUser || isWorkspaceOwner(currentUser)) {
+      return leads;
+    }
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (!perms.includes('leads')) return [];
+    return leads;
+  }, [leads, currentUser]);
+
+  const visibleUsers = useMemo((): User[] => {
+    if (!currentUser) return allUsers;
+    if (isWorkspaceOwner(currentUser)) {
+      return allUsers.filter((u: User) => u && (u.id === currentUser.id || (u as any).createdBy === currentUser.id || !(u as any).createdBy));
+    }
+    const myAdminId = (currentUser as any).createdBy;
+    return allUsers.filter((u: User) => u && (
+      u.id === currentUser.id ||
+      u.id === myAdminId ||
+      (myAdminId && (u as any).createdBy === myAdminId) ||
+      (!myAdminId && !(u as any).createdBy)
+    ));
+  }, [allUsers, currentUser]);
 
   return (
     <AppContext.Provider
@@ -2188,22 +2407,22 @@ export const AppProvider: React.FC<{
         currentUser,
         setCurrentUser,
         switchUser,
-        allUsers,
+        allUsers: visibleUsers,
         activeTab,
         setActiveTab,
-        brands,
+        brands: visibleBrands,
         selectedBrandId,
         setSelectedBrandId,
         addBrand,
         updateBrand,
         assignMembersToBrand,
-        projects,
-        tasks,
+        projects: visibleProjects,
+        tasks: visibleTasks,
         addTask,
         updateTaskStatus,
         addProject,
-        invoices,
-        payments,
+        invoices: visibleInvoices,
+        payments: visiblePayments,
         selectedInvoiceId,
         setSelectedInvoiceId,
         createInvoice,
@@ -2215,16 +2434,16 @@ export const AppProvider: React.FC<{
         deletePayment,
         deletePayments,
         simulateRazorpayPayment,
-        expenses,
+        expenses: visibleExpenses,
         addExpense,
         updateExpense,
         deleteExpense,
         deleteExpenses,
-        meetings,
+        meetings: visibleMeetings,
         addMeeting,
         updateMeeting,
         deleteMeeting,
-        leads,
+        leads: visibleLeads,
         addLead,
         updateLeadStage,
         convertLeadToBrand,

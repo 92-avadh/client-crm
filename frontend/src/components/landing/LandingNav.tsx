@@ -15,7 +15,7 @@ export const LandingNav: React.FC<LandingNavProps> = ({
 
   // Guarantee responsive & accurate auth status across prop and persistent storage
   const isAuth = isLoggedIn || (typeof window !== 'undefined' && Boolean(
-    localStorage.getItem('retentio_user') && (localStorage.getItem('retentio_token') || localStorage.getItem('retentio_bypass_mode') === 'true')
+    localStorage.getItem('retentio_user') && localStorage.getItem('retentio_token')
   ));
 
   useEffect(() => {
