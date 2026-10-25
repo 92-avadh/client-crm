@@ -410,6 +410,10 @@ export interface PortalData {
     usedHours: number;
     hoursRemaining: number;
     hoursUtilizationPct: number;
+    billingAddress?: string;
+    city?: string;
+    state?: string;
+    gstNumber?: string;
   };
   deliverables: {
     total: number;

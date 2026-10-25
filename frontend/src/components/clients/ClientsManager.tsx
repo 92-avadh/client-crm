@@ -105,7 +105,7 @@ export const ClientsManager: React.FC = () => {
   const {
     currentUser, brands, allUsers, addBrand, updateBrand, assignMembersToBrand,
     selectedBrandId, setSelectedBrandId, invoices, tasks, setActiveTab, showToast,
-    currencySymbol,
+    currencySymbol, conversations, setActiveConversationId, startDirectChat,
   } = useApp();
 
   const role = currentUser.role;
@@ -427,7 +427,27 @@ export const ClientsManager: React.FC = () => {
             activeTab={activeProfileTab}
             onTabChange={setActiveProfileTab}
             onClose={() => setSelectedBrandId(null)}
-            onChat={() => setActiveTab('chat')}
+            onChat={async (brandId) => {
+              const brand = brands.find((b) => b.id === brandId);
+              const conv = (conversations || []).find(
+                (c) => c.brandId === brandId || (brand && c.title?.toLowerCase() === brand.name?.toLowerCase())
+              );
+              if (conv) {
+                setActiveConversationId(conv.id);
+                setActiveTab('chat');
+                return;
+              }
+              const assigned = (brand?.assignedMemberIds || []).filter((id) => id !== currentUser.id);
+              if (assigned.length > 0 && typeof startDirectChat === 'function') {
+                try {
+                  await startDirectChat(assigned[0]);
+                  return;
+                } catch (err) {
+                  console.warn('Failed to start direct chat with assigned member:', err);
+                }
+              }
+              setActiveTab('chat');
+            }}
           />
         )}
       </AnimatePresence>

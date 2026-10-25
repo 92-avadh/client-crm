@@ -17,7 +17,8 @@ import {
   Layers,
   UploadCloud,
   FileCheck2,
-  FileWarning
+  FileWarning,
+  UserPlus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Brand, User, Invoice, Task, BrandDocument } from '../../types';
@@ -50,10 +51,6 @@ export const ClientProfileDrawer: React.FC<Props> = ({
   brand, role, allUsers, invoices, tasks, activeTab, onTabChange, onClose, onChat,
 }) => {
   const { currencySymbol: globalCurrencySymbol = '₹', expenses = [], showToast, updateBrand } = useApp();
-  if (!brand) return null;
-
-  const currSym = brand.currencySymbol || globalCurrencySymbol;
-  const formatAmt = (n: number) => `${currSym}${Number(n || 0).toLocaleString()}`;
 
   // Log Hours State
   const [showLogHoursModal, setShowLogHoursModal] = useState(false);
@@ -66,6 +63,11 @@ export const ClientProfileDrawer: React.FC<Props> = ({
   const [newDocCategory, setNewDocCategory] = useState<'MSA' | 'SOW' | 'NDA' | 'KYC & Tax' | 'Contract' | 'Other'>('MSA');
   const [newDocRenewal, setNewDocRenewal] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
+
+  if (!brand) return null;
+
+  const currSym = brand.currencySymbol || globalCurrencySymbol;
+  const formatAmt = (n: number) => `${currSym}${Number(n || 0).toLocaleString()}`;
 
   const assignedUsers = (allUsers || []).filter(Boolean).filter((u) => (brand?.assignedMemberIds || []).includes(u.id));
   const brandInvoices = (invoices || []).filter(Boolean).filter((i) => i.brandId === brand?.id);
@@ -630,14 +632,58 @@ export const ClientProfileDrawer: React.FC<Props> = ({
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
             <Users style={{ width: 14, height: 14 }} />
-            {assignedUsers.length} team member{assignedUsers.length !== 1 ? 's' : ''} assigned
+            {assignedUsers.length === 0 ? (
+              <span style={{ color: 'var(--text-muted)' }}>No team members assigned</span>
+            ) : (
+              <span>{assignedUsers.length} team member{assignedUsers.length !== 1 ? 's' : ''} assigned</span>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button onClick={() => onChat(brand.id)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              <MessageSquare style={{ width: 14, height: 14 }} />
-              Open Chat
-            </button>
+            {assignedUsers.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => onTabChange('team')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '9px 16px',
+                  background: 'var(--bg-subtle)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <UserPlus style={{ width: 14, height: 14, color: 'var(--brand-green, #10b981)' }} />
+                Assign Team Members
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onChat(brand.id)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '9px 16px',
+                  background: 'var(--solid-btn-bg)',
+                  color: 'var(--solid-btn-text)',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <MessageSquare style={{ width: 14, height: 14 }} />
+                Open Team Chat ({assignedUsers.length})
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
