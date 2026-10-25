@@ -510,7 +510,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
     if (isLoggedIn) {
       navigate('/dashboard');
     } else {
-      navigate('/login');
+      navigate('/signup');
     }
   };
 

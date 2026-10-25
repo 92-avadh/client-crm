@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, RotateCcw, Home, Sparkles } from 'lucide-react';
+import { RefreshCw, Home, AlertTriangle } from 'lucide-react';
 
 interface Props {
   children: React.ReactNode;
@@ -13,8 +13,7 @@ interface State {
 
 /**
  * Friendly, resilient Error Boundary.
- * Catches render crashes, displays comforting human-centric messaging with high contrast,
- * and tucks technical stack traces inside a collapsed details disclosure.
+ * Displays clean empathetic messaging and simple refresh action without wiping user data.
  */
 export class ErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false, message: '' };
@@ -34,41 +33,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   private handleReload = () => {
-    try {
-      const keys = ['retentio_local_expenses', 'retentio_local_invoices', 'retentio_local_payments'];
-      keys.forEach((key) => {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          try {
-            const arr = JSON.parse(raw);
-            if (Array.isArray(arr)) {
-              const clean = arr.filter((item) => item != null && typeof item === 'object' && item.id);
-              localStorage.setItem(key, JSON.stringify(clean));
-            }
-          } catch {}
-        }
-      });
-    } catch {}
     this.setState({ hasError: false, message: '' });
     window.location.reload();
   };
 
   private handleGoDashboard = () => {
-    this.setState({ hasError: false, message: '' });
-    window.location.href = '/dashboard';
-  };
-
-  private handleClearAndReload = () => {
-    try {
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith('retentio_local_') || k.startsWith('retentio_clean_') || k.includes('cache'))) {
-          keysToRemove.push(k);
-        }
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
-    } catch {}
     this.setState({ hasError: false, message: '' });
     window.location.href = '/dashboard';
   };
@@ -94,7 +63,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       >
         <div
           style={{
-            maxWidth: 520,
+            maxWidth: 480,
             width: '100%',
             background: 'var(--bg-card, #111827)',
             border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
@@ -108,25 +77,25 @@ export class ErrorBoundary extends React.Component<Props, State> {
             boxSizing: 'border-box',
           }}
         >
-          {/* Calm friendly icon badge */}
+          {/* Friendly alert badge */}
           <div
             style={{
-              width: 58,
-              height: 58,
+              width: 56,
+              height: 56,
               borderRadius: '50%',
-              background: 'rgba(34, 197, 94, 0.12)',
-              border: '1px solid rgba(34, 197, 94, 0.3)',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 20,
-              color: '#22c55e',
+              color: '#ef4444',
             }}
           >
-            <Sparkles size={28} />
+            <AlertTriangle size={26} />
           </div>
 
-          {/* High-contrast empathetic headline */}
+          {/* Clean, simple headline */}
           <h2
             style={{
               fontSize: 22,
@@ -136,32 +105,31 @@ export class ErrorBoundary extends React.Component<Props, State> {
               letterSpacing: '-0.02em',
             }}
           >
-            Workspace Encountered a Quick Pause
+            Oops! Something went wrong
           </h2>
 
-          {/* Reassuring human-centric copy */}
+          {/* Simple, reassuring copy */}
           <p
             style={{
               fontSize: 14,
               color: 'var(--text-secondary, #94a3b8)',
               margin: '0 0 24px',
               lineHeight: 1.6,
-              maxWidth: 420,
+              maxWidth: 400,
             }}
           >
-            Don't worry — your data and configurations are completely safe. A quick reload
-            or returning to the dashboard will restore your session seamlessly.
+            We encountered an unexpected error. Please try again later or refresh the page.
           </p>
 
           {/* Recovery Actions */}
           <div
             style={{
               display: 'flex',
-              gap: 10,
+              gap: 12,
               flexWrap: 'wrap',
               justifyContent: 'center',
               width: '100%',
-              marginBottom: 20,
+              marginBottom: 16,
             }}
           >
             <button
@@ -170,7 +138,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '11px 22px',
+                padding: '12px 24px',
                 background: 'var(--solid-btn-bg, #22c55e)',
                 color: 'var(--solid-btn-text, #ffffff)',
                 border: 'none',
@@ -184,7 +152,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
             >
               <RefreshCw size={15} />
-              Reload Workspace
+              Refresh Page
             </button>
 
             <button
@@ -193,7 +161,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '11px 18px',
+                padding: '12px 20px',
                 background: 'var(--bg-subtle, rgba(255, 255, 255, 0.05))',
                 color: 'var(--text-primary, #ffffff)',
                 border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
@@ -208,30 +176,6 @@ export class ErrorBoundary extends React.Component<Props, State> {
             >
               <Home size={15} />
               Dashboard
-            </button>
-
-            <button
-              onClick={this.handleClearAndReload}
-              title="Clears cached local data and re-syncs fresh state"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '11px 16px',
-                background: 'transparent',
-                color: 'var(--text-muted, #64748b)',
-                border: '1px solid transparent',
-                borderRadius: 10,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'color 0.15s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary, #94a3b8)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted, #64748b)')}
-            >
-              <RotateCcw size={14} />
-              Reset Cache & Sync
             </button>
           </div>
 

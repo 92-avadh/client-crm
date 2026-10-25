@@ -9,13 +9,15 @@
 const RULES: Array<[RegExp, string]> = [
   // ── Network / connectivity ───────────────────────────────
   [/failed to fetch|networkerror|network request failed|load failed/i,
-   'Connection issue. Please check your internet and try again.'],
+   'Unable to reach the server. The backend may be waking up — please try again in a moment.'],
   [/timeout|timed out|etimedout|aborted/i,
    'The request took too long. Please try again.'],
   [/cors|blocked by cors/i,
-   'Connection issue. Please check your internet and try again.'],
+   'Connection issue with server. Please try again in a few moments.'],
 
-  // ── Auth ─────────────────────────────────────────────────
+  // ── Auth & Registration ──────────────────────────────────
+  [/already registered|email.*already exists|user.*already exists/i,
+   'This email is already registered. Please sign in instead.'],
   [/invalid email or password|invalid credentials/i,
    'Email or password is incorrect. Please try again.'],
   [/unauthorized|not authenticated|jwt|token expired|invalid token/i,
@@ -26,7 +28,7 @@ const RULES: Array<[RegExp, string]> = [
    'Too many attempts. Please wait a few minutes and try again.'],
 
   // ── Data conflicts ───────────────────────────────────────
-  [/already registered|already exists|duplicate|unique constraint|23505/i,
+  [/already exists|duplicate|unique constraint|23505/i,
    'That record already exists. Please use a different value.'],
   [/not found|does not exist|no rows|404/i,
    'We could not find what you were looking for. It may have been removed.'],

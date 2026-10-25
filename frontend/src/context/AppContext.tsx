@@ -1095,6 +1095,31 @@ export const AppProvider: React.FC<{
     })();
   }, [currentUser]);
 
+  // Baseline clients & team roster preload on mount.
+  // Ensures refreshing directly on sub-routes (/chat, /tasks, /projects, /invoices)
+  // always has client names and team member details without mismatch or empty placeholders.
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      try {
+        const [brandsData, usersData] = await Promise.all([
+          api.brands.listAll().catch(() => null),
+          api.users.listAll().catch(() => null),
+        ]);
+        const normalizedBrands = normalizeBrandsList(brandsData);
+        if (normalizedBrands && normalizedBrands.length > 0) {
+          setBrands((prev) => (prev.length === 0 ? normalizedBrands : prev));
+        }
+        const usersList = extractDataArray<User>(usersData);
+        if (usersList && usersList.length > 0) {
+          setAllUsers((prev) => (prev.length === 0 ? usersList : prev));
+        }
+      } catch {
+        /* Non-blocking baseline preload */
+      }
+    })();
+  }, [currentUser]);
+
   // Load only the data the current route needs (see loadDomain).
   // Failed domains are retried on every revisit because loadDomain
   // only short-circuits on success (loadedRef), not on failure.

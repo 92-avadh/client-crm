@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Mail, Lock, Eye, EyeOff,
@@ -12,9 +12,10 @@ import { api, setToken } from '../../services/api';
 import { getNaturalErrorMessage } from '../../services/errors';
 
 interface LoginScreenProps {
-  onLogin: (email: string, password: string) => void,
+  onLogin: (email: string, password: string) => void;
   loginError?: string;
   loginLoading?: boolean;
+  defaultMode?: 'signin' | 'register';
 }
 
 type RegStep = 'details' | 'otp' | 'success';
@@ -31,9 +32,30 @@ const PATH_RIGHT = 'M 0,0 L 0.92,0 C 0.98,0.18 1.0,0.34 0.94,0.50 C 0.88,0.66 0.
 const PATH_LEFT  = 'M 1,0 L 0.08,0 C 0.02,0.18 0.0,0.34 0.06,0.50 C 0.12,0.66 0.04,0.84 0.08,1.0 L 1,1.0 Z';
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
-  onLogin, loginError = '', loginLoading = false,
+  onLogin, loginError = '', loginLoading = false, defaultMode = 'signin',
 }) => {
-  const [mode, setMode] = useState<'signin' | 'register'>('signin');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [mode, setMode] = useState<'signin' | 'register'>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname === '/signup') return 'register';
+      if (window.location.pathname === '/login') return 'signin';
+    }
+    return defaultMode;
+  });
+
+  useEffect(() => {
+    if (location.pathname === '/signup') {
+      setMode('register');
+      document.title = 'Create Your Agency — Retentio';
+    } else if (location.pathname === '/login') {
+      setMode('signin');
+      document.title = 'Sign In — Retentio';
+    } else if (defaultMode) {
+      setMode(defaultMode);
+    }
+  }, [location.pathname, defaultMode]);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [regStep, setRegStep] = useState<RegStep>('details');
@@ -319,6 +341,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setRegStep('details');
     setForgotStep(null);
     setMode('register');
+    navigate('/signup');
     if (typeof window !== 'undefined' && window.innerWidth <= 980) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -330,6 +353,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setForgotStep(null);
     if (regEmail) setSiEmail(regEmail);
     setMode('signin');
+    navigate('/login');
     if (typeof window !== 'undefined' && window.innerWidth <= 980) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }

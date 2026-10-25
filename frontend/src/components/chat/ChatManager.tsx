@@ -4,14 +4,12 @@ import {
   MessageSquare,
   Search,
   Send,
-  Paperclip,
   Check,
   CheckCheck,
   Building2,
   Users,
   FileText,
   Loader2,
-  UserPlus,
   X,
   Phone,
   Video,
@@ -21,13 +19,11 @@ import {
   Pin,
   Star,
   VolumeX,
-  Volume2,
   Reply,
   Copy,
   Forward,
   CheckSquare,
   Trash2,
-  Info,
   ChevronDown,
   Plus,
   Image as ImageIcon,
@@ -37,7 +33,7 @@ import {
   Download,
 } from 'lucide-react';
 import { getSocket, emitTypingStatus } from '../../services/socket';
-import type { User, Conversation, ChatMessage } from '../../types';
+import type { Conversation, ChatMessage } from '../../types';
 import { useConfirm } from '../../hooks/useConfirm';
 
 // WhatsApp Brand Palette Tokens
@@ -227,7 +223,7 @@ export const ChatManager: React.FC = () => {
       return new Set();
     }
   });
-  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+  const [_selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
 
   // Quoted reply state
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
@@ -314,7 +310,7 @@ export const ChatManager: React.FC = () => {
       isTyping: boolean;
     }) => {
       if (data.conversationId !== activeConv?.id) return;
-      if (data.userId === currentUser.id) return;
+      if (currentUser && data.userId === currentUser.id) return;
 
       setTypingUsers((prev) => {
         const next = { ...prev };
@@ -331,7 +327,7 @@ export const ChatManager: React.FC = () => {
     return () => {
       s.off('user_typing', handleUserTyping);
     };
-  }, [activeConv?.id, currentUser.id]);
+  }, [activeConv?.id, currentUser]);
 
   // Close menus on outside click
   useEffect(() => {
@@ -350,11 +346,11 @@ export const ChatManager: React.FC = () => {
     const val = e.target.value;
     setInputText(val);
 
-    if (activeConv) {
+    if (activeConv && currentUser) {
       emitTypingStatus(activeConv.id, currentUser.id, currentUser.name, true);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
-        if (activeConv) {
+        if (activeConv && currentUser) {
           emitTypingStatus(activeConv.id, currentUser.id, currentUser.name, false);
         }
       }, 2000);
@@ -384,7 +380,9 @@ export const ChatManager: React.FC = () => {
     if (!inputText.trim() || !activeConv) return;
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    emitTypingStatus(activeConv.id, currentUser.id, currentUser.name, false);
+    if (currentUser) {
+      emitTypingStatus(activeConv.id, currentUser.id, currentUser.name, false);
+    }
 
     let messageBody = inputText.trim();
     if (replyingTo) {
@@ -399,7 +397,8 @@ export const ChatManager: React.FC = () => {
 
     // If direct recipient is online, simulate WhatsApp read receipt after ~3.5 seconds
     if (activeConv.type === 'direct') {
-      const otherId = activeConv.otherMember?.id || activeConv.participantIds.find((id) => id !== currentUser.id);
+      const currentUserId = currentUser?.id || '';
+      const otherId = activeConv.otherMember?.id || (Array.isArray(activeConv.participantIds) ? activeConv.participantIds.find((id) => id !== currentUserId) : undefined);
       if (otherId && isUserOnline(otherId)) {
         setTimeout(() => {
           if (activeConv) {
@@ -431,17 +430,18 @@ export const ChatManager: React.FC = () => {
   const isRecipientOnline = useMemo(() => {
     if (!activeConv) return false;
     if (activeConv.type === 'direct') {
-      const otherId = activeConv.otherMember?.id || activeConv.participantIds.find((id) => id !== currentUser.id);
+      const currentUserId = currentUser?.id || '';
+      const otherId = activeConv.otherMember?.id || (Array.isArray(activeConv.participantIds) ? activeConv.participantIds.find((id) => id !== currentUserId) : undefined);
       return otherId ? isUserOnline(otherId) : false;
     }
     return true;
-  }, [activeConv, isUserOnline, currentUser.id]);
+  }, [activeConv, isUserOnline, currentUser?.id]);
 
   // Render WhatsApp ticks: 1 tick grey if offline, 2 ticks grey if online, 2 ticks blue if read
   const renderDeliveryTicks = (msg: ChatMessage) => {
     const isRead = Boolean(
       msg.isRead ||
-      (msg.readBy && msg.readBy.length > 1 && msg.readBy.some((id) => id !== currentUser.id))
+      (msg.readBy && msg.readBy.length > 1 && msg.readBy.some((id) => id !== currentUser?.id))
     );
 
     if (isRead) {
@@ -454,7 +454,8 @@ export const ChatManager: React.FC = () => {
 
     let isOnline = false;
     if (activeConv?.type === 'direct') {
-      const otherId = activeConv.otherMember?.id || activeConv.participantIds.find((id) => id !== currentUser.id);
+      const currentUserId = currentUser?.id || '';
+      const otherId = activeConv.otherMember?.id || (Array.isArray(activeConv.participantIds) ? activeConv.participantIds.find((id) => id !== currentUserId) : undefined);
       isOnline = otherId ? isUserOnline(otherId) : false;
     } else {
       isOnline = true;
@@ -605,9 +606,11 @@ export const ChatManager: React.FC = () => {
 
   // Filter conversations based on search and active filter pill
   const filteredConversations = useMemo(() => {
-    return conversations
+    return (conversations || [])
       .filter((conv) => {
-        const matchesSearch = conv.title.toLowerCase().includes(searchConv.toLowerCase());
+        if (!conv) return false;
+        const convTitle = conv.title || conv.otherMember?.name || 'Chat';
+        const matchesSearch = convTitle.toLowerCase().includes((searchConv || '').toLowerCase());
         if (!matchesSearch) return false;
 
         if (activeFilter === 'unread') {
@@ -649,21 +652,23 @@ export const ChatManager: React.FC = () => {
   // Set of user IDs who already have an existing direct conversation with currentUser
   const existingDirectUserIds = useMemo(() => {
     const ids = new Set<string>();
+    const currentId = currentUser?.id || '';
     (conversations || []).forEach((conv) => {
+      if (!conv) return;
       if (conv.type === 'direct') {
         if (conv.otherMember?.id) {
           ids.add(conv.otherMember.id);
         }
         if (Array.isArray(conv.participantIds)) {
           conv.participantIds.forEach((pid) => {
-            if (pid && pid !== currentUser.id) {
+            if (pid && pid !== currentId) {
               ids.add(pid);
             }
           });
         }
         if (conv.title) {
           const matchedByName = (allUsers || []).find(
-            (u) => u.name.trim().toLowerCase() === conv.title.trim().toLowerCase()
+            (u) => u?.name?.trim().toLowerCase() === conv.title?.trim().toLowerCase()
           );
           if (matchedByName) {
             ids.add(matchedByName.id);
@@ -672,26 +677,27 @@ export const ChatManager: React.FC = () => {
       }
     });
     return ids;
-  }, [conversations, currentUser.id, allUsers]);
+  }, [conversations, currentUser?.id, allUsers]);
 
   // Discover team members for new direct chats (exclude colleagues already in direct chats to prevent duplicates)
   const availableTeamMembers = useMemo(() => {
+    const currentId = currentUser?.id || '';
     return (allUsers || []).filter(
       (u) =>
+        u &&
         u.role !== 'brand' &&
-        u.id !== currentUser.id &&
+        u.id !== currentId &&
         (u as any).isActive !== false &&
         !existingDirectUserIds.has(u.id) &&
-        (u.name.toLowerCase().includes(teamSearch.toLowerCase()) ||
-          u.email.toLowerCase().includes(teamSearch.toLowerCase()) ||
-          (u.designation || '').toLowerCase().includes(teamSearch.toLowerCase()) ||
-          u.role.toLowerCase().includes(teamSearch.toLowerCase()))
+        ((u.name || '').toLowerCase().includes((teamSearch || '').toLowerCase()) ||
+          (u.email || '').toLowerCase().includes((teamSearch || '').toLowerCase()) ||
+          (u.designation || '').toLowerCase().includes((teamSearch || '').toLowerCase()) ||
+          (u.role || '').toLowerCase().includes((teamSearch || '').toLowerCase()))
     );
-  }, [allUsers, currentUser.id, teamSearch, existingDirectUserIds]);
+  }, [allUsers, currentUser?.id, teamSearch, existingDirectUserIds]);
 
   // Quick video meet launcher
   const handleStartGoogleMeet = () => {
-    const room = 'meet-' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 6);
     const url = `https://meet.google.com/new`;
     window.open(url, '_blank');
     if (activeConv) {
@@ -759,12 +765,12 @@ export const ChatManager: React.FC = () => {
                 overflow: 'hidden',
                 border: isLight ? '1.5px solid rgba(0,0,0,0.08)' : '1.5px solid rgba(255,255,255,0.1)',
               }}
-              title={currentUser.name}
+              title={currentUser?.name || 'You'}
             >
-              {currentUser.avatar ? (
+              {currentUser?.avatar ? (
                 <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <>{initialOf(currentUser.name)}</>
+                <>{initialOf(currentUser?.name || 'User')}</>
               )}
             </div>
             <h2 style={{ fontSize: 19, fontWeight: 800, color: t.textPrimary, margin: 0, letterSpacing: '-0.01em' }}>
@@ -919,7 +925,6 @@ export const ChatManager: React.FC = () => {
               const other = conv.otherMember;
               const isPinned = pinnedConvIds.has(conv.id);
               const isMuted = mutedConvIds.has(conv.id);
-              const isFav = favouriteConvIds.has(conv.id);
 
               return (
                 <div
@@ -1336,7 +1341,7 @@ export const ChatManager: React.FC = () => {
 
               {/* Messages Loop */}
               {visibleMessages.map((msg) => {
-                const isMe = msg.senderId === currentUser.id;
+                const isMe = msg.senderId === currentUser?.id;
                 const isHovered = hoveredMessageId === msg.id;
                 const msgReactions = reactions[msg.id] || [];
 

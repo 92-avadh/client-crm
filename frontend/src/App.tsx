@@ -388,7 +388,17 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           isLoggedIn ? (
             <Navigate to={intendedPath} replace />
           ) : (
-            <LoginScreen onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} />
+            <LoginScreen defaultMode="signin" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} />
+          )
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          isLoggedIn ? (
+            <Navigate to={intendedPath} replace />
+          ) : (
+            <LoginScreen defaultMode="register" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} />
           )
         }
       />
