@@ -66,6 +66,11 @@ const login = asyncHandler(async (req, res) => {
   res.json({ user: result.user, token: result.token });
 });
 
+const status = asyncHandler(async (req, res) => {
+  const result = await auth.getAuthStatus();
+  res.json(result);
+});
+
 const logout = asyncHandler(async (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
@@ -125,4 +130,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
-module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword };
+module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword, status };

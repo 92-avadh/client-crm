@@ -19,7 +19,7 @@ const RULES: Array<[RegExp, string]> = [
   [/already registered|email.*already exists|user.*already exists/i,
    'This email is already registered. Please sign in instead.'],
   [/invalid email or password|invalid credentials/i,
-   'Email or password is incorrect. Please try again.'],
+   'Invalid email or password. check your credentials'],
   [/unauthorized|not authenticated|jwt|token expired|invalid token/i,
    'Your session has expired. Please sign in again.'],
   [/forbidden|not allowed|permission|access denied|unauthorized: admin/i,

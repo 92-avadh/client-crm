@@ -150,6 +150,7 @@ const isPublicRoute = (path: string) =>
   path.startsWith('/auth/resend-otp') ||
   path.startsWith('/auth/forgot-password') ||
   path.startsWith('/auth/reset-password') ||
+  path.startsWith('/auth/status') ||
   path.startsWith('/portal') ||
   path === '/health';
 
@@ -288,6 +289,7 @@ export const api = {
       req<{ message: string }>('POST', '/auth/forgot-password', { email }),
     resetPassword: (data: { email: string; code: string; newPassword: string }) =>
       req<{ message: string }>('POST', '/auth/reset-password', data),
+    status: () => req<{ hasUsers: boolean; totalUsers: number }>('GET', '/auth/status'),
   },
   users: {
     list: () => req<any[]>('GET', '/users'),

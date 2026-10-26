@@ -198,14 +198,6 @@ export const AppProvider: React.FC<{
       localStorage.removeItem('retentio_user');
       localStorage.removeItem('retentio_active_user_id');
       localStorage.removeItem('retentio_bypass_mode');
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('retentio_local_')) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
     } catch {}
     if (onLogout) {
       onLogout();
@@ -494,21 +486,20 @@ export const AppProvider: React.FC<{
 
   const activeUserId = initialUser?.id || initialUserId || '';
 
-  // User boundary isolation: if a different user/ID is detected, clear un-scoped cache
+  // User boundary preservation: when activeUserId is set, preserve and migrate any un-scoped local data
   if (typeof localStorage !== 'undefined' && activeUserId) {
-    const prevUserId = localStorage.getItem('retentio_active_user_id');
-    if (prevUserId && prevUserId !== activeUserId) {
-      // Switching to a different user: clear previous user's un-scoped workspace cache!
-      const emptyArr = JSON.stringify([]);
-      localStorage.setItem('retentio_local_brands', emptyArr);
-      localStorage.setItem('retentio_local_projects', emptyArr);
-      localStorage.setItem('retentio_local_tasks', emptyArr);
-      localStorage.setItem('retentio_local_invoices', emptyArr);
-      localStorage.setItem('retentio_local_payments', emptyArr);
-      localStorage.setItem('retentio_local_expenses', emptyArr);
-      localStorage.setItem('retentio_local_meetings', emptyArr);
-      localStorage.setItem('retentio_local_leads', emptyArr);
-    }
+    const entities = ['brands', 'projects', 'tasks', 'invoices', 'payments', 'expenses', 'meetings', 'leads'];
+    entities.forEach((ent) => {
+      const scopedKey = `retentio_local_${ent}_${activeUserId}`;
+      const unscopedKey = `retentio_local_${ent}`;
+      const scopedData = localStorage.getItem(scopedKey);
+      const unscopedData = localStorage.getItem(unscopedKey);
+      if ((!scopedData || scopedData === '[]' || scopedData === 'null') && unscopedData && unscopedData !== '[]' && unscopedData !== 'null') {
+        try {
+          localStorage.setItem(scopedKey, unscopedData);
+        } catch {}
+      }
+    });
     localStorage.setItem('retentio_active_user_id', activeUserId);
   }
 
@@ -546,14 +537,18 @@ export const AppProvider: React.FC<{
         const userSaved = localStorage.getItem(`retentio_local_brands_${activeUserId}`);
         if (userSaved) {
           const normalized = normalizeBrandsList(JSON.parse(userSaved));
-          if (normalized) return normalized;
+          if (normalized && normalized.length > 0) return normalized;
         }
-        return [];
       }
       const saved = localStorage.getItem('retentio_local_brands');
       if (saved) {
         const normalized = normalizeBrandsList(JSON.parse(saved));
-        if (normalized) return normalized;
+        if (normalized && normalized.length > 0) {
+          if (activeUserId) {
+            try { localStorage.setItem(`retentio_local_brands_${activeUserId}`, JSON.stringify(normalized)); } catch {}
+          }
+          return normalized;
+        }
       }
     } catch {}
     return [];
@@ -563,11 +558,15 @@ export const AppProvider: React.FC<{
     try {
       if (activeUserId) {
         const userSaved = safeParseArray<Project>(localStorage.getItem(`retentio_local_projects_${activeUserId}`));
-        if (userSaved) return userSaved;
-        return [];
+        if (userSaved && userSaved.length > 0) return userSaved;
       }
       const saved = safeParseArray<Project>(localStorage.getItem('retentio_local_projects'));
-      if (saved) return saved;
+      if (saved && saved.length > 0) {
+        if (activeUserId) {
+          try { localStorage.setItem(`retentio_local_projects_${activeUserId}`, JSON.stringify(saved)); } catch {}
+        }
+        return saved;
+      }
     } catch {}
     return [];
   });
@@ -575,11 +574,15 @@ export const AppProvider: React.FC<{
     try {
       if (activeUserId) {
         const userSaved = safeParseArray<Task>(localStorage.getItem(`retentio_local_tasks_${activeUserId}`));
-        if (userSaved) return userSaved;
-        return [];
+        if (userSaved && userSaved.length > 0) return userSaved;
       }
       const saved = safeParseArray<Task>(localStorage.getItem('retentio_local_tasks'));
-      if (saved) return saved;
+      if (saved && saved.length > 0) {
+        if (activeUserId) {
+          try { localStorage.setItem(`retentio_local_tasks_${activeUserId}`, JSON.stringify(saved)); } catch {}
+        }
+        return saved;
+      }
     } catch {}
     return [];
   });
@@ -587,11 +590,15 @@ export const AppProvider: React.FC<{
     try {
       if (activeUserId) {
         const userSaved = safeParseArray<Invoice>(localStorage.getItem(`retentio_local_invoices_${activeUserId}`));
-        if (userSaved) return userSaved;
-        return [];
+        if (userSaved && userSaved.length > 0) return userSaved;
       }
       const saved = safeParseArray<Invoice>(localStorage.getItem('retentio_local_invoices'));
-      if (saved) return saved;
+      if (saved && saved.length > 0) {
+        if (activeUserId) {
+          try { localStorage.setItem(`retentio_local_invoices_${activeUserId}`, JSON.stringify(saved)); } catch {}
+        }
+        return saved;
+      }
     } catch {}
     return [];
   });
@@ -600,11 +607,15 @@ export const AppProvider: React.FC<{
     try {
       if (activeUserId) {
         const userSaved = safeParseArray<Payment>(localStorage.getItem(`retentio_local_payments_${activeUserId}`));
-        if (userSaved) return userSaved;
-        return [];
+        if (userSaved && userSaved.length > 0) return userSaved;
       }
       const saved = safeParseArray<Payment>(localStorage.getItem('retentio_local_payments'));
-      if (saved) return saved;
+      if (saved && saved.length > 0) {
+        if (activeUserId) {
+          try { localStorage.setItem(`retentio_local_payments_${activeUserId}`, JSON.stringify(saved)); } catch {}
+        }
+        return saved;
+      }
     } catch {}
     return [];
   });
@@ -612,11 +623,15 @@ export const AppProvider: React.FC<{
     try {
       if (activeUserId) {
         const userSaved = safeParseArray<Expense>(localStorage.getItem(`retentio_local_expenses_${activeUserId}`));
-        if (userSaved) return userSaved;
-        return [];
+        if (userSaved && userSaved.length > 0) return userSaved;
       }
       const saved = safeParseArray<Expense>(localStorage.getItem('retentio_local_expenses'));
-      if (saved) return saved;
+      if (saved && saved.length > 0) {
+        if (activeUserId) {
+          try { localStorage.setItem(`retentio_local_expenses_${activeUserId}`, JSON.stringify(saved)); } catch {}
+        }
+        return saved;
+      }
     } catch {}
     return [];
   });
@@ -624,11 +639,15 @@ export const AppProvider: React.FC<{
     try {
       if (activeUserId) {
         const userSaved = safeParseArray<Meeting>(localStorage.getItem(`retentio_local_meetings_${activeUserId}`));
-        if (userSaved) return userSaved;
-        return [];
+        if (userSaved && userSaved.length > 0) return userSaved;
       }
       const saved = safeParseArray<Meeting>(localStorage.getItem('retentio_local_meetings'));
-      if (saved) return saved;
+      if (saved && saved.length > 0) {
+        if (activeUserId) {
+          try { localStorage.setItem(`retentio_local_meetings_${activeUserId}`, JSON.stringify(saved)); } catch {}
+        }
+        return saved;
+      }
     } catch {}
     return [];
   });
@@ -636,11 +655,15 @@ export const AppProvider: React.FC<{
     try {
       if (activeUserId) {
         const userSaved = safeParseArray<Lead>(localStorage.getItem(`retentio_local_leads_${activeUserId}`));
-        if (userSaved) return userSaved;
-        return [];
+        if (userSaved && userSaved.length > 0) return userSaved;
       }
       const saved = safeParseArray<Lead>(localStorage.getItem('retentio_local_leads'));
-      if (saved) return saved;
+      if (saved && saved.length > 0) {
+        if (activeUserId) {
+          try { localStorage.setItem(`retentio_local_leads_${activeUserId}`, JSON.stringify(saved)); } catch {}
+        }
+        return saved;
+      }
     } catch {}
     return [];
   });
@@ -775,8 +798,18 @@ export const AppProvider: React.FC<{
             ]);
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) {
-              setBrands(normalizedBrands);
-              try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(normalizedBrands)); } catch {}
+              setBrands(prev => {
+                if (normalizedBrands.length > 0) {
+                  const unsynced = prev.filter(p => String(p.id).startsWith('brand_') && !normalizedBrands.some(r => r.id === p.id));
+                  const combined = [...normalizedBrands, ...unsynced];
+                  try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(combined)); } catch {}
+                  return combined;
+                } else if (prev.length > 0) {
+                  try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(prev)); } catch {}
+                  return prev;
+                }
+                return [];
+              });
             }
             const usersList = extractDataArray<User>(usersData);
             if (usersList && usersList.length > 0) {
@@ -798,16 +831,36 @@ export const AppProvider: React.FC<{
             ]);
             const projectsList = extractDataArray<Project>(projectsData);
             if (projectsList) {
-              setProjects(projectsList);
-              try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(projectsList)); } catch {}
+              setProjects(prev => {
+                if (projectsList.length > 0) {
+                  const unsynced = prev.filter(p => String(p.id).startsWith('proj_') && !projectsList.some(r => r.id === p.id));
+                  const combined = [...projectsList, ...unsynced];
+                  try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(combined)); } catch {}
+                  return combined;
+                } else if (prev.length > 0) {
+                  try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(prev)); } catch {}
+                  return prev;
+                }
+                return [];
+              });
             }
             const tasksList = extractDataArray<Task>(tasksData);
             if (tasksList) {
-              setTasks(tasksList);
-              try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(tasksList)); } catch {}
+              setTasks(prev => {
+                if (tasksList.length > 0) {
+                  const unsynced = prev.filter(p => String(p.id).startsWith('task_') && !tasksList.some(r => r.id === p.id));
+                  const combined = [...tasksList, ...unsynced];
+                  try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(combined)); } catch {}
+                  return combined;
+                } else if (prev.length > 0) {
+                  try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(prev)); } catch {}
+                  return prev;
+                }
+                return [];
+              });
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands) setBrands(normalizedBrands);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             const usersList = extractDataArray<User>(usersData);
             if (usersList && usersList.length > 0) setAllUsers(usersList);
             break;
@@ -820,16 +873,36 @@ export const AppProvider: React.FC<{
             ]);
             const invoicesList = extractDataArray<Invoice>(invoicesData);
             if (invoicesList) {
-              setInvoices(invoicesList);
-              try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(invoicesList)); } catch {}
+              setInvoices(prev => {
+                if (invoicesList.length > 0) {
+                  const unsynced = prev.filter(p => String(p.id).startsWith('inv_') && !invoicesList.some(r => r.id === p.id));
+                  const combined = [...invoicesList, ...unsynced];
+                  try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(combined)); } catch {}
+                  return combined;
+                } else if (prev.length > 0) {
+                  try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(prev)); } catch {}
+                  return prev;
+                }
+                return [];
+              });
             }
             const paymentsList = extractDataArray<Payment>(paymentsData);
             if (paymentsList) {
-              setPayments(paymentsList);
-              try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(paymentsList)); } catch {}
+              setPayments(prev => {
+                if (paymentsList.length > 0) {
+                  const unsynced = prev.filter(p => String(p.id).startsWith('pay_') && !paymentsList.some(r => r.id === p.id));
+                  const combined = [...paymentsList, ...unsynced];
+                  try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(combined)); } catch {}
+                  return combined;
+                } else if (prev.length > 0) {
+                  try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(prev)); } catch {}
+                  return prev;
+                }
+                return [];
+              });
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands) setBrands(normalizedBrands);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             break;
           }
           case 'finance': {
@@ -840,13 +913,13 @@ export const AppProvider: React.FC<{
               req('clients', api.brands.listAll()),
             ]);
             const paymentsList = extractDataArray<Payment>(paymentsData);
-            if (paymentsList) setPayments(paymentsList);
+            if (paymentsList && paymentsList.length > 0) setPayments(paymentsList);
             const expensesList = extractDataArray<Expense>(expensesData);
-            if (expensesList) setExpenses(expensesList);
+            if (expensesList && expensesList.length > 0) setExpenses(expensesList);
             const invoicesList = extractDataArray<Invoice>(invoicesData);
-            if (invoicesList) setInvoices(invoicesList);
+            if (invoicesList && invoicesList.length > 0) setInvoices(invoicesList);
             const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands) setBrands(normalizedBrands);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             break;
           }
           case 'expenses': {
@@ -857,11 +930,21 @@ export const AppProvider: React.FC<{
             ]);
             const expensesList = extractDataArray<Expense>(expensesData);
             if (expensesList) {
-              setExpenses(expensesList);
-              try { localStorage.setItem(userKey('retentio_local_expenses'), JSON.stringify(expensesList)); } catch {}
+              setExpenses(prev => {
+                if (expensesList.length > 0) {
+                  const unsynced = prev.filter(p => String(p.id).startsWith('exp_') && !expensesList.some(r => r.id === p.id));
+                  const combined = [...expensesList, ...unsynced];
+                  try { localStorage.setItem(userKey('retentio_local_expenses'), JSON.stringify(combined)); } catch {}
+                  return combined;
+                } else if (prev.length > 0) {
+                  try { localStorage.setItem(userKey('retentio_local_expenses'), JSON.stringify(prev)); } catch {}
+                  return prev;
+                }
+                return [];
+              });
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands) setBrands(normalizedBrands);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             const usersList = extractDataArray<User>(usersData);
             if (usersList && usersList.length > 0) setAllUsers(usersList);
             break;
@@ -872,7 +955,7 @@ export const AppProvider: React.FC<{
               req('settings', api.settings.get()),
             ]);
             const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands) setBrands(normalizedBrands);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             if (settingsData) setSettings(settingsData);
             break;
           }
@@ -883,11 +966,21 @@ export const AppProvider: React.FC<{
             ]);
             const leadsList = extractDataArray<Lead>(leadsData);
             if (leadsList) {
-              setLeads(leadsList);
-              try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(leadsList)); } catch {}
+              setLeads(prev => {
+                if (leadsList.length > 0) {
+                  const unsynced = prev.filter(p => String(p.id).startsWith('lead_') && !leadsList.some(r => r.id === p.id));
+                  const combined = [...leadsList, ...unsynced];
+                  try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(combined)); } catch {}
+                  return combined;
+                } else if (prev.length > 0) {
+                  try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(prev)); } catch {}
+                  return prev;
+                }
+                return [];
+              });
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands) setBrands(normalizedBrands);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             break;
           }
           case 'meetings': {
@@ -899,15 +992,25 @@ export const AppProvider: React.FC<{
             ]);
             const meetingsList = extractDataArray<Meeting>(meetingsData);
             if (meetingsList) {
-              setMeetings(meetingsList);
-              try { localStorage.setItem(userKey('retentio_local_meetings'), JSON.stringify(meetingsList)); } catch {}
+              setMeetings(prev => {
+                if (meetingsList.length > 0) {
+                  const unsynced = prev.filter(p => String(p.id).startsWith('meet_') && !meetingsList.some(r => r.id === p.id));
+                  const combined = [...meetingsList, ...unsynced];
+                  try { localStorage.setItem(userKey('retentio_local_meetings'), JSON.stringify(combined)); } catch {}
+                  return combined;
+                } else if (prev.length > 0) {
+                  try { localStorage.setItem(userKey('retentio_local_meetings'), JSON.stringify(prev)); } catch {}
+                  return prev;
+                }
+                return [];
+              });
             }
             const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands) setBrands(normalizedBrands);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             const usersList = extractDataArray<User>(usersData);
             if (usersList && usersList.length > 0) setAllUsers(usersList);
             const holidaysList = extractDataArray<Holiday>(holidaysData);
-            if (holidaysList) setHolidays(holidaysList);
+            if (holidaysList && holidaysList.length > 0) setHolidays(holidaysList);
             break;
           }
           case 'team': {

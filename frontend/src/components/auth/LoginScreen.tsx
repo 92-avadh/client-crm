@@ -16,6 +16,7 @@ interface LoginScreenProps {
   loginError?: string;
   loginLoading?: boolean;
   defaultMode?: 'signin' | 'register';
+  onClearError?: () => void;
 }
 
 type RegStep = 'details' | 'otp' | 'success';
@@ -32,7 +33,7 @@ const PATH_RIGHT = 'M 0,0 L 0.92,0 C 0.98,0.18 1.0,0.34 0.94,0.50 C 0.88,0.66 0.
 const PATH_LEFT  = 'M 1,0 L 0.08,0 C 0.02,0.18 0.0,0.34 0.06,0.50 C 0.12,0.66 0.04,0.84 0.08,1.0 L 1,1.0 Z';
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
-  onLogin, loginError = '', loginLoading = false, defaultMode = 'signin',
+  onLogin, loginError = '', loginLoading = false, defaultMode = 'signin', onClearError,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,7 +46,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     return defaultMode;
   });
 
+  const clearAllErrors = () => {
+    setError('');
+    setFieldErrors({});
+    if (onClearError) onClearError();
+  };
+
   useEffect(() => {
+    clearAllErrors();
     if (location.pathname === '/signup') {
       setMode('register');
       document.title = 'Create Your Agency — Retentio';
@@ -90,6 +98,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  const [hasUsers, setHasUsers] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    api.auth.status().then((res) => {
+      if (res && typeof res.hasUsers === 'boolean') {
+        setHasUsers(res.hasUsers);
+      }
+    }).catch(() => {});
+  }, []);
 
   const errMsg = loginError || error;
   const otpValue = otp.join('');
@@ -216,19 +233,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   // ── Forgot password handlers ──
   const handleForgotSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    if (!forgotEmail) {
-      setError('Enter your email address.');
+    clearAllErrors();
+    const cleanEmail = forgotEmail.trim().toLowerCase();
+    if (!cleanEmail) {
+      setError('Please enter your email address.');
       return;
     }
     try {
       setLoading(true);
-      await api.auth.forgotPassword(forgotEmail);
+      await api.auth.forgotPassword(cleanEmail).catch(() => {});
       setForgotStep('code');
       setForgotTimer(300);
       setForgotCanResend(false);
-    } catch (err: any) {
-      setError(getNaturalErrorMessage(err));
+    } catch (_err: any) {
+      setForgotStep('code');
+      setForgotTimer(300);
+      setForgotCanResend(false);
     } finally {
       setLoading(false);
     }
@@ -236,14 +256,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
   const handleForgotResend = async () => {
     if (!forgotCanResend) return;
-    setError('');
+    clearAllErrors();
+    const cleanEmail = forgotEmail.trim().toLowerCase();
     try {
       setLoading(true);
-      await api.auth.forgotPassword(forgotEmail);
+      await api.auth.forgotPassword(cleanEmail).catch(() => {});
       setForgotTimer(300);
       setForgotCanResend(false);
-    } catch (err: any) {
-      setError(getNaturalErrorMessage(err));
+    } catch (_err: any) {
+      setForgotTimer(300);
+      setForgotCanResend(false);
     } finally {
       setLoading(false);
     }
@@ -337,7 +359,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   }, []);
 
   const switchToRegister = () => {
-    setError('');
+    clearAllErrors();
     setRegStep('details');
     setForgotStep(null);
     setMode('register');
@@ -348,7 +370,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   const switchToSignIn = () => {
-    setError('');
+    clearAllErrors();
     setRegStep('details');
     setForgotStep(null);
     if (regEmail) setSiEmail(regEmail);
@@ -360,9 +382,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   const switchToForgot = () => {
+    clearAllErrors();
     setForgotStep('email');
     setForgotEmail(siEmail);
-    setError('');
     if (typeof window !== 'undefined' && window.innerWidth <= 980) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -448,21 +470,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     <label className="field-label">Full name</label>
                     <div className="field-input-box">
                       <User size={15} className="field-icon" />
-                      <input type="text" placeholder="Jane Smith" value={regName} onChange={e => setRegName(e.target.value)} className={`text-input ${fieldErrors.name ? 'input-error' : ''}`} />
+                      <input type="text" placeholder="Jane Smith" value={regName} onChange={e => { clearAllErrors(); setRegName(e.target.value); }} className={`text-input ${fieldErrors.name ? 'input-error' : ''}`} />
                     </div>
                   </div>
                   <div>
                     <label className="field-label">Agency / company name</label>
                     <div className="field-input-box">
                       <Building2 size={15} className="field-icon" />
-                      <input type="text" placeholder="Acme Digital LLP" value={regCompany} onChange={e => setRegCompany(e.target.value)} className={`text-input ${fieldErrors.company ? 'input-error' : ''}`} />
+                      <input type="text" placeholder="Acme Digital LLP" value={regCompany} onChange={e => { clearAllErrors(); setRegCompany(e.target.value); }} className={`text-input ${fieldErrors.company ? 'input-error' : ''}`} />
                     </div>
                   </div>
                   <div>
                     <label className="field-label">Work email</label>
                     <div className="field-input-box">
                       <Mail size={15} className="field-icon" />
-                      <input type="email" placeholder="you@agency.com" value={regEmail} onChange={e => setRegEmail(e.target.value)} className={`text-input ${fieldErrors.email ? 'input-error' : ''}`} />
+                      <input type="email" placeholder="you@agency.com" value={regEmail} onChange={e => { clearAllErrors(); setRegEmail(e.target.value); }} className={`text-input ${fieldErrors.email ? 'input-error' : ''}`} />
                     </div>
                   </div>
                   <div className="grid-two-cols">
@@ -470,7 +492,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       <label className="field-label">Password</label>
                       <div className="field-input-box">
                         <Lock size={15} className="field-icon" />
-                        <input type={showPwd ? 'text' : 'password'} placeholder="Min 8 chars" value={regPassword} onChange={e => setRegPassword(e.target.value)} className={`text-input ${fieldErrors.password ? 'input-error' : ''}`} />
+                        <input type={showPwd ? 'text' : 'password'} placeholder="Min 8 chars" value={regPassword} onChange={e => { clearAllErrors(); setRegPassword(e.target.value); }} className={`text-input ${fieldErrors.password ? 'input-error' : ''}`} />
                         <button type="button" onClick={() => setShowPwd(!showPwd)} className="toggle-pwd-btn">
                           {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
@@ -480,7 +502,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       <label className="field-label">Confirm password</label>
                       <div className="field-input-box">
                         <Lock size={15} className="field-icon" />
-                        <input type={showConfirmPwd ? 'text' : 'password'} placeholder="••••••••" value={regConfirm} onChange={e => setRegConfirm(e.target.value)} className={`text-input ${fieldErrors.confirm ? 'input-error' : ''}`} />
+                        <input type={showConfirmPwd ? 'text' : 'password'} placeholder="••••••••" value={regConfirm} onChange={e => { clearAllErrors(); setRegConfirm(e.target.value); }} className={`text-input ${fieldErrors.confirm ? 'input-error' : ''}`} />
                         <button type="button" onClick={() => setShowConfirmPwd(!showConfirmPwd)} className="toggle-pwd-btn">
                           {showConfirmPwd ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
@@ -585,10 +607,59 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </Link>
             </div>
 
-            {errMsg && isSignIn && (
-              <div className="auth-alert-banner">
-                <AlertCircle size={15} className="shrink-0" />
-                <span>{errMsg}</span>
+            {hasUsers === false && isSignIn && !errMsg && (
+              <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-200">
+                <div className="flex items-center gap-2 font-semibold">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>Agency Setup Required</span>
+                </div>
+                <p className="mt-1 text-zinc-300">
+                  No administrator account exists yet. Create your agency workspace to get started.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    if (siEmail) setRegEmail(siEmail);
+                    if (siPassword) {
+                      setRegPassword(siPassword);
+                      setRegConfirm(siPassword);
+                    }
+                    navigate('/signup');
+                  }}
+                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-amber-400 transition-colors"
+                >
+                  <span>Create Admin Account</span>
+                  <ArrowRight size={13} />
+                </button>
+              </div>
+            )}
+
+            {errMsg && isSignIn && !forgotStep && (
+              <div className="auth-alert-banner flex flex-col gap-1.5 items-start">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={15} className="shrink-0" />
+                  <span>{errMsg}</span>
+                </div>
+                {(errMsg.toLowerCase().includes('no administrator account') || errMsg.toLowerCase().includes('no account found')) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearAllErrors();
+                      setMode('register');
+                      if (siEmail) setRegEmail(siEmail);
+                      if (siPassword) {
+                        setRegPassword(siPassword);
+                        setRegConfirm(siPassword);
+                      }
+                      navigate('/signup');
+                    }}
+                    className="ml-6 inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300 underline"
+                  >
+                    <span>Click here to create your account now</span>
+                    <ArrowRight size={12} />
+                  </button>
+                )}
               </div>
             )}
 
@@ -604,14 +675,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     <label className="field-label">Email address</label>
                     <div className="field-input-box">
                       <Mail size={15} className="field-icon" />
-                      <input type="email" placeholder="you@agency.com" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} className="text-input" />
+                      <input
+                        type="email"
+                        placeholder="you@agency.com"
+                        value={forgotEmail}
+                        onChange={e => { clearAllErrors(); setForgotEmail(e.target.value); }}
+                        className="text-input"
+                      />
                     </div>
                   </div>
                   <button type="submit" disabled={loading} className="btn-primary-action">
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
                     <span>{loading ? 'Sending code…' : 'Send Reset Code'}</span>
                   </button>
-                  <button type="button" onClick={() => { setForgotStep(null); setError(''); }} className="btn-ghost-back">← Back to Sign In</button>
+                  <button type="button" onClick={() => { clearAllErrors(); setForgotStep(null); }} className="btn-ghost-back">← Back to Sign In</button>
                 </form>
               </div>
             )}
@@ -620,7 +697,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <div className="form-fade-in">
                 <div className="form-header">
                   <h2 className="form-title">Enter reset code</h2>
-                  <p className="form-subtitle">We sent a 6-digit code to <strong className="text-highlight">{forgotEmail}</strong></p>
+                  <p className="form-subtitle">If the email is registered, you will get a code in your mail. Enter the 6-digit code below to set a new password.</p>
                 </div>
                 <form onSubmit={handleForgotVerifyCode} className="form-fields">
                   <div>
@@ -710,7 +787,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                         type="email"
                         placeholder="you@agency.com"
                         value={siEmail}
-                        onChange={e => setSiEmail(e.target.value)}
+                        onChange={e => { clearAllErrors(); setSiEmail(e.target.value); }}
                         className="text-input"
                       />
                     </div>
@@ -729,7 +806,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                         type={showPwd ? 'text' : 'password'}
                         placeholder="••••••••"
                         value={siPassword}
-                        onChange={e => setSiPassword(e.target.value)}
+                        onChange={e => { clearAllErrors(); setSiPassword(e.target.value); }}
                         className="text-input pr-10"
                       />
                       <button type="button" onClick={() => setShowPwd(!showPwd)} className="toggle-pwd-btn">

@@ -158,24 +158,53 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
   };
 }
 
+async function getAuthStatus() {
+  const { rows } = await pool.query('SELECT COUNT(*) FROM users');
+  const count = parseInt(rows[0]?.count || '0', 10);
+  return { hasUsers: count > 0, totalUsers: count };
+}
+
 async function login({ email, password }) {
   const emailNorm = email.toLowerCase().trim();
   const { rows } = await pool.query(
-    'SELECT * FROM users WHERE LOWER(email) = $1 AND is_active = true',
+    'SELECT * FROM users WHERE LOWER(email) = $1',
     [emailNorm]
   );
   const user = rows[0];
 
-  if (!user || !user.password_hash) {
-    const err = new Error('Invalid email or password.');
+  if (!user) {
+    const { rows: countRows } = await pool.query('SELECT COUNT(*) FROM users');
+    const totalUsers = parseInt(countRows[0]?.count || '0', 10);
+    if (totalUsers === 0) {
+      const err = new Error('No administrator account exists yet. Please create your agency workspace first.');
+      err.status = 404;
+      err.code = 'NO_ADMIN_USER';
+      throw err;
+    }
+    const err = new Error('No account found with this email. Please check your email or click "Create your account".');
+    err.status = 404;
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  if (user.is_active === false) {
+    const err = new Error('This account has been deactivated. Please contact your workspace administrator.');
+    err.status = 403;
+    err.code = 'USER_DEACTIVATED';
+    throw err;
+  }
+
+  if (!user.password_hash) {
+    const err = new Error('Account does not have password login enabled.');
     err.status = 401;
     throw err;
   }
 
   const isMatch = await bcrypt.compare(password, user.password_hash);
   if (!isMatch) {
-    const err = new Error('Invalid email or password.');
+    const err = new Error('Invalid email or password. check your credentials');
     err.status = 401;
+    err.code = 'INVALID_PASSWORD';
     throw err;
   }
 
@@ -206,7 +235,7 @@ async function forgotPassword({ email }) {
   const user = rows[0];
 
   if (!user) {
-    return { message: 'If that email exists, a reset code has been sent.' };
+    return { message: 'If the email is registered, you will get a code in your mail.' };
   }
 
   const resetCode = genOtp();
@@ -252,7 +281,7 @@ async function forgotPassword({ email }) {
     console.error(`Background reset email dispatch failure for ${email}: ${err.message}`);
   });
 
-  return { message: 'If that email exists, a reset code has been sent.' };
+  return { message: 'If the email is registered, you will get a code in your mail.' };
 }
 
 async function resetPassword({ email, code, newPassword }) {
@@ -297,5 +326,5 @@ async function resetPassword({ email, code, newPassword }) {
 module.exports = {
   JWT_SECRET, MAX_OTP_ATTEMPTS,
   makeToken, requestRegistrationOtp, resendOtp, verifyOtpAndRegister, login,
-  forgotPassword, resetPassword,
+  forgotPassword, resetPassword, getAuthStatus,
 };

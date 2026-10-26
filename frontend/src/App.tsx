@@ -322,6 +322,7 @@ interface AppRoutesProps {
   loginLoading: boolean;
   onLogin: (email: string, password: string) => Promise<void>;
   onLogout: () => void;
+  onClearError?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -351,7 +352,7 @@ const PermissionGate: React.FC<{ module: string; children: React.ReactNode }> = 
 };
 
 const AppRoutes: React.FC<AppRoutesProps> = ({
-  isLoggedIn, loginUser, loginError, loginLoading, onLogin, onLogout,
+  isLoggedIn, loginUser, loginError, loginLoading, onLogin, onLogout, onClearError,
 }) => {
   const location = useLocation();
   const intendedPath = (location.state as any)?.from?.pathname || DEFAULT_ROUTE;
@@ -388,7 +389,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           isLoggedIn ? (
             <Navigate to={intendedPath} replace />
           ) : (
-            <LoginScreen defaultMode="signin" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} />
+            <LoginScreen defaultMode="signin" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} onClearError={onClearError} />
           )
         }
       />
@@ -398,7 +399,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           isLoggedIn ? (
             <Navigate to={intendedPath} replace />
           ) : (
-            <LoginScreen defaultMode="register" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} />
+            <LoginScreen defaultMode="register" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} onClearError={onClearError} />
           )
         }
       />
@@ -446,30 +447,17 @@ export const App: React.FC = () => {
 
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const purgeAllWorkspaceCache = useCallback(() => {
-    try {
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('retentio_local_') || key === 'retentio_active_user_id')) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
-    } catch {}
-  }, []);
-
   const handleForceLogout = useCallback((msg: string = 'Your session has expired. Please sign in again.') => {
     api.auth.logout().catch(() => {});
     clearToken();
     try {
       localStorage.removeItem('retentio_user');
+      localStorage.removeItem('retentio_active_user_id');
     } catch {}
-    purgeAllWorkspaceCache();
     setLoginUser(null);
     setIsLoggedIn(false);
     setLoginError(msg);
-  }, [purgeAllWorkspaceCache]);
+  }, []);
 
   // Listen for session expiry event from API calls
   React.useEffect(() => {
@@ -611,20 +599,19 @@ export const App: React.FC = () => {
         setIsLoggedIn(true);
         return;
       }
-    } catch (_err: any) {
-      // Backend rejected the credentials or the network failed. Either way we
-      // fall through to the explicit rejection below — there is no bypass.
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (/invalid email or password|invalid credentials|incorrect password/i.test(msg)) {
+        setLoginError('Invalid email or password. check your credentials');
+      } else {
+        setLoginError(msg || 'Invalid email or password. check your credentials');
+      }
+      return;
     } finally {
       setLoginLoading(false);
     }
 
-    const emailNorm = email.trim().toLowerCase();
-
-    // No local fallback. If the backend rejected the credentials, reject them
-    // here too. The previous fallback matched localStorage users and DEMO_USERS
-    // and flipped on bypass mode, which granted a real session to accounts that
-    // exist only in the browser and made the app look "empty but signed in".
-    setLoginError('Invalid email or password. Please verify the credentials provided.');
+    setLoginError('Invalid email or password. check your credentials');
   };
 
   const handleLogout = useCallback(() => {
@@ -633,12 +620,12 @@ export const App: React.FC = () => {
     try {
       localStorage.removeItem('retentio_user');
       localStorage.removeItem('retentio_token');
+      localStorage.removeItem('retentio_active_user_id');
     } catch {}
-    purgeAllWorkspaceCache();
     setLoginUser(null);
     setIsLoggedIn(false);
     setLoginError('');
-  }, [purgeAllWorkspaceCache]);
+  }, []);
 
   if (!authChecked) return <Splash />;
 
@@ -653,6 +640,7 @@ export const App: React.FC = () => {
           loginLoading={loginLoading}
           onLogin={handleLogin}
           onLogout={handleLogout}
+          onClearError={() => setLoginError('')}
         />
       </ErrorBoundary>
 
