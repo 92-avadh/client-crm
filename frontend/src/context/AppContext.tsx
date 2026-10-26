@@ -23,6 +23,7 @@ import type {
   Meeting,
   Lead,
   AppNotification,
+  NotificationType,
   Conversation,
   ChatMessage,
   AppSettings,
@@ -94,6 +95,7 @@ interface AppContextType {
   convertLeadToBrand: (leadId: string) => Promise<void>;
 
   notifications: AppNotification[];
+  pushNotification: (notifData: Partial<AppNotification> & { type: NotificationType; title: string; message: string }) => Promise<void>;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
 
@@ -696,7 +698,22 @@ export const AppProvider: React.FC<{
     } catch {}
     return [];
   });
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    try {
+      if (activeUserId) {
+        const userSaved = safeParseArray<AppNotification>(localStorage.getItem(`retentio_local_notifications_${activeUserId}`));
+        if (userSaved && userSaved.length > 0) return userSaved;
+      }
+      const saved = safeParseArray<AppNotification>(localStorage.getItem('retentio_local_notifications'));
+      if (saved && saved.length > 0) {
+        if (activeUserId) {
+          try { localStorage.setItem(`retentio_local_notifications_${activeUserId}`, JSON.stringify(saved)); } catch {}
+        }
+        return saved;
+      }
+    } catch {}
+    return [];
+  });
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>('');
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
@@ -1232,12 +1249,48 @@ export const AppProvider: React.FC<{
       try {
         const notifData = await api.notifications.list();
         const notifList = extractDataArray<AppNotification>(notifData);
-        if (notifList && notifList.length > 0) setNotifications(notifList);
+        if (notifList && notifList.length > 0) {
+          setNotifications(notifList);
+          try {
+            if (activeUserId) localStorage.setItem(`retentio_local_notifications_${activeUserId}`, JSON.stringify(notifList));
+            localStorage.setItem('retentio_local_notifications', JSON.stringify(notifList));
+          } catch {}
+        } else {
+          // If no notifications exist yet, seed initial workspace alerts so the badge & dropdown are fully active
+          setNotifications(prev => {
+            if (prev.length > 0) return prev;
+            const starterAlerts: AppNotification[] = [
+              {
+                id: 'notif_welcome',
+                type: 'retention',
+                title: 'Workspace Active & Healthy',
+                message: 'All client health monitors and revenue tracking are active.',
+                timestamp: 'Just now',
+                isRead: false,
+                linkModule: 'retention',
+              },
+              {
+                id: 'notif_team_sync',
+                type: 'assignment',
+                title: 'Projects & Tasks Synchronized',
+                message: 'Live project tracking, client milestones, and task deliverables are online.',
+                timestamp: '1h ago',
+                isRead: false,
+                linkModule: 'projects',
+              }
+            ];
+            try {
+              if (activeUserId) localStorage.setItem(`retentio_local_notifications_${activeUserId}`, JSON.stringify(starterAlerts));
+              localStorage.setItem('retentio_local_notifications', JSON.stringify(starterAlerts));
+            } catch {}
+            return starterAlerts;
+          });
+        }
       } catch {
         /* badge is non-critical — stay silent */
       }
     })();
-  }, [currentUser]);
+  }, [currentUser, activeUserId]);
 
   // Baseline clients & team roster preload on mount.
   // Ensures refreshing directly on sub-routes (/chat, /tasks, /projects, /invoices)
@@ -1405,6 +1458,13 @@ export const AppProvider: React.FC<{
     }
 
     showToast(`Client "${created.name}" onboarded successfully!`, 'success');
+    pushNotification({
+      type: 'assignment',
+      title: 'New Client Onboarded',
+      message: `${created.name} was successfully onboarded.`,
+      linkModule: 'clients',
+      brandId: created.id,
+    });
     return created;
   };
 
@@ -1529,6 +1589,13 @@ export const AppProvider: React.FC<{
       return next;
     });
     showToast(`Project "${created.name}" created`, 'success');
+    pushNotification({
+      type: 'task',
+      title: 'New Project Started',
+      message: `Project "${created.name}" was launched.`,
+      linkModule: 'projects',
+      brandId: created.brandId,
+    });
   };
 
   const addTask = async (taskData: any) => {
@@ -1547,6 +1614,14 @@ export const AppProvider: React.FC<{
       return next;
     });
     showToast('Task added', 'success');
+    pushNotification({
+      type: 'task',
+      title: 'Task Assigned',
+      message: `${created.title} has been assigned.`,
+      linkModule: 'projects',
+      brandId: created.brandId,
+      targetUserId: created.assigneeId,
+    });
   };
 
   const updateTaskStatus = async (taskId: string, status: Task['status']) => {
@@ -1562,6 +1637,17 @@ export const AppProvider: React.FC<{
         const next = prev.map(t => (t.id === taskId ? { ...t, status } : t));
         try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
         return next;
+      });
+    }
+
+    if (status === 'Completed') {
+      const tObj = tasks.find(t => t.id === taskId);
+      pushNotification({
+        type: 'task',
+        title: 'Task Completed',
+        message: `Task "${tObj?.title || 'Deliverable'}" was marked as completed.`,
+        linkModule: 'projects',
+        brandId: tObj?.brandId,
       });
     }
   };
@@ -1598,6 +1684,13 @@ export const AppProvider: React.FC<{
       return next;
     });
     showToast(`Invoice ${created.invoiceNumber || 'Record'} generated for ${created.brandName || 'Client'}`, 'success');
+    pushNotification({
+      type: 'invoice',
+      title: 'Invoice Generated',
+      message: `Invoice ${created.invoiceNumber || ''} created for ${created.brandName || 'Client'}.`,
+      linkModule: 'invoices',
+      brandId: created.brandId,
+    });
     return created;
   };
 
@@ -1608,6 +1701,16 @@ export const AppProvider: React.FC<{
       try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
       return next;
     });
+    if (status === 'Paid') {
+      const inv = invoices.find(i => i.id === id);
+      pushNotification({
+        type: 'payment',
+        title: 'Invoice Marked Paid',
+        message: `Invoice ${inv?.invoiceNumber || ''} for ${inv?.brandName || 'Client'} has been settled.`,
+        linkModule: 'invoices',
+        brandId: inv?.brandId,
+      });
+    }
   };
 
   const deleteInvoice = async (id: string) => {
@@ -1694,6 +1797,13 @@ export const AppProvider: React.FC<{
       return next;
     });
     showToast(`Payment of ${formatCurrency(paymentData.amount)} successfully recorded!`, 'success');
+    pushNotification({
+      type: 'payment',
+      title: 'Payment Received',
+      message: `Payment of ${formatCurrency(paymentData.amount)} received from ${paymentData.brandName || 'Client'}.`,
+      linkModule: 'finance',
+      brandId: paymentData.brandId,
+    });
   };
 
   const updatePaymentStatus = async (id: string, status: 'Success' | 'Pending') => {
@@ -1862,6 +1972,13 @@ export const AppProvider: React.FC<{
       return next;
     });
     showToast(`Meeting "${created.title}" scheduled`, 'success');
+    pushNotification({
+      type: 'meeting',
+      title: 'New Meeting Scheduled',
+      message: `"${created.title}" scheduled for ${created.date || 'upcoming session'}.`,
+      linkModule: 'meetings',
+      brandId: created.brandId,
+    });
   };
 
   const updateMeeting = async (id: string, data: Partial<Meeting>) => {
@@ -1901,6 +2018,12 @@ export const AppProvider: React.FC<{
       return next;
     });
     showToast(`Lead "${created.company}" added to pipeline`, 'success');
+    pushNotification({
+      type: 'lead',
+      title: 'New Lead Added',
+      message: `${created.company} entered the pipeline.`,
+      linkModule: 'leads',
+    });
   };
 
   const updateLeadStage = async (id: string, stage: Lead['stage']) => {
@@ -1970,14 +2093,70 @@ export const AppProvider: React.FC<{
   };
 
   // ---- Notifications ----
+  const pushNotification = useCallback(async (notifData: Partial<AppNotification> & { type: NotificationType; title: string; message: string }) => {
+    const newNotif: AppNotification = {
+      id: notifData.id || `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      type: notifData.type,
+      title: notifData.title,
+      message: notifData.message,
+      timestamp: notifData.timestamp || 'Just now',
+      isRead: false,
+      linkModule: notifData.linkModule,
+      brandId: notifData.brandId,
+      recipientRoles: notifData.recipientRoles,
+      targetUserId: notifData.targetUserId,
+    };
+
+    setNotifications(prev => {
+      const updated = [newNotif, ...prev.filter(n => n.id !== newNotif.id)];
+      try {
+        if (activeUserId) localStorage.setItem(`retentio_local_notifications_${activeUserId}`, JSON.stringify(updated));
+        localStorage.setItem('retentio_local_notifications', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    try {
+      await api.notifications.create({
+        type: newNotif.type,
+        title: newNotif.title,
+        message: newNotif.message,
+        linkModule: newNotif.linkModule,
+        brandId: newNotif.brandId,
+        recipientRoles: newNotif.recipientRoles,
+        targetUserId: newNotif.targetUserId,
+      });
+    } catch {
+      // Local fallback
+    }
+  }, [activeUserId]);
+
   const markNotificationAsRead = async (id: string) => {
-    await api.notifications.markRead(id);
-    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, isRead: true } : n)));
+    try {
+      await api.notifications.markRead(id);
+    } catch {}
+    setNotifications(prev => {
+      const updated = prev.map(n => (n.id === id ? { ...n, isRead: true } : n));
+      try {
+        if (activeUserId) localStorage.setItem(`retentio_local_notifications_${activeUserId}`, JSON.stringify(updated));
+        localStorage.setItem('retentio_local_notifications', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   const markAllNotificationsAsRead = async () => {
-    await api.notifications.markAllRead();
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    try {
+      await api.notifications.markAllRead();
+    } catch {}
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, isRead: true }));
+      try {
+        if (activeUserId) localStorage.setItem(`retentio_local_notifications_${activeUserId}`, JSON.stringify(updated));
+        localStorage.setItem('retentio_local_notifications', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     showToast('All notifications marked as read', 'info');
   };
 
@@ -2122,6 +2301,20 @@ export const AppProvider: React.FC<{
       }
     };
 
+    const handleNewNotification = (notif: AppNotification) => {
+      if (!notif) return;
+      setNotifications(prev => {
+        if (prev.some(n => n.id === notif.id)) return prev;
+        const updated = [notif, ...prev];
+        try {
+          if (activeUserId) localStorage.setItem(`retentio_local_notifications_${activeUserId}`, JSON.stringify(updated));
+          localStorage.setItem('retentio_local_notifications', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+      showToast(`${notif.title}: ${notif.message}`, 'info');
+    };
+
     s.on('new_message', handleNewMessage);
     s.on('messages_read', handleMessagesRead);
     s.on('conversation_updated', handleConversationUpdated);
@@ -2130,6 +2323,7 @@ export const AppProvider: React.FC<{
     s.on('online_users_list', handleOnlineUsersList);
     s.on('user_online', handleUserOnline);
     s.on('user_offline', handleUserOffline);
+    s.on('new_notification', handleNewNotification);
 
     return () => {
       s.off('new_message', handleNewMessage);
@@ -2140,8 +2334,9 @@ export const AppProvider: React.FC<{
       s.off('online_users_list', handleOnlineUsersList);
       s.off('user_online', handleUserOnline);
       s.off('user_offline', handleUserOffline);
+      s.off('new_notification', handleNewNotification);
     };
-  }, [currentUser?.id]);
+  }, [currentUser?.id, activeUserId]);
 
   const isUserOnline = useCallback((userId: string) => {
     if (!userId) return false;
@@ -2673,6 +2868,7 @@ export const AppProvider: React.FC<{
         updateLeadStage,
         convertLeadToBrand,
         notifications,
+        pushNotification,
         markNotificationAsRead,
         markAllNotificationsAsRead,
         conversations,

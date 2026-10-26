@@ -90,8 +90,8 @@ export const RetentionEngine: React.FC = () => {
 
   const handleLogFollowUp = (brandId: string) => {
     if (!callNote.trim()) return;
-    logBrandActivity(brandId, `Logged Follow-up Call: ${callNote}`);
-    showToast(`Touchpoint logged for client! Inactivity reset.`, 'success');
+    logBrandActivity(brandId, `Follow-up Call: ${callNote}`);
+    showToast(`Check-in saved for client! Activity updated.`, 'success');
     setSelectedBrandForLog(null);
     setCallNote('');
     fetchHealth();
@@ -101,8 +101,8 @@ export const RetentionEngine: React.FC = () => {
     const text = score.recommendation.suggestedMessage;
     const url = `https://wa.me/${score.mobile.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
-    logBrandActivity(score.brandId, `WhatsApp Outreach: ${score.recommendation.title}`);
-    showToast('WhatsApp outreach triggered and activity logged!', 'success');
+    logBrandActivity(score.brandId, `WhatsApp Message: ${score.recommendation.title}`);
+    showToast('WhatsApp message sent and recorded!', 'success');
   };
 
   const getFilteredScores = () => {
@@ -327,7 +327,7 @@ export const RetentionEngine: React.FC = () => {
             <ShieldCheck style={{ width: 44, height: 44, color: 'var(--success-text)', margin: '0 auto 12px' }} />
             <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: 16 }}>No Clients in This Category</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-              All client retainers in this segment have healthy touchpoint velocity and zero active blockers.
+              All clients in this group are happy and up to date.
             </p>
           </div>
         ) : (
@@ -504,7 +504,7 @@ export const RetentionEngine: React.FC = () => {
                     style={{ ...btnSecondary, fontSize: 12 }}
                   >
                     <PhoneCall style={{ width: 13, height: 13 }} />
-                    <span>Log Touchpoint</span>
+                    <span>Add Check-in</span>
                   </button>
 
                   <button
@@ -557,7 +557,7 @@ export const RetentionEngine: React.FC = () => {
         )}
       </div>
 
-      {/* Log Touchpoint Modal */}
+      {/* Add Check-in Modal */}
       {selectedBrandForLog && (
         <div style={modalOverlay} onClick={() => setSelectedBrandForLog(null)}>
           <div
@@ -576,16 +576,16 @@ export const RetentionEngine: React.FC = () => {
           >
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                Log Strategic Sync: {selectedBrandForLog.name}
+                Add Note: {selectedBrandForLog.name}
               </h3>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                Logging a strategic review resets the client inactivity counter and updates their strategic cadence factor to 25/25.
+                Adding a note or call keeps client activity fresh and up to date.
               </p>
             </div>
 
             <textarea
               rows={4}
-              placeholder="Summary of strategic discussion, deliverables discussed, next sync date..."
+              placeholder="Summary of discussion, deliverables talked about, next steps..."
               value={callNote}
               onChange={(e) => setCallNote(e.target.value)}
               style={inputFieldStyle}
@@ -597,7 +597,7 @@ export const RetentionEngine: React.FC = () => {
               </button>
               <button onClick={() => handleLogFollowUp(selectedBrandForLog.id)} style={btnPrimary}>
                 <CheckCircle style={{ width: 14, height: 14 }} />
-                <span>Save Touchpoint</span>
+                <span>Save Check-in</span>
               </button>
             </div>
           </div>

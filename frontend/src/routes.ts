@@ -18,6 +18,7 @@ export const ROUTES = {
   team: '/team',
   inbox: '/inbox',
   settings: '/settings',
+  onboard: '/onboard',
 } as const;
 
 export type RouteTab = keyof typeof ROUTES;

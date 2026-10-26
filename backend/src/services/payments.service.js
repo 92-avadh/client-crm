@@ -52,17 +52,38 @@ async function recordPayment({ invoiceId, brandId, brandName, amount, mode, refe
       [today, brandId]
     );
 
+    const paymentNotif = {
+      id: notifId(),
+      type: 'payment',
+      title: `💰 Payment Received: ${inr(amount)}`,
+      message: `Payment of ${inr(amount)} received from ${brandName}.`,
+      timestamp: new Date().toISOString(),
+      is_read: false,
+      link_module: 'invoices',
+      brand_id: brandId,
+      recipient_roles: ['admin', 'manager', 'hr', 'team'],
+    };
+
     await client.query(
       `INSERT INTO notifications (id,type,title,message,timestamp,is_read,link_module,brand_id,recipient_roles)
-       VALUES ($1,'payment',$2,$3,$4,false,'invoices',$5,ARRAY['admin','hr'])`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [
-        notifId(),
-        `💰 Payment Received: ${inr(amount)}`,
-        `Payment of ${inr(amount)} received from ${brandName}.`,
-        new Date().toISOString(),
-        brandId,
+        paymentNotif.id,
+        paymentNotif.type,
+        paymentNotif.title,
+        paymentNotif.message,
+        paymentNotif.timestamp,
+        false,
+        paymentNotif.link_module,
+        paymentNotif.brand_id,
+        paymentNotif.recipient_roles,
       ]
     );
+
+    try {
+      const { broadcastNotification } = require('../socket');
+      broadcastNotification(paymentNotif);
+    } catch {}
 
     await client.query(
       `INSERT INTO audit_logs (id,timestamp,actor_name,actor_role,action,details,ip_address)

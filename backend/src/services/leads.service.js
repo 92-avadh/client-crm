@@ -59,7 +59,20 @@ async function createLead(user, data) {
       data.notes || null, user ? user.id : null,
     ]
   );
-  return mapLead(rows[0]);
+  const lead = mapLead(rows[0]);
+  try {
+    const { createNotification } = require('./notifications.service');
+    await createNotification({
+      type: 'lead',
+      title: 'New Lead Captured',
+      message: `Lead "${lead.name}" (${lead.company || 'Direct'}) added to pipeline.`,
+      linkModule: 'leads',
+      recipientRoles: ['admin', 'manager'],
+    });
+  } catch (err) {
+    console.warn('Failed to dispatch lead notification:', err.message);
+  }
+  return lead;
 }
 
 async function updateLeadStage(id, stage) {

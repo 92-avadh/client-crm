@@ -33,7 +33,7 @@ export const PricingMatrix: React.FC<{ onSelectPlan?: (tier: string) => void }> 
         'Team Capacity & Sprint Milestone Tracking',
         'Automated Late Payment Sequences',
         'Multi-Currency & Zero-Fee ACH Debits',
-        'Priority 24/7 Chat & Slack Support',
+        'Priority 24/7 Help & Fast Support',
       ],
       popular: true,
       ctaText: 'Start Agency Pro Trial',

@@ -481,7 +481,7 @@ export const ProjectsAndTasks: React.FC = () => {
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Add New Client Task</h3>
-                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, marginBottom: 0 }}>Activity will be logged to client timeline</p>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, marginBottom: 0 }}>Activity will be saved to client history</p>
               </div>
               <button
                 onClick={() => setShowAddTaskModal(false)}

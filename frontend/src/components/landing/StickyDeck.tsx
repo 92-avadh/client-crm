@@ -26,7 +26,7 @@ export const StickyDeck: React.FC = () => {
             as="p"
             className="m-text-4"
           >
-            No months of enterprise onboarding and zero developers required. If your team uses Slack, Stripe, and email, Retentio is live before your next coffee.
+            No complicated setup and zero developers required. Connect your tools in seconds and Retentio is ready before your coffee gets cold.
           </ScrollReveal>
         </div>
 
@@ -39,7 +39,7 @@ export const StickyDeck: React.FC = () => {
             <div className="setup__copy">
               <h3 className="m-text-5">Connect your agency tools</h3>
               <p className="m-text-8">
-                One-click OAuth sync with Stripe, Slack, Gmail, and Google Calendar. Retentio instantly indexes client touchpoints and renewal milestones.
+                One-click connect with your email, payments, and calendar. Retentio automatically organizes your client meetings, tasks, and renewal dates.
               </p>
             </div>
             <div className="setup__ui m-text-6" aria-hidden="true">
@@ -55,7 +55,7 @@ export const StickyDeck: React.FC = () => {
                   <circle cx="12" cy="12" r="9" />
                   <path d="M8 12.5l2.5 2.5L16 9.5" />
                 </svg>
-                Slack workspace linked
+                Team alerts connected
               </p>
               <p className="setup__check">
                 <svg viewBox="0 0 24 24">

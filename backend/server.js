@@ -165,6 +165,7 @@ app.use('/api', idempotency);
 /* ------------------------------------------------------------------ */
 app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/portal', require('./src/routes/portal'));
+app.post('/api/intake', require('./src/controllers/portal.controller').intakeClient);
 
 app.use('/api/users', auth, require('./src/routes/users'));
 app.use('/api/brands', auth, require('./src/routes/brands'));
@@ -257,6 +258,8 @@ connectWithRetry()
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS currency_symbol VARCHAR(10) DEFAULT '₹';
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS retainer_hours NUMERIC(10,2) DEFAULT 40;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS used_hours NUMERIC(10,2) DEFAULT 0;
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS deliverables JSONB DEFAULT '[]';
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS survey_reminder_scheduled_at TIMESTAMP;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS nps_score INTEGER DEFAULT 9;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS contract_start_date DATE;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS contract_end_date DATE;
@@ -325,6 +328,12 @@ connectWithRetry()
       setInterval(() => {
         generateDueRecurring().catch(err => console.warn('Recurring invoice scheduled check warning:', err.message));
       }, 12 * 60 * 60 * 1000);
+
+      // Start background runner for automated 1-click micro-survey reminders (checks every 60s)
+      const { processScheduledSurveyReminders } = require('./src/services/portal.service');
+      setInterval(() => {
+        processScheduledSurveyReminders().catch(err => console.warn('Survey reminder check warning:', err.message));
+      }, 60 * 1000);
     });
   })
   .catch(err => {

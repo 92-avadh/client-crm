@@ -87,7 +87,22 @@ async function createTask(user, data) {
       user.id,
     ]
   );
-  return mapTask(rows[0]);
+  const task = mapTask(rows[0]);
+  try {
+    const { createNotification } = require('./notifications.service');
+    await createNotification({
+      type: 'task',
+      title: 'New Task Assigned',
+      message: `Task "${task.title}" was assigned. Due: ${task.dueDate || 'No due date'}`,
+      linkModule: 'projects',
+      brandId: task.brandId,
+      targetUserId: task.assigneeId || null,
+      recipientRoles: ['admin', 'manager', 'team'],
+    });
+  } catch (err) {
+    console.warn('Failed to dispatch task notification:', err.message);
+  }
+  return task;
 }
 
 async function updateTaskStatus(id, status) {
@@ -95,7 +110,21 @@ async function updateTaskStatus(id, status) {
     'UPDATE tasks SET status=$1 WHERE id=$2 RETURNING *',
     [status, id]
   );
-  return rows[0] ? mapTask(rows[0]) : null;
+  const task = rows[0] ? mapTask(rows[0]) : null;
+  if (task && status === 'Completed') {
+    try {
+      const { createNotification } = require('./notifications.service');
+      await createNotification({
+        type: 'task',
+        title: 'Task Completed',
+        message: `Task "${task.title}" has been marked completed.`,
+        linkModule: 'projects',
+        brandId: task.brandId,
+        recipientRoles: ['admin', 'manager'],
+      });
+    } catch {}
+  }
+  return task;
 }
 
 async function updateTask(id, data) {
@@ -115,7 +144,21 @@ async function updateTask(id, data) {
       id,
     ]
   );
-  return rows[0] ? mapTask(rows[0]) : null;
+  const task = rows[0] ? mapTask(rows[0]) : null;
+  if (task && data.status === 'Completed') {
+    try {
+      const { createNotification } = require('./notifications.service');
+      await createNotification({
+        type: 'task',
+        title: 'Task Completed',
+        message: `Task "${task.title}" has been completed.`,
+        linkModule: 'projects',
+        brandId: task.brandId,
+        recipientRoles: ['admin', 'manager'],
+      });
+    } catch {}
+  }
+  return task;
 }
 
 async function verifyTaskAccess(user, id) {

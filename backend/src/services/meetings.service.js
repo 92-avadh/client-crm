@@ -117,7 +117,21 @@ async function createMeeting(user, data) {
     }
 
     await client.query('COMMIT');
-    return getMeeting(id);
+    const meeting = await getMeeting(id);
+    try {
+      const { createNotification } = require('./notifications.service');
+      await createNotification({
+        type: 'meeting',
+        title: 'Meeting Scheduled',
+        message: `"${meeting.title}" scheduled on ${meeting.date || 'TBD'} at ${meeting.time || '10:00 AM'}.`,
+        linkModule: 'meetings',
+        brandId: meeting.brandId || null,
+        recipientRoles: ['admin', 'manager', 'team'],
+      });
+    } catch (err) {
+      console.warn('Failed to dispatch meeting notification:', err.message);
+    }
+    return meeting;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

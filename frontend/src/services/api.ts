@@ -377,6 +377,7 @@ export const api = {
   },
   notifications: {
     list: (params?: any) => req<any[]>('GET', '/notifications' + (params ? '?' + new URLSearchParams(params) : '')),
+    create: (data: any) => req<any>('POST', '/notifications', data),
     markRead: (id: string) => req<any>('PATCH', `/notifications/${id}/read`),
     markAllRead: () => req<any>('PATCH', '/notifications/read-all'),
   },
@@ -414,7 +415,11 @@ export const api = {
     get: (token: string) => req<any>('GET', `/portal/${token}`),
     submitFeedback: (token: string, data: { score: number; comment?: string }) =>
       req<any>('POST', `/portal/${token}/feedback`, data),
+    scheduleSurveyReminder: (token: string) =>
+      req<any>('POST', `/portal/${token}/schedule-survey-reminder`),
     getInvoice: (token: string, invoiceId: string) =>
       req<any>('GET', `/portal/${token}/invoices/${invoiceId}`),
+    intake: (data: any) =>
+      req<any>('POST', '/portal/intake', data),
   },
 };

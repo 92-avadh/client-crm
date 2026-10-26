@@ -101,7 +101,7 @@ export const TestimonialWall: React.FC = () => {
                   <StarIcon /><StarIcon /><StarIcon /><StarIcon /><StarIcon />
                 </p>
                 <p className="m-text">
-                  Live health scoring right inside Slack is a quiet little miracle for our account managers.
+                  Instant alerts right inside our team chat is a quiet little miracle for our account managers.
                 </p>
                 <p className="m-text-6">Daniel K. · Operations VP, ScaleWorks</p>
               </li>

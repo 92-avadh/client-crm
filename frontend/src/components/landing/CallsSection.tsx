@@ -12,7 +12,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
       <div className="calls__inner l-wrap">
         <div className="calls__head">
           <h2 className="m-text-3" id="calls-title" data-8b-motion="captionIn">
-            Account touchpoints that feel effortless again.
+            Keeping clients happy feels effortless again.
           </h2>
           <div className="calls__head-copy">
             <ScrollReveal
@@ -31,7 +31,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
               as="p"
               className="m-text-4 calls__lead"
             >
-              Retainer relationships should be calm, proactive, and predictable. With Retentio you see every health indicator, payment cadence, and renewal milestone live as your agency operates.
+              Working with clients should be simple, clear, and calm. With Retentio you see client health, paid invoices, and upcoming renewals all in one clean place.
             </ScrollReveal>
             <a
               className="m-btn"
@@ -70,11 +70,11 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
             <li className="calls__item">
               <h3 className="m-text-5">Live health scoring, account by account</h3>
               <p className="m-text-8">
-                Every email response, Slack thread, and invoice milestone updates the client’s vital pulse in real time so nothing slips through the cracks.
+                Every email response, team update, and paid invoice updates client health in real time so nothing slips through the cracks.
               </p>
             </li>
             <li className="calls__item">
-              <h3 className="m-text-5">Keep your team on Slack, Stripe & Gmail</h3>
+              <h3 className="m-text-5">Works with your email, payments & team chat</h3>
               <p className="m-text-8">
                 Syncs invisibly with your existing tools in 60 seconds. Your team and clients don’t change how they communicate or do work.
               </p>
@@ -94,7 +94,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
             <li className="calls__item">
               <h3 className="m-text-5">Audit-proof retention histories</h3>
               <p className="m-text-8">
-                Every client touchpoint, invoice status, and contract addendum is safely preserved in an encrypted audit trail you own forever.
+                Every client meeting, invoice, and agreement is safely saved so you never lose track of anything.
               </p>
             </li>
           </ScrollReveal>
@@ -177,7 +177,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
                             <span className="m-caption__wave" aria-hidden="true">
                               <i></i><i></i><i></i><i></i>
                             </span>
-                            <span className="phone__bubble-time">10:24 AM · Slack sync</span>
+                            <span className="phone__bubble-time">10:24 AM · Team sync</span>
                           </div>
                         </div>
                       </li>

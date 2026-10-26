@@ -707,16 +707,16 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <MessageSquare style={{ width: 16, height: 16 }} />
-                <span>External Notification Webhooks (Slack & Discord)</span>
+                <span>Team Chat Alerts (Slack & Discord)</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                Receive automated alerts for recurring invoices, overdue retainers, and at-risk client warnings directly in your agency channels.
+                Receive instant alerts for invoices, payments, and client reminders directly in your team channels.
               </div>
             </div>
 
             {/* Slack Webhook */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Slack Incoming Webhook URL</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Slack Webhook URL (for team notifications)</label>
               <div style={{ display: 'flex', gap: 10 }}>
                 <input
                   type="url"
@@ -736,14 +736,14 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
                   }}
                 >
                   {testingSlack ? <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" /> : <Send style={{ width: 13, height: 13 }} />}
-                  <span>Test Slack</span>
+                  <span>Send Test Alert</span>
                 </button>
               </div>
             </div>
 
             {/* Discord Webhook */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Discord Incoming Webhook URL</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Discord Webhook URL (for team notifications)</label>
               <div style={{ display: 'flex', gap: 10 }}>
                 <input
                   type="url"
@@ -763,7 +763,7 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
                   }}
                 >
                   {testingDiscord ? <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" /> : <Send style={{ width: 13, height: 13 }} />}
-                  <span>Test Discord</span>
+                  <span>Send Test Alert</span>
                 </button>
               </div>
             </div>

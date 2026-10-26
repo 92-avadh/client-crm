@@ -198,7 +198,21 @@ async function createInvoice(user, data) {
     }
 
     await client.query('COMMIT');
-    return getInvoice(user, id);
+    const invoice = await getInvoice(user, id);
+    try {
+      const { createNotification } = require('./notifications.service');
+      await createNotification({
+        type: 'invoice',
+        title: 'New Invoice Issued',
+        message: `Invoice #${invoice.invoiceNumber} for ${invoice.currencySymbol || '₹'}${Number(invoice.totalAmount || 0).toLocaleString('en-IN')} issued to ${invoice.brandName}.`,
+        linkModule: 'invoices',
+        brandId: invoice.brandId,
+        recipientRoles: ['admin', 'manager'],
+      });
+    } catch (err) {
+      console.warn('Failed to dispatch invoice notification:', err.message);
+    }
+    return invoice;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -212,7 +226,21 @@ async function updateInvoiceStatus(id, status) {
     'UPDATE invoices SET status=$1 WHERE id=$2 RETURNING *', [status, id]
   );
   if (!rows.length) return null;
-  return mapInvoice(rows[0], await getItems(id));
+  const invoice = mapInvoice(rows[0], await getItems(id));
+  if (status === 'Paid') {
+    try {
+      const { createNotification } = require('./notifications.service');
+      await createNotification({
+        type: 'payment',
+        title: 'Invoice Paid',
+        message: `Invoice #${invoice.invoiceNumber} for ${invoice.currencySymbol || '₹'}${Number(invoice.totalAmount || 0).toLocaleString('en-IN')} has been paid by ${invoice.brandName}!`,
+        linkModule: 'invoices',
+        brandId: invoice.brandId,
+        recipientRoles: ['admin', 'manager'],
+      });
+    } catch {}
+  }
+  return invoice;
 }
 
 const auditId = () => 'audit_' + crypto.randomBytes(6).toString('hex');

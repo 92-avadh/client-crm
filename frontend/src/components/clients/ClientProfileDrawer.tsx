@@ -3,13 +3,14 @@ import {
   X,
   FileText,
   Users,
-  MessageSquare,
   CheckCircle,
   Clock,
   AlertTriangle,
   ExternalLink,
   Copy,
   Plus,
+  Minus,
+  Trash2,
   ShieldCheck,
   TrendingUp,
   DollarSign,
@@ -21,7 +22,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Brand, User, Invoice, Task, BrandDocument } from '../../types';
+import type { Brand, User, Invoice, Task, BrandDocument, DeliverableItem } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 
@@ -36,7 +37,7 @@ interface Props {
   activeTab: ProfileTab;
   onTabChange: (tab: ProfileTab) => void;
   onClose: () => void;
-  onChat: (brandId: string) => void;
+  onChat?: (brandId: string) => void;
 }
 
 const cardStyle: React.CSSProperties = {
@@ -63,6 +64,12 @@ export const ClientProfileDrawer: React.FC<Props> = ({
   const [newDocCategory, setNewDocCategory] = useState<'MSA' | 'SOW' | 'NDA' | 'KYC & Tax' | 'Contract' | 'Other'>('MSA');
   const [newDocRenewal, setNewDocRenewal] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
+
+  // Deliverables State
+  const [showAddDeliverable, setShowAddDeliverable] = useState(false);
+  const [newDelTitle, setNewDelTitle] = useState('');
+  const [newDelTarget, setNewDelTarget] = useState('8');
+  const [newDelUnit, setNewDelUnit] = useState('items');
 
   if (!brand) return null;
 
@@ -104,11 +111,11 @@ export const ClientProfileDrawer: React.FC<Props> = ({
     try {
       await api.brands.logHours(brand.id, h);
       await updateBrand(brand.id, { usedHours: usedHours + h });
-      showToast(`Successfully logged ${h} hours for this client!`, 'success');
+      showToast(`Added ${h} hours for this client!`, 'success');
       setShowLogHoursModal(false);
       setHoursToAdd('');
     } catch (err: any) {
-      showToast(err.message || 'Failed to log hours.', 'error');
+      showToast(err.message || 'Failed to add hours.', 'error');
     } finally {
       setLoggingHours(false);
     }
@@ -137,6 +144,59 @@ export const ClientProfileDrawer: React.FC<Props> = ({
       showToast(err.message || 'Failed to upload document.', 'error');
     } finally {
       setUploadingDoc(false);
+    }
+  };
+
+  const deliverables: DeliverableItem[] = Array.isArray(brand.deliverables) ? brand.deliverables : [];
+
+  const handleUpdateDeliverableCount = async (id: string, delta: number) => {
+    const updated = deliverables.map((d) => {
+      if (d.id === id) {
+        const nextCount = Math.max(0, (d.completed || 0) + delta);
+        return { ...d, completed: nextCount };
+      }
+      return d;
+    });
+    await updateBrand(brand.id, { deliverables: updated });
+    try {
+      await api.brands.update(brand.id, { deliverables: updated });
+      showToast('Deliverable progress updated!', 'success');
+    } catch {
+      showToast('Failed to save deliverable progress.', 'error');
+    }
+  };
+
+  const handleAddDeliverableSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDelTitle.trim()) return;
+    const targetNum = parseInt(newDelTarget, 10) || 1;
+    const item: DeliverableItem = {
+      id: `del_${Date.now()}`,
+      title: newDelTitle.trim(),
+      target: targetNum,
+      completed: 0,
+      unit: newDelUnit.trim() || 'items',
+    };
+    const updated = [...deliverables, item];
+    await updateBrand(brand.id, { deliverables: updated });
+    try {
+      await api.brands.update(brand.id, { deliverables: updated });
+      showToast(`Added "${item.title}" to monthly plan!`, 'success');
+      setNewDelTitle('');
+      setShowAddDeliverable(false);
+    } catch {
+      showToast('Failed to add deliverable.', 'error');
+    }
+  };
+
+  const handleDeleteDeliverable = async (id: string) => {
+    const updated = deliverables.filter((d) => d.id !== id);
+    await updateBrand(brand.id, { deliverables: updated });
+    try {
+      await api.brands.update(brand.id, { deliverables: updated });
+      showToast('Deliverable removed from monthly plan.', 'success');
+    } catch {
+      showToast('Failed to delete deliverable.', 'error');
     }
   };
 
@@ -271,25 +331,25 @@ export const ClientProfileDrawer: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Retainer Hours Limit Tracker Banner */}
+        {/* Retainer Scope Banner (Deliverables + Hours) */}
         <div style={{ padding: '14px 24px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Clock style={{ width: 14, height: 14, color: isOverScope ? '#ef4444' : '#38bdf8' }} />
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Monthly Included Retainer Hours</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: isOverScope ? '#ef4444' : (isNearScope ? '#f59e0b' : 'var(--text-secondary)') }}>
-                {usedHours} / {retainerHours} hrs ({hoursPct}%)
-              </span>
+          {/* Deliverable Scope Section */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <CheckCircle style={{ width: 14, height: 14, color: 'var(--brand-green, #10b981)' }} />
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Monthly Deliverables</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>— Done-for-you scope (no billing arguments)</span>
+              </div>
               <button
-                onClick={() => setShowLogHoursModal(true)}
+                type="button"
+                onClick={() => setShowAddDeliverable(!showAddDeliverable)}
                 style={{
-                  padding: '3px 8px',
+                  padding: '4px 10px',
                   borderRadius: 6,
-                  background: 'var(--solid-btn-bg)',
-                  color: 'var(--solid-btn-text)',
-                  border: 'none',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
                   fontSize: 11,
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -298,31 +358,231 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                   gap: 4,
                 }}
               >
-                <Plus style={{ width: 12, height: 12 }} /> Log Hours
+                <Plus style={{ width: 12, height: 12 }} /> {showAddDeliverable ? 'Close Form' : 'Add Deliverable'}
               </button>
             </div>
+
+            {/* Quick Add Form */}
+            {showAddDeliverable && (
+              <form onSubmit={handleAddDeliverableSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12, padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <input
+                  type="text"
+                  placeholder="Deliverable title (e.g. Ad Creatives, Ad Campaigns)"
+                  value={newDelTitle}
+                  onChange={(e) => setNewDelTitle(e.target.value)}
+                  style={{ flex: '1 1 200px', height: 32, padding: '0 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                  required
+                />
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Target qty"
+                  value={newDelTarget}
+                  onChange={(e) => setNewDelTarget(e.target.value)}
+                  style={{ width: 70, height: 32, padding: '0 8px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Unit (designs, posts)"
+                  value={newDelUnit}
+                  onChange={(e) => setNewDelUnit(e.target.value)}
+                  style={{ width: 110, height: 32, padding: '0 8px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                />
+                <button
+                  type="submit"
+                  style={{ padding: '0 12px', height: 32, borderRadius: 6, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Save Item
+                </button>
+              </form>
+            )}
+
+            {/* Deliverables Cards Grid */}
+            {deliverables.length === 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 8, border: '1px dashed var(--border)' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  Deliverables scope not configured yet (e.g. 8 Creatives, 2 Ad Campaigns, 4 Copy Revisions).
+                </span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const preset: DeliverableItem[] = [
+                      { id: `del_1`, title: 'Ad Creatives', target: 8, completed: 0, unit: 'creatives' },
+                      { id: `del_2`, title: 'Ad Campaigns', target: 2, completed: 0, unit: 'campaigns' },
+                      { id: `del_3`, title: 'Copy Revisions', target: 4, completed: 0, unit: 'rounds' },
+                    ];
+                    await updateBrand(brand.id, { deliverables: preset });
+                    try {
+                      await api.brands.update(brand.id, { deliverables: preset });
+                      showToast('Standard deliverable package applied (8 Creatives, 2 Campaigns, 4 Copy Revisions)!', 'success');
+                    } catch {}
+                  }}
+                  style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Use Agency Scope Package
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 10, marginBottom: 14 }}>
+                {deliverables.map((item) => {
+                  const isDone = (item.completed || 0) >= item.target;
+                  const pct = Math.min(100, Math.round(((item.completed || 0) / (item.target || 1)) * 100));
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        background: isDone ? 'var(--success-bg)' : 'var(--bg-subtle)',
+                        border: `1px solid ${isDone ? 'var(--success-border)' : 'var(--border)'}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 6,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.title}
+                        </span>
+                        {isDone ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, color: 'var(--success-text)' }}>
+                            <CheckCircle style={{ width: 12, height: 12 }} /> Complete
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                            {item.completed} / {item.target} {item.unit || ''}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ height: 4, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: isDone ? 'var(--success-text)' : 'var(--text-primary)', borderRadius: 4, transition: 'width 0.2s' }} />
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDeliverableCount(item.id, -1)}
+                            disabled={(item.completed || 0) <= 0}
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: 4,
+                              background: 'var(--bg-card)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text-primary)',
+                              fontSize: 12,
+                              fontWeight: 800,
+                              cursor: (item.completed || 0) <= 0 ? 'not-allowed' : 'pointer',
+                              opacity: (item.completed || 0) <= 0 ? 0.4 : 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Minus style={{ width: 10, height: 10 }} />
+                          </button>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', minWidth: 16, textAlign: 'center' }}>
+                            {item.completed || 0}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDeliverableCount(item.id, 1)}
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: 4,
+                              background: 'var(--solid-btn-bg)',
+                              border: 'none',
+                              color: 'var(--solid-btn-text)',
+                              fontSize: 12,
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Plus style={{ width: 10, height: 10 }} />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDeliverable(item.id)}
+                          title="Remove deliverable"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: 2,
+                          }}
+                        >
+                          <Trash2 style={{ width: 12, height: 12 }} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div style={{ height: 6, borderRadius: 6, background: 'var(--bg-subtle)', overflow: 'hidden' }}>
-            <div
-              style={{
-                height: '100%',
-                width: `${Math.min(100, hoursPct)}%`,
-                background: isOverScope ? '#ef4444' : (isNearScope ? '#f59e0b' : 'var(--success-text)'),
-                borderRadius: 6,
-                transition: 'width 0.4s ease',
-              }}
-            />
-          </div>
-
-          {isOverScope && (
-            <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'var(--danger-bg)', color: 'var(--danger-text)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0 }} />
-              <span>
-                <strong>Hours Limit Reached:</strong> Monthly agreement hours exceeded ({usedHours}/{retainerHours} hrs). You can invoice extra hours separately or increase their monthly retainer plan.
-              </span>
+          {/* Retainer Hours (Optional alongside deliverables) */}
+          <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock style={{ width: 14, height: 14, color: isOverScope ? '#ef4444' : '#38bdf8' }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>Monthly Plan Hours</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: isOverScope ? '#ef4444' : (isNearScope ? '#f59e0b' : 'var(--text-secondary)') }}>
+                  {usedHours} / {retainerHours} hrs ({hoursPct}%)
+                </span>
+                <button
+                  onClick={() => setShowLogHoursModal(true)}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: 6,
+                    background: 'var(--solid-btn-bg)',
+                    color: 'var(--solid-btn-text)',
+                    border: 'none',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Plus style={{ width: 12, height: 12 }} /> Add Hours
+                </button>
+              </div>
             </div>
-          )}
+
+            <div style={{ height: 6, borderRadius: 6, background: 'var(--bg-subtle)', overflow: 'hidden' }}>
+              <div
+                style={{
+                  height: '100%',
+                  width: `${Math.min(100, hoursPct)}%`,
+                  background: isOverScope ? '#ef4444' : (isNearScope ? '#f59e0b' : 'var(--success-text)'),
+                  borderRadius: 6,
+                  transition: 'width 0.4s ease',
+                }}
+              />
+            </div>
+
+            {isOverScope && (
+              <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'var(--danger-bg)', color: 'var(--danger-text)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0 }} />
+                <span>
+                  <strong>Hours Plan Completed:</strong> Plan hours exceeded ({usedHours}/{retainerHours} hrs). You can add more hours or bill additional work.
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -761,15 +1021,15 @@ export const ClientProfileDrawer: React.FC<Props> = ({
             ) : (
               <button
                 type="button"
-                onClick={() => onChat(brand.id)}
+                onClick={() => onTabChange('team')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
                   padding: '9px 16px',
-                  background: 'var(--solid-btn-bg)',
-                  color: 'var(--solid-btn-text)',
-                  border: 'none',
+                  background: 'var(--bg-subtle)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                   fontSize: 12,
                   fontWeight: 700,
@@ -777,25 +1037,25 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                   transition: 'all 0.15s ease',
                 }}
               >
-                <MessageSquare style={{ width: 14, height: 14 }} />
-                Open Team Chat ({assignedUsers.length})
+                <Users style={{ width: 14, height: 14 }} />
+                Manage Team ({assignedUsers.length})
               </button>
             )}
           </div>
         </div>
       </motion.div>
 
-      {/* Log Retainer Hours Modal */}
+      {/* Add Plan Hours Modal */}
       {showLogHoursModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, maxWidth: 420, width: '100%' }}>
-            <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>Log Retainer Hours</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>Add Work Hours</h3>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 16px' }}>
-              Record billable time for {brand.name} against their monthly included {retainerHours} hrs.
+              Add completed hours for {brand.name} against their monthly {retainerHours} hrs.
             </p>
             <form onSubmit={handleLogHoursSubmit}>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 6, color: 'var(--text-secondary)' }}>Hours to Log</label>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 6, color: 'var(--text-secondary)' }}>Hours to Add</label>
                 <input
                   type="number"
                   step="0.5"
@@ -811,7 +1071,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                 <button type="button" onClick={() => setShowLogHoursModal(false)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-raised)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
                 <button type="submit" disabled={loggingHours} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', cursor: 'pointer', fontWeight: 700 }}>
-                  {loggingHours ? 'Saving...' : 'Log Hours'}
+                  {loggingHours ? 'Saving...' : 'Add Hours'}
                 </button>
               </div>
             </form>

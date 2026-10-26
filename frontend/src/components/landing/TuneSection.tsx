@@ -143,12 +143,12 @@ export const TuneSection: React.FC = () => {
               ></button>
             </li>
             <li className="tune__row">
-              <h3 className="m-text-5">Slack & Teams instant sync</h3>
+              <h3 className="m-text-5">Instant team notifications</h3>
               <p className="m-text-8">Direct high-risk alerts into dedicated private agency channels.</p>
               <button
                 type="button"
                 className={`tune__ctl tune__toggle ${slackSync ? 'is-active' : ''}`}
-                aria-label="Toggle Slack & Teams instant sync"
+                aria-label="Toggle instant team notifications"
                 aria-pressed={slackSync}
                 onClick={() => setSlackSync(!slackSync)}
               ></button>

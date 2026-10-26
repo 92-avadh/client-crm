@@ -121,7 +121,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                 <svg viewBox="0 0 16 16" aria-hidden="true">
                   <path className="hero__tick" d="M3 8.5l3 3 7-7" />
                 </svg>
-                Client portal, WhatsApp share &amp; Slack alerts
+                Client portal, WhatsApp share &amp; team alerts
               </li>
             </ScrollReveal>
             <div className="hero__actions">

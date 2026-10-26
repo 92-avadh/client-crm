@@ -165,6 +165,14 @@ function broadcastMessageDeleted(conversationId, messageId, deleteType, userId) 
   });
 }
 
+function broadcastNotification(notification, targetUserId) {
+  if (!io) return;
+  if (targetUserId) {
+    io.to(`user_${targetUserId}`).emit('new_notification', notification);
+  }
+  io.emit('new_notification', notification);
+}
+
 module.exports = {
   initSocket,
   getIO,
@@ -172,4 +180,5 @@ module.exports = {
   broadcastMessagesRead,
   broadcastConversationCreated,
   broadcastMessageDeleted,
+  broadcastNotification,
 };

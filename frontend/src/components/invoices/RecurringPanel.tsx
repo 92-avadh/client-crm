@@ -78,7 +78,7 @@ export const RecurringPanel: React.FC<Props> = ({
               <span>Recurring Invoice Schedules & Automation</span>
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, marginBottom: 0 }}>
-              Scheduled monthly invoicing with automated Slack/Discord notifications and per-client currency billing.
+              Scheduled monthly invoices with automatic team notifications and client currency billing.
             </p>
           </div>
           <button onClick={onClose} style={{ background: 'var(--bg-raised)', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>

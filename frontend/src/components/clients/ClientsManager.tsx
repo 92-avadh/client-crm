@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import type { Brand, BrandStatus } from '../../types';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Copy } from 'lucide-react';
 import { getNaturalErrorMessage } from '../../services/errors';
 import { ClientGrid } from './ClientGrid';
 import { ClientProfileDrawer, type ProfileTab } from './ClientProfileDrawer';
@@ -356,12 +356,41 @@ export const ClientsManager: React.FC = () => {
         </div>
 
         {(role === 'admin' || role === 'hr') && (
-          <button onClick={openOnboard}
-            className="w-fit self-start sm:self-auto"
-            style={{ padding: '9px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Plus className="w-3.5 h-3.5" />
-            <span>Onboard New Client</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => {
+                const intakeUrl = `${window.location.origin}/onboard`;
+                navigator.clipboard.writeText(intakeUrl);
+                showToast('Self-serve onboarding link copied! Clients can fill it in 3 minutes.', 'success');
+              }}
+              style={{
+                padding: '9px 16px',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+              title="Copy public 3-minute onboarding form link"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy Intake Link</span>
+            </button>
+            <button
+              onClick={openOnboard}
+              className="w-fit self-start sm:self-auto"
+              style={{ padding: '9px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Client</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -435,27 +464,6 @@ export const ClientsManager: React.FC = () => {
             activeTab={activeProfileTab}
             onTabChange={setActiveProfileTab}
             onClose={() => setSelectedBrandId(null)}
-            onChat={async (brandId) => {
-              const brand = brands.find((b) => b.id === brandId);
-              const conv = (conversations || []).find(
-                (c) => c.brandId === brandId || (brand && c.title?.toLowerCase() === brand.name?.toLowerCase())
-              );
-              if (conv) {
-                setActiveConversationId(conv.id);
-                setActiveTab('chat');
-                return;
-              }
-              const assigned = (brand?.assignedMemberIds || []).filter((id) => id !== currentUser.id);
-              if (assigned.length > 0 && typeof startDirectChat === 'function') {
-                try {
-                  await startDirectChat(assigned[0]);
-                  return;
-                } catch (err) {
-                  console.warn('Failed to start direct chat with assigned member:', err);
-                }
-              }
-              setActiveTab('chat');
-            }}
           />
         )}
       </AnimatePresence>

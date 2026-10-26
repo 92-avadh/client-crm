@@ -33,6 +33,7 @@ function validateClient(body, { requireName = false } = {}) {
     .oneOf('status', brands.CLIENT_STATUSES, { label: 'Status' })
     .oneOf('paymentStatus', brands.PAYMENT_STATUSES, { label: 'Payment status' })
     .array('memberIds', { ofStrings: true, max: 100, label: 'Team members' })
+    .array('deliverables', { max: 100, label: 'Deliverables' })
     .validate();
 }
 

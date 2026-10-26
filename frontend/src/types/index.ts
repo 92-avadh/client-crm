@@ -44,6 +44,14 @@ export interface BrandDocument {
   fileUrl?: string;
 }
 
+export interface DeliverableItem {
+  id: string;
+  title: string;
+  target: number;
+  completed: number;
+  unit?: string;
+}
+
 export interface Brand {
   id: string;
   name: string;
@@ -75,6 +83,8 @@ export interface Brand {
   lastActivityDate: string;
   lastPaymentDate: string;
   documents: BrandDocument[];
+  deliverables?: DeliverableItem[];
+  surveyReminderScheduledAt?: string;
 }
 
 export type ProjectStatus = 'Not started' | 'In progress' | 'On hold' | 'Completed';
@@ -414,6 +424,7 @@ export interface PortalData {
     city?: string;
     state?: string;
     gstNumber?: string;
+    deliverablesScope?: DeliverableItem[];
   };
   deliverables: {
     total: number;

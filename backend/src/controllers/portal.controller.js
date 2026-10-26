@@ -31,8 +31,41 @@ const getInvoice = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+const scheduleSurveyReminder = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const result = await portalService.scheduleSurveyReminder(token);
+  res.json(result);
+});
+
+const intakeClient = asyncHandler(async (req, res) => {
+  const body = makeValidator(req.body)
+    .requiredString('name', { max: 200, label: 'Company / Client name' })
+    .optionalString('ownerName', { max: 200, label: 'Point of Contact' })
+    .optionalString('mobile', { max: 40, label: 'Mobile / WhatsApp' })
+    .email('email', { label: 'Email' })
+    .optionalString('billingAddress', { max: 500, label: 'Billing address' })
+    .optionalString('city', { max: 100, label: 'City' })
+    .optionalString('state', { max: 80, label: 'State' })
+    .optionalString('pincode', { max: 12, label: 'Pincode' })
+    .optionalString('gstNumber', { max: 30, label: 'GST Number' })
+    .optionalString('pan', { max: 20, label: 'PAN' })
+    .optionalString('serviceDetails', { max: 3000, label: 'Services needed' })
+    .optionalString('notes', { max: 3000, label: 'Notes' })
+    .number('monthlyFee', { min: 0, label: 'Monthly fee' })
+    .optionalString('currency', { max: 10, label: 'Currency' })
+    .optionalString('currencySymbol', { max: 10, label: 'Currency symbol' })
+    .optionalString('contractStartDate', { max: 50, label: 'Start date' })
+    .array('deliverables', { max: 100, label: 'Deliverables' })
+    .validate();
+
+  const result = await portalService.intakeClient(body);
+  res.status(201).json(result);
+});
+
 module.exports = {
   getPortal,
   submitFeedback,
+  scheduleSurveyReminder,
+  intakeClient,
   getInvoice,
 };

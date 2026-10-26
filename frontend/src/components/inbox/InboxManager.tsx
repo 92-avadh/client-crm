@@ -7,14 +7,13 @@ import {
   AlertTriangle,
   CheckSquare,
   Calendar,
-  MessageSquare,
-  Mail,
   Tag,
+  Mail,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import type { AppNotification, Conversation } from '../../types';
+import type { AppNotification } from '../../types';
 
-type FilterTab = 'all' | 'alerts' | 'chats';
+type FilterTab = 'all' | 'unread' | 'alerts';
 
 function getNotificationIcon(type: AppNotification['type']) {
   const iconStyle = { width: 18, height: 18 };
@@ -25,7 +24,6 @@ function getNotificationIcon(type: AppNotification['type']) {
     case 'retention':    return <AlertTriangle style={iconStyle} />;
     case 'task':         return <CheckSquare style={iconStyle} />;
     case 'meeting':      return <Calendar style={iconStyle} />;
-    case 'chat':         return <MessageSquare style={iconStyle} />;
     case 'lead':         return <Tag style={iconStyle} />;
     case 'subscription': return <Mail style={iconStyle} />;
     default:             return <Bell style={iconStyle} />;
@@ -40,7 +38,6 @@ function getIconBg(type: AppNotification['type']): string {
     case 'retention':    return 'var(--warn-bg)';
     case 'task':         return 'var(--success-bg)';
     case 'meeting':      return 'var(--info-bg)';
-    case 'chat':         return 'var(--accent-bg)';
     case 'lead':         return 'var(--danger-bg)';
     case 'subscription': return 'var(--success-bg)';
     default:             return 'var(--bg-raised)';
@@ -55,7 +52,6 @@ function getIconColor(type: AppNotification['type']): string {
     case 'retention':    return 'var(--warn-text)';
     case 'task':         return 'var(--success-text)';
     case 'meeting':      return 'var(--info-text)';
-    case 'chat':         return 'var(--text-secondary)';
     case 'lead':         return 'var(--danger-text)';
     case 'subscription': return 'var(--success-text)';
     default:             return 'var(--text-secondary)';
@@ -87,7 +83,7 @@ function isToday(timestamp: string): boolean {
   );
 }
 
-const EmptyState: React.FC<{ tab: FilterTab }> = ({ tab }) => (
+const EmptyState: React.FC = () => (
   <div
     style={{
       display: 'flex',
@@ -109,20 +105,14 @@ const EmptyState: React.FC<{ tab: FilterTab }> = ({ tab }) => (
         justifyContent: 'center',
       }}
     >
-      {tab === 'chats' ? (
-        <MessageSquare style={{ width: 32, height: 32, color: 'var(--text-muted)' }} />
-      ) : (
-        <Bell style={{ width: 32, height: 32, color: 'var(--text-muted)' }} />
-      )}
+      <Bell style={{ width: 32, height: 32, color: 'var(--text-muted)' }} />
     </div>
     <div style={{ textAlign: 'center' }}>
       <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-        {tab === 'chats' ? 'No unread chats' : 'All caught up!'}
+        All caught up!
       </p>
       <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6, margin: '6px 0 0' }}>
-        {tab === 'chats'
-          ? 'No conversations with unread messages right now.'
-          : 'You have no notifications in this category.'}
+        You have no updates or alerts right now.
       </p>
     </div>
   </div>
@@ -132,16 +122,13 @@ export const InboxManager: React.FC = () => {
   const {
     currentUser,
     notifications,
-    conversations,
     markNotificationAsRead,
     markAllNotificationsAsRead,
     setActiveTab,
-    setActiveConversationId,
   } = useApp();
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [hoveredNotifId, setHoveredNotifId] = useState<string | null>(null);
-  const [hoveredConvId, setHoveredConvId] = useState<string | null>(null);
 
   // Role-filtered notifications
   const roleFilteredNotifications = notifications.filter((n) => {
@@ -149,40 +136,25 @@ export const InboxManager: React.FC = () => {
     return n.recipientRoles.includes(currentUser.role);
   });
 
-  const alertNotifications = roleFilteredNotifications.filter((n) => n.type !== 'chat');
-  const chatNotifications = roleFilteredNotifications.filter((n) => n.type === 'chat');
-  const unreadConversations = conversations.filter((c) => (c.unreadCount ?? 0) > 0);
-
-  const unreadAlerts = alertNotifications.filter((n) => !n.isRead).length;
-  const unreadChats =
-    chatNotifications.filter((n) => !n.isRead).length +
-    unreadConversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+  const unreadCount = roleFilteredNotifications.filter((n) => !n.isRead).length;
+  const highPriorityAlerts = roleFilteredNotifications.filter((n) =>
+    ['retention', 'payment', 'assignment'].includes(n.type)
+  );
+  const alertsCount = highPriorityAlerts.filter((n) => !n.isRead).length;
   const totalToday = roleFilteredNotifications.filter((n) => isToday(n.timestamp)).length;
 
-  // Tab counts
-  const allCount = roleFilteredNotifications.filter((n) => !n.isRead).length + unreadConversations.length;
-  const alertsCount = unreadAlerts;
-  const chatsCount = unreadChats;
+  // Filtered notifications
+  const visibleNotifications = roleFilteredNotifications.filter((n) => {
+    if (activeFilter === 'unread') return !n.isRead;
+    if (activeFilter === 'alerts') return ['retention', 'payment', 'assignment'].includes(n.type);
+    return true;
+  });
 
-  // Items to render
-  const visibleAlerts =
-    activeFilter === 'all' || activeFilter === 'alerts' ? alertNotifications : [];
-  const visibleChatNotifs =
-    activeFilter === 'all' || activeFilter === 'chats' ? chatNotifications : [];
-  const visibleConvs =
-    activeFilter === 'all' || activeFilter === 'chats' ? unreadConversations : [];
-
-  const hasContent =
-    visibleAlerts.length > 0 || visibleChatNotifs.length > 0 || visibleConvs.length > 0;
+  const hasContent = visibleNotifications.length > 0;
 
   const handleNotificationClick = (notif: AppNotification) => {
     markNotificationAsRead(notif.id);
     if (notif.linkModule) setActiveTab(notif.linkModule);
-  };
-
-  const handleConversationClick = (conv: Conversation) => {
-    setActiveTab('chat');
-    setActiveConversationId(conv.id);
   };
 
   // ── Styles ──────────────────────────────────────────────────────────────────
@@ -228,17 +200,6 @@ export const InboxManager: React.FC = () => {
     position: 'relative',
   });
 
-  const convCardStyle = (hovered: boolean): React.CSSProperties => ({
-    display: 'flex',
-    gap: 14,
-    padding: '14px 16px',
-    borderRadius: 10,
-    background: hovered ? 'var(--bg-subtle)' : 'var(--bg-card)',
-    border: `1px solid ${hovered ? 'var(--border)' : 'var(--border)'}`,
-    cursor: 'pointer',
-    transition: 'all 0.15s ease',
-  });
-
   return (
     <div className="w-full" style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 760 }}>
 
@@ -248,31 +209,34 @@ export const InboxManager: React.FC = () => {
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
-          paddingBottom: 20,
-          borderBottom: '1px solid var(--border)',
+          flexWrap: 'wrap',
+          gap: 12,
         }}
       >
         <div>
           <h1
             style={{
-              fontSize: 26,
-              fontWeight: 900,
+              fontSize: 24,
+              fontWeight: 800,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.2,
               margin: 0,
+              letterSpacing: '-0.02em',
             }}
           >
-            Inbox
+            Inbox & Alerts
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            All your messages and alerts in one place
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
+            Keep track of client updates, invoices, and urgent notices.
           </p>
         </div>
+
         <button
           onClick={markAllNotificationsAsRead}
           style={{
-            padding: '8px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 14px',
             borderRadius: 8,
             border: '1px solid var(--border)',
             background: 'var(--bg-card)',
@@ -280,10 +244,7 @@ export const InboxManager: React.FC = () => {
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            transition: 'all 0.15s ease',
+            transition: 'background 0.15s ease',
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-raised)';
@@ -300,9 +261,9 @@ export const InboxManager: React.FC = () => {
       {/* ── Stats Bar ────────────────────────────────────────────────────────── */}
       <div className="rg-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {[
-          { label: 'Unread Alerts', value: unreadAlerts, icon: <Bell style={{ width: 16, height: 16, color: 'var(--warn-text)' }} />, accent: 'var(--warn-bg)' },
-          { label: 'Unread Chats', value: unreadChats, icon: <MessageSquare style={{ width: 16, height: 16, color: 'var(--text-secondary)' }} />, accent: 'var(--accent-bg)' },
-          { label: "Today's Notifications", value: totalToday, icon: <Calendar style={{ width: 16, height: 16, color: 'var(--info-text)' }} />, accent: 'var(--info-bg)' },
+          { label: 'Unread Notes', value: unreadCount, icon: <Bell style={{ width: 16, height: 16, color: 'var(--warn-text)' }} />, accent: 'var(--warn-bg)' },
+          { label: 'Important Alerts', value: alertsCount, icon: <AlertTriangle style={{ width: 16, height: 16, color: 'var(--danger-text)' }} />, accent: 'var(--danger-bg)' },
+          { label: "Today's Updates", value: totalToday, icon: <Calendar style={{ width: 16, height: 16, color: 'var(--info-text)' }} />, accent: 'var(--info-bg)' },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -353,9 +314,9 @@ export const InboxManager: React.FC = () => {
       >
         {(
           [
-            { id: 'all' as FilterTab, label: 'All', count: allCount },
-            { id: 'alerts' as FilterTab, label: 'Alerts', count: alertsCount },
-            { id: 'chats' as FilterTab, label: 'Chats', count: chatsCount },
+            { id: 'all' as FilterTab, label: 'All', count: roleFilteredNotifications.length },
+            { id: 'unread' as FilterTab, label: 'Unread', count: unreadCount },
+            { id: 'alerts' as FilterTab, label: 'Important', count: alertsCount },
           ] as { id: FilterTab; label: string; count: number }[]
         ).map((tab) => (
           <button
@@ -375,360 +336,112 @@ export const InboxManager: React.FC = () => {
 
       {/* ── List ─────────────────────────────────────────────────────────────── */}
       {!hasContent ? (
-        <EmptyState tab={activeFilter} />
+        <EmptyState />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} aria-live="polite">
-
-          {/* Alert Notifications */}
-          {visibleAlerts.length > 0 && (
-            <section>
-              {activeFilter === 'all' && (
-                <h3
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: 'var(--text-muted)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    margin: '0 0 10px',
-                  }}
-                >
-                  Alerts
-                </h3>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {visibleAlerts.map((notif) => (
-                  <div
-                    key={notif.id}
-                    style={cardStyle(notif.isRead, hoveredNotifId === notif.id)}
-                    onClick={() => handleNotificationClick(notif)}
-                    onMouseEnter={() => setHoveredNotifId(notif.id)}
-                    onMouseLeave={() => setHoveredNotifId(null)}
-                  >
-                    {/* Icon */}
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        background: getIconBg(notif.type),
-                        color: getIconColor(notif.type),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        marginTop: 1,
-                      }}
-                    >
-                      {getNotificationIcon(notif.type)}
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                        <p
-                          style={{
-                            fontSize: 13,
-                            fontWeight: notif.isRead ? 500 : 700,
-                            color: 'var(--text-primary)',
-                            margin: 0,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {notif.title}
-                        </p>
-                        {!notif.isRead && (
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              background: 'var(--info-text)',
-                              flexShrink: 0,
-                            }}
-                          />
-                        )}
-                      </div>
-                      <p
-                        style={{
-                          fontSize: 12,
-                          color: 'var(--text-muted)',
-                          margin: 0,
-                          overflow: 'hidden',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                        }}
-                      >
-                        {notif.message}
-                      </p>
-                    </div>
-
-                    {/* Right side */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-end',
-                        gap: 8,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                        {formatTime(notif.timestamp)}
-                      </span>
-                      {hoveredNotifId === notif.id && !notif.isRead && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markNotificationAsRead(notif.id);
-                          }}
-                          style={{
-                            padding: '3px 8px',
-                            borderRadius: 5,
-                            border: '1px solid var(--border)',
-                            background: 'var(--bg-card)',
-                            color: 'var(--text-secondary)',
-                            fontSize: 11,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Mark read
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Chat Notifications */}
-          {visibleChatNotifs.length > 0 && (
-            <section>
-              {activeFilter === 'all' && (
-                <h3
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: 'var(--text-muted)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    margin: '0 0 10px',
-                  }}
-                >
-                  Chat Notifications
-                </h3>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {visibleChatNotifs.map((notif) => (
-                  <div
-                    key={notif.id}
-                    style={cardStyle(notif.isRead, hoveredNotifId === `cn-${notif.id}`)}
-                    onClick={() => handleNotificationClick(notif)}
-                    onMouseEnter={() => setHoveredNotifId(`cn-${notif.id}`)}
-                    onMouseLeave={() => setHoveredNotifId(null)}
-                  >
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        background: getIconBg(notif.type),
-                        color: getIconColor(notif.type),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        marginTop: 1,
-                      }}
-                    >
-                      {getNotificationIcon(notif.type)}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                        <p
-                          style={{
-                            fontSize: 13,
-                            fontWeight: notif.isRead ? 500 : 700,
-                            color: 'var(--text-primary)',
-                            margin: 0,
-                          }}
-                        >
-                          {notif.title}
-                        </p>
-                        {!notif.isRead && (
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              background: 'var(--info-text)',
-                              flexShrink: 0,
-                            }}
-                          />
-                        )}
-                      </div>
-                      <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>{notif.message}</p>
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-end',
-                        gap: 8,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                        {formatTime(notif.timestamp)}
-                      </span>
-                      {hoveredNotifId === `cn-${notif.id}` && !notif.isRead && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markNotificationAsRead(notif.id);
-                          }}
-                          style={{
-                            padding: '3px 8px',
-                            borderRadius: 5,
-                            border: '1px solid var(--border)',
-                            background: 'var(--bg-card)',
-                            color: 'var(--text-secondary)',
-                            fontSize: 11,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Mark read
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Conversations with unread messages */}
-          {visibleConvs.length > 0 && (
-            <section>
-              <h3
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }} aria-live="polite">
+          {visibleNotifications.map((notif) => (
+            <div
+              key={notif.id}
+              style={cardStyle(notif.isRead, hoveredNotifId === notif.id)}
+              onClick={() => handleNotificationClick(notif)}
+              onMouseEnter={() => setHoveredNotifId(notif.id)}
+              onMouseLeave={() => setHoveredNotifId(null)}
+            >
+              {/* Icon */}
+              <div
                 style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: 'var(--text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  margin: '0 0 10px',
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  background: getIconBg(notif.type),
+                  color: getIconColor(notif.type),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: 1,
                 }}
               >
-                Conversations
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {visibleConvs.map((conv) => (
-                  <div
-                    key={conv.id}
-                    style={convCardStyle(hoveredConvId === conv.id)}
-                    onClick={() => handleConversationClick(conv)}
-                    onMouseEnter={() => setHoveredConvId(conv.id)}
-                    onMouseLeave={() => setHoveredConvId(null)}
-                  >
-                    {/* Avatar */}
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: '50%',
-                        background: 'var(--accent-bg)',
-                        color: 'var(--text-secondary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        fontSize: 13,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {(conv.title || '?').charAt(0).toUpperCase()}
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          color: 'var(--text-primary)',
-                          margin: 0,
-                          marginBottom: 2,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {conv.title}
-                      </p>
-                      {conv.lastMessage && (
-                        <p
-                          style={{
-                            fontSize: 12,
-                            color: 'var(--text-muted)',
-                            margin: 0,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {conv.lastMessage}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Right side */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-end',
-                        gap: 6,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {conv.lastMessageTime && (
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                          {formatTime(conv.lastMessageTime)}
-                        </span>
-                      )}
-                      {(conv.unreadCount ?? 0) > 0 && (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minWidth: 20,
-                            height: 20,
-                            borderRadius: 10,
-                            background: 'var(--solid-btn-bg)',
-                            color: 'var(--solid-btn-text)',
-                            fontSize: 10,
-                            fontWeight: 700,
-                            padding: '0 5px',
-                          }}
-                        >
-                          {conv.unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                {getNotificationIcon(notif.type)}
               </div>
-            </section>
-          )}
+
+              {/* Content */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      fontWeight: notif.isRead ? 500 : 700,
+                      color: 'var(--text-primary)',
+                      margin: 0,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {notif.title}
+                  </p>
+                  {!notif.isRead && (
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: 'var(--info-text)',
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                </div>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--text-secondary)',
+                    margin: 0,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {notif.message}
+                </p>
+              </div>
+
+              {/* Timestamp & Quick Mark */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: 8,
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                  {formatTime(notif.timestamp)}
+                </span>
+                {hoveredNotifId === notif.id && !notif.isRead && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markNotificationAsRead(notif.id);
+                    }}
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: 5,
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg-card)',
+                      color: 'var(--text-secondary)',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Mark read
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -12,7 +12,7 @@ async function getPortalDataByToken(token) {
   const brandRes = await pool.query(
     `SELECT id, name, owner_name, email, mobile, service_details, monthly_fee, billing_cycle_day,
             currency, currency_symbol, retainer_hours, used_hours, nps_score, contract_start_date,
-            contract_end_date, status, payment_status, last_payment_date
+            contract_end_date, status, payment_status, last_payment_date, deliverables
      FROM brands WHERE magic_token = $1`,
     [token]
   );
@@ -86,6 +86,7 @@ async function getPortalDataByToken(token) {
       usedHours,
       hoursRemaining,
       hoursUtilizationPct: retainerHours > 0 ? Math.round((usedHours / retainerHours) * 100) : 0,
+      deliverablesScope: Array.isArray(brand.deliverables) ? brand.deliverables : (typeof brand.deliverables === 'string' ? (() => { try { return JSON.parse(brand.deliverables); } catch { return []; } })() : []),
     },
     deliverables: {
       total: totalTasks,
@@ -129,9 +130,9 @@ async function submitPortalFeedback(token, score, comment = '') {
   }
   const brand = brandRes.rows[0];
 
-  // Update NPS Score on brand
+  // Update NPS Score on brand and clear reminder schedule
   await pool.query(
-    'UPDATE brands SET nps_score = $1, last_activity_date = CURRENT_DATE WHERE id = $2',
+    'UPDATE brands SET nps_score = $1, survey_reminder_scheduled_at = NULL, last_activity_date = CURRENT_DATE WHERE id = $2',
     [score, brand.id]
   );
 
@@ -215,8 +216,162 @@ async function getPortalInvoiceDetails(token, invoiceId) {
   };
 }
 
+async function scheduleSurveyReminder(token) {
+  if (!token) return { success: false, message: 'Missing token' };
+  const brandRes = await pool.query('SELECT id, name, owner_name, email FROM brands WHERE magic_token = $1', [token]);
+  if (!brandRes.rows.length) return { success: false, message: 'Portal not found' };
+  const brand = brandRes.rows[0];
+
+  // Set scheduled reminder time to 1 hour from now
+  await pool.query(
+    `UPDATE brands SET survey_reminder_scheduled_at = NOW() + INTERVAL '1 hour' WHERE id = $1`,
+    [brand.id]
+  );
+
+  return {
+    success: true,
+    message: 'Feedback reminder scheduled for 1 hour. An automated 1-click survey email will be sent if unreviewed.',
+    scheduledAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+  };
+}
+
+async function intakeClient(data) {
+  if (!data || !data.name || !data.name.trim()) {
+    throw new Error('Company or Client name is required.');
+  }
+
+  const id = 'brand_' + crypto.randomBytes(6).toString('hex');
+  const magicToken = 'tok_' + crypto.randomBytes(12).toString('hex');
+  const today = new Date().toISOString().split('T')[0];
+  const fee = parseFloat(data.monthlyFee) || 0;
+  const currency = data.currency || 'INR';
+  const currencySymbol = data.currencySymbol || '₹';
+
+  // Find owner/admin user to link if possible
+  const adminRes = await pool.query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+  const ownerId = adminRes.rows.length ? adminRes.rows[0].id : null;
+
+  const deliverables = Array.isArray(data.deliverables) ? JSON.stringify(data.deliverables) : '[]';
+
+  await pool.query(
+    `INSERT INTO brands (
+      id, name, owner_name, mobile, email, billing_address, city, state, pincode,
+      gst_number, pan, service_details, monthly_fee, billing_cycle_day, onboarding_date,
+      notes, status, payment_status, last_payment_date, last_activity_date, owner_id,
+      currency, currency_symbol, retainer_hours, used_hours, contract_start_date,
+      magic_token, deliverables
+    ) VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9,
+      $10, $11, $12, $13, 1, $14,
+      $15, 'Active', 'Pending', NULL, $16, $17,
+      $18, $19, $20, 0, $21,
+      $22, $23
+    )`,
+    [
+      id, data.name.trim(), data.ownerName?.trim() || null, data.mobile?.trim() || null, data.email?.trim() || null,
+      data.billingAddress?.trim() || null, data.city?.trim() || null, data.state?.trim() || null, data.pincode?.trim() || null,
+      data.gstNumber?.trim() || null, data.pan?.trim() || null, data.serviceDetails?.trim() || null, fee, today,
+      data.notes?.trim() || 'Self-onboarded via intake link', today, ownerId,
+      currency, currencySymbol, parseFloat(data.retainerHours || 40), data.contractStartDate || today,
+      magicToken, deliverables
+    ]
+  );
+
+  // Auto-assign owner to brand
+  if (ownerId) {
+    await pool.query(
+      'INSERT INTO brand_assignments (brand_id, member_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [id, ownerId]
+    );
+  }
+
+  // Real-time notification & Socket.io broadcast
+  try {
+    const { createNotification } = require('./notifications.service');
+    const { broadcastNotification } = require('../socket');
+    const notif = await createNotification({
+      type: 'assignment',
+      title: '🚀 New Client Self-Onboarded!',
+      message: `${data.name} completed the intake form. Invoicing & company details are ready in workspace.`,
+      linkModule: 'clients',
+      brandId: id,
+      recipientRoles: ['admin', 'manager', 'team'],
+    });
+    if (notif) broadcastNotification(notif);
+  } catch (err) {
+    console.warn('Failed to dispatch intake notification:', err.message);
+  }
+
+  return {
+    success: true,
+    clientId: id,
+    name: data.name.trim(),
+    magicToken,
+    portalUrl: `/portal/${magicToken}`,
+  };
+}
+
+async function processScheduledSurveyReminders() {
+  try {
+    const due = await pool.query(
+      `SELECT id, name, owner_name, email, mobile, magic_token 
+       FROM brands 
+       WHERE survey_reminder_scheduled_at IS NOT NULL 
+         AND survey_reminder_scheduled_at <= NOW()`
+    );
+
+    if (!due.rows.length) return 0;
+
+    const { createNotification } = require('./notifications.service');
+    const { broadcastNotification } = require('../socket');
+
+    for (const brand of due.rows) {
+      console.log(`[Survey Engine] Sending automated 1-click micro-survey to client ${brand.name} (${brand.email || 'no email'})`);
+
+      // Clear scheduled timestamp immediately so it cannot double-fire
+      await pool.query('UPDATE brands SET survey_reminder_scheduled_at = NULL WHERE id = $1', [brand.id]);
+
+      // Create notification to agency team
+      try {
+        const notif = await createNotification({
+          type: 'retention',
+          title: `📨 1-Click Survey Sent: ${brand.name}`,
+          message: `Automated 1-hour follow-up sent to ${brand.owner_name || brand.name} (${brand.email || 'WhatsApp'}). Asking: How did we do this month? [Great] [Okay] [Need Help].`,
+          linkModule: 'retention',
+          brandId: brand.id,
+          recipientRoles: ['admin', 'manager', 'team'],
+        });
+        if (notif) broadcastNotification(notif);
+      } catch (e) {
+        console.warn('Failed to notify agency of survey dispatch:', e.message);
+      }
+
+      // Log in audit trail
+      try {
+        await pool.query(
+          `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address)
+           VALUES ($1, $2, 'Retentio Automation', 'system', 'Automated 1-Click Survey Sent', $3, 'system')`,
+          [
+            auditId(),
+            new Date().toISOString(),
+            `Dispatched automated micro-survey to ${brand.name} (${brand.email || 'client'}) after 1-hour reminder delay.`,
+          ]
+        );
+      } catch (e) {}
+    }
+
+    return due.rows.length;
+  } catch (err) {
+    console.warn('[Survey Engine] Error processing survey reminders:', err.message);
+    return 0;
+  }
+}
+
 module.exports = {
   getPortalDataByToken,
   submitPortalFeedback,
+  scheduleSurveyReminder,
+  processScheduledSurveyReminders,
+  intakeClient,
   getPortalInvoiceDetails,
 };

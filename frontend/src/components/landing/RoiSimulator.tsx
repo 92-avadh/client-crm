@@ -34,7 +34,7 @@ export const RoiSimulator: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
         <div className="max-w-[700px] mb-12">
           <div className="land-kicker mb-3 flex items-center gap-1.5">
             <Calculator size={14} className="text-emerald-800" />
-            <span>Interactive Profit Telemetry</span>
+            <span>Interactive Profit Calculator</span>
           </div>
           <h2 className="land-display-section mb-3">
             Estimate Your Agency's Retention ROI

@@ -18,4 +18,9 @@ const markRead = asyncHandler(async (req, res) => {
   res.json(updated);
 });
 
-module.exports = { list, markAllRead, markRead };
+const create = asyncHandler(async (req, res) => {
+  const created = await notifications.createNotification(req.body);
+  res.status(201).json(created);
+});
+
+module.exports = { list, markAllRead, markRead, create };

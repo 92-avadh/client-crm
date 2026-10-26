@@ -16,7 +16,12 @@ import {
   Printer,
   Layers,
   Receipt,
-  Calendar
+  Calendar,
+  X,
+  Smile,
+  Meh,
+  Frown,
+  Sparkles,
 } from 'lucide-react';
 
 export const ClientPortal: React.FC = () => {
@@ -25,12 +30,13 @@ export const ClientPortal: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // NPS Feedback State
+  // Proactive 1-Click Micro-Survey State
   const [rating, setRating] = useState<number | null>(null);
-  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [feedbackNote, setFeedbackNote] = useState('');
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [showSurveyModal, setShowSurveyModal] = useState(false);
+  const [selectedSurveyChoice, setSelectedSurveyChoice] = useState<'great' | 'okay' | 'help' | null>(null);
 
   // Active Invoice Modal
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
@@ -54,6 +60,17 @@ export const ClientPortal: React.FC = () => {
         setData(res);
         if (res.client?.npsScore) {
           setRating(res.client.npsScore);
+          if (res.client.npsScore >= 8) setSelectedSurveyChoice('great');
+          else if (res.client.npsScore >= 5) setSelectedSurveyChoice('okay');
+          else setSelectedSurveyChoice('help');
+        } else {
+          // Proactive trigger: show 1-click survey popup if not dismissed in this session
+          const dismissed = sessionStorage.getItem(`retentio_survey_dismissed_${token}`);
+          if (!dismissed) {
+            setTimeout(() => {
+              if (isMounted) setShowSurveyModal(true);
+            }, 1000);
+          }
         }
         setLoading(false);
       } catch (err: any) {
@@ -74,6 +91,42 @@ export const ClientPortal: React.FC = () => {
       isMounted = false;
     };
   }, [token]);
+
+  const handleDismissSurveyModal = async () => {
+    setShowSurveyModal(false);
+    sessionStorage.setItem(`retentio_survey_dismissed_${token}`, 'true');
+    if (token) {
+      try {
+        await api.portal.scheduleSurveyReminder(token);
+      } catch (err) {
+        console.warn('Failed to schedule survey reminder:', err);
+      }
+    }
+  };
+
+  const handleSelectChoiceAndSubmit = async (choice: 'great' | 'okay' | 'help') => {
+    if (!token) return;
+    const score = choice === 'great' ? 10 : (choice === 'okay' ? 7 : 3);
+    const label = choice === 'great' ? 'Great' : (choice === 'okay' ? 'Okay' : 'Need Help');
+    setSelectedSurveyChoice(choice);
+    setRating(score);
+    setIsSubmittingFeedback(true);
+    try {
+      await api.portal.submitFeedback(token, {
+        score,
+        comment: feedbackNote || `1-Click response: ${label}`,
+      });
+      setFeedbackSuccess(true);
+      setTimeout(() => {
+        setShowSurveyModal(false);
+        setFeedbackSuccess(false);
+      }, 1600);
+    } catch (err: any) {
+      alert(err.message || 'Failed to submit feedback.');
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
 
   const handleSubmitNps = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -449,8 +502,69 @@ export const ClientPortal: React.FC = () => {
           </div>
         </div>
 
-        {/* Retainer Scope & Deliverable Quota Card */}
+        {/* Retainer Scope & Deliverables Card */}
         <div className="portal-card" style={{ padding: '24px 28px' }}>
+          {/* Deliverables-Based Scope (e.g. 8 Creatives, 2 Ad Campaigns, 4 Copy Revisions) */}
+          {Array.isArray((client as any).deliverablesScope) && (client as any).deliverablesScope.length > 0 && (
+            <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: '#34d399',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <CheckCircle style={{ width: 16, height: 16 }} />
+                  </div>
+                  <span>Monthly Deliverables Plan</span>
+                </div>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>Deliverable-based scope</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+                {(client as any).deliverablesScope.map((item: any) => {
+                  const isDone = (item.completed || 0) >= item.target;
+                  const pct = Math.min(100, Math.round(((item.completed || 0) / (item.target || 1)) * 100));
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: 12,
+                        background: isDone ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                        border: `1px solid ${isDone ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>{item.title}</span>
+                        {isDone ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 800, color: '#34d399' }}>
+                            <CheckCircle style={{ width: 13, height: 13 }} /> Completed
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8' }}>
+                            {item.completed} / {item.target} {item.unit || ''}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ height: 6, borderRadius: 6, background: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: isDone ? '#10b981' : '#38bdf8', borderRadius: 6, transition: 'width 0.3s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
             <div>
               <div style={{ fontSize: 16, fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -466,10 +580,10 @@ export const ClientPortal: React.FC = () => {
                 }}>
                   <Clock style={{ width: 16, height: 16 }} />
                 </div>
-                <span>Monthly Retainer Hours Tracker</span>
+                <span>Monthly Hours Tracker</span>
               </div>
               <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
-                Transparent deliverable hours allocation for the active billing cycle.
+                Transparent hours allocation for the active billing cycle.
               </div>
             </div>
 
@@ -597,7 +711,7 @@ export const ClientPortal: React.FC = () => {
                   </div>
                   <div style={{ fontWeight: 600, color: '#94a3b8' }}>All deliverables currently up to date</div>
                   <div style={{ fontSize: 11, maxWidth: 300 }}>
-                    As new milestones or sprint tasks are logged by the agency team, you will see real-time progress right here.
+                    As new tasks or milestones are added by your team, you will see live progress right here.
                   </div>
                 </div>
               ) : (
@@ -764,148 +878,154 @@ export const ClientPortal: React.FC = () => {
           </div>
         </div>
 
-        {/* 1-Click NPS Satisfaction Feedback Widget */}
+        {/* 1-Click Micro-Survey Feedback Widget */}
         <div className="portal-card" style={{
           padding: '32px 32px',
-          border: '1px solid rgba(245, 158, 11, 0.25)',
+          border: '1px solid rgba(16, 185, 129, 0.25)',
           background: 'linear-gradient(180deg, rgba(20, 27, 45, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)',
           boxShadow: '0 20px 40px -15px rgba(0,0,0,0.5)',
         }}>
-          <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
               padding: '4px 14px',
               borderRadius: 20,
-              background: 'rgba(245, 158, 11, 0.12)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              color: '#fbbf24',
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              color: '#34d399',
               fontSize: 11,
               fontWeight: 800,
               marginBottom: 14,
               letterSpacing: '0.04em',
             }}>
-              <Star style={{ width: 13, height: 13 }} /> 1-Click Client Experience Feedback
+              <Star style={{ width: 13, height: 13 }} /> Quick 1-Click Client Review
             </span>
 
             <h2 style={{ fontSize: 22, fontWeight: 900, color: '#f8fafc', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
-              How satisfied are you with our agency deliverables this month?
+              How did we do this month?
             </h2>
             <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5, margin: '0 0 24px' }}>
-              Your rating is fed directly into our Executive Retention &amp; Quality Assurance Engine to ensure your account gets top priority and maximum velocity.
+              One click lets {agency.companyName || 'our team'} know how things are going so we can support you best:
             </p>
 
-            <form onSubmit={handleSubmitNps}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
-                  const isSelected = rating === num;
-                  const isHovered = hoverRating !== null && hoverRating >= num;
-                  const activeColor = getRatingColor(num, true);
-
-                  return (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => setRating(num)}
-                      onMouseEnter={() => setHoverRating(num)}
-                      onMouseLeave={() => setHoverRating(null)}
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 12,
-                        border: isSelected
-                          ? `2px solid ${activeColor}`
-                          : (isHovered ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid rgba(255, 255, 255, 0.08)'),
-                        background: isSelected
-                          ? activeColor
-                          : (isHovered ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)'),
-                        color: isSelected ? '#080c14' : '#f8fafc',
-                        fontWeight: 900,
-                        fontSize: 15,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
-                        transform: isSelected ? 'scale(1.08)' : (isHovered ? 'scale(1.04)' : 'scale(1)'),
-                        boxShadow: isSelected ? `0 0 16px ${activeColor}80` : 'none',
-                      }}
-                    >
-                      {num}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', maxWidth: 480, margin: '0 auto 20px' }}>
-                <span>1 - Needs improvement</span>
-                <span>10 - Exceptional velocity</span>
-              </div>
-
-              <div style={{ maxWidth: 520, margin: '0 auto 16px' }}>
-                <input
-                  type="text"
-                  placeholder="Optional comment: What can our team improve or accelerate for you?"
-                  value={feedbackNote}
-                  onChange={(e) => setFeedbackNote(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 18px',
-                    borderRadius: 12,
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    color: '#f8fafc',
-                    fontSize: 13,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    transition: 'border-color 0.15s ease',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#38bdf8';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                  }}
-                />
-              </div>
-
+            {/* 3-Choice Micro-Survey */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, maxWidth: 540, margin: '0 auto 20px' }}>
               <button
-                type="submit"
-                disabled={!rating || isSubmittingFeedback}
+                type="button"
+                onClick={() => handleSelectChoiceAndSubmit('great')}
+                disabled={isSubmittingFeedback}
                 style={{
-                  padding: '12px 32px',
-                  borderRadius: 12,
-                  background: rating ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)' : 'rgba(255,255,255,0.08)',
-                  color: rating ? '#ffffff' : '#64748b',
-                  border: 'none',
-                  fontSize: 13,
-                  fontWeight: 800,
-                  cursor: rating ? 'pointer' : 'not-allowed',
-                  display: 'inline-flex',
+                  padding: '18px 12px',
+                  borderRadius: 14,
+                  background: selectedSurveyChoice === 'great' ? '#059669' : 'rgba(16, 185, 129, 0.08)',
+                  border: `2px solid ${selectedSurveyChoice === 'great' ? '#34d399' : 'rgba(16, 185, 129, 0.25)'}`,
+                  color: selectedSurveyChoice === 'great' ? '#ffffff' : '#34d399',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   gap: 8,
-                  boxShadow: rating ? '0 4px 16px rgba(16, 185, 129, 0.35)' : 'none',
-                  transition: 'all 0.15s ease',
+                  fontWeight: 800,
+                  fontSize: 14,
+                  transition: 'transform 0.15s ease',
+                  transform: selectedSurveyChoice === 'great' ? 'scale(1.04)' : 'scale(1)',
                 }}
               >
-                <Send style={{ width: 14, height: 14 }} />
-                <span>{isSubmittingFeedback ? 'Submitting...' : 'Submit Satisfaction Rating'}</span>
+                <Smile style={{ width: 32, height: 32 }} />
+                <span>Great</span>
+                <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>Happy with work</span>
               </button>
 
-              {feedbackSuccess && (
-                <div style={{
-                  marginTop: 16,
-                  color: '#34d399',
-                  fontSize: 13,
-                  fontWeight: 700,
+              <button
+                type="button"
+                onClick={() => handleSelectChoiceAndSubmit('okay')}
+                disabled={isSubmittingFeedback}
+                style={{
+                  padding: '18px 12px',
+                  borderRadius: 14,
+                  background: selectedSurveyChoice === 'okay' ? '#d97706' : 'rgba(245, 158, 11, 0.08)',
+                  border: `2px solid ${selectedSurveyChoice === 'okay' ? '#fbbf24' : 'rgba(245, 158, 11, 0.25)'}`,
+                  color: selectedSurveyChoice === 'okay' ? '#ffffff' : '#fbbf24',
+                  cursor: 'pointer',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}>
-                  <CheckCircle style={{ width: 16, height: 16 }} />
-                  <span>Feedback submitted directly to agency leadership! Thank you.</span>
-                </div>
-              )}
-            </form>
+                  gap: 8,
+                  fontWeight: 800,
+                  fontSize: 14,
+                  transition: 'transform 0.15s ease',
+                  transform: selectedSurveyChoice === 'okay' ? 'scale(1.04)' : 'scale(1)',
+                }}
+              >
+                <Meh style={{ width: 32, height: 32 }} />
+                <span>Okay</span>
+                <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>Small tweaks needed</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectChoiceAndSubmit('help')}
+                disabled={isSubmittingFeedback}
+                style={{
+                  padding: '18px 12px',
+                  borderRadius: 14,
+                  background: selectedSurveyChoice === 'help' ? '#dc2626' : 'rgba(239, 68, 68, 0.08)',
+                  border: `2px solid ${selectedSurveyChoice === 'help' ? '#f87171' : 'rgba(239, 68, 68, 0.25)'}`,
+                  color: selectedSurveyChoice === 'help' ? '#ffffff' : '#f87171',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontWeight: 800,
+                  fontSize: 14,
+                  transition: 'transform 0.15s ease',
+                  transform: selectedSurveyChoice === 'help' ? 'scale(1.04)' : 'scale(1)',
+                }}
+              >
+                <Frown style={{ width: 32, height: 32 }} />
+                <span>Need Help</span>
+                <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>Needs urgent attention</span>
+              </button>
+            </div>
+
+            <div style={{ maxWidth: 540, margin: '0 auto 16px' }}>
+              <input
+                type="text"
+                placeholder="Optional note: What can we improve or make faster for you?"
+                value={feedbackNote}
+                onChange={(e) => setFeedbackNote(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 18px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  color: '#f8fafc',
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {feedbackSuccess && (
+              <div style={{
+                marginTop: 12,
+                color: '#34d399',
+                fontSize: 13,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}>
+                <CheckCircle style={{ width: 16, height: 16 }} />
+                <span>Thank you! Your feedback has been sent to the team.</span>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -1086,6 +1206,172 @@ export const ClientPortal: React.FC = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Proactive Event-Triggered Micro-Survey Modal */}
+      {showSurveyModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 20,
+        }}>
+          <div style={{
+            background: '#0f172a',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: 20,
+            padding: '32px 28px',
+            maxWidth: 480,
+            width: '100%',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+            textAlign: 'center',
+            position: 'relative',
+          }}>
+            <button
+              onClick={handleDismissSurveyModal}
+              title="Remind me later"
+              style={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                borderRadius: '50%',
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#94a3b8',
+                cursor: 'pointer',
+              }}
+            >
+              <X style={{ width: 16, height: 16 }} />
+            </button>
+
+            <div style={{
+              width: 52,
+              height: 52,
+              borderRadius: 16,
+              background: 'rgba(16, 185, 129, 0.15)',
+              color: '#34d399',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}>
+              <Sparkles style={{ width: 26, height: 26 }} />
+            </div>
+
+            <h3 style={{ fontSize: 20, fontWeight: 900, color: '#f8fafc', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+              How did we do this month?
+            </h3>
+            <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 24px', lineHeight: 1.5 }}>
+              1-click check-in. Tell {agency.companyName || 'your agency'} how your work is going:
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+              <button
+                type="button"
+                onClick={() => handleSelectChoiceAndSubmit('great')}
+                disabled={isSubmittingFeedback}
+                style={{
+                  padding: '16px 10px',
+                  borderRadius: 14,
+                  background: selectedSurveyChoice === 'great' ? '#059669' : 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  color: selectedSurveyChoice === 'great' ? '#ffffff' : '#34d399',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontWeight: 800,
+                  fontSize: 13,
+                  transition: 'transform 0.15s ease',
+                }}
+              >
+                <Smile style={{ width: 28, height: 28 }} />
+                <span>Great</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectChoiceAndSubmit('okay')}
+                disabled={isSubmittingFeedback}
+                style={{
+                  padding: '16px 10px',
+                  borderRadius: 14,
+                  background: selectedSurveyChoice === 'okay' ? '#d97706' : 'rgba(245, 158, 11, 0.1)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  color: selectedSurveyChoice === 'okay' ? '#ffffff' : '#fbbf24',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontWeight: 800,
+                  fontSize: 13,
+                  transition: 'transform 0.15s ease',
+                }}
+              >
+                <Meh style={{ width: 28, height: 28 }} />
+                <span>Okay</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectChoiceAndSubmit('help')}
+                disabled={isSubmittingFeedback}
+                style={{
+                  padding: '16px 10px',
+                  borderRadius: 14,
+                  background: selectedSurveyChoice === 'help' ? '#dc2626' : 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: selectedSurveyChoice === 'help' ? '#ffffff' : '#f87171',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontWeight: 800,
+                  fontSize: 13,
+                  transition: 'transform 0.15s ease',
+                }}
+              >
+                <Frown style={{ width: 28, height: 28 }} />
+                <span>Need Help</span>
+              </button>
+            </div>
+
+            {feedbackSuccess && (
+              <div style={{ color: '#34d399', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
+                ✓ Thank you! Your feedback has been sent to the team.
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleDismissSurveyModal}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                fontSize: 12,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              Remind me in an hour
+            </button>
           </div>
         </div>
       )}

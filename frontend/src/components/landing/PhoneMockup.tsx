@@ -131,7 +131,7 @@ export const PhoneMockup: React.FC<PhoneMockupProps> = ({
                 </div>
               </div>
               <div className="text-[0.68rem] text-slate-400 text-center font-mono">
-                Updated in real-time via Slack & Gmail
+                Updated live with your email & team
               </div>
             </div>
           )}
@@ -221,7 +221,7 @@ export const PhoneMockup: React.FC<PhoneMockupProps> = ({
                 </div>
               </div>
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-800 text-center text-xs font-bold">
-                Synced with Slack & Email
+                Synced with your email & team
               </div>
             </div>
           )}
@@ -230,7 +230,7 @@ export const PhoneMockup: React.FC<PhoneMockupProps> = ({
             <div className="flex flex-col h-full justify-between">
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2">
-                  Cashflow Telemetry
+                  Cashflow Overview
                 </div>
                 <div className="p-4 rounded-2xl bg-[var(--land-forest-base)] text-white text-center mb-4">
                   <div className="text-xs text-emerald-300 font-bold mb-1">Annual Retained Run-Rate</div>

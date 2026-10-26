@@ -27,6 +27,8 @@ function mapBrand(b) {
     paymentStatus: b.payment_status || 'Paid',
     lastActivityDate: formatDateOnly(b.last_activity_date),
     lastPaymentDate: formatDateOnly(b.last_payment_date),
+    deliverables: Array.isArray(b.deliverables) ? b.deliverables : (typeof b.deliverables === 'string' ? (() => { try { return JSON.parse(b.deliverables); } catch { return []; } })() : []),
+    surveyReminderScheduledAt: b.survey_reminder_scheduled_at,
     createdAt: b.created_at
   };
 }
@@ -176,11 +178,13 @@ async function createBrand(user, data) {
     // NPS score must be null until client submits rating in portal — never default to 9
     const npsScore = data.npsScore != null ? parseInt(data.npsScore, 10) : null;
 
+    const deliverables = Array.isArray(data.deliverables) ? JSON.stringify(data.deliverables) : '[]';
+
     await client.query(
       `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,city,state,pincode,gst_number,pan,
        service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date,owner_id,
-       currency, currency_symbol, retainer_hours, used_hours, nps_score, contract_start_date, contract_end_date, magic_token)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)`,
+       currency, currency_symbol, retainer_hours, used_hours, nps_score, contract_start_date, contract_end_date, magic_token, deliverables)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,
       [
         id, data.name, data.ownerName || null, data.mobile || null, data.email || null,
         data.billingAddress || null, data.city || null, data.state || null, data.pincode || null,
@@ -188,7 +192,7 @@ async function createBrand(user, data) {
         fee, data.billingCycleDay || 1, today, data.notes || null,
         status, paymentStatus, lastPaymentDate, today, user.id,
         currency, currencySymbol, retainerHours, 0, npsScore,
-        contractStartDate, contractEndDate, magicToken
+        contractStartDate, contractEndDate, magicToken, deliverables
       ]
     );
 
@@ -214,7 +218,21 @@ async function createBrand(user, data) {
     }
 
     await client.query('COMMIT');
-    return getBrandWithDetails(user, id);
+    const brand = await getBrandWithDetails(user, id);
+    try {
+      const { createNotification } = require('./notifications.service');
+      await createNotification({
+        type: 'assignment',
+        title: 'New Client Onboarded',
+        message: `Client "${brand.name}" has been onboarded with retainer ${brand.currencySymbol || '₹'}${Number(brand.monthlyFee || 0).toLocaleString('en-IN')}/mo.`,
+        linkModule: 'clients',
+        brandId: brand.id,
+        recipientRoles: ['admin', 'manager', 'team'],
+      });
+    } catch (err) {
+      console.warn('Failed to dispatch client onboarding notification:', err.message);
+    }
+    return brand;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -285,6 +303,10 @@ async function updateBrand(id, data) {
   if (data.onboardingDate !== undefined) {
     fields.push(`onboarding_date = $${idx++}`);
     values.push(formatDateOnly(data.onboardingDate));
+  }
+  if (data.deliverables !== undefined) {
+    fields.push(`deliverables = $${idx++}`);
+    values.push(JSON.stringify(Array.isArray(data.deliverables) ? data.deliverables : []));
   }
 
   let rows = [];

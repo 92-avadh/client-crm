@@ -176,7 +176,7 @@ export const MeetingsCalendar: React.FC = () => {
             Meetings & Calendar
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>
-            Client touchpoints, team syncs and agency holiday calendar
+            Client meetings, team syncs and holiday calendar
           </p>
         </div>
         {(role === 'admin' || role === 'hr' || role === 'team') && (
@@ -186,7 +186,7 @@ export const MeetingsCalendar: React.FC = () => {
         )}
       </div>
 
-      {/* 30-Day Strategic Touchpoint Cadence Banner */}
+      {/* Monthly Client Check-In Reminder Banner */}
       <div style={{
         padding: '16px 20px', borderRadius: 12, background: 'var(--bg-card)',
         border: '1px solid var(--border)', display: 'flex', alignItems: 'center',
@@ -198,10 +198,10 @@ export const MeetingsCalendar: React.FC = () => {
           </div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
-              Strategic Review Cadence (Retention Health Engine)
+              Monthly Client Check-Ins
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              Clients with a strategic review in the last 30 days earn full health score velocity (+25 pts). Keep monthly review cadences green.
+              Clients you meet with at least once a month stay happy and never leave. Schedule a friendly check-in!
             </div>
           </div>
         </div>
@@ -325,7 +325,7 @@ export const MeetingsCalendar: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', borderBottom: '1px solid var(--border)' }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>Schedule Meeting</h2>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>Add a client sync or team touchpoint</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>Add a client meeting or team catch-up</p>
               </div>
               <button onClick={() => setShowAddModal(false)} style={{ background: 'var(--bg-raised)', border: 'none', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X style={{ width: 16, height: 16 }} />

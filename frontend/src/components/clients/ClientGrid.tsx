@@ -14,7 +14,7 @@ interface Props {
   onTogglePaymentStatus?: (brand: Brand) => void;
 }
 
-/** Shows how long a client has had no touchpoint. Distinct from account status. */
+/** Shows how long a client has had no check-in. Distinct from account status. */
 export const InactivityBadge: React.FC<{ lastActivityDate?: string | null }> = ({ lastActivityDate }) => {
   if (!lastActivityDate) return null;
   const time = new Date(lastActivityDate).getTime();
@@ -25,7 +25,7 @@ export const InactivityBadge: React.FC<{ lastActivityDate?: string | null }> = (
   const urgent = days >= 15;
   return (
     <span
-      title={`No touchpoint recorded for ${days} days`}
+      title={`No check-in recorded for ${days} days`}
       style={{
         fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
         background: urgent ? 'var(--danger-bg)' : 'var(--warn-bg)',
@@ -33,7 +33,7 @@ export const InactivityBadge: React.FC<{ lastActivityDate?: string | null }> = (
         border: `1px solid ${urgent ? 'var(--danger-border)' : 'var(--warn-border)'}`,
       }}
     >
-      {days}d no touchpoint
+      {days}d no check-in
     </span>
   );
 };

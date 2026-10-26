@@ -33,6 +33,7 @@ export const Sidebar: React.FC = () => {
     retentionAlerts,
     invoices,
     tasks,
+    notifications,
     conversations,
     sidebarCollapsed,
     toggleSidebar,
@@ -68,6 +69,10 @@ export const Sidebar: React.FC = () => {
     () => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0),
     [conversations]
   );
+  const unreadNotifCount = useMemo(
+    () => (notifications || []).filter(n => n && !n.isRead).length,
+    [notifications]
+  );
 
   interface NavItem {
     id: string;
@@ -81,8 +86,7 @@ export const Sidebar: React.FC = () => {
   const allItems: NavItem[] = [
     { id: 'dashboard',    label: 'Dashboard',          icon: LayoutDashboard, roles: ['admin','hr','team'] },
     { id: 'clients',      label: role === 'team' ? 'Assigned Clients' : 'Clients', icon: Building2, roles: ['admin','hr','team'] },
-    { id: 'projects',     label: 'Projects',            icon: FolderKanban,    roles: ['admin','hr','team'] },
-    { id: 'tasks',        label: 'Tasks',               icon: CheckSquare,     roles: ['admin','hr','team'],
+    { id: 'projects',     label: 'Projects & Tasks',   icon: FolderKanban,    roles: ['admin','hr','team'],
       badge: pendingTaskCount || undefined, badgeVariant: 'warn' },
     { id: 'invoices',     label: 'Invoices & Billing',  icon: Receipt,         roles: ['admin','hr'],
       badge: unpaidCount || undefined, badgeVariant: 'warn' },
@@ -92,8 +96,7 @@ export const Sidebar: React.FC = () => {
       badge: retentionAlerts.length > 0 ? retentionAlerts.length : undefined, badgeVariant: 'danger' },
     { id: 'team',         label: 'Team',                icon: Users,           roles: ['admin','hr'] },
     { id: 'inbox',        label: 'Inbox',               icon: Inbox,           roles: ['admin','hr','team','brand'],
-      badge: unreadChat || undefined, badgeVariant: 'neutral' },
-    { id: 'chat',         label: 'Chat',                icon: MessageSquare,   roles: ['admin','hr','team','brand'] },
+      badge: unreadNotifCount || undefined, badgeVariant: 'danger' },
     { id: 'meetings',     label: 'Meetings',            icon: CalendarDays,    roles: ['admin','hr','team','brand'] },
     { id: 'leads',        label: 'Leads Pipeline',      icon: Target,          roles: ['admin','hr'] },
     { id: 'settings',     label: 'Settings',            icon: Settings,        roles: ['admin','hr','team','brand'] },
@@ -103,14 +106,17 @@ export const Sidebar: React.FC = () => {
     // An explicit permission list always wins, even for admins. Without this,
     // every admin saw all 14 modules no matter what their role config said.
     if (Array.isArray(currentUser.permissions) && currentUser.permissions.length > 0) {
+      if (i.id === 'projects') {
+        return currentUser.permissions.includes('projects') || currentUser.permissions.includes('tasks');
+      }
       return currentUser.permissions.includes(i.id);
     }
     // No permission list at all (e.g. the built-in owner account) falls back to
     // the role-based defaults.
     return i.roles.includes(role) || (role !== 'brand' && i.roles.includes('team'));
   });
-  const coreItems = items.filter(i => !['chat','meetings','leads','settings'].includes(i.id));
-  const commItems = items.filter(i => ['chat','meetings','leads'].includes(i.id));
+  const coreItems = items.filter(i => !['meetings','leads','settings'].includes(i.id));
+  const commItems = items.filter(i => ['meetings','leads'].includes(i.id));
   const sysItems  = items.filter(i => i.id === 'settings');
 
   const BadgePill = ({ item, isSelected }: { item: NavItem; isSelected?: boolean }) => {
@@ -131,7 +137,9 @@ export const Sidebar: React.FC = () => {
 
   const NavButton = ({ item }: { item: NavItem }) => {
     const Icon = item.icon;
-    const isSelected = activeTab === item.id;
+    const isSelected = item.id === 'projects'
+      ? (activeTab === 'projects' || activeTab === 'tasks')
+      : activeTab === item.id;
     return (
       <button
         type="button"

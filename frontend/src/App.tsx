@@ -31,6 +31,7 @@ const importTeam = () => import('./components/team/TeamManager').then(m => ({ de
 const importInbox = () => import('./components/inbox/InboxManager').then(m => ({ default: m.InboxManager }));
 const importPortal = () => import('./components/portal/ClientPortal').then(m => ({ default: m.ClientPortal }));
 const importLanding = () => import('./components/landing/LandingPage').then(m => ({ default: m.LandingPage }));
+const importIntake = () => import('./components/intake/ClientIntakePage').then(m => ({ default: m.ClientIntakePage }));
 
 const Dashboard = lazy(importDashboard);
 const ClientsManager = lazy(importClients);
@@ -47,6 +48,7 @@ const TeamManager = lazy(importTeam);
 const InboxManager = lazy(importInbox);
 const ClientPortal = lazy(importPortal);
 const LandingPage = lazy(importLanding);
+const ClientIntakePage = lazy(importIntake);
 
 export const prefetchRoute = (tab: string) => {
   switch (tab) {
@@ -56,7 +58,6 @@ export const prefetchRoute = (tab: string) => {
     case 'finance': importFinance(); break;
     case 'expenses': importExpenses(); break;
     case 'retention': importRetention(); break;
-    case 'chat': importChat(); break;
     case 'projects':
     case 'tasks': importProjectsAndTasks(); break;
     case 'meetings': importMeetings(); break;
@@ -384,6 +385,22 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         }
       />
       <Route
+        path="/onboard"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <ClientIntakePage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/onboard/:agencySlug"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <ClientIntakePage />
+          </Suspense>
+        }
+      />
+      <Route
         path="/login"
         element={
           isLoggedIn ? (
@@ -422,7 +439,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path={ROUTES.finance} element={<PermissionGate module="finance"><FinanceManager /></PermissionGate>} />
         <Route path={ROUTES.expenses} element={<PermissionGate module="expenses"><ExpensesManager /></PermissionGate>} />
         <Route path={ROUTES.retention} element={<PermissionGate module="retention"><RetentionEngine /></PermissionGate>} />
-        <Route path={ROUTES.chat} element={<PermissionGate module="chat"><ChatManager /></PermissionGate>} />
+        <Route path={ROUTES.chat} element={<Navigate to={DEFAULT_ROUTE} replace />} />
         <Route path={ROUTES.meetings} element={<PermissionGate module="meetings"><MeetingsCalendar /></PermissionGate>} />
         <Route path={ROUTES.leads} element={<PermissionGate module="leads"><LeadsPipeline /></PermissionGate>} />
         <Route path={ROUTES.team} element={<PermissionGate module="team"><TeamManager /></PermissionGate>} />
