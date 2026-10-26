@@ -119,12 +119,12 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
   const hash = await bcrypt.hash(password, 10);
   const id = genId();
 
-  // First user becomes admin; subsequent self-registrations are blocked
-  const { rows: userCount } = await pool.query('SELECT COUNT(*) FROM users');
-  if (parseInt(userCount[0].count, 10) > 0) {
+  // Ensure email is not already registered
+  const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+  if (existingUser.rows.length > 0) {
     await pool.query('DELETE FROM otp_verifications WHERE email = $1', [email.toLowerCase()]);
-    const err = new Error('Self-registration is closed. Please contact your administrator to create an account.');
-    err.status = 403;
+    const err = new Error('This email is already registered. Please sign in.');
+    err.status = 409;
     throw err;
   }
 
