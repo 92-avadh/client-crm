@@ -181,9 +181,9 @@ async function login({ email, password }) {
       err.code = 'NO_ADMIN_USER';
       throw err;
     }
-    const err = new Error('No account found with this email. Please check your email or click "Create your account".');
-    err.status = 404;
-    err.code = 'USER_NOT_FOUND';
+    const err = new Error('Invalid email or password. check your credentials');
+    err.status = 401;
+    err.code = 'INVALID_CREDENTIALS';
     throw err;
   }
 
