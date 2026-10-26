@@ -7,11 +7,13 @@ const newBrandId = () => 'brand_' + crypto.randomBytes(6).toString('hex');
 const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'];
 const LEAD_SOURCES = ['Referral', 'Website', 'Social Media', 'Cold Call', 'Event', 'Other'];
 
+const { formatDateOnly } = require('../utils/dateUtils');
+
 function mapLead(l) {
   return {
     id: l.id, name: l.name, company: l.company, contact: l.contact,
     email: l.email, phone: l.phone, source: l.source, stage: l.stage,
-    value: parseFloat(l.value || 0), followUpDate: l.follow_up_date,
+    value: parseFloat(l.value || 0), followUpDate: formatDateOnly(l.follow_up_date),
     notes: l.notes, createdAt: l.created_at
   };
 }
@@ -53,7 +55,7 @@ async function createLead(user, data) {
     [
       genId(), data.name, data.company || null, data.contact || null,
       data.email || null, data.phone || null, data.source || null,
-      data.stage || 'New', data.value || 0, data.followUpDate || null,
+      data.stage || 'New', data.value || 0, formatDateOnly(data.followUpDate),
       data.notes || null, user ? user.id : null,
     ]
   );

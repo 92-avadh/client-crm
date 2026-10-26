@@ -163,6 +163,21 @@ const WORKSPACE_OWNER_ID = 'usr_admin';
 const isWorkspaceOwner = (user: User | null | undefined): boolean =>
   !!user && (user.role === 'admin' || (user as any).id === WORKSPACE_OWNER_ID);
 
+export const normalizeDateStr = (val: any): string => {
+  if (!val) return '';
+  const str = String(val).trim();
+  if (!str) return '';
+  if (str.includes('T')) return str.split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    try {
+      return d.toISOString().split('T')[0];
+    } catch {}
+  }
+  return str;
+};
+
 export const normalizeBrandsList = (payload: any): Brand[] | null => {
   if (!payload) return null;
   const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : null);
@@ -177,7 +192,21 @@ export const normalizeBrandsList = (payload: any): Brand[] | null => {
     serviceDetails: b?.serviceDetails || '',
     paymentStatus: b?.paymentStatus || 'Paid',
     status: b?.status || 'Active',
-    lastActivityDate: b?.lastActivityDate || '',
+    contractStartDate: normalizeDateStr(b?.contractStartDate),
+    contractEndDate: normalizeDateStr(b?.contractEndDate),
+    onboardingDate: normalizeDateStr(b?.onboardingDate),
+    lastActivityDate: normalizeDateStr(b?.lastActivityDate),
+    lastPaymentDate: normalizeDateStr(b?.lastPaymentDate),
+    notes: b?.notes || '',
+    gstNumber: b?.gstNumber || '',
+    pan: b?.pan || '',
+    billingAddress: b?.billingAddress || '',
+    city: b?.city || '',
+    state: b?.state || '',
+    pincode: b?.pincode || '',
+    currency: b?.currency || 'INR',
+    currencySymbol: b?.currencySymbol || '₹',
+    retainerHours: typeof b?.retainerHours === 'number' ? b.retainerHours : (parseFloat(b?.retainerHours || 40) || 40),
   }));
 };
 
@@ -1305,6 +1334,18 @@ export const AppProvider: React.FC<{
       if (created && (!created.assignedMemberIds || created.assignedMemberIds.length === 0)) {
         created.assignedMemberIds = assignedMemberIds;
       }
+      created = {
+        ...created,
+        contractStartDate: normalizeDateStr(created.contractStartDate || brandData.contractStartDate),
+        contractEndDate: normalizeDateStr(created.contractEndDate || brandData.contractEndDate),
+        onboardingDate: normalizeDateStr(created.onboardingDate || today),
+        notes: created.notes !== undefined ? created.notes : (brandData.notes || ''),
+        gstNumber: created.gstNumber || brandData.gstNumber || '',
+        pan: created.pan || brandData.pan || '',
+        currency: created.currency || brandData.currency || 'INR',
+        currencySymbol: created.currencySymbol || brandData.currencySymbol || '₹',
+        retainerHours: created.retainerHours ?? brandData.retainerHours ?? 40,
+      };
     } catch (_apiErr: any) {
       // Local fallback in bypass mode or API error
       created = {
@@ -1320,9 +1361,15 @@ export const AppProvider: React.FC<{
         gstNumber: brandData.gstNumber || '',
         pan: brandData.pan || '',
         serviceDetails: brandData.serviceDetails || '',
+        currency: brandData.currency || 'INR',
+        currencySymbol: brandData.currencySymbol || '₹',
+        retainerHours: Number(brandData.retainerHours) || 40,
         monthlyFee: fee,
         billingCycleDay: Number(brandData.billingCycleDay) || 1,
+        contractStartDate: normalizeDateStr(brandData.contractStartDate),
+        contractEndDate: normalizeDateStr(brandData.contractEndDate),
         onboardingDate: today,
+        notes: brandData.notes || '',
         status: selectedStatus,
         paymentStatus: payStatus,
         lastActivityDate: today,
@@ -1362,14 +1409,20 @@ export const AppProvider: React.FC<{
   };
 
   const updateBrand = async (id: string, updates: Partial<Brand>) => {
+    const normalizedUpdates = {
+      ...updates,
+      ...(updates.contractStartDate !== undefined ? { contractStartDate: normalizeDateStr(updates.contractStartDate) } : {}),
+      ...(updates.contractEndDate !== undefined ? { contractEndDate: normalizeDateStr(updates.contractEndDate) } : {}),
+    };
+
     try {
-      await api.brands.update(id, updates);
+      await api.brands.update(id, normalizedUpdates);
     } catch (_err: any) {
       // Local fallback
     }
 
     setBrands(prev => {
-      const next = prev.map(b => (b.id === id ? { ...b, ...updates } : b));
+      const next = prev.map(b => (b.id === id ? { ...b, ...normalizedUpdates } : b));
       try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
       return next;
     });

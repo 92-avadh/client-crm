@@ -382,6 +382,13 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
               />
             </FieldRow>
 
+            <FormField
+              label="Internal Notes"
+              value={formData.notes || ''}
+              placeholder="Internal notes about this client's requirements, contacts, or billing..."
+              onChange={(v) => onFormChange({ notes: v })}
+            />
+
             <FieldRow>
               <FormSelect
                 label="Account Status"

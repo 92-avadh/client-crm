@@ -21,6 +21,7 @@ const create = asyncHandler(async (req, res) => {
     .optionalString('description', { max: 5000, label: 'Description' })
     .optionalString('projectId', { max: 80, label: 'Project' })
     .optionalString('assigneeId', { max: 80, label: 'Assignee' })
+    .optionalString('dueDate', { max: 50, label: 'Due date' })
     .oneOf('priority', tasks.PRIORITIES, { label: 'Priority' })
     .oneOf('status', tasks.STATUSES, { label: 'Status' })
     .validate();
@@ -50,6 +51,9 @@ const update = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .optionalString('title', { max: 300, label: 'Title' })
     .optionalString('description', { max: 5000, label: 'Description' })
+    .optionalString('projectId', { max: 80, label: 'Project' })
+    .optionalString('assigneeId', { max: 80, label: 'Assignee' })
+    .optionalString('dueDate', { max: 50, label: 'Due date' })
     .oneOf('priority', tasks.PRIORITIES, { label: 'Priority' })
     .oneOf('status', tasks.STATUSES, { label: 'Status' })
     .validate();

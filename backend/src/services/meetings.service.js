@@ -3,10 +3,12 @@ const crypto = require('crypto');
 
 const genId = () => 'meet_' + crypto.randomBytes(6).toString('hex');
 
+const { formatDateOnly } = require('../utils/dateUtils');
+
 function mapMeeting(m, attendeeIds) {
   return {
     id: m.id, title: m.title, brandId: m.brand_id, leadId: m.lead_id,
-    date: m.date, time: m.time, durationMinutes: m.duration_minutes,
+    date: formatDateOnly(m.date), time: m.time, durationMinutes: m.duration_minutes,
     linkOrLocation: m.link_or_location, notes: m.notes, reminderSent: m.reminder_sent,
     createdAt: m.created_at, attendeeIds: attendeeIds || []
   };
@@ -103,7 +105,7 @@ async function createMeeting(user, data) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         id, data.title, data.brandId || null, data.leadId || null,
-        data.date || null, data.time || null, data.durationMinutes || 60,
+        formatDateOnly(data.date), data.time || null, data.durationMinutes || 60,
         data.linkOrLocation || null, data.notes || null, user ? user.id : null,
       ]
     );
@@ -132,7 +134,8 @@ async function updateMeeting(id, data) {
      WHERE id=$9 RETURNING *`,
     [
       data.title ?? null, data.brandId ?? null, data.leadId ?? null,
-      data.date ?? null, data.time ?? null, data.durationMinutes ?? null,
+      data.date !== undefined ? formatDateOnly(data.date) : null,
+      data.time ?? null, data.durationMinutes ?? null,
       data.linkOrLocation ?? null, data.notes ?? null, id,
     ]
   );

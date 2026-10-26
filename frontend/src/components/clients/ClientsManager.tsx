@@ -212,6 +212,7 @@ export const ClientsManager: React.FC = () => {
         billingCycleDay: Number(formData.billingCycleDay) || 1,
         status: selectedStatus,
         paymentStatus: selectedPaymentStatus,
+        notes: formData.notes?.trim() || '',
       } as any);
       setPage(0);
       setShowOnboardModal(false);
@@ -229,6 +230,8 @@ export const ClientsManager: React.FC = () => {
   const openEditModal = (brand: Brand) => {
     setEditingBrand(brand);
     const { countryCode, nationalNumber } = parsePhoneAndCountry(brand.mobile, (brand as any).countryCode || 'IN');
+    const toDateStr = (val?: string) => val ? String(val).split('T')[0] : '';
+
     setEditFormData({
       name: brand.name || '',
       ownerName: brand.ownerName || '',
@@ -245,8 +248,8 @@ export const ClientsManager: React.FC = () => {
       currency: brand.currency || 'INR',
       currencySymbol: brand.currencySymbol || '₹',
       retainerHours: brand.retainerHours != null ? String(brand.retainerHours) : '40',
-      contractStartDate: brand.contractStartDate || '',
-      contractEndDate: brand.contractEndDate || '',
+      contractStartDate: toDateStr(brand.contractStartDate),
+      contractEndDate: toDateStr(brand.contractEndDate),
       monthlyFee: brand.monthlyFee != null ? String(brand.monthlyFee) : '',
       billingCycleDay: brand.billingCycleDay != null ? String(brand.billingCycleDay) : '',
       status: brand.status || 'Active',
@@ -288,6 +291,9 @@ export const ClientsManager: React.FC = () => {
         billingCycleDay: Number(editFormData.billingCycleDay) || 1,
         status: editFormData.status as BrandStatus,
         paymentStatus: editFormData.paymentStatus,
+        notes: editFormData.notes || '',
+        gstNumber: editFormData.gstNumber || '',
+        pan: editFormData.pan || '',
       } as any);
       setShowEditModal(false);
       setEditingBrand(null);

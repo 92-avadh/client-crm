@@ -855,7 +855,7 @@
       "label": "list",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L38",
+      "source_location": "L39",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_list",
       "community": 32,
@@ -865,7 +865,7 @@
       "label": "get",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L47",
+      "source_location": "L48",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_get",
       "community": 32,
@@ -875,7 +875,7 @@
       "label": "create",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L56",
+      "source_location": "L57",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_create",
       "community": 32,
@@ -885,7 +885,7 @@
       "label": "update",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L64",
+      "source_location": "L65",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_update",
       "community": 32,
@@ -895,7 +895,7 @@
       "label": "assignMembers",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L74",
+      "source_location": "L75",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_assignmembers",
       "community": 32,
@@ -905,7 +905,7 @@
       "label": "logActivity",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L87",
+      "source_location": "L88",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_logactivity",
       "community": 32,
@@ -915,7 +915,7 @@
       "label": "churn",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L96",
+      "source_location": "L97",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_churn",
       "community": 32,
@@ -925,7 +925,7 @@
       "label": "snoozeRetention",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L105",
+      "source_location": "L106",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_snoozeretention",
       "community": 32,
@@ -935,7 +935,7 @@
       "label": "addDocument",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L114",
+      "source_location": "L115",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_adddocument",
       "community": 32,
@@ -945,7 +945,7 @@
       "label": "logHours",
       "file_type": "code",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L131",
+      "source_location": "L132",
       "_origin": "ast",
       "id": "backend_src_controllers_brands_controller_loghours",
       "community": 32,
@@ -1088,7 +1088,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller",
-      "community": 15,
+      "community": 107,
       "norm_label": "expenses.controller.js"
     },
     {
@@ -1098,7 +1098,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_asynchandler",
-      "community": 15,
+      "community": 107,
       "norm_label": "asynchandler"
     },
     {
@@ -1108,7 +1108,7 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_makevalidator",
-      "community": 15,
+      "community": 107,
       "norm_label": "{ makevalidator }"
     },
     {
@@ -1118,7 +1118,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_expenses",
-      "community": 15,
+      "community": 107,
       "norm_label": "expenses"
     },
     {
@@ -1128,7 +1128,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_requirefinancerole",
-      "community": 15,
+      "community": 107,
       "norm_label": "requirefinancerole()"
     },
     {
@@ -1138,7 +1138,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_list",
-      "community": 15,
+      "community": 107,
       "norm_label": "list"
     },
     {
@@ -1148,7 +1148,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_create",
-      "community": 15,
+      "community": 107,
       "norm_label": "create"
     },
     {
@@ -1158,7 +1158,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_update",
-      "community": 15,
+      "community": 107,
       "norm_label": "update"
     },
     {
@@ -1168,7 +1168,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_remove",
-      "community": 15,
+      "community": 107,
       "norm_label": "remove"
     },
     {
@@ -1178,7 +1178,7 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "backend_src_controllers_expenses_controller_bulkremove",
-      "community": 15,
+      "community": 107,
       "norm_label": "bulkremove"
     },
     {
@@ -1425,7 +1425,7 @@
       "label": "updateStage",
       "file_type": "code",
       "source_file": "backend/src/controllers/leads.controller.js",
-      "source_location": "L25",
+      "source_location": "L26",
       "_origin": "ast",
       "id": "backend_src_controllers_leads_controller_updatestage",
       "community": 20,
@@ -1435,7 +1435,7 @@
       "label": "convert",
       "file_type": "code",
       "source_file": "backend/src/controllers/leads.controller.js",
-      "source_location": "L35",
+      "source_location": "L36",
       "_origin": "ast",
       "id": "backend_src_controllers_leads_controller_convert",
       "community": 20,
@@ -1515,7 +1515,7 @@
       "label": "remove",
       "file_type": "code",
       "source_file": "backend/src/controllers/meetings.controller.js",
-      "source_location": "L44",
+      "source_location": "L48",
       "_origin": "ast",
       "id": "backend_src_controllers_meetings_controller_remove",
       "community": 21,
@@ -1835,7 +1835,7 @@
       "label": "update",
       "file_type": "code",
       "source_file": "backend/src/controllers/projects.controller.js",
-      "source_location": "L27",
+      "source_location": "L29",
       "_origin": "ast",
       "id": "backend_src_controllers_projects_controller_update",
       "community": 25,
@@ -2085,7 +2085,7 @@
       "label": "updateStatus",
       "file_type": "code",
       "source_file": "backend/src/controllers/tasks.controller.js",
-      "source_location": "L32",
+      "source_location": "L33",
       "_origin": "ast",
       "id": "backend_src_controllers_tasks_controller_updatestatus",
       "community": 108,
@@ -2095,7 +2095,7 @@
       "label": "update",
       "file_type": "code",
       "source_file": "backend/src/controllers/tasks.controller.js",
-      "source_location": "L46",
+      "source_location": "L47",
       "_origin": "ast",
       "id": "backend_src_controllers_tasks_controller_update",
       "community": 108,
@@ -2202,20 +2202,30 @@
       "norm_label": "index.js"
     },
     {
-      "label": "{ Pool }",
+      "label": "{ Pool, types }",
       "file_type": "code",
       "source_file": "backend/src/db/index.js",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "backend_src_db_index_pool_types",
+      "community": 53,
+      "norm_label": "{ pool, types }"
+    },
+    {
+      "label": "pool",
+      "file_type": "code",
+      "source_file": "backend/src/db/index.js",
+      "source_location": "L19",
+      "_origin": "ast",
       "id": "backend_src_db_index_pool",
       "community": 53,
-      "norm_label": "{ pool }"
+      "norm_label": "pool"
     },
     {
       "label": "connectWithRetry()",
       "file_type": "code",
       "source_file": "backend/src/db/index.js",
-      "source_location": "L25",
+      "source_location": "L28",
       "_origin": "ast",
       "id": "backend_src_db_index_connectwithretry",
       "community": 53,
@@ -2608,7 +2618,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_routes_expenses",
-      "community": 15,
+      "community": 107,
       "norm_label": "expenses.js"
     },
     {
@@ -2618,7 +2628,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_routes_expenses_express",
-      "community": 15,
+      "community": 107,
       "norm_label": "express"
     },
     {
@@ -2628,7 +2638,7 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "backend_src_routes_expenses_router",
-      "community": 15,
+      "community": 107,
       "norm_label": "router"
     },
     {
@@ -2638,7 +2648,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "backend_src_routes_expenses_controller",
-      "community": 15,
+      "community": 107,
       "norm_label": "controller"
     },
     {
@@ -3492,10 +3502,20 @@
       "norm_label": "document_types"
     },
     {
-      "label": "mapBrand()",
+      "label": "{ formatDateOnly }",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
       "source_location": "L12",
+      "_origin": "ast",
+      "id": "backend_src_services_brands_service_formatdateonly",
+      "community": 23,
+      "norm_label": "{ formatdateonly }"
+    },
+    {
+      "label": "mapBrand()",
+      "file_type": "code",
+      "source_file": "backend/src/services/brands.service.js",
+      "source_location": "L14",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_mapbrand",
       "community": 23,
@@ -3505,7 +3525,7 @@
       "label": "mapDoc()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L30",
+      "source_location": "L34",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_mapdoc",
       "community": 23,
@@ -3515,7 +3535,7 @@
       "label": "verifyBrandAccess()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L45",
+      "source_location": "L49",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_verifybrandaccess",
       "community": 23,
@@ -3525,7 +3545,7 @@
       "label": "getBrandWithDetails()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L62",
+      "source_location": "L66",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_getbrandwithdetails",
       "community": 23,
@@ -3535,7 +3555,7 @@
       "label": "listBrands()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L81",
+      "source_location": "L85",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_listbrands",
       "community": 23,
@@ -3545,7 +3565,7 @@
       "label": "createBrand()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L154",
+      "source_location": "L158",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_createbrand",
       "community": 23,
@@ -3555,7 +3575,7 @@
       "label": "updateBrand()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L220",
+      "source_location": "L226",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_updatebrand",
       "community": 23,
@@ -3565,7 +3585,7 @@
       "label": "assignMembers()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L293",
+      "source_location": "L345",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_assignmembers",
       "community": 23,
@@ -3575,7 +3595,7 @@
       "label": "logActivity()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L304",
+      "source_location": "L356",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_logactivity",
       "community": 23,
@@ -3585,7 +3605,7 @@
       "label": "markChurned()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L312",
+      "source_location": "L364",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_markchurned",
       "community": 23,
@@ -3595,7 +3615,7 @@
       "label": "snoozeRetention()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L320",
+      "source_location": "L372",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_snoozeretention",
       "community": 23,
@@ -3605,7 +3625,7 @@
       "label": "addDocument()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L329",
+      "source_location": "L381",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_adddocument",
       "community": 23,
@@ -3615,7 +3635,7 @@
       "label": "logHours()",
       "file_type": "code",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L341",
+      "source_location": "L393",
       "_origin": "ast",
       "id": "backend_src_services_brands_service_loghours",
       "community": 23,
@@ -3922,10 +3942,20 @@
       "norm_label": "payment_statuses"
     },
     {
-      "label": "mapExpense()",
+      "label": "{ formatDateOnly }",
       "file_type": "code",
       "source_file": "backend/src/services/expenses.service.js",
       "source_location": "L25",
+      "_origin": "ast",
+      "id": "backend_src_services_expenses_service_formatdateonly",
+      "community": 15,
+      "norm_label": "{ formatdateonly }"
+    },
+    {
+      "label": "mapExpense()",
+      "file_type": "code",
+      "source_file": "backend/src/services/expenses.service.js",
+      "source_location": "L27",
       "_origin": "ast",
       "id": "backend_src_services_expenses_service_mapexpense",
       "community": 15,
@@ -3935,7 +3965,7 @@
       "label": "writeAudit()",
       "file_type": "code",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L52",
+      "source_location": "L48",
       "_origin": "ast",
       "id": "backend_src_services_expenses_service_writeaudit",
       "community": 15,
@@ -3945,7 +3975,7 @@
       "label": "formatAmount()",
       "file_type": "code",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L64",
+      "source_location": "L60",
       "_origin": "ast",
       "id": "backend_src_services_expenses_service_formatamount",
       "community": 15,
@@ -3955,7 +3985,7 @@
       "label": "listExpenses()",
       "file_type": "code",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L66",
+      "source_location": "L62",
       "_origin": "ast",
       "id": "backend_src_services_expenses_service_listexpenses",
       "community": 15,
@@ -3965,7 +3995,7 @@
       "label": "createExpense()",
       "file_type": "code",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L133",
+      "source_location": "L129",
       "_origin": "ast",
       "id": "backend_src_services_expenses_service_createexpense",
       "community": 15,
@@ -3975,7 +4005,7 @@
       "label": "updateExpense()",
       "file_type": "code",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L177",
+      "source_location": "L173",
       "_origin": "ast",
       "id": "backend_src_services_expenses_service_updateexpense",
       "community": 15,
@@ -3985,7 +4015,7 @@
       "label": "deleteExpense()",
       "file_type": "code",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L219",
+      "source_location": "L215",
       "_origin": "ast",
       "id": "backend_src_services_expenses_service_deleteexpense",
       "community": 15,
@@ -3995,7 +4025,7 @@
       "label": "deleteExpenses()",
       "file_type": "code",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L232",
+      "source_location": "L228",
       "_origin": "ast",
       "id": "backend_src_services_expenses_service_deleteexpenses",
       "community": 15,
@@ -4212,10 +4242,20 @@
       "norm_label": "gst_types"
     },
     {
-      "label": "mapInvoice()",
+      "label": "{ formatDateOnly }",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
       "source_location": "L11",
+      "_origin": "ast",
+      "id": "backend_src_services_invoices_service_formatdateonly",
+      "community": 10,
+      "norm_label": "{ formatdateonly }"
+    },
+    {
+      "label": "mapInvoice()",
+      "file_type": "code",
+      "source_file": "backend/src/services/invoices.service.js",
+      "source_location": "L13",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_mapinvoice",
       "community": 10,
@@ -4225,7 +4265,7 @@
       "label": "getItems()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L28",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_getitems",
       "community": 10,
@@ -4235,7 +4275,7 @@
       "label": "getItemsForInvoices()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L39",
+      "source_location": "L41",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_getitemsforinvoices",
       "community": 10,
@@ -4245,7 +4285,7 @@
       "label": "listInvoices()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L53",
+      "source_location": "L55",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_listinvoices",
       "community": 10,
@@ -4255,7 +4295,7 @@
       "label": "getInvoice()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L105",
+      "source_location": "L107",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_getinvoice",
       "community": 10,
@@ -4265,7 +4305,7 @@
       "label": "nextInvoiceNumber()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L130",
+      "source_location": "L132",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_nextinvoicenumber",
       "community": 10,
@@ -4275,7 +4315,7 @@
       "label": "createInvoice()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L158",
+      "source_location": "L160",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_createinvoice",
       "community": 10,
@@ -4285,7 +4325,7 @@
       "label": "updateInvoiceStatus()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L207",
+      "source_location": "L210",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_updateinvoicestatus",
       "community": 10,
@@ -4295,7 +4335,7 @@
       "label": "auditId()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L215",
+      "source_location": "L218",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_auditid",
       "community": 10,
@@ -4305,7 +4345,7 @@
       "label": "writeAudit()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L217",
+      "source_location": "L220",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_writeaudit",
       "community": 10,
@@ -4315,7 +4355,7 @@
       "label": "deleteInvoice()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L229",
+      "source_location": "L232",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_deleteinvoice",
       "community": 10,
@@ -4325,7 +4365,7 @@
       "label": "deleteInvoices()",
       "file_type": "code",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L267",
+      "source_location": "L270",
       "_origin": "ast",
       "id": "backend_src_services_invoices_service_deleteinvoices",
       "community": 10,
@@ -4402,10 +4442,20 @@
       "norm_label": "lead_sources"
     },
     {
-      "label": "mapLead()",
+      "label": "{ formatDateOnly }",
       "file_type": "code",
       "source_file": "backend/src/services/leads.service.js",
       "source_location": "L10",
+      "_origin": "ast",
+      "id": "backend_src_services_leads_service_formatdateonly",
+      "community": 56,
+      "norm_label": "{ formatdateonly }"
+    },
+    {
+      "label": "mapLead()",
+      "file_type": "code",
+      "source_file": "backend/src/services/leads.service.js",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "backend_src_services_leads_service_maplead",
       "community": 56,
@@ -4415,7 +4465,7 @@
       "label": "listLeads()",
       "file_type": "code",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "backend_src_services_leads_service_listleads",
       "community": 56,
@@ -4425,7 +4475,7 @@
       "label": "createLead()",
       "file_type": "code",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L49",
+      "source_location": "L51",
       "_origin": "ast",
       "id": "backend_src_services_leads_service_createlead",
       "community": 56,
@@ -4435,7 +4485,7 @@
       "label": "updateLeadStage()",
       "file_type": "code",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L63",
+      "source_location": "L65",
       "_origin": "ast",
       "id": "backend_src_services_leads_service_updateleadstage",
       "community": 56,
@@ -4445,7 +4495,7 @@
       "label": "convertLeadToBrand()",
       "file_type": "code",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L75",
+      "source_location": "L77",
       "_origin": "ast",
       "id": "backend_src_services_leads_service_convertleadtobrand",
       "community": 56,
@@ -4492,10 +4542,20 @@
       "norm_label": "genid()"
     },
     {
-      "label": "mapMeeting()",
+      "label": "{ formatDateOnly }",
       "file_type": "code",
       "source_file": "backend/src/services/meetings.service.js",
       "source_location": "L6",
+      "_origin": "ast",
+      "id": "backend_src_services_meetings_service_formatdateonly",
+      "community": 109,
+      "norm_label": "{ formatdateonly }"
+    },
+    {
+      "label": "mapMeeting()",
+      "file_type": "code",
+      "source_file": "backend/src/services/meetings.service.js",
+      "source_location": "L8",
       "_origin": "ast",
       "id": "backend_src_services_meetings_service_mapmeeting",
       "community": 109,
@@ -4505,7 +4565,7 @@
       "label": "attachAttendees()",
       "file_type": "code",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L15",
+      "source_location": "L17",
       "_origin": "ast",
       "id": "backend_src_services_meetings_service_attachattendees",
       "community": 109,
@@ -4515,7 +4575,7 @@
       "label": "getAttendeesForMeetings()",
       "file_type": "code",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L26",
+      "source_location": "L28",
       "_origin": "ast",
       "id": "backend_src_services_meetings_service_getattendeesformeetings",
       "community": 109,
@@ -4525,7 +4585,7 @@
       "label": "getMeeting()",
       "file_type": "code",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L40",
+      "source_location": "L42",
       "_origin": "ast",
       "id": "backend_src_services_meetings_service_getmeeting",
       "community": 109,
@@ -4535,7 +4595,7 @@
       "label": "listMeetings()",
       "file_type": "code",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L46",
+      "source_location": "L48",
       "_origin": "ast",
       "id": "backend_src_services_meetings_service_listmeetings",
       "community": 109,
@@ -4545,7 +4605,7 @@
       "label": "createMeeting()",
       "file_type": "code",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L95",
+      "source_location": "L97",
       "_origin": "ast",
       "id": "backend_src_services_meetings_service_createmeeting",
       "community": 109,
@@ -4555,7 +4615,7 @@
       "label": "updateMeeting()",
       "file_type": "code",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L127",
+      "source_location": "L129",
       "_origin": "ast",
       "id": "backend_src_services_meetings_service_updatemeeting",
       "community": 109,
@@ -4565,7 +4625,7 @@
       "label": "deleteMeeting()",
       "file_type": "code",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L153",
+      "source_location": "L156",
       "_origin": "ast",
       "id": "backend_src_services_meetings_service_deletemeeting",
       "community": 109,
@@ -4638,7 +4698,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_services_payments_service",
-      "community": 13,
+      "community": 79,
       "norm_label": "payments.service.js"
     },
     {
@@ -4648,7 +4708,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_pool",
-      "community": 13,
+      "community": 79,
       "norm_label": "pool"
     },
     {
@@ -4658,7 +4718,7 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_crypto",
-      "community": 13,
+      "community": 79,
       "norm_label": "crypto"
     },
     {
@@ -4668,7 +4728,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_genid",
-      "community": 13,
+      "community": 79,
       "norm_label": "genid()"
     },
     {
@@ -4678,7 +4738,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_notifid",
-      "community": 13,
+      "community": 79,
       "norm_label": "notifid()"
     },
     {
@@ -4688,7 +4748,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_auditid",
-      "community": 13,
+      "community": 79,
       "norm_label": "auditid()"
     },
     {
@@ -4698,7 +4758,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_payment_modes",
-      "community": 13,
+      "community": 79,
       "norm_label": "payment_modes"
     },
     {
@@ -4708,7 +4768,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_payment_statuses",
-      "community": 13,
+      "community": 79,
       "norm_label": "payment_statuses"
     },
     {
@@ -4718,7 +4778,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_mappayment",
-      "community": 13,
+      "community": 79,
       "norm_label": "mappayment()"
     },
     {
@@ -4728,7 +4788,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_inr",
-      "community": 13,
+      "community": 79,
       "norm_label": "inr()"
     },
     {
@@ -4738,7 +4798,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_recordpayment",
-      "community": 13,
+      "community": 79,
       "norm_label": "recordpayment()"
     },
     {
@@ -4748,7 +4808,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_listpayments",
-      "community": 13,
+      "community": 79,
       "norm_label": "listpayments()"
     },
     {
@@ -4758,7 +4818,7 @@
       "source_location": "L125",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_updatepayment",
-      "community": 13,
+      "community": 79,
       "norm_label": "updatepayment()"
     },
     {
@@ -4768,7 +4828,7 @@
       "source_location": "L167",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_initiaterazorpay",
-      "community": 13,
+      "community": 79,
       "norm_label": "initiaterazorpay()"
     },
     {
@@ -4778,7 +4838,7 @@
       "source_location": "L187",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_deletepayment",
-      "community": 13,
+      "community": 79,
       "norm_label": "deletepayment()"
     },
     {
@@ -4788,7 +4848,7 @@
       "source_location": "L241",
       "_origin": "ast",
       "id": "backend_src_services_payments_service_deletepayments",
-      "community": 13,
+      "community": 79,
       "norm_label": "deletepayments()"
     },
     {
@@ -4832,10 +4892,20 @@
       "norm_label": "{ sendwebhookevent }"
     },
     {
+      "label": "{ formatDateOnly }",
+      "file_type": "code",
+      "source_file": "backend/src/services/portal.service.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "backend_src_services_portal_service_formatdateonly",
+      "community": 34,
+      "norm_label": "{ formatdateonly }"
+    },
+    {
       "label": "notifId()",
       "file_type": "code",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L5",
+      "source_location": "L6",
       "_origin": "ast",
       "id": "backend_src_services_portal_service_notifid",
       "community": 34,
@@ -4845,7 +4915,7 @@
       "label": "auditId()",
       "file_type": "code",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L6",
+      "source_location": "L7",
       "_origin": "ast",
       "id": "backend_src_services_portal_service_auditid",
       "community": 34,
@@ -4855,7 +4925,7 @@
       "label": "getPortalDataByToken()",
       "file_type": "code",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L8",
+      "source_location": "L9",
       "_origin": "ast",
       "id": "backend_src_services_portal_service_getportaldatabytoken",
       "community": 34,
@@ -4865,7 +4935,7 @@
       "label": "submitPortalFeedback()",
       "file_type": "code",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L117",
+      "source_location": "L118",
       "_origin": "ast",
       "id": "backend_src_services_portal_service_submitportalfeedback",
       "community": 34,
@@ -4875,7 +4945,7 @@
       "label": "getPortalInvoiceDetails()",
       "file_type": "code",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L173",
+      "source_location": "L174",
       "_origin": "ast",
       "id": "backend_src_services_portal_service_getportalinvoicedetails",
       "community": 34,
@@ -4932,10 +5002,20 @@
       "norm_label": "project_statuses"
     },
     {
-      "label": "mapProject()",
+      "label": "{ formatDateOnly }",
       "file_type": "code",
       "source_file": "backend/src/services/projects.service.js",
       "source_location": "L8",
+      "_origin": "ast",
+      "id": "backend_src_services_projects_service_formatdateonly",
+      "community": 111,
+      "norm_label": "{ formatdateonly }"
+    },
+    {
+      "label": "mapProject()",
+      "file_type": "code",
+      "source_file": "backend/src/services/projects.service.js",
+      "source_location": "L10",
       "_origin": "ast",
       "id": "backend_src_services_projects_service_mapproject",
       "community": 111,
@@ -4945,7 +5025,7 @@
       "label": "getProject()",
       "file_type": "code",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L17",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "backend_src_services_projects_service_getproject",
       "community": 111,
@@ -4955,7 +5035,7 @@
       "label": "listProjects()",
       "file_type": "code",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L26",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "backend_src_services_projects_service_listprojects",
       "community": 111,
@@ -4965,7 +5045,7 @@
       "label": "createProject()",
       "file_type": "code",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L76",
+      "source_location": "L80",
       "_origin": "ast",
       "id": "backend_src_services_projects_service_createproject",
       "community": 111,
@@ -4975,7 +5055,7 @@
       "label": "updateProject()",
       "file_type": "code",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L109",
+      "source_location": "L113",
       "_origin": "ast",
       "id": "backend_src_services_projects_service_updateproject",
       "community": 111,
@@ -5108,7 +5188,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_services_settings_service",
-      "community": 79,
+      "community": 41,
       "norm_label": "settings.service.js"
     },
     {
@@ -5118,7 +5198,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_services_settings_service_pool",
-      "community": 79,
+      "community": 41,
       "norm_label": "pool"
     },
     {
@@ -5128,7 +5208,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "backend_src_services_settings_service_mapsettings",
-      "community": 79,
+      "community": 41,
       "norm_label": "mapsettings()"
     },
     {
@@ -5138,7 +5218,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "backend_src_services_settings_service_getsettings",
-      "community": 79,
+      "community": 41,
       "norm_label": "getsettings()"
     },
     {
@@ -5148,7 +5228,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "backend_src_services_settings_service_updatesettings",
-      "community": 79,
+      "community": 41,
       "norm_label": "updatesettings()"
     },
     {
@@ -5212,10 +5292,20 @@
       "norm_label": "statuses"
     },
     {
+      "label": "{ formatDateOnly }",
+      "file_type": "code",
+      "source_file": "backend/src/services/tasks.service.js",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "backend_src_services_tasks_service_formatdateonly",
+      "community": 19,
+      "norm_label": "{ formatdateonly }"
+    },
+    {
       "label": "mapTask()",
       "file_type": "code",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L10",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "backend_src_services_tasks_service_maptask",
       "community": 19,
@@ -5225,7 +5315,7 @@
       "label": "scopeForUser()",
       "file_type": "code",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L30",
+      "source_location": "L32",
       "_origin": "ast",
       "id": "backend_src_services_tasks_service_scopeforuser",
       "community": 19,
@@ -5235,7 +5325,7 @@
       "label": "listTasks()",
       "file_type": "code",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L45",
+      "source_location": "L47",
       "_origin": "ast",
       "id": "backend_src_services_tasks_service_listtasks",
       "community": 19,
@@ -5245,7 +5335,7 @@
       "label": "createTask()",
       "file_type": "code",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L70",
+      "source_location": "L72",
       "_origin": "ast",
       "id": "backend_src_services_tasks_service_createtask",
       "community": 19,
@@ -5255,7 +5345,7 @@
       "label": "updateTaskStatus()",
       "file_type": "code",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L91",
+      "source_location": "L93",
       "_origin": "ast",
       "id": "backend_src_services_tasks_service_updatetaskstatus",
       "community": 19,
@@ -5265,7 +5355,7 @@
       "label": "updateTask()",
       "file_type": "code",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L99",
+      "source_location": "L101",
       "_origin": "ast",
       "id": "backend_src_services_tasks_service_updatetask",
       "community": 19,
@@ -5275,7 +5365,7 @@
       "label": "verifyTaskAccess()",
       "file_type": "code",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L119",
+      "source_location": "L121",
       "_origin": "ast",
       "id": "backend_src_services_tasks_service_verifytaskaccess",
       "community": 19,
@@ -5418,7 +5508,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_services_webhook_service",
-      "community": 34,
+      "community": 53,
       "norm_label": "webhook.service.js"
     },
     {
@@ -5428,7 +5518,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_src_services_webhook_service_pool",
-      "community": 34,
+      "community": 53,
       "norm_label": "pool"
     },
     {
@@ -5438,7 +5528,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "backend_src_services_webhook_service_sendwebhookevent",
-      "community": 34,
+      "community": 50,
       "norm_label": "sendwebhookevent()"
     },
     {
@@ -5448,7 +5538,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "backend_src_services_webhook_service_testwebhookurl",
-      "community": 34,
+      "community": 53,
       "norm_label": "testwebhookurl()"
     },
     {
@@ -5550,6 +5640,26 @@
       "id": "backend_src_utils_asynchandler_asynchandler",
       "community": 49,
       "norm_label": "asynchandler()"
+    },
+    {
+      "label": "dateUtils.js",
+      "file_type": "code",
+      "source_file": "backend/src/utils/dateUtils.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "backend_src_utils_dateutils",
+      "community": 109,
+      "norm_label": "dateutils.js"
+    },
+    {
+      "label": "formatDateOnly()",
+      "file_type": "code",
+      "source_file": "backend/src/utils/dateUtils.js",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "backend_src_utils_dateutils_formatdateonly",
+      "community": 109,
+      "norm_label": "formatdateonly()"
     },
     {
       "label": "mailer.js",
@@ -6128,7 +6238,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "frontend_src_app_importdashboard",
-      "community": 2,
+      "community": 26,
       "norm_label": "importdashboard()"
     },
     {
@@ -6178,7 +6288,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "frontend_src_app_importretention",
-      "community": 26,
+      "community": 14,
       "norm_label": "importretention()"
     },
     {
@@ -6188,7 +6298,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "frontend_src_app_importchat",
-      "community": 46,
+      "community": 14,
       "norm_label": "importchat()"
     },
     {
@@ -6208,7 +6318,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "frontend_src_app_importmeetings",
-      "community": 12,
+      "community": 124,
       "norm_label": "importmeetings()"
     },
     {
@@ -6218,7 +6328,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "frontend_src_app_importleads",
-      "community": 26,
+      "community": 115,
       "norm_label": "importleads()"
     },
     {
@@ -6228,7 +6338,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "frontend_src_app_importsettings",
-      "community": 14,
+      "community": 1,
       "norm_label": "importsettings()"
     },
     {
@@ -6258,7 +6368,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "frontend_src_app_importportal",
-      "community": 113,
+      "community": 38,
       "norm_label": "importportal()"
     },
     {
@@ -6478,7 +6588,7 @@
       "source_location": "L161",
       "_origin": "ast",
       "id": "frontend_src_app_mainlayout",
-      "community": 14,
+      "community": 36,
       "norm_label": "mainlayout()"
     },
     {
@@ -6498,7 +6608,7 @@
       "source_location": "L331",
       "_origin": "ast",
       "id": "frontend_src_app_permissiongate",
-      "community": 107,
+      "community": 36,
       "norm_label": "permissiongate()"
     },
     {
@@ -6728,7 +6838,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdown-menu.tsx"
     },
     {
@@ -6738,7 +6848,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_dropdownmenu",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdownmenu()"
     },
     {
@@ -6748,7 +6858,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_dropdownmenucontent",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdownmenucontent"
     },
     {
@@ -6758,7 +6868,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_dropdownmenusubcontent",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdownmenusubcontent"
     },
     {
@@ -6768,7 +6878,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_dropdownmenuitem",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdownmenuitem"
     },
     {
@@ -6778,7 +6888,7 @@
       "source_location": "L121",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_dropdownmenucheckboxitem",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdownmenucheckboxitem"
     },
     {
@@ -6788,7 +6898,7 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_dropdownmenusubtrigger",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdownmenusubtrigger"
     },
     {
@@ -6798,7 +6908,7 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_dropdownmenulabel",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdownmenulabel"
     },
     {
@@ -6808,7 +6918,7 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_dropdownmenuseparator",
-      "community": 4,
+      "community": 113,
       "norm_label": "dropdownmenuseparator"
     },
     {
@@ -6828,7 +6938,7 @@
       "source_location": "L213",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_radixdropdownmenudemoprops",
-      "community": 4,
+      "community": 113,
       "norm_label": "radixdropdownmenudemoprops"
     },
     {
@@ -6838,7 +6948,7 @@
       "source_location": "L220",
       "_origin": "ast",
       "id": "frontend_src_components_animate_ui_components_radix_dropdown_menu_radixdropdownmenudemo",
-      "community": 4,
+      "community": 113,
       "norm_label": "radixdropdownmenudemo()"
     },
     {
@@ -6848,7 +6958,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_auth_loginscreen",
-      "community": 115,
+      "community": 38,
       "norm_label": "loginscreen.tsx"
     },
     {
@@ -6858,7 +6968,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "frontend_src_components_auth_loginscreen_loginscreenprops",
-      "community": 115,
+      "community": 38,
       "norm_label": "loginscreenprops"
     },
     {
@@ -6868,7 +6978,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "frontend_src_components_auth_loginscreen_regstep",
-      "community": 115,
+      "community": 38,
       "norm_label": "regstep"
     },
     {
@@ -6878,7 +6988,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "frontend_src_components_auth_loginscreen_forgotstep",
-      "community": 115,
+      "community": 38,
       "norm_label": "forgotstep"
     },
     {
@@ -6888,7 +6998,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "frontend_src_components_auth_loginscreen_features",
-      "community": 115,
+      "community": 38,
       "norm_label": "features"
     },
     {
@@ -6898,7 +7008,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "frontend_src_components_auth_loginscreen_loginscreen",
-      "community": 115,
+      "community": 38,
       "norm_label": "loginscreen()"
     },
     {
@@ -7128,7 +7238,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_calendar_meetingscalendar",
-      "community": 12,
+      "community": 124,
       "norm_label": "meetingscalendar.tsx"
     },
     {
@@ -7138,7 +7248,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "frontend_src_components_calendar_meetingscalendar_meetingscalendar",
-      "community": 12,
+      "community": 124,
       "norm_label": "meetingscalendar()"
     },
     {
@@ -7248,7 +7358,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientformmodals_clientformdata",
-      "community": 42,
+      "community": 112,
       "norm_label": "clientformdata"
     },
     {
@@ -7358,14 +7468,14 @@
       "source_location": "L124",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientformmodals_onboardclientmodal",
-      "community": 36,
+      "community": 125,
       "norm_label": "onboardclientmodal()"
     },
     {
       "label": "EditProps",
       "file_type": "code",
       "source_file": "frontend/src/components/clients/ClientFormModals.tsx",
-      "source_location": "L423",
+      "source_location": "L430",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientformmodals_editprops",
       "community": 7,
@@ -7375,10 +7485,10 @@
       "label": "EditClientModal()",
       "file_type": "code",
       "source_file": "frontend/src/components/clients/ClientFormModals.tsx",
-      "source_location": "L427",
+      "source_location": "L434",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientformmodals_editclientmodal",
-      "community": 36,
+      "community": 125,
       "norm_label": "editclientmodal()"
     },
     {
@@ -7448,7 +7558,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientprofiledrawer",
-      "community": 42,
+      "community": 123,
       "norm_label": "clientprofiledrawer.tsx"
     },
     {
@@ -7458,7 +7568,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientprofiledrawer_profiletab",
-      "community": 42,
+      "community": 123,
       "norm_label": "profiletab"
     },
     {
@@ -7468,7 +7578,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientprofiledrawer_props",
-      "community": 42,
+      "community": 123,
       "norm_label": "props"
     },
     {
@@ -7478,7 +7588,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientprofiledrawer_cardstyle",
-      "community": 42,
+      "community": 123,
       "norm_label": "cardstyle"
     },
     {
@@ -7488,7 +7598,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientprofiledrawer_capstyle",
-      "community": 42,
+      "community": 123,
       "norm_label": "capstyle"
     },
     {
@@ -7498,7 +7608,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientprofiledrawer_clientprofiledrawer",
-      "community": 42,
+      "community": 123,
       "norm_label": "clientprofiledrawer()"
     },
     {
@@ -7508,7 +7618,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientsmanager",
-      "community": 42,
+      "community": 112,
       "norm_label": "clientsmanager.tsx"
     },
     {
@@ -7518,7 +7628,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientsmanager_todayiso",
-      "community": 42,
+      "community": 112,
       "norm_label": "todayiso()"
     },
     {
@@ -7528,7 +7638,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientsmanager_emptyonboard",
-      "community": 42,
+      "community": 112,
       "norm_label": "emptyonboard()"
     },
     {
@@ -7538,7 +7648,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientsmanager_country_phone_lengths",
-      "community": 42,
+      "community": 112,
       "norm_label": "country_phone_lengths"
     },
     {
@@ -7548,7 +7658,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientsmanager_validateclientform",
-      "community": 42,
+      "community": 112,
       "norm_label": "validateclientform()"
     },
     {
@@ -7558,7 +7668,7 @@
       "source_location": "L104",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientsmanager_clientsmanager",
-      "community": 42,
+      "community": 112,
       "norm_label": "clientsmanager()"
     },
     {
@@ -7592,10 +7702,20 @@
       "norm_label": "fieldprops"
     },
     {
+      "label": "toDateInputValue()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/clients/clientFormUi.tsx",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "frontend_src_components_clients_clientformui_todateinputvalue",
+      "community": 7,
+      "norm_label": "todateinputvalue()"
+    },
+    {
       "label": "FormField()",
       "file_type": "code",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L21",
+      "source_location": "L36",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientformui_formfield",
       "community": 7,
@@ -7605,7 +7725,7 @@
       "label": "FieldRow()",
       "file_type": "code",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L65",
+      "source_location": "L84",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientformui_fieldrow",
       "community": 7,
@@ -7615,7 +7735,7 @@
       "label": "ErrorBanner()",
       "file_type": "code",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L72",
+      "source_location": "L91",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientformui_errorbanner",
       "community": 7,
@@ -7625,7 +7745,7 @@
       "label": "FormSelect()",
       "file_type": "code",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L85",
+      "source_location": "L104",
       "_origin": "ast",
       "id": "frontend_src_components_clients_clientformui_formselect",
       "community": 7,
@@ -7638,7 +7758,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_common_premiumlogoloader",
-      "community": 113,
+      "community": 38,
       "norm_label": "premiumlogoloader.tsx"
     },
     {
@@ -7648,7 +7768,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_components_common_premiumlogoloader_premiumlogoloaderprops",
-      "community": 113,
+      "community": 38,
       "norm_label": "premiumlogoloaderprops"
     },
     {
@@ -7658,7 +7778,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "frontend_src_components_common_premiumlogoloader_premiumlogoloader",
-      "community": 113,
+      "community": 38,
       "norm_label": "premiumlogoloader()"
     },
     {
@@ -7668,7 +7788,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_dashboard_dashboard",
-      "community": 2,
+      "community": 26,
       "norm_label": "dashboard.tsx"
     },
     {
@@ -7678,7 +7798,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "frontend_src_components_dashboard_dashboard_brand",
-      "community": 2,
+      "community": 26,
       "norm_label": "brand"
     },
     {
@@ -7688,7 +7808,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "frontend_src_components_dashboard_dashboard_widgettogglepanel",
-      "community": 2,
+      "community": 26,
       "norm_label": "widgettogglepanel()"
     },
     {
@@ -7698,7 +7818,7 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "frontend_src_components_dashboard_dashboard_formatdatedisplay",
-      "community": 2,
+      "community": 26,
       "norm_label": "formatdatedisplay()"
     },
     {
@@ -7708,7 +7828,7 @@
       "source_location": "L176",
       "_origin": "ast",
       "id": "frontend_src_components_dashboard_dashboard_dashboard",
-      "community": 2,
+      "community": 26,
       "norm_label": "dashboard()"
     },
     {
@@ -7718,7 +7838,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_expenses_expenseformmodal",
-      "community": 43,
+      "community": 11,
       "norm_label": "expenseformmodal.tsx"
     },
     {
@@ -7728,7 +7848,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "frontend_src_components_expenses_expenseformmodal_expenseformdata",
-      "community": 43,
+      "community": 11,
       "norm_label": "expenseformdata"
     },
     {
@@ -7738,7 +7858,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "frontend_src_components_expenses_expenseformmodal_props",
-      "community": 42,
+      "community": 11,
       "norm_label": "props"
     },
     {
@@ -7758,7 +7878,7 @@
       "source_location": "L285",
       "_origin": "ast",
       "id": "frontend_src_components_expenses_expenseformmodal_deleteprops",
-      "community": 43,
+      "community": 11,
       "norm_label": "deleteprops"
     },
     {
@@ -7768,7 +7888,7 @@
       "source_location": "L293",
       "_origin": "ast",
       "id": "frontend_src_components_expenses_expenseformmodal_deleteexpensemodal",
-      "community": 43,
+      "community": 11,
       "norm_label": "deleteexpensemodal()"
     },
     {
@@ -8258,7 +8378,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_components_invoices_invoicepreviewmodal_props",
-      "community": 2,
+      "community": 1,
       "norm_label": "props"
     },
     {
@@ -8368,7 +8488,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "frontend_src_components_invoices_paymentmodals_onlineprops",
-      "community": 2,
+      "community": 1,
       "norm_label": "onlineprops"
     },
     {
@@ -8408,7 +8528,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "frontend_src_components_invoices_paymentmodals_offlinepaymentmodal",
-      "community": 2,
+      "community": 36,
       "norm_label": "offlinepaymentmodal()"
     },
     {
@@ -8428,7 +8548,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "frontend_src_components_invoices_recurringpanel_props",
-      "community": 42,
+      "community": 2,
       "norm_label": "props"
     },
     {
@@ -9308,7 +9428,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_layout_starparticles",
-      "community": 14,
+      "community": 36,
       "norm_label": "starparticles.tsx"
     },
     {
@@ -9318,7 +9438,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_components_layout_starparticles_starparticles",
-      "community": 14,
+      "community": 36,
       "norm_label": "starparticles()"
     },
     {
@@ -9348,7 +9468,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_leads_leadspipeline",
-      "community": 26,
+      "community": 115,
       "norm_label": "leadspipeline.tsx"
     },
     {
@@ -9358,7 +9478,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "frontend_src_components_leads_leadspipeline_inputfieldstyle",
-      "community": 26,
+      "community": 115,
       "norm_label": "inputfieldstyle"
     },
     {
@@ -9368,7 +9488,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "frontend_src_components_leads_leadspipeline_btnprimary",
-      "community": 26,
+      "community": 115,
       "norm_label": "btnprimary"
     },
     {
@@ -9378,7 +9498,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "frontend_src_components_leads_leadspipeline_btnsecondary",
-      "community": 26,
+      "community": 115,
       "norm_label": "btnsecondary"
     },
     {
@@ -9388,7 +9508,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "frontend_src_components_leads_leadspipeline_modaloverlay",
-      "community": 26,
+      "community": 115,
       "norm_label": "modaloverlay"
     },
     {
@@ -9398,7 +9518,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "frontend_src_components_leads_leadspipeline_leadspipeline",
-      "community": 26,
+      "community": 115,
       "norm_label": "leadspipeline()"
     },
     {
@@ -9408,7 +9528,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_portal_clientportal",
-      "community": 113,
+      "community": 38,
       "norm_label": "clientportal.tsx"
     },
     {
@@ -9418,7 +9538,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "frontend_src_components_portal_clientportal_clientportal",
-      "community": 113,
+      "community": 38,
       "norm_label": "clientportal()"
     },
     {
@@ -9588,7 +9708,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "frontend_src_components_retention_retentionengine_retentionengine",
-      "community": 26,
+      "community": 36,
       "norm_label": "retentionengine()"
     },
     {
@@ -9798,7 +9918,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "frontend_src_components_settings_profiletab_profileprops",
-      "community": 1,
+      "community": 0,
       "norm_label": "profileprops"
     },
     {
@@ -10008,7 +10128,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "frontend_src_components_team_addmembermodal_addmembermodal",
-      "community": 107,
+      "community": 36,
       "norm_label": "addmembermodal()"
     },
     {
@@ -10068,7 +10188,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "frontend_src_components_team_editmembermodal_editmembermodal",
-      "community": 107,
+      "community": 36,
       "norm_label": "editmembermodal()"
     },
     {
@@ -10078,7 +10198,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_team_memberdrawer",
-      "community": 91,
+      "community": 0,
       "norm_label": "memberdrawer.tsx"
     },
     {
@@ -10088,7 +10208,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "frontend_src_components_team_memberdrawer_props",
-      "community": 91,
+      "community": 0,
       "norm_label": "props"
     },
     {
@@ -10098,7 +10218,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "frontend_src_components_team_memberdrawer_brandcolor",
-      "community": 91,
+      "community": 0,
       "norm_label": "brandcolor()"
     },
     {
@@ -10108,7 +10228,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "frontend_src_components_team_memberdrawer_memberdrawer",
-      "community": 91,
+      "community": 0,
       "norm_label": "memberdrawer()"
     },
     {
@@ -10118,7 +10238,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsselector",
-      "community": 112,
+      "community": 0,
       "norm_label": "permissionsselector.tsx"
     },
     {
@@ -10128,7 +10248,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsselector_icon_map",
-      "community": 112,
+      "community": 0,
       "norm_label": "icon_map"
     },
     {
@@ -10138,7 +10258,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsselector_props",
-      "community": 112,
+      "community": 0,
       "norm_label": "props"
     },
     {
@@ -10198,7 +10318,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_team_teammanager",
-      "community": 107,
+      "community": 0,
       "norm_label": "teammanager.tsx"
     },
     {
@@ -10208,7 +10328,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "frontend_src_components_team_teammanager_emptyform",
-      "community": 107,
+      "community": 0,
       "norm_label": "emptyform()"
     },
     {
@@ -10218,7 +10338,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "frontend_src_components_team_teammanager_emptyeditform",
-      "community": 107,
+      "community": 0,
       "norm_label": "emptyeditform()"
     },
     {
@@ -10228,7 +10348,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "frontend_src_components_team_teammanager_teammanager",
-      "community": 107,
+      "community": 0,
       "norm_label": "teammanager()"
     },
     {
@@ -10238,7 +10358,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamtable",
-      "community": 91,
+      "community": 0,
       "norm_label": "teamtable.tsx"
     },
     {
@@ -10248,7 +10368,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamtable_props",
-      "community": 91,
+      "community": 0,
       "norm_label": "props"
     },
     {
@@ -10258,7 +10378,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamtable_teamtable",
-      "community": 91,
+      "community": 0,
       "norm_label": "teamtable()"
     },
     {
@@ -10268,7 +10388,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_team_imageutils",
-      "community": 107,
+      "community": 0,
       "norm_label": "imageutils.ts"
     },
     {
@@ -10278,7 +10398,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_components_team_imageutils_accepted_types",
-      "community": 107,
+      "community": 0,
       "norm_label": "accepted_types"
     },
     {
@@ -10288,7 +10408,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "frontend_src_components_team_imageutils_accepted_extensions",
-      "community": 107,
+      "community": 0,
       "norm_label": "accepted_extensions"
     },
     {
@@ -10298,7 +10418,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "frontend_src_components_team_imageutils_processresult",
-      "community": 107,
+      "community": 0,
       "norm_label": "processresult"
     },
     {
@@ -10318,7 +10438,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "frontend_src_components_team_imageutils_generatepassword",
-      "community": 107,
+      "community": 0,
       "norm_label": "generatepassword()"
     },
     {
@@ -10328,7 +10448,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsconfig",
-      "community": 112,
+      "community": 0,
       "norm_label": "permissionsconfig.ts"
     },
     {
@@ -10338,7 +10458,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsconfig_modulepermission",
-      "community": 112,
+      "community": 0,
       "norm_label": "modulepermission"
     },
     {
@@ -10348,7 +10468,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsconfig_available_permissions",
-      "community": 112,
+      "community": 0,
       "norm_label": "available_permissions"
     },
     {
@@ -10358,7 +10478,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsconfig_all_permission_ids",
-      "community": 112,
+      "community": 0,
       "norm_label": "all_permission_ids"
     },
     {
@@ -10368,7 +10488,7 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsconfig_corporateroleoption",
-      "community": 112,
+      "community": 0,
       "norm_label": "corporateroleoption"
     },
     {
@@ -10388,7 +10508,7 @@
       "source_location": "L175",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsconfig_getdefaultpermissionsforrole",
-      "community": 107,
+      "community": 36,
       "norm_label": "getdefaultpermissionsforrole()"
     },
     {
@@ -10398,7 +10518,7 @@
       "source_location": "L218",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsconfig_permissionpreset",
-      "community": 112,
+      "community": 0,
       "norm_label": "permissionpreset"
     },
     {
@@ -10408,7 +10528,7 @@
       "source_location": "L224",
       "_origin": "ast",
       "id": "frontend_src_components_team_permissionsconfig_permission_presets",
-      "community": 112,
+      "community": 0,
       "norm_label": "permission_presets"
     },
     {
@@ -10418,7 +10538,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamui",
-      "community": 91,
+      "community": 0,
       "norm_label": "teamui.tsx"
     },
     {
@@ -10428,7 +10548,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamui_avatar_colors",
-      "community": 91,
+      "community": 0,
       "norm_label": "avatar_colors"
     },
     {
@@ -10438,7 +10558,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamui_getavatarcolor",
-      "community": 91,
+      "community": 0,
       "norm_label": "getavatarcolor()"
     },
     {
@@ -10448,7 +10568,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamui_avatar_presets",
-      "community": 91,
+      "community": 0,
       "norm_label": "avatar_presets"
     },
     {
@@ -10458,7 +10578,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamui_avatar",
-      "community": 91,
+      "community": 0,
       "norm_label": "avatar()"
     },
     {
@@ -10468,7 +10588,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamui_role_styles",
-      "community": 91,
+      "community": 0,
       "norm_label": "role_styles"
     },
     {
@@ -10478,7 +10598,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamui_rolebadge",
-      "community": 91,
+      "community": 0,
       "norm_label": "rolebadge()"
     },
     {
@@ -10488,7 +10608,7 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "frontend_src_components_team_teamui_statcard",
-      "community": 91,
+      "community": 0,
       "norm_label": "statcard()"
     },
     {
@@ -10498,7 +10618,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_ui_animatedselect",
-      "community": 43,
+      "community": 124,
       "norm_label": "animatedselect.tsx"
     },
     {
@@ -10508,7 +10628,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_components_ui_animatedselect_selectoption",
-      "community": 43,
+      "community": 124,
       "norm_label": "selectoption"
     },
     {
@@ -10518,7 +10638,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "frontend_src_components_ui_animatedselect_animatedselectprops",
-      "community": 43,
+      "community": 124,
       "norm_label": "animatedselectprops"
     },
     {
@@ -10528,7 +10648,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "frontend_src_components_ui_animatedselect_animatedselect",
-      "community": 43,
+      "community": 124,
       "norm_label": "animatedselect()"
     },
     {
@@ -10538,7 +10658,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_ui_countrycodepicker",
-      "community": 7,
+      "community": 112,
       "norm_label": "countrycodepicker.tsx"
     },
     {
@@ -10548,7 +10668,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_components_ui_countrycodepicker_country",
-      "community": 7,
+      "community": 112,
       "norm_label": "country"
     },
     {
@@ -10558,7 +10678,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_components_ui_countrycodepicker_countries",
-      "community": 7,
+      "community": 112,
       "norm_label": "countries"
     },
     {
@@ -10568,7 +10688,7 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "frontend_src_components_ui_countrycodepicker_parsephoneandcountry",
-      "community": 7,
+      "community": 112,
       "norm_label": "parsephoneandcountry()"
     },
     {
@@ -10578,7 +10698,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "frontend_src_components_ui_countrycodepicker_countrycodepickerprops",
-      "community": 7,
+      "community": 112,
       "norm_label": "countrycodepickerprops"
     },
     {
@@ -10588,7 +10708,7 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "frontend_src_components_ui_countrycodepicker_countrycodepicker",
-      "community": 7,
+      "community": 112,
       "norm_label": "countrycodepicker()"
     },
     {
@@ -10598,7 +10718,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_ui_datepicker",
-      "community": 4,
+      "community": 91,
       "norm_label": "datepicker.tsx"
     },
     {
@@ -10608,7 +10728,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_components_ui_datepicker_datepickerprops",
-      "community": 4,
+      "community": 91,
       "norm_label": "datepickerprops"
     },
     {
@@ -10618,7 +10738,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "frontend_src_components_ui_datepicker_datepicker",
-      "community": 2,
+      "community": 91,
       "norm_label": "datepicker()"
     },
     {
@@ -10628,7 +10748,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_ui_pagination",
-      "community": 33,
+      "community": 126,
       "norm_label": "pagination.tsx"
     },
     {
@@ -10638,7 +10758,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_components_ui_pagination_props",
-      "community": 33,
+      "community": 126,
       "norm_label": "props"
     },
     {
@@ -10648,7 +10768,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "frontend_src_components_ui_pagination_btnbase",
-      "community": 33,
+      "community": 126,
       "norm_label": "btnbase"
     },
     {
@@ -10658,7 +10778,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "frontend_src_components_ui_pagination_pagination",
-      "community": 33,
+      "community": 126,
       "norm_label": "pagination()"
     },
     {
@@ -10668,7 +10788,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_ui_button",
-      "community": 4,
+      "community": 91,
       "norm_label": "button.tsx"
     },
     {
@@ -10678,7 +10798,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_components_ui_button_buttonprops",
-      "community": 4,
+      "community": 91,
       "norm_label": "buttonprops"
     },
     {
@@ -10688,7 +10808,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "frontend_src_components_ui_button_button",
-      "community": 4,
+      "community": 91,
       "norm_label": "button"
     },
     {
@@ -10698,7 +10818,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_ui_calendar",
-      "community": 4,
+      "community": 91,
       "norm_label": "calendar.tsx"
     },
     {
@@ -10708,7 +10828,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "frontend_src_components_ui_calendar_calendarprops",
-      "community": 4,
+      "community": 91,
       "norm_label": "calendarprops"
     },
     {
@@ -10718,7 +10838,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_components_ui_calendar_current_year",
-      "community": 4,
+      "community": 91,
       "norm_label": "current_year"
     },
     {
@@ -10728,7 +10848,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "frontend_src_components_ui_calendar_default_start_month",
-      "community": 4,
+      "community": 91,
       "norm_label": "default_start_month"
     },
     {
@@ -10738,7 +10858,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_components_ui_calendar_default_end_month",
-      "community": 4,
+      "community": 91,
       "norm_label": "default_end_month"
     },
     {
@@ -10748,7 +10868,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "frontend_src_components_ui_calendar_weekday_names",
-      "community": 4,
+      "community": 91,
       "norm_label": "weekday_names"
     },
     {
@@ -10758,7 +10878,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "frontend_src_components_ui_calendar_calendar",
-      "community": 4,
+      "community": 91,
       "norm_label": "calendar()"
     },
     {
@@ -10768,7 +10888,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "frontend_src_components_ui_calendar_calendardemo",
-      "community": 4,
+      "community": 91,
       "norm_label": "calendardemo()"
     },
     {
@@ -10778,7 +10898,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_context_appcontext",
-      "community": 46,
+      "community": 12,
       "norm_label": "appcontext.tsx"
     },
     {
@@ -10788,7 +10908,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "frontend_src_context_appcontext_toast",
-      "community": 46,
+      "community": 12,
       "norm_label": "toast"
     },
     {
@@ -10808,7 +10928,7 @@
       "source_location": "L153",
       "_origin": "ast",
       "id": "frontend_src_context_appcontext_appcontext",
-      "community": 46,
+      "community": 12,
       "norm_label": "appcontext"
     },
     {
@@ -10818,24 +10938,34 @@
       "source_location": "L163",
       "_origin": "ast",
       "id": "frontend_src_context_appcontext_isworkspaceowner",
-      "community": 46,
+      "community": 12,
       "norm_label": "isworkspaceowner()"
+    },
+    {
+      "label": "normalizeDateStr()",
+      "file_type": "code",
+      "source_file": "frontend/src/context/AppContext.tsx",
+      "source_location": "L166",
+      "_origin": "ast",
+      "id": "frontend_src_context_appcontext_normalizedatestr",
+      "community": 12,
+      "norm_label": "normalizedatestr()"
     },
     {
       "label": "normalizeBrandsList()",
       "file_type": "code",
       "source_file": "frontend/src/context/AppContext.tsx",
-      "source_location": "L166",
+      "source_location": "L181",
       "_origin": "ast",
       "id": "frontend_src_context_appcontext_normalizebrandslist",
-      "community": 46,
+      "community": 12,
       "norm_label": "normalizebrandslist()"
     },
     {
       "label": "AppProvider()",
       "file_type": "code",
       "source_file": "frontend/src/context/AppContext.tsx",
-      "source_location": "L184",
+      "source_location": "L213",
       "_origin": "ast",
       "id": "frontend_src_context_appcontext_appprovider",
       "community": 14,
@@ -10845,10 +10975,10 @@
       "label": "useApp()",
       "file_type": "code",
       "source_file": "frontend/src/context/AppContext.tsx",
-      "source_location": "L2679",
+      "source_location": "L2732",
       "_origin": "ast",
       "id": "frontend_src_context_appcontext_useapp",
-      "community": 2,
+      "community": 36,
       "norm_label": "useapp()"
     },
     {
@@ -10858,7 +10988,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_data_defaults",
-      "community": 46,
+      "community": 12,
       "norm_label": "defaults.ts"
     },
     {
@@ -10868,7 +10998,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "frontend_src_data_defaults_default_settings",
-      "community": 46,
+      "community": 12,
       "norm_label": "default_settings"
     },
     {
@@ -10988,7 +11118,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_hooks_usefinancials",
-      "community": 12,
+      "community": 127,
       "norm_label": "usefinancials.ts"
     },
     {
@@ -10998,7 +11128,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_hooks_usefinancials_financials",
-      "community": 12,
+      "community": 127,
       "norm_label": "financials"
     },
     {
@@ -11008,7 +11138,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_hooks_usefinancials_usefinancials",
-      "community": 12,
+      "community": 127,
       "norm_label": "usefinancials()"
     },
     {
@@ -11018,7 +11148,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_lib_utils",
-      "community": 4,
+      "community": 91,
       "norm_label": "utils.ts"
     },
     {
@@ -11118,7 +11248,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "frontend_src_services_api_settoken",
-      "community": 115,
+      "community": 38,
       "norm_label": "settoken()"
     },
     {
@@ -11228,7 +11358,7 @@
       "source_location": "L277",
       "_origin": "ast",
       "id": "frontend_src_services_api_api",
-      "community": 113,
+      "community": 38,
       "norm_label": "api"
     },
     {
@@ -11368,7 +11498,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_styles_financials",
-      "community": 12,
+      "community": 127,
       "norm_label": "financials.ts"
     },
     {
@@ -11508,7 +11638,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_types_index_user",
-      "community": 42,
+      "community": 0,
       "norm_label": "user"
     },
     {
@@ -11518,7 +11648,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "frontend_src_types_index_brandstatus",
-      "community": 42,
+      "community": 112,
       "norm_label": "brandstatus"
     },
     {
@@ -11528,7 +11658,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "frontend_src_types_index_branddocument",
-      "community": 42,
+      "community": 123,
       "norm_label": "branddocument"
     },
     {
@@ -11588,7 +11718,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "frontend_src_types_index_task",
-      "community": 42,
+      "community": 123,
       "norm_label": "task"
     },
     {
@@ -11648,7 +11778,7 @@
       "source_location": "L159",
       "_origin": "ast",
       "id": "frontend_src_types_index_expensecategory",
-      "community": 43,
+      "community": 11,
       "norm_label": "expensecategory"
     },
     {
@@ -11678,7 +11808,7 @@
       "source_location": "L206",
       "_origin": "ast",
       "id": "frontend_src_types_index_leadstage",
-      "community": 26,
+      "community": 115,
       "norm_label": "leadstage"
     },
     {
@@ -11688,7 +11818,7 @@
       "source_location": "L208",
       "_origin": "ast",
       "id": "frontend_src_types_index_lead",
-      "community": 26,
+      "community": 12,
       "norm_label": "lead"
     },
     {
@@ -11708,7 +11838,7 @@
       "source_location": "L233",
       "_origin": "ast",
       "id": "frontend_src_types_index_appnotification",
-      "community": 29,
+      "community": 12,
       "norm_label": "appnotification"
     },
     {
@@ -11728,7 +11858,7 @@
       "source_location": "L253",
       "_origin": "ast",
       "id": "frontend_src_types_index_chatmessage",
-      "community": 46,
+      "community": 12,
       "norm_label": "chatmessage"
     },
     {
@@ -11738,7 +11868,7 @@
       "source_location": "L269",
       "_origin": "ast",
       "id": "frontend_src_types_index_conversation",
-      "community": 46,
+      "community": 12,
       "norm_label": "conversation"
     },
     {
@@ -11798,7 +11928,7 @@
       "source_location": "L378",
       "_origin": "ast",
       "id": "frontend_src_types_index_portaldata",
-      "community": 113,
+      "community": 38,
       "norm_label": "portaldata"
     },
     {
@@ -11898,7 +12028,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_validation",
-      "community": 36,
+      "community": 125,
       "norm_label": "validation.ts"
     },
     {
@@ -11908,7 +12038,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_validation_validationresult",
-      "community": 36,
+      "community": 125,
       "norm_label": "validationresult"
     },
     {
@@ -11918,7 +12048,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_utils_validation_validateclientform",
-      "community": 36,
+      "community": 125,
       "norm_label": "validateclientform()"
     },
     {
@@ -11928,7 +12058,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_utils_validation_getfielderror",
-      "community": 36,
+      "community": 125,
       "norm_label": "getfielderror()"
     },
     {
@@ -17353,7 +17483,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L114",
+      "source_location": "L115",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_adddocument",
@@ -17363,7 +17493,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L74",
+      "source_location": "L75",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_assignmembers",
@@ -17393,7 +17523,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L96",
+      "source_location": "L97",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_churn",
@@ -17403,7 +17533,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L56",
+      "source_location": "L57",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_create",
@@ -17413,7 +17543,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L47",
+      "source_location": "L48",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_get",
@@ -17423,7 +17553,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L38",
+      "source_location": "L39",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_list",
@@ -17433,7 +17563,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L87",
+      "source_location": "L88",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_logactivity",
@@ -17443,7 +17573,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L131",
+      "source_location": "L132",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_loghours",
@@ -17463,7 +17593,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L105",
+      "source_location": "L106",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_snoozeretention",
@@ -17473,7 +17603,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/brands.controller.js",
-      "source_location": "L64",
+      "source_location": "L65",
       "weight": 1.0,
       "source": "backend_src_controllers_brands_controller",
       "target": "backend_src_controllers_brands_controller_update",
@@ -18159,7 +18289,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/leads.controller.js",
-      "source_location": "L35",
+      "source_location": "L36",
       "weight": 1.0,
       "source": "backend_src_controllers_leads_controller",
       "target": "backend_src_controllers_leads_controller_convert",
@@ -18209,7 +18339,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/leads.controller.js",
-      "source_location": "L25",
+      "source_location": "L26",
       "weight": 1.0,
       "source": "backend_src_controllers_leads_controller",
       "target": "backend_src_controllers_leads_controller_updatestage",
@@ -18324,7 +18454,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/meetings.controller.js",
-      "source_location": "L44",
+      "source_location": "L48",
       "weight": 1.0,
       "source": "backend_src_controllers_meetings_controller",
       "target": "backend_src_controllers_meetings_controller_remove",
@@ -18812,7 +18942,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/projects.controller.js",
-      "source_location": "L27",
+      "source_location": "L29",
       "weight": 1.0,
       "source": "backend_src_controllers_projects_controller",
       "target": "backend_src_controllers_projects_controller_update",
@@ -19197,7 +19327,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/tasks.controller.js",
-      "source_location": "L46",
+      "source_location": "L47",
       "weight": 1.0,
       "source": "backend_src_controllers_tasks_controller",
       "target": "backend_src_controllers_tasks_controller_update",
@@ -19207,7 +19337,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/controllers/tasks.controller.js",
-      "source_location": "L32",
+      "source_location": "L33",
       "weight": 1.0,
       "source": "backend_src_controllers_tasks_controller",
       "target": "backend_src_controllers_tasks_controller_updatestatus",
@@ -19407,7 +19537,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/db/index.js",
-      "source_location": "L25",
+      "source_location": "L28",
       "weight": 1.0,
       "source": "backend_src_db_index",
       "target": "backend_src_db_index_connectwithretry",
@@ -19417,10 +19547,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/db/index.js",
-      "source_location": "L16",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "backend_src_db_index",
       "target": "backend_src_db_index_pool",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/db/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "backend_src_db_index",
+      "target": "backend_src_db_index_pool_types",
       "confidence_score": 1.0
     },
     {
@@ -20808,7 +20948,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L354",
+      "source_location": "L406",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20819,7 +20959,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L354",
+      "source_location": "L406",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20840,7 +20980,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L353",
+      "source_location": "L405",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20881,6 +21021,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "backend_src_services_brands_service",
+      "target": "backend_src_services_brands_service_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/brands.service.js",
       "source_location": "L4",
       "weight": 1.0,
       "source": "backend_src_services_brands_service",
@@ -20891,7 +21041,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L353",
+      "source_location": "L405",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20902,7 +21052,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L353",
+      "source_location": "L405",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20913,7 +21063,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L354",
+      "source_location": "L406",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20924,7 +21074,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L354",
+      "source_location": "L406",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20935,7 +21085,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L353",
+      "source_location": "L405",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20946,7 +21096,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L353",
+      "source_location": "L405",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20957,7 +21107,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L354",
+      "source_location": "L406",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -20998,7 +21148,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L354",
+      "source_location": "L406",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -21009,7 +21159,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L354",
+      "source_location": "L406",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -21020,7 +21170,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L353",
+      "source_location": "L405",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_brands_service",
@@ -21028,11 +21178,33 @@
       "confidence_score": 0.5
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/brands.service.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "backend_src_services_brands_service",
+      "target": "backend_src_utils_dateutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/brands.service.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "backend_src_services_brands_service",
+      "target": "backend_src_utils_dateutils_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L159",
+      "source_location": "L163",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_createbrand",
       "target": "backend_src_services_brands_service_genid",
@@ -21043,7 +21215,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L334",
+      "source_location": "L386",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_adddocument",
       "target": "backend_src_services_brands_service_docid",
@@ -21054,7 +21226,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L203",
+      "source_location": "L209",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_createbrand",
       "target": "backend_src_services_brands_service_payid",
@@ -21065,7 +21237,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L284",
+      "source_location": "L336",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_updatebrand",
       "target": "backend_src_services_brands_service_payid",
@@ -21076,7 +21248,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L75",
+      "source_location": "L79",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_getbrandwithdetails",
       "target": "backend_src_services_brands_service_mapbrand",
@@ -21087,7 +21259,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L348",
+      "source_location": "L400",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_loghours",
       "target": "backend_src_services_brands_service_mapbrand",
@@ -21097,8 +21269,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L338",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "backend_src_services_brands_service_mapbrand",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/brands.service.js",
+      "source_location": "L390",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_adddocument",
       "target": "backend_src_services_brands_service_mapdoc",
@@ -21109,7 +21292,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L77",
+      "source_location": "L81",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_getbrandwithdetails",
       "target": "backend_src_services_brands_service_mapdoc",
@@ -21119,8 +21302,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L68",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "backend_src_services_brands_service_mapdoc",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/brands.service.js",
+      "source_location": "L72",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_getbrandwithdetails",
       "target": "backend_src_services_brands_service_verifybrandaccess",
@@ -21131,7 +21325,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L301",
+      "source_location": "L353",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_assignmembers",
       "target": "backend_src_services_brands_service_getbrandwithdetails",
@@ -21142,7 +21336,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L211",
+      "source_location": "L217",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_createbrand",
       "target": "backend_src_services_brands_service_getbrandwithdetails",
@@ -21153,7 +21347,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L309",
+      "source_location": "L361",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_logactivity",
       "target": "backend_src_services_brands_service_getbrandwithdetails",
@@ -21164,7 +21358,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L317",
+      "source_location": "L369",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_markchurned",
       "target": "backend_src_services_brands_service_getbrandwithdetails",
@@ -21175,7 +21369,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L326",
+      "source_location": "L378",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_snoozeretention",
       "target": "backend_src_services_brands_service_getbrandwithdetails",
@@ -21186,11 +21380,33 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/brands.service.js",
-      "source_location": "L290",
+      "source_location": "L342",
       "weight": 1.0,
       "source": "backend_src_services_brands_service_updatebrand",
       "target": "backend_src_services_brands_service_getbrandwithdetails",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/brands.service.js",
+      "source_location": "L165",
+      "weight": 1.0,
+      "source": "backend_src_services_brands_service_createbrand",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/brands.service.js",
+      "source_location": "L279",
+      "weight": 1.0,
+      "source": "backend_src_services_brands_service_updatebrand",
+      "target": "backend_src_utils_dateutils_formatdateonly"
     },
     {
       "relation": "contains",
@@ -21571,7 +21787,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L244",
+      "source_location": "L240",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_expenses_service",
@@ -21592,7 +21808,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L244",
+      "source_location": "L240",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_expenses_service",
@@ -21603,7 +21819,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L244",
+      "source_location": "L240",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_expenses_service",
@@ -21624,10 +21840,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L64",
+      "source_location": "L60",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service",
       "target": "backend_src_services_expenses_service_formatamount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/expenses.service.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "backend_src_services_expenses_service",
+      "target": "backend_src_services_expenses_service_formatdateonly",
       "confidence_score": 1.0
     },
     {
@@ -21644,7 +21870,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L244",
+      "source_location": "L240",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_expenses_service",
@@ -21655,7 +21881,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L244",
+      "source_location": "L240",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_expenses_service",
@@ -21696,7 +21922,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L244",
+      "source_location": "L240",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_expenses_service",
@@ -21707,10 +21933,32 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L52",
+      "source_location": "L48",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service",
       "target": "backend_src_services_expenses_service_writeaudit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/expenses.service.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "backend_src_services_expenses_service",
+      "target": "backend_src_utils_dateutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/expenses.service.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "backend_src_services_expenses_service",
+      "target": "backend_src_utils_dateutils_formatdateonly",
       "confidence_score": 1.0
     },
     {
@@ -21718,7 +21966,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L138",
+      "source_location": "L134",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_createexpense",
       "target": "backend_src_services_expenses_service_genid",
@@ -21729,7 +21977,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L57",
+      "source_location": "L53",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_writeaudit",
       "target": "backend_src_services_expenses_service_auditid",
@@ -21740,7 +21988,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L168",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_createexpense",
       "target": "backend_src_services_expenses_service_mapexpense",
@@ -21751,7 +21999,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L128",
+      "source_location": "L124",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_listexpenses",
       "target": "backend_src_services_expenses_service_mapexpense",
@@ -21761,8 +22009,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L216",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "backend_src_services_expenses_service_mapexpense",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/expenses.service.js",
+      "source_location": "L212",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_updateexpense",
       "target": "backend_src_services_expenses_service_mapexpense",
@@ -21773,7 +22032,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L164",
+      "source_location": "L160",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_createexpense",
       "target": "backend_src_services_expenses_service_writeaudit",
@@ -21784,7 +22043,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L226",
+      "source_location": "L222",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_deleteexpense",
       "target": "backend_src_services_expenses_service_writeaudit",
@@ -21795,7 +22054,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L213",
+      "source_location": "L209",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_updateexpense",
       "target": "backend_src_services_expenses_service_writeaudit",
@@ -21806,7 +22065,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L165",
+      "source_location": "L161",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_createexpense",
       "target": "backend_src_services_expenses_service_formatamount",
@@ -21817,7 +22076,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L227",
+      "source_location": "L223",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_deleteexpense",
       "target": "backend_src_services_expenses_service_formatamount",
@@ -21828,7 +22087,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L214",
+      "source_location": "L210",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_updateexpense",
       "target": "backend_src_services_expenses_service_formatamount",
@@ -21838,8 +22097,30 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/expenses.service.js",
-      "source_location": "L236",
+      "source_location": "L138",
+      "weight": 1.0,
+      "source": "backend_src_services_expenses_service_createexpense",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/expenses.service.js",
+      "source_location": "L184",
+      "weight": 1.0,
+      "source": "backend_src_services_expenses_service_updateexpense",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/expenses.service.js",
+      "source_location": "L232",
       "weight": 1.0,
       "source": "backend_src_services_expenses_service_deleteexpenses",
       "target": "backend_src_services_expenses_service_deleteexpense",
@@ -22009,7 +22290,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L215",
+      "source_location": "L218",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service",
       "target": "backend_src_services_invoices_service_auditid",
@@ -22019,7 +22300,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L279",
+      "source_location": "L282",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_invoices_service",
@@ -22040,7 +22321,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L279",
+      "source_location": "L282",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_invoices_service",
@@ -22051,12 +22332,22 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L279",
+      "source_location": "L282",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_invoices_service",
       "target": "backend_src_services_invoices_service_deleteinvoices",
       "confidence_score": 0.5
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/invoices.service.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "backend_src_services_invoices_service",
+      "target": "backend_src_services_invoices_service_formatdateonly",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -22072,7 +22363,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L279",
+      "source_location": "L282",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_invoices_service",
@@ -22083,7 +22374,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L28",
+      "source_location": "L30",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service",
       "target": "backend_src_services_invoices_service_getitems",
@@ -22093,7 +22384,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L39",
+      "source_location": "L41",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service",
       "target": "backend_src_services_invoices_service_getitemsforinvoices",
@@ -22133,7 +22424,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L279",
+      "source_location": "L282",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_invoices_service",
@@ -22144,7 +22435,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L279",
+      "source_location": "L282",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_invoices_service",
@@ -22155,7 +22446,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L130",
+      "source_location": "L132",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service",
       "target": "backend_src_services_invoices_service_nextinvoicenumber",
@@ -22185,7 +22476,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L279",
+      "source_location": "L282",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_invoices_service",
@@ -22196,10 +22487,32 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L217",
+      "source_location": "L220",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service",
       "target": "backend_src_services_invoices_service_writeaudit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/invoices.service.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "backend_src_services_invoices_service",
+      "target": "backend_src_utils_dateutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/invoices.service.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "backend_src_services_invoices_service",
+      "target": "backend_src_utils_dateutils_formatdateonly",
       "confidence_score": 1.0
     },
     {
@@ -22218,7 +22531,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L163",
+      "source_location": "L165",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_createinvoice",
       "target": "backend_src_services_invoices_service_genid",
@@ -22229,7 +22542,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L186",
+      "source_location": "L189",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_createinvoice",
       "target": "backend_src_services_invoices_service_itemid",
@@ -22240,7 +22553,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L193",
+      "source_location": "L196",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_createinvoice",
       "target": "backend_src_services_invoices_service_recid",
@@ -22251,7 +22564,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L123",
+      "source_location": "L125",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_getinvoice",
       "target": "backend_src_services_invoices_service_mapinvoice",
@@ -22261,8 +22574,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L212",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "backend_src_services_invoices_service_mapinvoice",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/invoices.service.js",
+      "source_location": "L215",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_updateinvoicestatus",
       "target": "backend_src_services_invoices_service_mapinvoice",
@@ -22273,7 +22597,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L123",
+      "source_location": "L125",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_getinvoice",
       "target": "backend_src_services_invoices_service_getitems",
@@ -22284,7 +22608,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L212",
+      "source_location": "L215",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_updateinvoicestatus",
       "target": "backend_src_services_invoices_service_getitems",
@@ -22295,7 +22619,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L99",
+      "source_location": "L101",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_listinvoices",
       "target": "backend_src_services_invoices_service_getitemsforinvoices",
@@ -22306,7 +22630,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L198",
+      "source_location": "L201",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_createinvoice",
       "target": "backend_src_services_invoices_service_getinvoice",
@@ -22317,7 +22641,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L164",
+      "source_location": "L166",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_createinvoice",
       "target": "backend_src_services_invoices_service_nextinvoicenumber",
@@ -22327,8 +22651,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L222",
+      "source_location": "L177",
+      "weight": 1.0,
+      "source": "backend_src_services_invoices_service_createinvoice",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/invoices.service.js",
+      "source_location": "L225",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_writeaudit",
       "target": "backend_src_services_invoices_service_auditid",
@@ -22339,7 +22674,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L251",
+      "source_location": "L254",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_deleteinvoice",
       "target": "backend_src_services_invoices_service_writeaudit",
@@ -22350,7 +22685,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/invoices.service.js",
-      "source_location": "L271",
+      "source_location": "L274",
       "weight": 1.0,
       "source": "backend_src_services_invoices_service_deleteinvoices",
       "target": "backend_src_services_invoices_service_deleteinvoice",
@@ -22360,7 +22695,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L111",
+      "source_location": "L113",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_leads_service",
@@ -22371,7 +22706,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L111",
+      "source_location": "L113",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_leads_service",
@@ -22386,6 +22721,16 @@
       "weight": 1.0,
       "source": "backend_src_services_leads_service",
       "target": "backend_src_services_leads_service_crypto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/leads.service.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "backend_src_services_leads_service",
+      "target": "backend_src_services_leads_service_formatdateonly",
       "confidence_score": 1.0
     },
     {
@@ -22422,7 +22767,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L111",
+      "source_location": "L113",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_leads_service",
@@ -22433,7 +22778,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L111",
+      "source_location": "L113",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_leads_service",
@@ -22464,7 +22809,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L111",
+      "source_location": "L113",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_leads_service",
@@ -22472,11 +22817,33 @@
       "confidence_score": 0.5
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/leads.service.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "backend_src_services_leads_service",
+      "target": "backend_src_utils_dateutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/leads.service.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "backend_src_services_leads_service",
+      "target": "backend_src_utils_dateutils_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L54",
+      "source_location": "L56",
       "weight": 1.0,
       "source": "backend_src_services_leads_service_createlead",
       "target": "backend_src_services_leads_service_genid",
@@ -22487,7 +22854,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L86",
+      "source_location": "L88",
       "weight": 1.0,
       "source": "backend_src_services_leads_service_convertleadtobrand",
       "target": "backend_src_services_leads_service_newbrandid",
@@ -22498,7 +22865,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L100",
+      "source_location": "L102",
       "weight": 1.0,
       "source": "backend_src_services_leads_service_convertleadtobrand",
       "target": "backend_src_services_leads_service_maplead",
@@ -22509,7 +22876,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L60",
+      "source_location": "L62",
       "weight": 1.0,
       "source": "backend_src_services_leads_service_createlead",
       "target": "backend_src_services_leads_service_maplead",
@@ -22520,7 +22887,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L46",
+      "source_location": "L48",
       "weight": 1.0,
       "source": "backend_src_services_leads_service_listleads",
       "target": "backend_src_services_leads_service_maplead",
@@ -22530,18 +22897,40 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/leads.service.js",
-      "source_location": "L67",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "backend_src_services_leads_service_maplead",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/leads.service.js",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "backend_src_services_leads_service_updateleadstage",
       "target": "backend_src_services_leads_service_maplead",
       "confidence_score": 1.0
     },
     {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/leads.service.js",
+      "source_location": "L58",
+      "weight": 1.0,
+      "source": "backend_src_services_leads_service_createlead",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L15",
+      "source_location": "L17",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service",
       "target": "backend_src_services_meetings_service_attachattendees",
@@ -22551,7 +22940,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L158",
+      "source_location": "L161",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_meetings_service",
@@ -22572,12 +22961,22 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L158",
+      "source_location": "L161",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_meetings_service",
       "target": "backend_src_services_meetings_service_deletemeeting",
       "confidence_score": 0.5
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/meetings.service.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "backend_src_services_meetings_service",
+      "target": "backend_src_services_meetings_service_formatdateonly",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -22593,7 +22992,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L26",
+      "source_location": "L28",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service",
       "target": "backend_src_services_meetings_service_getattendeesformeetings",
@@ -22603,7 +23002,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L158",
+      "source_location": "L161",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_meetings_service",
@@ -22614,7 +23013,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L158",
+      "source_location": "L161",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_meetings_service",
@@ -22625,7 +23024,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L158",
+      "source_location": "L161",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_meetings_service",
@@ -22646,7 +23045,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L158",
+      "source_location": "L161",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_meetings_service",
@@ -22654,11 +23053,33 @@
       "confidence_score": 0.5
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/meetings.service.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "backend_src_services_meetings_service",
+      "target": "backend_src_utils_dateutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/meetings.service.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "backend_src_services_meetings_service",
+      "target": "backend_src_utils_dateutils_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L100",
+      "source_location": "L102",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service_createmeeting",
       "target": "backend_src_services_meetings_service_genid",
@@ -22669,7 +23090,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L43",
+      "source_location": "L45",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service_getmeeting",
       "target": "backend_src_services_meetings_service_mapmeeting",
@@ -22679,8 +23100,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L150",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "backend_src_services_meetings_service_mapmeeting",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/meetings.service.js",
+      "source_location": "L153",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service_updatemeeting",
       "target": "backend_src_services_meetings_service_mapmeeting",
@@ -22691,7 +23123,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L43",
+      "source_location": "L45",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service_getmeeting",
       "target": "backend_src_services_meetings_service_attachattendees",
@@ -22702,7 +23134,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L150",
+      "source_location": "L153",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service_updatemeeting",
       "target": "backend_src_services_meetings_service_attachattendees",
@@ -22713,7 +23145,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L89",
+      "source_location": "L91",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service_listmeetings",
       "target": "backend_src_services_meetings_service_getattendeesformeetings",
@@ -22724,11 +23156,33 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/meetings.service.js",
-      "source_location": "L118",
+      "source_location": "L120",
       "weight": 1.0,
       "source": "backend_src_services_meetings_service_createmeeting",
       "target": "backend_src_services_meetings_service_getmeeting",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/meetings.service.js",
+      "source_location": "L108",
+      "weight": 1.0,
+      "source": "backend_src_services_meetings_service_createmeeting",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/meetings.service.js",
+      "source_location": "L137",
+      "weight": 1.0,
+      "source": "backend_src_services_meetings_service_updatemeeting",
+      "target": "backend_src_utils_dateutils_formatdateonly"
     },
     {
       "relation": "indirect_call",
@@ -23066,7 +23520,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "backend_src_services_portal_service",
       "target": "backend_src_services_portal_service_auditid",
@@ -23083,10 +23537,20 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/portal.service.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "backend_src_services_portal_service",
+      "target": "backend_src_services_portal_service_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L218",
+      "source_location": "L219",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_portal_service",
@@ -23097,7 +23561,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L220",
+      "source_location": "L221",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_portal_service",
@@ -23108,7 +23572,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L5",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "backend_src_services_portal_service",
       "target": "backend_src_services_portal_service_notifid",
@@ -23138,7 +23602,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L219",
+      "source_location": "L220",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_portal_service",
@@ -23168,11 +23632,33 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/portal.service.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "backend_src_services_portal_service",
+      "target": "backend_src_utils_dateutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/portal.service.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "backend_src_services_portal_service",
+      "target": "backend_src_utils_dateutils_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L143",
+      "source_location": "L144",
       "weight": 1.0,
       "source": "backend_src_services_portal_service_submitportalfeedback",
       "target": "backend_src_services_portal_service_notifid",
@@ -23183,7 +23669,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L156",
+      "source_location": "L157",
       "weight": 1.0,
       "source": "backend_src_services_portal_service_submitportalfeedback",
       "target": "backend_src_services_portal_service_auditid",
@@ -23195,7 +23681,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/src/services/portal.service.js",
-      "source_location": "L164",
+      "source_location": "L79",
+      "weight": 1.0,
+      "source": "backend_src_services_portal_service_getportaldatabytoken",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/portal.service.js",
+      "source_location": "L165",
       "weight": 1.0,
       "source": "backend_src_services_portal_service_submitportalfeedback",
       "target": "backend_src_services_webhook_service_sendwebhookevent"
@@ -23204,7 +23701,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L136",
+      "source_location": "L142",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_projects_service",
@@ -23225,6 +23722,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/projects.service.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "backend_src_services_projects_service",
+      "target": "backend_src_services_projects_service_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/projects.service.js",
       "source_location": "L4",
       "weight": 1.0,
       "source": "backend_src_services_projects_service",
@@ -23235,7 +23742,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L136",
+      "source_location": "L142",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_projects_service",
@@ -23246,7 +23753,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L136",
+      "source_location": "L142",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_projects_service",
@@ -23257,7 +23764,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L136",
+      "source_location": "L142",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_projects_service",
@@ -23288,7 +23795,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L136",
+      "source_location": "L142",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_projects_service",
@@ -23296,11 +23803,33 @@
       "confidence_score": 0.5
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/projects.service.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "backend_src_services_projects_service",
+      "target": "backend_src_utils_dateutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/projects.service.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "backend_src_services_projects_service",
+      "target": "backend_src_utils_dateutils_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L81",
+      "source_location": "L85",
       "weight": 1.0,
       "source": "backend_src_services_projects_service_createproject",
       "target": "backend_src_services_projects_service_genid",
@@ -23311,7 +23840,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L23",
+      "source_location": "L27",
       "weight": 1.0,
       "source": "backend_src_services_projects_service_getproject",
       "target": "backend_src_services_projects_service_mapproject",
@@ -23321,8 +23850,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L100",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "backend_src_services_projects_service_mapproject",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/projects.service.js",
+      "source_location": "L104",
       "weight": 1.0,
       "source": "backend_src_services_projects_service_createproject",
       "target": "backend_src_services_projects_service_getproject",
@@ -23333,11 +23873,33 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/projects.service.js",
-      "source_location": "L131",
+      "source_location": "L137",
       "weight": 1.0,
       "source": "backend_src_services_projects_service_updateproject",
       "target": "backend_src_services_projects_service_getproject",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/projects.service.js",
+      "source_location": "L91",
+      "weight": 1.0,
+      "source": "backend_src_services_projects_service_createproject",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/projects.service.js",
+      "source_location": "L120",
+      "weight": 1.0,
+      "source": "backend_src_services_projects_service_updateproject",
+      "target": "backend_src_utils_dateutils_formatdateonly"
     },
     {
       "relation": "indirect_call",
@@ -23557,7 +24119,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L140",
+      "source_location": "L142",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_tasks_service",
@@ -23578,6 +24140,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/tasks.service.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "backend_src_services_tasks_service",
+      "target": "backend_src_services_tasks_service_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/tasks.service.js",
       "source_location": "L4",
       "weight": 1.0,
       "source": "backend_src_services_tasks_service",
@@ -23588,7 +24160,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L139",
+      "source_location": "L141",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_tasks_service",
@@ -23599,7 +24171,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L137",
+      "source_location": "L139",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_tasks_service",
@@ -23630,7 +24202,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L138",
+      "source_location": "L140",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_tasks_service",
@@ -23651,7 +24223,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L142",
+      "source_location": "L144",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_tasks_service",
@@ -23662,7 +24234,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L141",
+      "source_location": "L143",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_tasks_service",
@@ -23673,7 +24245,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L143",
+      "source_location": "L145",
       "weight": 1.0,
       "context": "collection",
       "source": "backend_src_services_tasks_service",
@@ -23681,11 +24253,33 @@
       "confidence_score": 0.5
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/tasks.service.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "backend_src_services_tasks_service",
+      "target": "backend_src_utils_dateutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/tasks.service.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "backend_src_services_tasks_service",
+      "target": "backend_src_utils_dateutils_formatdateonly",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L71",
+      "source_location": "L73",
       "weight": 1.0,
       "source": "backend_src_services_tasks_service_createtask",
       "target": "backend_src_services_tasks_service_genid",
@@ -23696,7 +24290,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L88",
+      "source_location": "L90",
       "weight": 1.0,
       "source": "backend_src_services_tasks_service_createtask",
       "target": "backend_src_services_tasks_service_maptask",
@@ -23707,7 +24301,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L67",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "backend_src_services_tasks_service_listtasks",
       "target": "backend_src_services_tasks_service_maptask",
@@ -23717,8 +24311,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L116",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "backend_src_services_tasks_service_maptask",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/services/tasks.service.js",
+      "source_location": "L118",
       "weight": 1.0,
       "source": "backend_src_services_tasks_service_updatetask",
       "target": "backend_src_services_tasks_service_maptask",
@@ -23729,7 +24334,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L96",
+      "source_location": "L98",
       "weight": 1.0,
       "source": "backend_src_services_tasks_service_updatetaskstatus",
       "target": "backend_src_services_tasks_service_maptask",
@@ -23740,11 +24345,33 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/services/tasks.service.js",
-      "source_location": "L46",
+      "source_location": "L48",
       "weight": 1.0,
       "source": "backend_src_services_tasks_service_listtasks",
       "target": "backend_src_services_tasks_service_scopeforuser",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/tasks.service.js",
+      "source_location": "L84",
+      "weight": 1.0,
+      "source": "backend_src_services_tasks_service_createtask",
+      "target": "backend_src_utils_dateutils_formatdateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/src/services/tasks.service.js",
+      "source_location": "L111",
+      "weight": 1.0,
+      "source": "backend_src_services_tasks_service_updatetask",
+      "target": "backend_src_utils_dateutils_formatdateonly"
     },
     {
       "relation": "contains",
@@ -24067,6 +24694,17 @@
       "source": "backend_src_utils_asynchandler",
       "target": "backend_src_utils_asynchandler_asynchandler",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "indirect_call",
+      "confidence": "INFERRED",
+      "source_file": "backend/src/utils/dateUtils.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "context": "collection",
+      "source": "backend_src_utils_dateutils",
+      "target": "backend_src_utils_dateutils_formatdateonly",
+      "confidence_score": 0.5
     },
     {
       "relation": "contains",
@@ -27180,7 +27818,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/clients/ClientFormModals.tsx",
-      "source_location": "L427",
+      "source_location": "L434",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformmodals",
       "target": "frontend_src_components_clients_clientformmodals_editclientmodal",
@@ -27190,7 +27828,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/clients/ClientFormModals.tsx",
-      "source_location": "L423",
+      "source_location": "L430",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformmodals",
       "target": "frontend_src_components_clients_clientformmodals_editprops",
@@ -27502,7 +28140,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/clients/ClientFormModals.tsx",
-      "source_location": "L430",
+      "source_location": "L437",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformmodals_editclientmodal",
       "target": "frontend_src_hooks_useconfirm_useconfirm"
@@ -27513,7 +28151,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "frontend/src/components/clients/ClientFormModals.tsx",
-      "source_location": "L556",
+      "source_location": "L563",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformmodals_editclientmodal",
       "target": "frontend_src_utils_validation_getfielderror"
@@ -28101,7 +28739,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L72",
+      "source_location": "L91",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformui",
       "target": "frontend_src_components_clients_clientformui_errorbanner",
@@ -28131,7 +28769,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L65",
+      "source_location": "L84",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformui",
       "target": "frontend_src_components_clients_clientformui_fieldrow",
@@ -28141,7 +28779,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L21",
+      "source_location": "L36",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformui",
       "target": "frontend_src_components_clients_clientformui_formfield",
@@ -28151,10 +28789,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L85",
+      "source_location": "L104",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformui",
       "target": "frontend_src_components_clients_clientformui_formselect",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/clients/clientFormUi.tsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "frontend_src_components_clients_clientformui",
+      "target": "frontend_src_components_clients_clientformui_todateinputvalue",
       "confidence_score": 1.0
     },
     {
@@ -28162,7 +28810,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L82",
+      "source_location": "L101",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformui",
       "target": "frontend_src_components_ui_animatedselect",
@@ -28173,10 +28821,21 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/clients/clientFormUi.tsx",
-      "source_location": "L82",
+      "source_location": "L101",
       "weight": 1.0,
       "source": "frontend_src_components_clients_clientformui",
       "target": "frontend_src_components_ui_animatedselect_animatedselect",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/clients/clientFormUi.tsx",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "frontend_src_components_clients_clientformui_formfield",
+      "target": "frontend_src_components_clients_clientformui_todateinputvalue",
       "confidence_score": 1.0
     },
     {
@@ -35912,7 +36571,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/context/AppContext.tsx",
-      "source_location": "L184",
+      "source_location": "L213",
       "weight": 1.0,
       "source": "frontend_src_context_appcontext",
       "target": "frontend_src_context_appcontext_appprovider",
@@ -35932,10 +36591,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/context/AppContext.tsx",
-      "source_location": "L166",
+      "source_location": "L181",
       "weight": 1.0,
       "source": "frontend_src_context_appcontext",
       "target": "frontend_src_context_appcontext_normalizebrandslist",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/context/AppContext.tsx",
+      "source_location": "L166",
+      "weight": 1.0,
+      "source": "frontend_src_context_appcontext",
+      "target": "frontend_src_context_appcontext_normalizedatestr",
       "confidence_score": 1.0
     },
     {
@@ -35952,7 +36621,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/context/AppContext.tsx",
-      "source_location": "L2679",
+      "source_location": "L2732",
       "weight": 1.0,
       "source": "frontend_src_context_appcontext",
       "target": "frontend_src_context_appcontext_useapp",
@@ -42039,5 +42708,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "c1ad78397d6fe3ccbd874789d4371afd28d06235"
+  "built_at_commit": "caf84804d30508cd5b448df661b948736d9a72bb"
 }

@@ -17,20 +17,38 @@ interface FieldProps {
   required?: boolean;
 }
 
+const toDateInputValue = (val: string | number | undefined | null): string => {
+  if (!val) return '';
+  const str = String(val).trim();
+  if (!str) return '';
+  if (str.includes('T')) return str.split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    try {
+      return d.toISOString().split('T')[0];
+    } catch {}
+  }
+  return str;
+};
+
 /** Labelled input that turns red and shows the message when invalid. */
 export const FormField: React.FC<FieldProps> = ({
   label, value, onChange, onBlur, error, helper, type = 'text', placeholder, mono, required,
-}) => (
-  <div>
-    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', fontSize: 12, marginBottom: 6 }}>
-      {label}{required ? ' *' : ''}
-    </label>
-    <input
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onBlur}
+}) => {
+  const inputValue = type === 'date' ? toDateInputValue(value) : (value ?? '');
+
+  return (
+    <div>
+      <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', fontSize: 12, marginBottom: 6 }}>
+        {label}{required ? ' *' : ''}
+      </label>
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={inputValue}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
       onWheel={(e) => {
         if (type === 'number') {
           e.currentTarget.blur();
@@ -59,7 +77,8 @@ export const FormField: React.FC<FieldProps> = ({
       </span>
     ) : null}
   </div>
-);
+  );
+};
 
 /** Two-column responsive grid used by the client forms. */
 export const FieldRow: React.FC<{ children: React.ReactNode }> = ({ children }) => (

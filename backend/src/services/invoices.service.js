@@ -8,15 +8,17 @@ const recId = () => 'rec_' + crypto.randomBytes(6).toString('hex');
 const INVOICE_STATUSES = ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled'];
 const GST_TYPES = ['NONE', 'CGST_SGST', 'IGST'];
 
+const { formatDateOnly } = require('../utils/dateUtils');
+
 function mapInvoice(r, items) {
   return {
     id: r.id, invoiceNumber: r.invoice_number, brandId: r.brand_id, brandName: r.brand_name,
-    issueDate: r.issue_date, dueDate: r.due_date, subtotal: parseFloat(r.subtotal || 0),
+    issueDate: formatDateOnly(r.issue_date), dueDate: formatDateOnly(r.due_date), subtotal: parseFloat(r.subtotal || 0),
     hasGst: r.has_gst, gstType: r.gst_type, cgstAmount: parseFloat(r.cgst_amount || 0),
     sgstAmount: parseFloat(r.sgst_amount || 0), igstAmount: parseFloat(r.igst_amount || 0),
     totalAmount: parseFloat(r.total_amount || 0), paidAmount: parseFloat(r.paid_amount || 0),
     currency: r.currency || 'INR', currencySymbol: r.currency_symbol || '₹',
-    status: r.status, notes: r.notes, paymentDate: r.payment_date, paymentMode: r.payment_mode,
+    status: r.status, notes: r.notes, paymentDate: formatDateOnly(r.payment_date), paymentMode: r.payment_mode,
     razorpayPaymentId: r.razorpay_payment_id, isRecurring: r.is_recurring, createdAt: r.created_at,
     items: (items || []).map(i => ({
       id: i.id, invoiceId: i.invoice_id, description: i.description, hsnSac: i.hsn_sac,
@@ -171,7 +173,8 @@ async function createInvoice(user, data) {
        currency,currency_symbol)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16,$17,$18,$19)`,
       [
-        id, invoiceNumber, data.brandId, data.brandName, data.issueDate || null, data.dueDate || null,
+        id, invoiceNumber, data.brandId, data.brandName,
+        formatDateOnly(data.issueDate), formatDateOnly(data.dueDate),
         data.subtotal || 0, data.hasGst || false, data.gstType || 'NONE',
         data.cgstAmount || 0, data.sgstAmount || 0, data.igstAmount || 0,
         data.totalAmount || 0, data.notes || null, data.paymentMode || null,

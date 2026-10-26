@@ -30,6 +30,10 @@ const create = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .optionalString('title', { max: 200, label: 'Meeting title' })
+    .optionalString('brandId', { max: 80, label: 'Client' })
+    .optionalString('leadId', { max: 80, label: 'Lead' })
+    .optionalString('date', { max: 50, label: 'Date' })
+    .optionalString('time', { max: 20, label: 'Time' })
     .number('durationMinutes', { min: 5, max: 1440, label: 'Duration' })
     .optionalString('linkOrLocation', { max: 500, label: 'Link or location' })
     .optionalString('notes', { max: 3000, label: 'Notes' })

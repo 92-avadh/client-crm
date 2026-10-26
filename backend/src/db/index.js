@@ -1,5 +1,8 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 require('dotenv').config();
+
+// PostgreSQL DATE (OID 1082) parsed as 'YYYY-MM-DD' string to prevent UTC date shifting
+types.setTypeParser(1082, (val) => val);
 
 const dbUrl = process.env.DATABASE_URL || '';
 const isInternalRender = dbUrl.includes('dpg-') && !dbUrl.includes('.render.com');

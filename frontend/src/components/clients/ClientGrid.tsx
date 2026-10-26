@@ -170,9 +170,19 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>Billing Cycle:</span>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {role === 'team' ? 'Managed by Admin' : `${brand.billingCycleDay}st of month`}
+                    {role === 'team' ? 'Managed by Admin' : `${brand.billingCycleDay || 1}st of month`}
                   </span>
                 </div>
+
+                {(brand.contractStartDate || brand.contractEndDate) && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11 }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Contract:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {brand.contractStartDate ? brand.contractStartDate.split('T')[0] : '—'}
+                      {brand.contractEndDate ? ` → ${brand.contractEndDate.split('T')[0]}` : ''}
+                    </span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 2 }}>
                   <span>Assigned Team:</span>

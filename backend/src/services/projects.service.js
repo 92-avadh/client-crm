@@ -5,10 +5,14 @@ const genId = () => 'proj_' + crypto.randomBytes(6).toString('hex');
 
 const PROJECT_STATUSES = ['Not started', 'In Progress', 'On Hold', 'Completed'];
 
+const { formatDateOnly } = require('../utils/dateUtils');
+
 function mapProject(p, memberIds) {
   return {
     id: p.id, brandId: p.brand_id, name: p.name, scope: p.scope,
-    startDate: p.start_date, endDate: p.end_date, status: p.status,
+    startDate: formatDateOnly(p.start_date),
+    endDate: formatDateOnly(p.end_date),
+    status: p.status,
     billingAmount: parseFloat(p.billing_amount || 0), progress: p.progress,
     createdAt: p.created_at, assignedMemberIds: memberIds || []
   };
@@ -84,7 +88,7 @@ async function createProject(user, data) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         id, data.brandId, data.name, data.scope || null,
-        data.startDate || null, data.endDate || null,
+        formatDateOnly(data.startDate), formatDateOnly(data.endDate),
         data.status || 'Not started', data.billingAmount || 0,
         data.progress || 0, user.id,
       ]
@@ -112,8 +116,10 @@ async function updateProject(id, data) {
      end_date=COALESCE($4,end_date), status=COALESCE($5,status), billing_amount=COALESCE($6,billing_amount),
      progress=COALESCE($7,progress) WHERE id=$8 RETURNING *`,
     [
-      data.name ?? null, data.scope ?? null, data.startDate ?? null,
-      data.endDate ?? null, data.status ?? null,
+      data.name ?? null, data.scope ?? null,
+      data.startDate !== undefined ? formatDateOnly(data.startDate) : null,
+      data.endDate !== undefined ? formatDateOnly(data.endDate) : null,
+      data.status ?? null,
       data.billingAmount ?? null, data.progress ?? null, id,
     ]
   );

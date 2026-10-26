@@ -121,5 +121,10 @@
   "119": "MetricsGrid.tsx",
   "120": "ClosingQrCta.tsx",
   "121": "PricingMatrix.tsx",
-  "122": "RoiSimulator.tsx"
+  "122": "RoiSimulator.tsx",
+  "123": "ClientProfileDrawer.tsx",
+  "124": "AnimatedSelect.tsx",
+  "125": "EditClientModal",
+  "126": "Pagination.tsx",
+  "127": "useFinancials.ts"
 }

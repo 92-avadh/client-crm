@@ -9,6 +9,8 @@ const CLIENT_STATUSES = ['Active', 'Inactive', 'Paused', 'Churned', 'On Hold'];
 const PAYMENT_STATUSES = ['Paid', 'Pending', 'Active', 'Inactive', 'Paused', 'Churned'];
 const DOCUMENT_TYPES = ['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'PNG', 'JPG', 'JPEG', 'Other'];
 
+const { formatDateOnly } = require('../utils/dateUtils');
+
 function mapBrand(b) {
   return {
     id: b.id, name: b.name, ownerName: b.owner_name, mobile: b.mobile, email: b.email,
@@ -18,11 +20,13 @@ function mapBrand(b) {
     currency: b.currency || 'INR', currencySymbol: b.currency_symbol || '₹',
     retainerHours: parseFloat(b.retainer_hours || 40), usedHours: parseFloat(b.used_hours || 0),
     npsScore: b.nps_score != null ? parseInt(b.nps_score, 10) : null,
-    contractStartDate: b.contract_start_date, contractEndDate: b.contract_end_date,
+    contractStartDate: formatDateOnly(b.contract_start_date),
+    contractEndDate: formatDateOnly(b.contract_end_date),
     magicToken: b.magic_token,
-    onboardingDate: b.onboarding_date, notes: b.notes, status: b.status,
+    onboardingDate: formatDateOnly(b.onboarding_date), notes: b.notes, status: b.status,
     paymentStatus: b.payment_status || 'Paid',
-    lastActivityDate: b.last_activity_date, lastPaymentDate: b.last_payment_date,
+    lastActivityDate: formatDateOnly(b.last_activity_date),
+    lastPaymentDate: formatDateOnly(b.last_payment_date),
     createdAt: b.created_at
   };
 }
@@ -33,10 +37,10 @@ function mapDoc(d) {
     brandId: d.brand_id,
     name: d.name,
     size: d.size,
-    uploadDate: d.upload_date,
+    uploadDate: formatDateOnly(d.upload_date),
     type: d.type,
     category: d.category || 'Contract',
-    renewalDate: d.renewal_date || null,
+    renewalDate: formatDateOnly(d.renewal_date),
     status: d.status || 'Signed',
     fileUrl: d.file_url || null,
   };
@@ -158,7 +162,9 @@ async function createBrand(user, data) {
 
     const id = genId();
     const fee = parseFloat(data.monthlyFee) || 0;
-    const today = data.onboardingDate || new Date().toISOString().split('T')[0];
+    const today = formatDateOnly(data.onboardingDate) || new Date().toISOString().split('T')[0];
+    const contractStartDate = formatDateOnly(data.contractStartDate) || today;
+    const contractEndDate = formatDateOnly(data.contractEndDate);
     const status = data.status || 'Active';
     // Default to 'Pending' — payment must be explicitly confirmed by user before marking Paid
     const paymentStatus = data.paymentStatus === 'Paid' ? 'Paid' : 'Pending';
@@ -182,7 +188,7 @@ async function createBrand(user, data) {
         fee, data.billingCycleDay || 1, today, data.notes || null,
         status, paymentStatus, lastPaymentDate, today, user.id,
         currency, currencySymbol, retainerHours, 0, npsScore,
-        data.contractStartDate || today, data.contractEndDate || null, magicToken
+        contractStartDate, contractEndDate, magicToken
       ]
     );
 
@@ -218,35 +224,81 @@ async function createBrand(user, data) {
 }
 
 async function updateBrand(id, data) {
-  const { rows } = await pool.query(
-    `UPDATE brands SET
-     name=COALESCE($1,name), owner_name=COALESCE($2,owner_name), mobile=COALESCE($3,mobile),
-     email=COALESCE($4,email), billing_address=COALESCE($5,billing_address), city=COALESCE($6,city), state=COALESCE($7,state),
-     pincode=COALESCE($8,pincode), gst_number=COALESCE($9,gst_number), pan=COALESCE($10,pan),
-     service_details=COALESCE($11,service_details), monthly_fee=COALESCE($12,monthly_fee),
-     billing_cycle_day=COALESCE($13,billing_cycle_day), onboarding_date=COALESCE($14,onboarding_date),
-     notes=COALESCE($15,notes), status=COALESCE($16,status), payment_status=COALESCE($17,payment_status),
-     currency=COALESCE($18,currency), currency_symbol=COALESCE($19,currency_symbol),
-     retainer_hours=COALESCE($20,retainer_hours), used_hours=COALESCE($21,used_hours),
-     nps_score=COALESCE($22,nps_score), contract_start_date=COALESCE($23,contract_start_date),
-     contract_end_date=COALESCE($24,contract_end_date)
-     WHERE id=$25 RETURNING *`,
-    [
-      data.name ?? null, data.ownerName ?? null, data.mobile ?? null,
-      data.email ?? null, data.billingAddress ?? null, data.city ?? null, data.state ?? null,
-      data.pincode ?? null, data.gstNumber ?? null, data.pan ?? null,
-      data.serviceDetails ?? null, data.monthlyFee ?? null,
-      data.billingCycleDay ?? null, data.onboardingDate ?? null,
-      data.notes ?? null, data.status ?? null, data.paymentStatus ?? null,
-      data.currency ?? null, data.currencySymbol ?? null,
-      data.retainerHours != null ? parseFloat(data.retainerHours) : null,
-      data.usedHours != null ? parseFloat(data.usedHours) : null,
-      data.npsScore != null ? parseInt(data.npsScore, 10) : null,
-      data.contractStartDate ?? null, data.contractEndDate ?? null,
-      id,
-    ]
-  );
-  if (!rows.length) return null;
+  const fields = [];
+  const values = [];
+  let idx = 1;
+
+  const directMap = {
+    name: 'name',
+    ownerName: 'owner_name',
+    mobile: 'mobile',
+    email: 'email',
+    billingAddress: 'billing_address',
+    city: 'city',
+    state: 'state',
+    pincode: 'pincode',
+    gstNumber: 'gst_number',
+    pan: 'pan',
+    serviceDetails: 'service_details',
+    notes: 'notes',
+    status: 'status',
+    paymentStatus: 'payment_status',
+    currency: 'currency',
+    currencySymbol: 'currency_symbol',
+  };
+
+  for (const [key, col] of Object.entries(directMap)) {
+    if (data[key] !== undefined) {
+      fields.push(`${col} = $${idx++}`);
+      values.push(data[key] === '' ? null : data[key]);
+    }
+  }
+
+  if (data.monthlyFee !== undefined) {
+    fields.push(`monthly_fee = $${idx++}`);
+    values.push(parseFloat(data.monthlyFee) || 0);
+  }
+  if (data.billingCycleDay !== undefined) {
+    fields.push(`billing_cycle_day = $${idx++}`);
+    values.push(parseInt(data.billingCycleDay, 10) || 1);
+  }
+  if (data.retainerHours !== undefined) {
+    fields.push(`retainer_hours = $${idx++}`);
+    values.push(parseFloat(data.retainerHours) || 40);
+  }
+  if (data.usedHours !== undefined) {
+    fields.push(`used_hours = $${idx++}`);
+    values.push(parseFloat(data.usedHours) || 0);
+  }
+  if (data.npsScore !== undefined) {
+    fields.push(`nps_score = $${idx++}`);
+    values.push(data.npsScore != null ? parseInt(data.npsScore, 10) : null);
+  }
+  if (data.contractStartDate !== undefined) {
+    fields.push(`contract_start_date = $${idx++}`);
+    values.push(formatDateOnly(data.contractStartDate));
+  }
+  if (data.contractEndDate !== undefined) {
+    fields.push(`contract_end_date = $${idx++}`);
+    values.push(formatDateOnly(data.contractEndDate));
+  }
+  if (data.onboardingDate !== undefined) {
+    fields.push(`onboarding_date = $${idx++}`);
+    values.push(formatDateOnly(data.onboardingDate));
+  }
+
+  let rows = [];
+  if (fields.length > 0) {
+    values.push(id);
+    const sql = `UPDATE brands SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`;
+    const res = await pool.query(sql, values);
+    rows = res.rows;
+    if (!rows.length) return null;
+  } else {
+    const res = await pool.query('SELECT * FROM brands WHERE id = $1', [id]);
+    rows = res.rows;
+    if (!rows.length) return null;
+  }
 
   if (Array.isArray(data.memberIds)) {
     await pool.query('DELETE FROM brand_assignments WHERE brand_id=$1', [id]);

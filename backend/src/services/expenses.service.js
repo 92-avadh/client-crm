@@ -22,20 +22,16 @@ const EXPENSE_CATEGORIES = [
 const PAYMENT_MODES = ['Corporate Card', 'Bank Transfer', 'Cash', 'UPI', 'Cheque', 'Company NetBanking'];
 const PAYMENT_STATUSES = ['Paid', 'Pending'];
 
+const { formatDateOnly } = require('../utils/dateUtils');
+
 function mapExpense(e) {
-  let formattedDate = null;
-  if (e.date) {
-    if (typeof e.date === 'string') formattedDate = e.date.split('T')[0];
-    else if (e.date instanceof Date) formattedDate = e.date.toISOString().split('T')[0];
-    else formattedDate = String(e.date).split('T')[0];
-  }
   return {
     id: e.id,
     title: e.title || e.note || e.category || 'Expense',
     description: e.description || e.note || '',
     category: e.category,
     amount: parseFloat(e.amount || 0),
-    date: formattedDate,
+    date: formatDateOnly(e.date),
     paymentMode: e.payment_mode || 'Corporate Card',
     paymentStatus: e.payment_status || 'Paid',
     employeeName: e.employee_name || '',
@@ -139,7 +135,7 @@ async function createExpense(user, data) {
     const cleanAmount = parseFloat(data.amount) || 0;
     const cleanTitle = (data.title && data.title.trim()) || (data.note && data.note.trim()) || data.category || 'Expense';
     const cleanDesc = data.description !== undefined ? data.description : (data.note || '');
-    const cleanDate = data.date || new Date().toISOString().split('T')[0];
+    const cleanDate = formatDateOnly(data.date) || new Date().toISOString().split('T')[0];
 
     const { rows } = await client.query(
       `INSERT INTO expenses (
@@ -185,7 +181,7 @@ async function updateExpense(user, id, data) {
   const newDesc = pick('description', prev.description || prev.note || '');
   const newCategory = pick('category', prev.category);
   const newAmount = data.amount !== undefined ? parseFloat(data.amount) : parseFloat(prev.amount);
-  const newDate = pick('date', prev.date);
+  const newDate = data.date !== undefined ? formatDateOnly(data.date) : formatDateOnly(prev.date);
   const newMode = pick('paymentMode', prev.payment_mode);
   const newPayStatus = pick('paymentStatus', prev.payment_status || 'Paid');
   const newEmpName = pick('employeeName', prev.employee_name || '');

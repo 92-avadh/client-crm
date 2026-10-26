@@ -1,6 +1,7 @@
 const pool = require('../db');
 const crypto = require('crypto');
 const { sendWebhookEvent } = require('./webhook.service');
+const { formatDateOnly } = require('../utils/dateUtils');
 
 const notifId = () => 'notif_' + crypto.randomBytes(6).toString('hex');
 const auditId = () => 'audit_' + crypto.randomBytes(6).toString('hex');
@@ -75,11 +76,11 @@ async function getPortalDataByToken(token) {
       currency: brand.currency || 'INR',
       currencySymbol: brand.currency_symbol || '₹',
       billingCycleDay: brand.billing_cycle_day,
-      contractStartDate: brand.contract_start_date,
-      contractEndDate: brand.contract_end_date,
+      contractStartDate: formatDateOnly(brand.contract_start_date),
+      contractEndDate: formatDateOnly(brand.contract_end_date),
       status: brand.status,
       paymentStatus: brand.payment_status,
-      lastPaymentDate: brand.last_payment_date,
+      lastPaymentDate: formatDateOnly(brand.last_payment_date),
       npsScore: brand.nps_score,
       retainerHours,
       usedHours,
@@ -96,14 +97,14 @@ async function getPortalDataByToken(token) {
         description: t.description,
         status: t.status,
         priority: t.priority,
-        dueDate: t.due_date,
+        dueDate: formatDateOnly(t.due_date),
       })),
     },
     invoices: invoicesRes.rows.map(inv => ({
       id: inv.id,
       invoiceNumber: inv.invoice_number,
-      issueDate: inv.issue_date,
-      dueDate: inv.due_date,
+      issueDate: formatDateOnly(inv.issue_date),
+      dueDate: formatDateOnly(inv.due_date),
       totalAmount: parseFloat(inv.total_amount || 0),
       paidAmount: parseFloat(inv.paid_amount || 0),
       status: inv.status,

@@ -6,6 +6,8 @@ const genId = () => 'task_' + crypto.randomBytes(6).toString('hex');
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 const STATUSES = ['To Do', 'In Progress', 'In Review', 'Review', 'Completed'];
 
+const { formatDateOnly } = require('../utils/dateUtils');
+
 /** Row → API shape. */
 function mapTask(t) {
   return {
@@ -15,7 +17,7 @@ function mapTask(t) {
     title: t.title,
     description: t.description,
     assigneeId: t.assignee_id,
-    dueDate: t.due_date,
+    dueDate: formatDateOnly(t.due_date),
     priority: t.priority,
     status: t.status,
     createdAt: t.created_at,
@@ -79,7 +81,7 @@ async function createTask(user, data) {
       data.title,
       data.description || null,
       data.assigneeId || null,
-      data.dueDate || null,
+      formatDateOnly(data.dueDate),
       data.priority || 'Medium',
       data.status || 'To Do',
       user.id,
@@ -106,7 +108,7 @@ async function updateTask(id, data) {
       data.title ?? null,
       data.description ?? null,
       data.assigneeId ?? null,
-      data.dueDate ?? null,
+      data.dueDate !== undefined ? formatDateOnly(data.dueDate) : null,
       data.priority ?? null,
       data.status ?? null,
       data.projectId ?? null,

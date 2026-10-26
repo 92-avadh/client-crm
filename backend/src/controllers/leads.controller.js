@@ -16,6 +16,7 @@ const create = asyncHandler(async (req, res) => {
     .oneOf('source', leads.LEAD_SOURCES, { label: 'Source' })
     .oneOf('stage', leads.LEAD_STAGES, { label: 'Stage' })
     .number('value', { min: 0, label: 'Deal value' })
+    .optionalString('followUpDate', { max: 50, label: 'Follow up date' })
     .optionalString('notes', { max: 3000, label: 'Notes' })
     .validate();
 

@@ -149,11 +149,26 @@ export const ClientProfileDrawer: React.FC<Props> = ({
     { id: 'timeline' as const, label: 'Timeline' },
   ];
 
+  const formatDisplayDate = (d?: string) => {
+    if (!d) return '—';
+    const clean = String(d).split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const year = parts[0];
+      const month = months[parseInt(parts[1], 10) - 1] || parts[1];
+      const day = parseInt(parts[2], 10);
+      return `${day} ${month} ${year}`;
+    }
+    return clean;
+  };
+
   // Helper for contract renewal countdown
   const getRenewalBadge = (renewalDate?: string) => {
     if (!renewalDate) return null;
+    const clean = String(renewalDate).split('T')[0];
     const now = new Date();
-    const ren = new Date(renewalDate);
+    const ren = new Date(clean);
     const diffDays = Math.ceil((ren.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < 0) {
       return <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>Expired {Math.abs(diffDays)}d ago</span>;
@@ -161,7 +176,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
     if (diffDays <= 30) {
       return <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>Renews in {diffDays} days</span>;
     }
-    return <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, background: 'var(--bg-card)', color: 'var(--text-muted)' }}>Renews {renewalDate}</span>;
+    return <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, background: 'var(--bg-card)', color: 'var(--text-muted)' }}>Renews {formatDisplayDate(clean)}</span>;
   };
 
   return (
@@ -412,7 +427,56 @@ export const ClientProfileDrawer: React.FC<Props> = ({
 
               <div style={cardStyle}>
                 <span style={capStyle}>Agreed Services &amp; Deliverables</span>
-                <p style={{ color: 'var(--text-primary)', marginTop: 6, lineHeight: 1.5 }}>{brand.serviceDetails}</p>
+                <p style={{ color: 'var(--text-primary)', marginTop: 6, lineHeight: 1.5 }}>{brand.serviceDetails || 'No service details specified'}</p>
+              </div>
+
+              {/* Contract Period & Tax Information */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+                <div style={cardStyle}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <span style={capStyle}>Contract Agreement Period</span>
+                    {brand.contractEndDate && getRenewalBadge(brand.contractEndDate)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <Calendar style={{ width: 15, height: 15, color: 'var(--text-muted)', flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 13 }}>
+                      {formatDisplayDate(brand.contractStartDate)}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)' }}>→</span>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 13 }}>
+                      {brand.contractEndDate ? formatDisplayDate(brand.contractEndDate) : 'Ongoing'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Onboarded: {formatDisplayDate(brand.onboardingDate)}
+                  </div>
+                </div>
+
+                <div style={cardStyle}>
+                  <span style={capStyle}>Tax &amp; Business Registration</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>GSTIN:</span>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 12, color: brand.gstNumber ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        {brand.gstNumber || 'Not provided'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>PAN:</span>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 12, color: brand.pan ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        {brand.pan || 'Not provided'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Internal Notes */}
+              <div style={cardStyle}>
+                <span style={capStyle}>Internal Notes</span>
+                <p style={{ color: brand.notes ? 'var(--text-primary)' : 'var(--text-muted)', marginTop: 6, lineHeight: 1.5, fontStyle: brand.notes ? 'normal' : 'italic' }}>
+                  {brand.notes || 'No internal notes recorded for this client.'}
+                </p>
               </div>
             </div>
           )}
@@ -420,6 +484,24 @@ export const ClientProfileDrawer: React.FC<Props> = ({
           {/* CONTRACT & KYC VAULT TAB */}
           {activeTab === 'vault' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Master Contract Duration Header */}
+              {(brand.contractStartDate || brand.contractEndDate) && (
+                <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Calendar style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Master Retainer Contract Period
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        Started {formatDisplayDate(brand.contractStartDate)} {brand.contractEndDate ? `· Renews / Expires ${formatDisplayDate(brand.contractEndDate)}` : '· Ongoing Retainer'}
+                      </div>
+                    </div>
+                  </div>
+                  {brand.contractEndDate && getRenewalBadge(brand.contractEndDate)}
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>

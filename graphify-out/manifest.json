@@ -40,8 +40,8 @@
     "semantic_hash": ""
   },
   "backend/src/controllers/brands.controller.js": {
-    "mtime": 1792908308.301684,
-    "ast_hash": "65467e61c3417f3874f51c77ff4bbafa",
+    "mtime": 1793015375.6505415,
+    "ast_hash": "dfd2f7e9a1a1ff01d8cd01ee5c6b6cc6",
     "semantic_hash": ""
   },
   "backend/src/controllers/chat.controller.js": {
@@ -65,13 +65,13 @@
     "semantic_hash": ""
   },
   "backend/src/controllers/leads.controller.js": {
-    "mtime": 1791705048.9466314,
-    "ast_hash": "bae4f99d95a1a1e2ee432773142bedcd",
+    "mtime": 1793015735.2840686,
+    "ast_hash": "1fa0faa10ffb5c0ba452b02a7e521e79",
     "semantic_hash": ""
   },
   "backend/src/controllers/meetings.controller.js": {
-    "mtime": 1791825470.3120067,
-    "ast_hash": "8ac7693996c9a9b35f9468f1519e7dec",
+    "mtime": 1793015697.810637,
+    "ast_hash": "2059c591dca4ba362e38d957fbe33647",
     "semantic_hash": ""
   },
   "backend/src/controllers/notifications.controller.js": {
@@ -90,8 +90,8 @@
     "semantic_hash": ""
   },
   "backend/src/controllers/projects.controller.js": {
-    "mtime": 1791825491.1052437,
-    "ast_hash": "5528210d4104c999aada8fe6bafaf08b",
+    "mtime": 1793015461.5549304,
+    "ast_hash": "839f8f1479900808cc778b279bb4966b",
     "semantic_hash": ""
   },
   "backend/src/controllers/recurring-invoices.controller.js": {
@@ -105,8 +105,8 @@
     "semantic_hash": ""
   },
   "backend/src/controllers/tasks.controller.js": {
-    "mtime": 1792297510.2623155,
-    "ast_hash": "1b0f662cb23b13a97c819f0d12b3d590",
+    "mtime": 1793015514.3233905,
+    "ast_hash": "2858bbdfcc66a35b58d9c5ba153e4938",
     "semantic_hash": ""
   },
   "backend/src/controllers/users.controller.js": {
@@ -115,8 +115,8 @@
     "semantic_hash": ""
   },
   "backend/src/db/index.js": {
-    "mtime": 1791825085.0138724,
-    "ast_hash": "582e8cf2635d34dd7ba9bb7256d70b7e",
+    "mtime": 1793015297.9357777,
+    "ast_hash": "1c0a3989ef859d7fdfc000a63ff5698d",
     "semantic_hash": ""
   },
   "backend/src/db/reset.js": {
@@ -255,8 +255,8 @@
     "semantic_hash": ""
   },
   "backend/src/services/brands.service.js": {
-    "mtime": 1792950649.697674,
-    "ast_hash": "16df95a8cdebf8708064f55776440c5b",
+    "mtime": 1793015359.8402421,
+    "ast_hash": "e315a4784bcdbb4636fd072226998b53",
     "semantic_hash": ""
   },
   "backend/src/services/chat.service.js": {
@@ -265,8 +265,8 @@
     "semantic_hash": ""
   },
   "backend/src/services/expenses.service.js": {
-    "mtime": 1792991634.2721157,
-    "ast_hash": "3a62e3250e8e15ce4d622b0012b5c1dd",
+    "mtime": 1793015634.61715,
+    "ast_hash": "cae56dcc1a72659f1390e2db9157e3be",
     "semantic_hash": ""
   },
   "backend/src/services/health.service.js": {
@@ -280,18 +280,18 @@
     "semantic_hash": ""
   },
   "backend/src/services/invoices.service.js": {
-    "mtime": 1792991600.7222733,
-    "ast_hash": "e389bc2c87fe3fc6280e708c215baad3",
+    "mtime": 1793015583.9741976,
+    "ast_hash": "d5465c07a8007057fd07641a03baa322",
     "semantic_hash": ""
   },
   "backend/src/services/leads.service.js": {
-    "mtime": 1792991663.6878996,
-    "ast_hash": "671a2b7ab4749e995590eb717c8b6e9d",
+    "mtime": 1793015721.7637897,
+    "ast_hash": "7bc32ac0fa16a2040cac760ff5efe6d3",
     "semantic_hash": ""
   },
   "backend/src/services/meetings.service.js": {
-    "mtime": 1792991647.1964984,
-    "ast_hash": "8b88e5153cdccac35dd9a9935a990e11",
+    "mtime": 1793015681.2083771,
+    "ast_hash": "f50d4059c023c1383771d56cfd8f9eb5",
     "semantic_hash": ""
   },
   "backend/src/services/notifications.service.js": {
@@ -305,13 +305,13 @@
     "semantic_hash": ""
   },
   "backend/src/services/portal.service.js": {
-    "mtime": 1792298616.1661036,
-    "ast_hash": "e3d0be14b5a614e8a2b77db542babf1d",
+    "mtime": 1793015780.9379573,
+    "ast_hash": "7d39b924639184149a956bd5279c1695",
     "semantic_hash": ""
   },
   "backend/src/services/projects.service.js": {
-    "mtime": 1792991563.6282134,
-    "ast_hash": "50f1d619f33fa4e4253067962db2263b",
+    "mtime": 1793015443.2450316,
+    "ast_hash": "7b376aac961e672cf97c025b5528b453",
     "semantic_hash": ""
   },
   "backend/src/services/recurring-invoices.service.js": {
@@ -325,8 +325,8 @@
     "semantic_hash": ""
   },
   "backend/src/services/tasks.service.js": {
-    "mtime": 1792991588.6209984,
-    "ast_hash": "04d02dd07e0876ce6795b8bb8c02e217",
+    "mtime": 1793015494.7064936,
+    "ast_hash": "459511146bfc0ae62b7947ee19ccf2ce",
     "semantic_hash": ""
   },
   "backend/src/services/users.service.js": {
@@ -430,28 +430,28 @@
     "semantic_hash": ""
   },
   "frontend/src/components/clients/ClientFormModals.tsx": {
-    "mtime": 1792950717.6185596,
-    "ast_hash": "a4cdeb0de2ed4428540cdaad6cd2f80d",
+    "mtime": 1793016190.6195674,
+    "ast_hash": "541b9c98ef1be06e37f37c47993cde31",
     "semantic_hash": ""
   },
   "frontend/src/components/clients/ClientGrid.tsx": {
-    "mtime": 1792908655.76942,
-    "ast_hash": "c015f82280a301dee8c3e00fd21f8bde",
+    "mtime": 1793016113.810817,
+    "ast_hash": "19180b1217d993b7bb17fd5338873bad",
     "semantic_hash": ""
   },
   "frontend/src/components/clients/ClientProfileDrawer.tsx": {
-    "mtime": 1792950736.2155845,
-    "ast_hash": "64f59e774f41ba0e43145a9a799ee913",
+    "mtime": 1793016072.0011692,
+    "ast_hash": "8f1bc7dc059f4c5712c315c483d8ce6f",
     "semantic_hash": ""
   },
   "frontend/src/components/clients/ClientsManager.tsx": {
-    "mtime": 1792991831.684948,
-    "ast_hash": "eec6da6ee58e31cb33cf68b28d8d75c7",
+    "mtime": 1793016209.466744,
+    "ast_hash": "60ec3b43baf8bacc6b015785813c0cfe",
     "semantic_hash": ""
   },
   "frontend/src/components/clients/clientFormUi.tsx": {
-    "mtime": 1792299244.5435615,
-    "ast_hash": "70bfdc9a5cc2d9284bc3b61d963fe4e9",
+    "mtime": 1793016254.4399438,
+    "ast_hash": "72fff3e2b09e71a1df5b2b99e134254c",
     "semantic_hash": ""
   },
   "frontend/src/components/dashboard/Dashboard.tsx": {
@@ -685,8 +685,8 @@
     "semantic_hash": ""
   },
   "frontend/src/context/AppContext.tsx": {
-    "mtime": 1792991800.400558,
-    "ast_hash": "db5910aa208bc6adfa265bc5c7851fee",
+    "mtime": 1793015977.2341938,
+    "ast_hash": "44ccfd127744bdc3a59f4898e341e389",
     "semantic_hash": ""
   },
   "frontend/src/data/defaults.ts": {
@@ -1147,6 +1147,11 @@
   "frontend/public/images/scenario-urgent-escalation.jpg": {
     "mtime": 1792492216.8982694,
     "ast_hash": "38b2e4715d6773120944389006d731aa",
+    "semantic_hash": ""
+  },
+  "backend/src/utils/dateUtils.js": {
+    "mtime": 1793015282.6707194,
+    "ast_hash": "7751e0767544cf5503007d8aa721469c",
     "semantic_hash": ""
   }
 }
