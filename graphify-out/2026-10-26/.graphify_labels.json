@@ -104,5 +104,22 @@
   "102": "useApiData.ts",
   "103": "vite.config.ts",
   "104": "backup.sh",
-  "105": "useFinancials.ts"
+  "105": "useFinancials.ts",
+  "106": "users.service.js",
+  "107": "TeamManager.tsx",
+  "108": "tasks.controller.js",
+  "109": "meetings.service.js",
+  "110": "Client CRM — Issues, Root Causes, and Proposed Fixes",
+  "111": "projects.service.js",
+  "112": "permissionsConfig.ts",
+  "113": "api",
+  "114": "sendOtpEmail",
+  "115": "LoginScreen.tsx",
+  "116": "PhoneMockup.tsx",
+  "117": "auth.js",
+  "118": "VelocityMarquee.tsx",
+  "119": "MetricsGrid.tsx",
+  "120": "ClosingQrCta.tsx",
+  "121": "PricingMatrix.tsx",
+  "122": "RoiSimulator.tsx"
 }

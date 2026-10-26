@@ -176,8 +176,12 @@ export const ExpensesManager: React.FC = () => {
         isRecurring: formData.isRecurring,
       };
 
-      if (editingExpense) await updateExpense(editingExpense.id, payload);
-      else await addExpense(payload);
+      if (editingExpense) {
+        await updateExpense(editingExpense.id, payload);
+      } else {
+        await addExpense(payload);
+        setPage(0);
+      }
 
       setModalOpen(false);
       setEditingExpense(null);

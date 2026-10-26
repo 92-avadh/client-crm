@@ -158,6 +158,7 @@ export const InvoicesManager: React.FC = () => {
         notes: builder.notes,
       });
 
+      setPage(0);
       if (isRecurring && newInvoice?.id) {
         setRecurringInvoiceIds((prev) => new Set([...prev, newInvoice.id]));
       }

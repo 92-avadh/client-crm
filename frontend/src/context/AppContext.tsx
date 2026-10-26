@@ -1019,7 +1019,19 @@ export const AppProvider: React.FC<{
               req('clients', api.brands.listAll()),
             ]);
             const usersList = extractDataArray<User>(usersData);
-            if (usersList && usersList.length > 0) setAllUsers(usersList);
+            if (usersList && usersList.length > 0) {
+              setAllUsers(prev => {
+                const unsynced = prev.filter(p => !usersList.some(r => r.id === p.id));
+                const combined = [...usersList, ...unsynced];
+                try {
+                  localStorage.setItem('retentio_local_users', JSON.stringify(combined));
+                  if (activeUserId) {
+                    localStorage.setItem(`retentio_local_users_${activeUserId}`, JSON.stringify(combined));
+                  }
+                } catch {}
+                return combined;
+              });
+            }
             const normalizedBrands = normalizeBrandsList(brandsData);
             if (normalizedBrands) setBrands(normalizedBrands);
             break;
@@ -1211,11 +1223,17 @@ export const AppProvider: React.FC<{
         ]);
         const normalizedBrands = normalizeBrandsList(brandsData);
         if (normalizedBrands && normalizedBrands.length > 0) {
-          setBrands((prev) => (prev.length === 0 ? normalizedBrands : prev));
+          setBrands((prev) => {
+            const unsynced = prev.filter(p => !normalizedBrands.some(r => r.id === p.id));
+            return [...normalizedBrands, ...unsynced];
+          });
         }
         const usersList = extractDataArray<User>(usersData);
         if (usersList && usersList.length > 0) {
-          setAllUsers((prev) => (prev.length === 0 ? usersList : prev));
+          setAllUsers((prev) => {
+            const unsynced = prev.filter(p => !usersList.some(r => r.id === p.id));
+            return [...usersList, ...unsynced];
+          });
         }
       } catch {
         /* Non-blocking baseline preload */
@@ -1270,9 +1288,23 @@ export const AppProvider: React.FC<{
     const payStatus = brandData.paymentStatus === 'Paid' ? 'Paid' : 'Pending';
     const fee = Number(brandData.monthlyFee) || 0;
 
+    const rawMemberIds = Array.isArray(brandData.assignedMemberIds) ? brandData.assignedMemberIds : [];
+    const assignedMemberIds = currentUser && !rawMemberIds.includes(currentUser.id)
+      ? [...rawMemberIds, currentUser.id]
+      : rawMemberIds;
+
     let created: Brand;
     try {
-      created = await api.brands.create({ ...brandData, status: selectedStatus, paymentStatus: payStatus });
+      created = await api.brands.create({
+        ...brandData,
+        memberIds: assignedMemberIds,
+        assignedMemberIds,
+        status: selectedStatus,
+        paymentStatus: payStatus
+      });
+      if (created && (!created.assignedMemberIds || created.assignedMemberIds.length === 0)) {
+        created.assignedMemberIds = assignedMemberIds;
+      }
     } catch (_apiErr: any) {
       // Local fallback in bypass mode or API error
       created = {
@@ -1295,7 +1327,7 @@ export const AppProvider: React.FC<{
         paymentStatus: payStatus,
         lastActivityDate: today,
         lastPaymentDate: payStatus === 'Paid' ? today : '',
-        assignedMemberIds: brandData.assignedMemberIds || [],
+        assignedMemberIds,
         documents: []
       };
     }
@@ -2328,7 +2360,7 @@ export const AppProvider: React.FC<{
     // could not sign in and vanished on reload.
     const created = await api.users.create({ ...data, createdBy: currentUser?.id });
     setAllUsers(prev => {
-      const next = [...prev.filter(u => u.id !== created.id), created];
+      const next = [created, ...prev.filter(u => u.id !== created.id)];
       try {
         localStorage.setItem('retentio_local_users', JSON.stringify(next));
         if (activeUserId) {
@@ -2449,6 +2481,10 @@ export const AppProvider: React.FC<{
     if (!currentUser || isWorkspaceOwner(currentUser)) {
       return brands;
     }
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (perms.includes('clients') || currentUser.role === 'hr') {
+      return brands;
+    }
     // Team members only access clients explicitly assigned to them
     return brands.filter((b: Brand) => Array.isArray(b.assignedMemberIds) && b.assignedMemberIds.includes(currentUser.id));
   }, [brands, currentUser]);
@@ -2457,16 +2493,24 @@ export const AppProvider: React.FC<{
     if (!currentUser || isWorkspaceOwner(currentUser)) {
       return tasks;
     }
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (perms.includes('tasks') || currentUser.role === 'hr') {
+      return tasks;
+    }
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
-    return tasks.filter((t: Task) => t.assigneeId === currentUser.id || (t.brandId && myBrandIds.has(t.brandId)));
+    return tasks.filter((t: Task) => t.assigneeId === currentUser.id || !t.brandId || myBrandIds.has(t.brandId));
   }, [tasks, visibleBrands, currentUser]);
 
   const visibleProjects = useMemo((): Project[] => {
     if (!currentUser || isWorkspaceOwner(currentUser)) {
       return projects;
     }
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (perms.includes('projects') || currentUser.role === 'hr') {
+      return projects;
+    }
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
-    return projects.filter((p: Project) => (p.brandId && myBrandIds.has(p.brandId)) || (Array.isArray(p.assignedMemberIds) && p.assignedMemberIds.includes(currentUser.id)));
+    return projects.filter((p: Project) => !p.brandId || myBrandIds.has(p.brandId) || (Array.isArray(p.assignedMemberIds) && p.assignedMemberIds.includes(currentUser.id)));
   }, [projects, visibleBrands, currentUser]);
 
   const visibleInvoices = useMemo((): Invoice[] => {
@@ -2474,9 +2518,9 @@ export const AppProvider: React.FC<{
       return invoices;
     }
     const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
-    if (!perms.includes('invoices') && !perms.includes('finance')) return [];
+    if (!perms.includes('invoices') && !perms.includes('finance') && currentUser.role !== 'hr') return [];
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
-    return invoices.filter((i: Invoice) => Boolean(i.brandId && myBrandIds.has(i.brandId)));
+    return invoices.filter((i: Invoice) => !i.brandId || myBrandIds.has(i.brandId));
   }, [invoices, visibleBrands, currentUser]);
 
   const visiblePayments = useMemo((): Payment[] => {
@@ -2484,9 +2528,9 @@ export const AppProvider: React.FC<{
       return payments;
     }
     const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
-    if (!perms.includes('finance') && !perms.includes('invoices')) return [];
+    if (!perms.includes('finance') && !perms.includes('invoices') && currentUser.role !== 'hr') return [];
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
-    return payments.filter((p: Payment) => Boolean(p.brandId && myBrandIds.has(p.brandId)));
+    return payments.filter((p: Payment) => !p.brandId || myBrandIds.has(p.brandId));
   }, [payments, visibleBrands, currentUser]);
 
   const visibleExpenses = useMemo((): Expense[] => {
@@ -2494,17 +2538,21 @@ export const AppProvider: React.FC<{
       return expenses;
     }
     const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
-    if (!perms.includes('expenses') && !perms.includes('finance')) return [];
+    if (!perms.includes('expenses') && !perms.includes('finance') && currentUser.role !== 'hr') return [];
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
-    return expenses.filter((e: Expense) => Boolean((e.brandId && myBrandIds.has(e.brandId)) || (e.employeeId === currentUser.id)));
+    return expenses.filter((e: Expense) => !e.brandId || myBrandIds.has(e.brandId) || (e.employeeId === currentUser.id));
   }, [expenses, visibleBrands, currentUser]);
 
   const visibleMeetings = useMemo((): Meeting[] => {
     if (!currentUser || isWorkspaceOwner(currentUser)) {
       return meetings;
     }
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (perms.includes('meetings') || currentUser.role === 'hr') {
+      return meetings;
+    }
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
-    return meetings.filter((m: Meeting) => Boolean((Array.isArray(m.attendeeIds) && m.attendeeIds.includes(currentUser.id)) || (m.brandId && myBrandIds.has(m.brandId))));
+    return meetings.filter((m: Meeting) => Boolean((Array.isArray(m.attendeeIds) && m.attendeeIds.includes(currentUser.id)) || !m.brandId || myBrandIds.has(m.brandId)));
   }, [meetings, visibleBrands, currentUser]);
 
   const visibleLeads = useMemo((): Lead[] => {
@@ -2512,22 +2560,17 @@ export const AppProvider: React.FC<{
       return leads;
     }
     const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
-    if (!perms.includes('leads')) return [];
+    if (!perms.includes('leads') && currentUser.role !== 'hr') return [];
     return leads;
   }, [leads, currentUser]);
 
   const visibleUsers = useMemo((): User[] => {
     if (!currentUser) return allUsers;
-    if (isWorkspaceOwner(currentUser)) {
-      return allUsers.filter((u: User) => u && (u.id === currentUser.id || (u as any).createdBy === currentUser.id || !(u as any).createdBy));
+    if (currentUser.role === 'brand') {
+      return allUsers.filter((u: User) => u && (u.id === currentUser.id || u.brandId === currentUser.brandId || (Array.isArray(u.assignedBrandIds) && currentUser.brandId && u.assignedBrandIds.includes(currentUser.brandId))));
     }
-    const myAdminId = (currentUser as any).createdBy;
-    return allUsers.filter((u: User) => u && (
-      u.id === currentUser.id ||
-      u.id === myAdminId ||
-      (myAdminId && (u as any).createdBy === myAdminId) ||
-      (!myAdminId && !(u as any).createdBy)
-    ));
+    // All internal agency staff see their agency colleagues
+    return allUsers.filter((u: User) => u && u.role !== 'brand');
   }, [allUsers, currentUser]);
 
   return (

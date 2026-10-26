@@ -25,7 +25,8 @@ function mapUser(u, brandIds) {
     role: u.role, avatar: u.avatar, designation: u.designation,
     brandId: u.brand_id, isActive: u.is_active,
     permissions: perms,
-    assignedBrandIds: brandIds || []
+    assignedBrandIds: brandIds || [],
+    createdBy: u.created_by || null,
   };
 }
 
@@ -36,23 +37,15 @@ async function listUsers(user, { page = 1, pageSize = 50, includeInactive = fals
 
   if (user) {
     if (user.role === 'admin') {
-      where += ` AND (id = $${idx} OR created_by = $${idx})`;
-      params.push(user.id);
-      idx += 1;
+      // Admins manage the workspace and see all internal agency users
+      where += ` AND role != 'brand'`;
     } else if (user.role === 'brand') {
       where += ` AND (id = $${idx} OR brand_id = $${idx + 1} OR id IN (SELECT member_id FROM brand_assignments WHERE brand_id = $${idx + 1}))`;
       params.push(user.id, user.brandId || 'none');
       idx += 2;
     } else {
-      // Team members only discover colleagues in their own agency (same admin or assigned)
-      where += ` AND role != 'brand' AND (
-        id = $${idx} OR
-        created_by = (SELECT created_by FROM users WHERE id = $${idx}) OR
-        id = (SELECT created_by FROM users WHERE id = $${idx}) OR
-        created_by = $${idx}
-      )`;
-      params.push(user.id);
-      idx += 1;
+      // Internal agency staff (hr, project managers, team) see all colleagues in the agency
+      where += ` AND role != 'brand'`;
     }
   }
 

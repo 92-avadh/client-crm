@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const genId = () => 'task_' + crypto.randomBytes(6).toString('hex');
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
-const STATUSES = ['To Do', 'In Progress', 'Review', 'Completed'];
+const STATUSES = ['To Do', 'In Progress', 'In Review', 'Review', 'Completed'];
 
 /** Row → API shape. */
 function mapTask(t) {
@@ -32,10 +32,8 @@ function scopeForUser(user) {
     return { sql: ' AND brand_id = $1', params: [user.brandId || ''] };
   }
   if (user.role === 'admin') {
-    // The built-in owner sees everything. Every other admin must always be
-    // able to see tasks assigned directly to them, otherwise a task handed to
-    // a co-admin vanishes from their own board.
-    return { sql: ' AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $1) OR brand_id IS NULL OR assignee_id = $1)', params: [user.id] };
+    // Admins see tasks across their agency workspace
+    return { sql: ' AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $1 OR owner_id IS NULL) OR brand_id IS NULL OR assignee_id = $1 OR owner_id = $1 OR owner_id IS NULL)', params: [user.id] };
   }
   // Internal team members (standard, corporate presets, or custom roles)
   return {

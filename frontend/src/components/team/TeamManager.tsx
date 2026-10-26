@@ -165,6 +165,7 @@ export const TeamManager: React.FC = () => {
         avatar: form.avatar || undefined,
         permissions: form.permissions ?? getDefaultPermissionsForRole(form.role),
       });
+      setPage(0);
       setCreatedCreds({ name: form.name, email: form.email, password: form.password });
       showToast(`${form.name} added successfully`, 'success');
     } catch (err: any) {

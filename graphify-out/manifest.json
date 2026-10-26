@@ -250,8 +250,8 @@
     "semantic_hash": ""
   },
   "backend/src/services/auth.service.js": {
-    "mtime": 1792988792.027758,
-    "ast_hash": "727c95a00121472014e1e2e1271afc79",
+    "mtime": 1792989630.2752485,
+    "ast_hash": "c69f3abb584f2965bff8e1b9563d7739",
     "semantic_hash": ""
   },
   "backend/src/services/brands.service.js": {
@@ -265,8 +265,8 @@
     "semantic_hash": ""
   },
   "backend/src/services/expenses.service.js": {
-    "mtime": 1792920217.7713916,
-    "ast_hash": "88f738479a77868fdda1d2c63cc211df",
+    "mtime": 1792991634.2721157,
+    "ast_hash": "3a62e3250e8e15ce4d622b0012b5c1dd",
     "semantic_hash": ""
   },
   "backend/src/services/health.service.js": {
@@ -280,18 +280,18 @@
     "semantic_hash": ""
   },
   "backend/src/services/invoices.service.js": {
-    "mtime": 1792920207.2375593,
-    "ast_hash": "b06a32c621aa9fbce154a9cde53c3402",
+    "mtime": 1792991600.7222733,
+    "ast_hash": "e389bc2c87fe3fc6280e708c215baad3",
     "semantic_hash": ""
   },
   "backend/src/services/leads.service.js": {
-    "mtime": 1792908350.6213093,
-    "ast_hash": "cb594aefdec089ca4a2f5e61c369a8da",
+    "mtime": 1792991663.6878996,
+    "ast_hash": "671a2b7ab4749e995590eb717c8b6e9d",
     "semantic_hash": ""
   },
   "backend/src/services/meetings.service.js": {
-    "mtime": 1792920240.6550648,
-    "ast_hash": "9c07aa493e759a83184f82bd5c3192bd",
+    "mtime": 1792991647.1964984,
+    "ast_hash": "8b88e5153cdccac35dd9a9935a990e11",
     "semantic_hash": ""
   },
   "backend/src/services/notifications.service.js": {
@@ -300,8 +300,8 @@
     "semantic_hash": ""
   },
   "backend/src/services/payments.service.js": {
-    "mtime": 1792918882.1657908,
-    "ast_hash": "f647076438f66ffb61c11db3ba5e0b36",
+    "mtime": 1792991620.2592795,
+    "ast_hash": "27f899aa34eb058255a25cdf62aaff2a",
     "semantic_hash": ""
   },
   "backend/src/services/portal.service.js": {
@@ -310,8 +310,8 @@
     "semantic_hash": ""
   },
   "backend/src/services/projects.service.js": {
-    "mtime": 1792920229.1867418,
-    "ast_hash": "7d54648531c8c6b11917347d518f35f3",
+    "mtime": 1792991563.6282134,
+    "ast_hash": "50f1d619f33fa4e4253067962db2263b",
     "semantic_hash": ""
   },
   "backend/src/services/recurring-invoices.service.js": {
@@ -325,13 +325,13 @@
     "semantic_hash": ""
   },
   "backend/src/services/tasks.service.js": {
-    "mtime": 1792918814.8591545,
-    "ast_hash": "5a19a0344d18a3c71c377a43cca9cfda",
+    "mtime": 1792991588.6209984,
+    "ast_hash": "04d02dd07e0876ce6795b8bb8c02e217",
     "semantic_hash": ""
   },
   "backend/src/services/users.service.js": {
-    "mtime": 1792918699.7008364,
-    "ast_hash": "29025f42d1fee5496d30588d05f4acd7",
+    "mtime": 1792991542.1118102,
+    "ast_hash": "cf04dad885327938af3ac614d62ac600",
     "semantic_hash": ""
   },
   "backend/src/services/webhook.service.js": {
@@ -445,8 +445,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/clients/ClientsManager.tsx": {
-    "mtime": 1792950764.2165675,
-    "ast_hash": "59f830b763ab5c21ae8488a7d8145985",
+    "mtime": 1792991831.684948,
+    "ast_hash": "eec6da6ee58e31cb33cf68b28d8d75c7",
     "semantic_hash": ""
   },
   "frontend/src/components/clients/clientFormUi.tsx": {
@@ -470,8 +470,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/expenses/ExpensesManager.tsx": {
-    "mtime": 1792910858.3660512,
-    "ast_hash": "08578212187ed72b8aa4dd6b67e3108f",
+    "mtime": 1792991879.3698807,
+    "ast_hash": "1e4de07ec34b0795015192f9374b433f",
     "semantic_hash": ""
   },
   "frontend/src/components/expenses/expenseConfig.ts": {
@@ -515,8 +515,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/invoices/InvoicesManager.tsx": {
-    "mtime": 1792909385.201414,
-    "ast_hash": "7fd8fe199b0c12aa1367e9903dfc01ed",
+    "mtime": 1792991864.0427928,
+    "ast_hash": "0c0073fb678290a4ac9190dbd919d864",
     "semantic_hash": ""
   },
   "frontend/src/components/invoices/PaymentModals.tsx": {
@@ -570,8 +570,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/projects/ProjectsAndTasks.tsx": {
-    "mtime": 1792917200.6162932,
-    "ast_hash": "57c35fe1a00ef9217324d647bf00a00f",
+    "mtime": 1792991849.7373202,
+    "ast_hash": "62401486d156a81ee82bfec7766db652",
     "semantic_hash": ""
   },
   "frontend/src/components/retention/RetentionEngine.tsx": {
@@ -635,8 +635,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/team/TeamManager.tsx": {
-    "mtime": 1792909764.0012548,
-    "ast_hash": "323e00e0461fd282f6c5ca6bb5e22637",
+    "mtime": 1792991815.7755995,
+    "ast_hash": "dc4d97bfe6bc48e69633e7338a587a50",
     "semantic_hash": ""
   },
   "frontend/src/components/team/TeamTable.tsx": {
@@ -685,8 +685,8 @@
     "semantic_hash": ""
   },
   "frontend/src/context/AppContext.tsx": {
-    "mtime": 1792989191.3076398,
-    "ast_hash": "c7bcdeea496181f14db2dcb79a7535bd",
+    "mtime": 1792991800.400558,
+    "ast_hash": "db5910aa208bc6adfa265bc5c7851fee",
     "semantic_hash": ""
   },
   "frontend/src/data/defaults.ts": {

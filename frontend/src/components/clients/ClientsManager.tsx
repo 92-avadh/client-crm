@@ -213,6 +213,7 @@ export const ClientsManager: React.FC = () => {
         status: selectedStatus,
         paymentStatus: selectedPaymentStatus,
       } as any);
+      setPage(0);
       setShowOnboardModal(false);
       setFormData(emptyOnboard());
       // Do not auto-open the side drawer when adding a client

@@ -1,16 +1,16 @@
-# Graph Report - client-crm  (2026-10-18)
+# Graph Report - client-crm  (2026-10-26)
 
 ## Corpus Check
-- 177 files · ~254,226 words
+- 201 files · ~468,863 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1546 nodes · 2327 edges · 106 communities (97 shown, 9 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 158 edges (avg confidence: 0.53)
+- 1641 nodes · 2447 edges · 123 communities (112 shown, 11 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 162 edges (avg confidence: 0.53)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9b995380`
+- Built from commit: `0a08aab5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -118,13 +118,27 @@
 - [[_COMMUNITY_healthcheck.sh|healthcheck.sh]]
 - [[_COMMUNITY_backup.sh|backup.sh]]
 - [[_COMMUNITY_useFinancials.ts|useFinancials.ts]]
+- [[_COMMUNITY_users.service.js|users.service.js]]
+- [[_COMMUNITY_TeamManager.tsx|TeamManager.tsx]]
+- [[_COMMUNITY_tasks.controller.js|tasks.controller.js]]
+- [[_COMMUNITY_meetings.service.js|meetings.service.js]]
+- [[_COMMUNITY_Client CRM — Issues, Root Causes, and Proposed Fixes|Client CRM — Issues, Root Causes, and Proposed Fixes]]
+- [[_COMMUNITY_projects.service.js|projects.service.js]]
+- [[_COMMUNITY_permissionsConfig.ts|permissionsConfig.ts]]
+- [[_COMMUNITY_api|api]]
+- [[_COMMUNITY_sendOtpEmail|sendOtpEmail]]
+- [[_COMMUNITY_LoginScreen.tsx|LoginScreen.tsx]]
+- [[_COMMUNITY_PhoneMockup.tsx|PhoneMockup.tsx]]
+- [[_COMMUNITY_auth.js|auth.js]]
+- [[_COMMUNITY_VelocityMarquee.tsx|VelocityMarquee.tsx]]
+- [[_COMMUNITY_MetricsGrid.tsx|MetricsGrid.tsx]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `useApp()` - 46 edges
 2. `2. A to Z Engineering & Architecture Encyclopedia` - 27 edges
-3. `Brand` - 26 edges
+3. `Brand` - 25 edges
 4. `Retentio — Feature Reference` - 24 edges
-5. `User` - 23 edges
+5. `User` - 21 edges
 6. `Retentio API — Endpoint Reference` - 20 edges
 7. `compilerOptions` - 19 edges
 8. `Retentio — Backend API Endpoints` - 19 edges
@@ -132,33 +146,33 @@
 10. `makeValidator()` - 17 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `generateDueRecurring()` --calls--> `sendWebhookEvent()`  [INFERRED]
+  backend/src/services/recurring-invoices.service.js → backend/src/services/webhook.service.js
+- `MainLayout()` --calls--> `useApp()`  [EXTRACTED]
+  frontend/src/App.tsx → frontend/src/context/AppContext.tsx
 - `AlertDialogHeader()` --calls--> `cn()`  [INFERRED]
   frontend/src/components/animate-ui/components/base/alert-dialog.tsx → frontend/src/lib/utils.ts
 - `AlertDialogTitle()` --calls--> `cn()`  [INFERRED]
   frontend/src/components/animate-ui/components/base/alert-dialog.tsx → frontend/src/lib/utils.ts
 - `AlertDialogDescription()` --calls--> `cn()`  [INFERRED]
   frontend/src/components/animate-ui/components/base/alert-dialog.tsx → frontend/src/lib/utils.ts
-- `AlertDialogFooter()` --calls--> `cn()`  [INFERRED]
-  frontend/src/components/animate-ui/components/base/alert-dialog.tsx → frontend/src/lib/utils.ts
-- `DropdownMenuShortcut()` --calls--> `cn()`  [INFERRED]
-  frontend/src/components/animate-ui/components/radix/dropdown-menu.tsx → frontend/src/lib/utils.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (106 total, 9 thin omitted)
+## Communities (123 total, 11 thin omitted)
 
 ### Community 0 - "TeamManager.tsx"
-Cohesion: 0.07
-Nodes (47): PermissionGate(), ProfileProps, AddMemberForm, AddMemberModal(), inputStyle, labelStyle, Props, EditMemberForm (+39 more)
+Cohesion: 0.16
+Nodes (14): AddMemberForm, inputStyle, labelStyle, Props, EditMemberForm, inputStyle, labelStyle, Props (+6 more)
 
 ### Community 1 - "ProfileTab.tsx"
 Cohesion: 0.06
-Nodes (47): OnboardingData, OnboardingWizard(), OnboardingWizardProps, GOALS, StepGoals(), StepGoalsProps, INDUSTRIES, StepIndustry() (+39 more)
+Nodes (49): OnboardingData, OnboardingWizard(), OnboardingWizardProps, GOALS, StepGoals(), StepGoalsProps, INDUSTRIES, StepIndustry() (+41 more)
 
 ### Community 2 - "InvoicesManager.tsx"
-Cohesion: 0.09
-Nodes (37): InvoiceBuilderModal(), Props, inr(), InvoicePreviewModal(), Props, InvoicesManager(), badgeActive, badgeBase (+29 more)
+Cohesion: 0.08
+Nodes (40): importDashboard(), BRAND, Dashboard(), formatDateDisplay(), FinanceManager(), InvoiceBuilderModal(), Props, inr() (+32 more)
 
 ### Community 3 - "Retentio — Feature Reference"
 Cohesion: 0.04
@@ -166,47 +180,47 @@ Nodes (42): 10. WhatsApp Click-to-Share, 11. Chat / Inbox System, 12. Projects M
 
 ### Community 4 - "alert-dialog.tsx"
 Cohesion: 0.06
-Nodes (33): AlertDialogAction(), AlertDialogCancel(), AlertDialogContext, AlertDialogContextType, AlertDialogDescription(), AlertDialogFooter(), AlertDialogHeader(), AlertDialogPopup (+25 more)
+Nodes (36): AlertDialogAction(), AlertDialogCancel(), AlertDialogContext, AlertDialogContextType, AlertDialogDescription(), AlertDialogFooter(), AlertDialogHeader(), AlertDialogPopup (+28 more)
 
 ### Community 5 - "dependencies"
 Cohesion: 0.05
-Nodes (41): dependencies, canvas-confetti, clsx, date-fns, framer-motion, lucide-react, @radix-ui/react-dropdown-menu, @radix-ui/react-slot (+33 more)
+Nodes (43): dependencies, canvas-confetti, clsx, date-fns, framer-motion, gsap, lenis, lucide-react (+35 more)
 
 ### Community 6 - "2. A to Z Engineering & Architecture Encyclopedia"
 Cohesion: 0.05
 Nodes (39): 0. 🚨 Mandatory Pre-Project & Pre-Task Kickoff Gate, 1. Integrated Agent Frameworks & Workflows, 2. A to Z Engineering & Architecture Encyclopedia, 3. End-to-End Delivery Protocol & Quality Gate, **A** — Accessibility (A11y) & AbortController, AI Engineering & Architecture Master Standard (A to Z), **B** — Bundle Optimization & Boundary Validation, **C** — Caching Strategies & CSRF Protection (+31 more)
 
 ### Community 7 - "ClientFormModals.tsx"
-Cohesion: 0.08
-Nodes (26): BILLING_CYCLE_HELPER, BILLING_CYCLE_OPTIONS, CURRENCY_OPTIONS, EditClientModal(), EditProps, footerStyle, INITIAL_STATUS_OPTIONS, modalShell (+18 more)
+Cohesion: 0.11
+Nodes (22): BILLING_CYCLE_HELPER, BILLING_CYCLE_OPTIONS, CURRENCY_OPTIONS, EditProps, footerStyle, INITIAL_STATUS_OPTIONS, modalShell, OnboardProps (+14 more)
 
 ### Community 8 - "Retentio"
 Cohesion: 0.05
 Nodes (39): API Overview, Backend, Backend, Backend — Transaction Safety, Chat System, Client & Brand Management, Database, Day-to-Day Usage (after first time) (+31 more)
 
 ### Community 9 - "chat.service.js"
-Cohesion: 0.08
-Nodes (30): asyncHandler, chat, createConversation, deleteMessage, directConversation, listConversations, listMessages, { makeValidator } (+22 more)
+Cohesion: 0.15
+Nodes (17): attId(), CONVERSATION_TYPES, createConversation(), crypto, ensureDirectConversations(), genId(), getAttachmentsForMessages(), getOrCreateDirectConversation() (+9 more)
 
 ### Community 10 - "invoices.service.js"
-Cohesion: 0.08
-Nodes (31): asyncHandler, bulkRemove, create, get, invoices, list, { makeValidator }, pdfData (+23 more)
+Cohesion: 0.17
+Nodes (19): auditId(), createInvoice(), crypto, deleteInvoice(), deleteInvoices(), genId(), getInvoice(), getItems() (+11 more)
 
 ### Community 11 - "ExpensesManager.tsx"
-Cohesion: 0.13
-Nodes (22): CATEGORY_CONFIG, CategoryStyle, PAYMENT_MODES, STANDARD_CATEGORIES, DeleteExpenseModal(), DeleteProps, ExpenseFormData, ExpenseFormModal() (+14 more)
+Cohesion: 0.15
+Nodes (17): CATEGORY_CONFIG, CategoryStyle, PAYMENT_MODES, STANDARD_CATEGORIES, ExpenseFormModal(), emptyForm(), ExpensesManager(), todayIso() (+9 more)
 
 ### Community 12 - "AppContext.tsx"
-Cohesion: 0.12
-Nodes (29): AppContext, AppContextType, Toast, DEFAULT_SETTINGS, DEMO_BRANDS, DEMO_EXPENSES, DEMO_INVOICES, DEMO_LEADS (+21 more)
+Cohesion: 0.13
+Nodes (17): importMeetings(), MeetingsCalendar(), AppContextType, Financials, useFinancials(), AuditLogItem, ChatAttachment, CorporateRole (+9 more)
 
 ### Community 13 - "payments.service.js"
 Cohesion: 0.08
 Nodes (28): asyncHandler, bulkRemove, crypto, list, { makeValidator }, payments, razorpayInitiate, razorpayVerify (+20 more)
 
 ### Community 14 - "App.tsx"
-Cohesion: 0.08
-Nodes (24): AppRoutesProps, ChatManager, ClientPortal, ClientsManager, Dashboard, ExpensesManager, FinanceManager, importChat() (+16 more)
+Cohesion: 0.07
+Nodes (26): AppRoutesProps, ChatManager, ClientPortal, ClientsManager, Dashboard, ExpensesManager, FinanceManager, importClients() (+18 more)
 
 ### Community 15 - "expenses.service.js"
 Cohesion: 0.09
@@ -217,28 +231,28 @@ Cohesion: 0.07
 Nodes (22): ALLOWED_ORIGINS, ALLOWED_PATTERNS, app, auth, authLimiter, burstLimiter, { connectWithRetry }, cors (+14 more)
 
 ### Community 17 - "users.service.js"
-Cohesion: 0.10
-Nodes (22): asyncHandler, create, deactivate, get, list, { makeValidator }, update, users (+14 more)
+Cohesion: 0.15
+Nodes (11): asyncHandler, create, deactivate, get, list, { makeValidator }, update, users (+3 more)
 
 ### Community 18 - "dependencies"
 Cohesion: 0.08
 Nodes (24): dependencies, bcryptjs, cors, dotenv, express, express-rate-limit, helmet, jsonwebtoken (+16 more)
 
 ### Community 19 - "tasks.service.js"
-Cohesion: 0.10
-Nodes (21): asyncHandler, create, list, { makeValidator }, tasks, update, updateStatus, controller (+13 more)
+Cohesion: 0.23
+Nodes (11): createTask(), crypto, genId(), listTasks(), mapTask(), pool, PRIORITIES, scopeForUser() (+3 more)
 
 ### Community 20 - "leads.service.js"
 Cohesion: 0.17
 Nodes (10): asyncHandler, convert, create, leads, list, { makeValidator }, updateStage, controller (+2 more)
 
 ### Community 21 - "meetings.service.js"
-Cohesion: 0.11
-Nodes (20): asyncHandler, create, list, { makeValidator }, meetings, remove, update, controller (+12 more)
+Cohesion: 0.17
+Nodes (10): asyncHandler, create, list, { makeValidator }, meetings, remove, update, controller (+2 more)
 
 ### Community 22 - "auth.service.js"
-Cohesion: 0.06
-Nodes (38): asyncHandler, auth, COOKIE_OPTIONS, forgotPassword, login, logout, { makeValidator }, me (+30 more)
+Cohesion: 0.16
+Nodes (15): bcrypt, crypto, forgotPassword(), genId(), genOtp(), issueOtp(), jwt, login() (+7 more)
 
 ### Community 23 - "brands.service.js"
 Cohesion: 0.16
@@ -249,12 +263,12 @@ Cohesion: 0.09
 Nodes (21): compilerOptions, allowArbitraryExtensions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection (+13 more)
 
 ### Community 25 - "projects.controller.js"
-Cohesion: 0.11
-Nodes (17): asyncHandler, create, list, { makeValidator }, projects, update, controller, express (+9 more)
+Cohesion: 0.18
+Nodes (9): asyncHandler, create, list, { makeValidator }, projects, update, controller, express (+1 more)
 
 ### Community 26 - "RetentionEngine.tsx"
-Cohesion: 0.17
-Nodes (11): importRetention(), badgeDanger, badgeSuccess, badgeWarning, btnPrimary, btnSecondary, inputFieldStyle, modalOverlay (+3 more)
+Cohesion: 0.09
+Nodes (21): importLeads(), importRetention(), btnPrimary, btnSecondary, inputFieldStyle, LeadsPipeline(), modalOverlay, badgeDanger (+13 more)
 
 ### Community 27 - "holidays.controller.js"
 Cohesion: 0.12
@@ -265,8 +279,8 @@ Cohesion: 0.11
 Nodes (18): Authentication & Roles, Brand/Client Management (Section 3.2 & 3.3), Chat (Section 3.8), Dashboard (Section 3.11), ✅ DONE — Frontend Features Implemented, Finance / Payments & Expenses (Section 3.4 & 3.5), Inbox (Section 3.11), Invoices (Section 3.7) (+10 more)
 
 ### Community 29 - "useApp"
-Cohesion: 0.20
-Nodes (3): importInbox(), FilterTab, InboxManager()
+Cohesion: 0.18
+Nodes (4): importInbox(), FilterTab, InboxManager(), AppNotification
 
 ### Community 30 - "package.json"
 Cohesion: 0.11
@@ -277,40 +291,40 @@ Cohesion: 0.12
 Nodes (16): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, noEmit, noFallthroughCasesInSwitch (+8 more)
 
 ### Community 32 - "brands.controller.js"
-Cohesion: 0.13
-Nodes (15): addDocument, assignMembers, asyncHandler, brands, churn, create, get, list (+7 more)
+Cohesion: 0.11
+Nodes (18): addDocument, assignMembers, asyncHandler, brands, churn, create, get, list (+10 more)
 
 ### Community 33 - "ProjectsAndTasks.tsx"
-Cohesion: 0.15
-Nodes (14): importProjectsAndTasks(), btnPrimary, btnSecondary, getDefaultDueDate(), getTodayDate(), inputFieldStyle, modalOverlay, ProjectsAndTasks() (+6 more)
+Cohesion: 0.12
+Nodes (16): importProjectsAndTasks(), btnPrimary, btnSecondary, getDefaultDueDate(), getTodayDate(), inputFieldStyle, modalOverlay, ProjectsAndTasks() (+8 more)
 
 ### Community 34 - "portal.service.js"
-Cohesion: 0.17
-Nodes (10): auditId(), crypto, notifId(), pool, { sendWebhookEvent }, submitPortalFeedback(), generateDueRecurring(), notifId() (+2 more)
+Cohesion: 0.21
+Nodes (8): auditId(), crypto, notifId(), pool, { sendWebhookEvent }, submitPortalFeedback(), pool, sendWebhookEvent()
 
 ### Community 35 - "🏛️ The 10 Engineering Pillars (Deduplicated Master Checklist)"
 Cohesion: 0.14
 Nodes (13): 10. Observability, Operations & Incident Response, 1. Security & Cryptography, 2. Authentication, Authorization & Identity, 3. Database Architecture & Concurrency, 4. Reliability, Resilience & Fault Tolerance, 5. Distributed Systems & Data Consistency, 6. Performance, Caching & Scaling, 7. Networking & Communication Protocols (+5 more)
 
 ### Community 36 - "auth.controller.js"
-Cohesion: 0.24
-Nodes (10): MainLayout(), MeetingsCalendar(), ChatManager(), Sidebar(), StarParticles(), Topbar(), useApp(), ConfirmOptions (+2 more)
+Cohesion: 0.18
+Nodes (10): EditClientModal(), OnboardClientModal(), Sidebar(), Topbar(), processImageFile(), ConfirmOptions, ICONS, useConfirm() (+2 more)
 
 ### Community 37 - "Retentio API — Endpoint Reference"
 Cohesion: 0.14
 Nodes (14): AUDIT LOGS MODULE, Common Error Examples, Error Responses, EXPENSES MODULE, GET /api/audit-logs, GET /api/expenses, GET /api/health, GET /api/settings (+6 more)
 
 ### Community 38 - "api.ts"
-Cohesion: 0.12
-Nodes (20): importPortal(), features, ForgotStep, LoginScreen(), LoginScreenProps, RegStep, api, CacheEntry (+12 more)
+Cohesion: 0.20
+Nodes (13): CacheEntry, clearApiCache(), clearToken(), fetchAll(), fetchAllAuditLogs(), getToken(), handleSessionExpired(), inFlightRequests (+5 more)
 
 ### Community 39 - "Retentio — Backend API Endpoints"
 Cohesion: 0.17
 Nodes (11): 39. GET /api/expenses, 40. POST /api/expenses, 56. GET /api/settings, 57. PATCH /api/settings, 61. GET /api/audit-logs, 📋 AUDIT LOGS MODULE, 🗄️ DATABASE SETUP (PostgreSQL via Docker), 📊 ENDPOINTS SUMMARY (+3 more)
 
 ### Community 40 - "auditLogs.controller.js"
-Cohesion: 0.25
-Nodes (6): asyncHandler, auditLogs, list, controller, express, router
+Cohesion: 0.18
+Nodes (9): asyncHandler, auditLogs, list, controller, express, router, listAuditLogs(), mapAuditLog() (+1 more)
 
 ### Community 41 - "settings.controller.js"
 Cohesion: 0.17
@@ -318,39 +332,39 @@ Nodes (10): asyncHandler, get, { makeValidator }, resetData, settings, testWebho
 
 ### Community 42 - "ClientProfileDrawer.tsx"
 Cohesion: 0.11
-Nodes (20): importClients(), AssignMembersModal(), Props, ClientFormData, ClientGrid(), ClientRole, Props, capStyle (+12 more)
+Nodes (21): AssignMembersModal(), Props, ClientFormData, ClientGrid(), ClientRole, Props, capStyle, cardStyle (+13 more)
 
 ### Community 43 - "FinanceManager.tsx"
-Cohesion: 0.17
-Nodes (10): badgeActive, badgeDanger, badgeInfo, badgeNeutral, badgeWarning, btnPrimary, btnSecondary, FinanceManager() (+2 more)
+Cohesion: 0.13
+Nodes (16): DeleteExpenseModal(), DeleteProps, ExpenseFormData, badgeActive, badgeDanger, badgeInfo, badgeNeutral, badgeWarning (+8 more)
 
 ### Community 44 - "portal.controller.js"
 Cohesion: 0.18
 Nodes (9): asyncHandler, getInvoice, getPortal, { makeValidator }, portalService, submitFeedback, controller, express (+1 more)
 
 ### Community 45 - "asyncHandler.js"
-Cohesion: 0.29
-Nodes (4): asyncHandler, express, healthService, router
+Cohesion: 0.25
+Nodes (7): asyncHandler, express, healthService, router, calculateBrandHealth(), getAgencyHealthOverview(), pool
 
 ### Community 46 - "ChatManager.tsx"
-Cohesion: 0.24
-Nodes (12): EXTENDED_EMOJIS, QUICK_EMOJIS, WA, connectSocket(), disconnectSocket(), emitDeleteMessage(), emitMarkRead(), emitTypingStatus() (+4 more)
+Cohesion: 0.14
+Nodes (20): importChat(), ChatManager(), EXTENDED_EMOJIS, initialOf(), QUICK_EMOJIS, WA, AppContext, Toast (+12 more)
 
 ### Community 47 - "🏢 BRANDS / CLIENTS MODULE"
 Cohesion: 0.20
 Nodes (10): 10. GET /api/brands, 11. GET /api/brands/:id, 12. POST /api/brands, 13. PATCH /api/brands/:id, 14. PATCH /api/brands/:id/assign-members, 15. PATCH /api/brands/:id/log-activity, 16. PATCH /api/brands/:id/churn, 17. PATCH /api/brands/:id/snooze-retention (+2 more)
 
 ### Community 48 - "notifications.controller.js"
-Cohesion: 0.20
-Nodes (8): asyncHandler, list, markAllRead, markRead, notifications, controller, express, router
+Cohesion: 0.14
+Nodes (12): asyncHandler, list, markAllRead, markRead, notifications, controller, express, router (+4 more)
 
 ### Community 49 - "recurring-invoices.controller.js"
-Cohesion: 0.20
+Cohesion: 0.17
 Nodes (9): asyncHandler, create, get, list, { makeValidator }, remove, runNow, svc (+1 more)
 
 ### Community 50 - "recurring-invoices.service.js"
-Cohesion: 0.22
-Nodes (5): createRecurring(), crypto, genId(), invoicesService, pool
+Cohesion: 0.20
+Nodes (7): createRecurring(), crypto, generateDueRecurring(), genId(), invoicesService, notifId(), pool
 
 ### Community 51 - "BRANDS MODULE"
 Cohesion: 0.20
@@ -361,8 +375,8 @@ Cohesion: 0.20
 Nodes (9): badgeActive, badgeDanger, badgeInfo, badgeNeutral, badgeWarning, btnPrimary, btnSecondary, inputFieldStyle (+1 more)
 
 ### Community 53 - "index.js"
-Cohesion: 0.22
-Nodes (4): pool, connectWithRetry(), { Pool }, pool
+Cohesion: 0.33
+Nodes (3): connectWithRetry(), { Pool }, pool
 
 ### Community 54 - "wrangler.json"
 Cohesion: 0.22
@@ -377,20 +391,20 @@ Cohesion: 0.26
 Nodes (11): convertLeadToBrand(), createLead(), crypto, genId(), LEAD_SOURCES, LEAD_STAGES, listLeads(), mapLead() (+3 more)
 
 ### Community 58 - "LeadsPipeline.tsx"
-Cohesion: 0.15
-Nodes (13): importDashboard(), importLeads(), BRAND, Dashboard(), formatDateDisplay(), btnPrimary, btnSecondary, inputFieldStyle (+5 more)
+Cohesion: 0.10
+Nodes (19): importLanding(), CallsSection(), CallsSectionProps, ContactSection(), FaqSection(), HeroIntersect(), HeroIntersectProps, LandingFooter() (+11 more)
 
 ### Community 59 - "ErrorBoundary"
-Cohesion: 0.25
+Cohesion: 0.22
 Nodes (3): ErrorBoundary, Props, State
 
 ### Community 60 - "seed.js"
-Cohesion: 0.33
-Nodes (6): bcrypt, fs, path, pool, runSchema(), seed()
+Cohesion: 0.40
+Nodes (5): fs, path, pool, runSchema(), seed()
 
 ### Community 62 - "LoginScreen.tsx"
-Cohesion: 0.67
-Nodes (3): listAuditLogs(), mapAuditLog(), pool
+Cohesion: 0.12
+Nodes (15): asyncHandler, chat, clearConversation, createConversation, deleteConversation, deleteMessage, directConversation, listConversations (+7 more)
 
 ### Community 63 - "🧾 INVOICES MODULE"
 Cohesion: 0.33
@@ -401,8 +415,8 @@ Cohesion: 0.33
 Nodes (6): 5. GET /api/users, 6. GET /api/users/:id, 7. POST /api/users, 8. PATCH /api/users/:id, 9. PATCH /api/users/:id/deactivate, 👥 USERS / TEAM MODULE
 
 ### Community 65 - "notifications.service.js"
-Cohesion: 0.47
-Nodes (4): listNotifications(), mapNotif(), markRead(), pool
+Cohesion: 0.13
+Nodes (14): asyncHandler, auth, COOKIE_OPTIONS, forgotPassword, login, logout, { makeValidator }, me (+6 more)
 
 ### Community 66 - "Overview"
 Cohesion: 0.33
@@ -489,8 +503,8 @@ Cohesion: 0.40
 Nodes (5): GET /api/tasks, PATCH /api/tasks/:id, PATCH /api/tasks/:id/status, POST /api/tasks, TASKS MODULE
 
 ### Community 87 - "api"
-Cohesion: 0.67
-Nodes (3): calculateBrandHealth(), getAgencyHealthOverview(), pool
+Cohesion: 0.13
+Nodes (13): asyncHandler, bulkRemove, create, get, invoices, list, { makeValidator }, pdfData (+5 more)
 
 ### Community 88 - "📁 PROJECTS MODULE"
 Cohesion: 0.50
@@ -505,8 +519,8 @@ Cohesion: 0.50
 Nodes (4): 58. GET /api/holidays, 59. POST /api/holidays, 60. DELETE /api/holidays/:id, 🗓️ HOLIDAYS MODULE
 
 ### Community 91 - "brands.js"
-Cohesion: 0.50
-Nodes (3): controller, express, router
+Cohesion: 0.18
+Nodes (11): MemberDrawer(), Props, Props, TeamTable(), Avatar(), AVATAR_COLORS, AVATAR_PRESETS, getAvatarColor() (+3 more)
 
 ### Community 92 - "HOLIDAYS MODULE"
 Cohesion: 0.50
@@ -524,25 +538,73 @@ Nodes (4): GET /api/projects, PATCH /api/projects/:id, POST /api/projects, PROJE
 Cohesion: 0.50
 Nodes (3): Expanding the Oxlint configuration, React Compiler, React + TypeScript + Vite
 
+### Community 105 - "useFinancials.ts"
+Cohesion: 0.14
+Nodes (13): Client CRM — Fixes Applied & Pre-Launch Verification Guide, Part 1 — Why the same error kept coming back for a month, Part 2 — All fixes applied, Part 3 — Verification actually run, Part 4 — Two blockers before go-live, Part 5 — Pre-launch checklist, Part 6 — Additional hardening applied (follow-up pass), Part 7 — Final consistency pass (+5 more)
+
+### Community 106 - "users.service.js"
+Cohesion: 0.24
+Nodes (11): bcrypt, createUser(), crypto, deactivateUser(), genId(), getAssignedBrandIds(), getUser(), mapUser() (+3 more)
+
+### Community 107 - "TeamManager.tsx"
+Cohesion: 0.24
+Nodes (11): PermissionGate(), AddMemberModal(), EditMemberModal(), ACCEPTED_EXTENSIONS, ACCEPTED_TYPES, generatePassword(), ProcessResult, getDefaultPermissionsForRole() (+3 more)
+
+### Community 108 - "tasks.controller.js"
+Cohesion: 0.17
+Nodes (10): asyncHandler, create, list, { makeValidator }, tasks, update, updateStatus, controller (+2 more)
+
+### Community 109 - "meetings.service.js"
+Cohesion: 0.27
+Nodes (10): attachAttendees(), createMeeting(), crypto, genId(), getAttendeesForMeetings(), getMeeting(), listMeetings(), mapMeeting() (+2 more)
+
+### Community 110 - "Client CRM — Issues, Root Causes, and Proposed Fixes"
+Cohesion: 0.17
+Nodes (11): Client CRM — Issues, Root Causes, and Proposed Fixes, Confirmed (report is correct), New problems the report missed, Part 1 — What I verified, and what the report gets wrong, Part 2 — Issues I could not verify (need your input), Part 3 — Proposed fix plan (in dependency order), Part 4 — Decisions I need from you, Report is wrong or incomplete (+3 more)
+
+### Community 111 - "projects.service.js"
+Cohesion: 0.29
+Nodes (8): createProject(), crypto, genId(), getProject(), mapProject(), pool, PROJECT_STATUSES, updateProject()
+
+### Community 112 - "permissionsConfig.ts"
+Cohesion: 0.29
+Nodes (8): ALL_PERMISSION_IDS, AVAILABLE_PERMISSIONS, CorporateRoleOption, ModulePermission, PERMISSION_PRESETS, PermissionPreset, ICON_MAP, Props
+
+### Community 113 - "api"
+Cohesion: 0.29
+Nodes (5): importPortal(), PremiumLogoLoader(), PremiumLogoLoaderProps, api, PortalData
+
+### Community 114 - "sendOtpEmail"
+Cohesion: 0.48
+Nodes (6): createTransporter(), escapeHtml(), nodemailer, sendOtpEmail(), sendViaBrevo(), sendViaResend()
+
+### Community 115 - "LoginScreen.tsx"
+Cohesion: 0.29
+Nodes (6): features, ForgotStep, LoginScreen(), LoginScreenProps, RegStep, setToken()
+
+### Community 117 - "auth.js"
+Cohesion: 0.40
+Nodes (4): auth, controller, express, router
+
 ## Knowledge Gaps
-- **836 isolated node(s):** `$schema`, `plugins`, `react/rules-of-hooks`, `react/only-export-components`, `healthcheck.sh script` (+831 more)
+- **876 isolated node(s):** `$schema`, `plugins`, `react/rules-of-hooks`, `react/only-export-components`, `healthcheck.sh script` (+871 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `makeValidator()` connect `brands.controller.js` to `chat.service.js`, `invoices.service.js`, `settings.controller.js`, `portal.controller.js`, `payments.service.js`, `expenses.service.js`, `recurring-invoices.controller.js`, `users.service.js`, `tasks.service.js`, `leads.service.js`, `meetings.service.js`, `auth.service.js`, `projects.controller.js`, `holidays.controller.js`, `validate.js`?**
-  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `makeValidator()` connect `brands.controller.js` to `notifications.service.js`, `settings.controller.js`, `portal.controller.js`, `payments.service.js`, `tasks.controller.js`, `expenses.service.js`, `recurring-invoices.controller.js`, `users.service.js`, `leads.service.js`, `meetings.service.js`, `api`, `projects.controller.js`, `holidays.controller.js`, `validate.js`, `LoginScreen.tsx`?**
+  _High betweenness centrality (0.013) - this node is a cross-community bridge._
+- **Why does `importLanding()` connect `LeadsPipeline.tsx` to `App.tsx`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **Why does `Retentio API — Endpoint Reference` connect `Retentio API — Endpoint Reference` to `Overview`, `Retentio — Feature Reference`, `INVOICES MODULE`, `USERS MODULE`, `AUTH MODULE`, `CHAT MODULE`, `MEETINGS MODULE`, `BRANDS MODULE`, `LEADS MODULE`, `PAYMENTS MODULE`, `RECURRING INVOICES MODULE`, `TASKS MODULE`, `HOLIDAYS MODULE`, `NOTIFICATIONS MODULE`, `PROJECTS MODULE`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
-- **Why does `useApp()` connect `auth.controller.js` to `TeamManager.tsx`, `ProjectsAndTasks.tsx`, `InvoicesManager.tsx`, `RetentionEngine.tsx`, `ProfileTab.tsx`, `ClientProfileDrawer.tsx`, `ExpensesManager.tsx`, `AppContext.tsx`, `FinanceManager.tsx`, `ChatManager.tsx`, `App.tsx`, `LeadsPipeline.tsx`, `useApp`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **What connects `$schema`, `plugins`, `react/rules-of-hooks` to the rest of the system?**
-  _836 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `TeamManager.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.06545879602571596 - nodes in this community are weakly interconnected._
+  _876 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ProfileTab.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.060814383923849816 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.061507936507936505 - nodes in this community are weakly interconnected._
 - **Should `InvoicesManager.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.09183673469387756 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08345428156748912 - nodes in this community are weakly interconnected._
+- **Should `Retentio — Feature Reference` be split into smaller, more focused modules?**
+  _Cohesion score 0.043478260869565216 - nodes in this community are weakly interconnected._

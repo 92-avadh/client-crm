@@ -91,6 +91,7 @@ export const ProjectsAndTasks: React.FC = () => {
     try {
       setIsSubmittingTask(true);
       await addTask(taskForm);
+      setTaskPage(0);
       setShowAddTaskModal(false);
       setTaskForm({
         brandId: brands[0]?.id || '',
@@ -112,6 +113,7 @@ export const ProjectsAndTasks: React.FC = () => {
     try {
       setIsSubmittingProject(true);
       await addProject({ ...projectForm, billingAmount: Number(projectForm.billingAmount) || 0 });
+      setProjectPage(0);
       setShowAddProjectModal(false);
       setProjectForm({
         brandId: brands[0]?.id || '',

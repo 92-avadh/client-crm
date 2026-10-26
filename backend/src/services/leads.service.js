@@ -28,10 +28,13 @@ async function listLeads(user, { stage } = {}) {
     query += ` AND owner_id = $${idx}`;
     params.push(user.brandId || user.id);
     idx += 1;
-  } else if (user && user.role !== 'admin') {
-    query += ` AND owner_id = $${idx}`;
-    params.push(user.id);
-    idx += 1;
+  } else if (user && user.role !== 'admin' && user.role !== 'hr') {
+    const perms = Array.isArray(user.permissions) ? user.permissions : [];
+    if (!perms.includes('leads')) {
+      query += ` AND owner_id = $${idx}`;
+      params.push(user.id);
+      idx += 1;
+    }
   }
   if (stage) {
     query += ` AND stage=$${idx}`;

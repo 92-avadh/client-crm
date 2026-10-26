@@ -54,7 +54,7 @@ async function listMeetings(user, { brandId, leadId, page = 1, pageSize = 50 } =
       params.push(user.brandId || 'none');
       idx += 1;
     } else if (user.role === 'admin') {
-      whereClause += ` AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx}))`;
+      whereClause += ` AND (owner_id = $${idx} OR owner_id IS NULL OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx} OR owner_id IS NULL) OR brand_id IS NULL)`;
       params.push(user.id);
       idx += 1;
     } else {
