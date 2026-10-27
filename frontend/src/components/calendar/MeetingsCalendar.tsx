@@ -84,10 +84,25 @@ export const MeetingsCalendar: React.FC = () => {
 
   const getBrandName = (brandId?: string) => brands.find((b: any) => b.id === brandId)?.name || '';
 
+  const sanitizeMeetingUrl = (url?: string): string | null => {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    try {
+      const parsed = new URL(trimmed);
+      if (['https:', 'http:', 'mailto:', 'tel:'].includes(parsed.protocol)) {
+        return trimmed;
+      }
+    } catch {
+      if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    }
+    return null;
+  };
+
   const MeetingCardInner = React.memo<{ m: Meeting; isPast?: boolean }>(({ m, isPast }) => {
     const brand = brands.find((b: any) => b.id === m.brandId);
     const attendees = (allUsers as any[]).filter(u => m.attendeeIds?.includes(u.id));
-    const isJoinable = !!m.linkOrLocation?.startsWith('http');
+    const safeJoinUrl = sanitizeMeetingUrl(m.linkOrLocation);
+    const isJoinable = !!safeJoinUrl;
 
     return (
       <div style={{
@@ -112,8 +127,8 @@ export const MeetingsCalendar: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
-            {isJoinable && !isPast && (
-              <a href={m.linkOrLocation} target="_blank" rel="noreferrer" style={{
+            {isJoinable && !isPast && safeJoinUrl && (
+              <a href={safeJoinUrl} target="_blank" rel="noopener noreferrer" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '7px 14px', background: 'var(--accent-text)', color: 'var(--solid-btn-text)',
                 borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none',

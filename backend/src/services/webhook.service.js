@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { safeFetch } = require('../utils/safeFetch');
 
 /**
  * Send an event payload to configured Slack or Discord webhooks.
@@ -16,8 +17,8 @@ async function sendWebhookEvent(eventType, { title, description, brandName, amou
       (amount != null ? `\n• Amount: ${currency || '₹'}${Number(amount).toLocaleString()}` : '');
 
     // Send to Slack if configured
-    if (slackUrl && slackUrl.startsWith('http')) {
-      fetch(slackUrl, {
+    if (slackUrl && slackUrl.startsWith('https://')) {
+      safeFetch(slackUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -41,13 +42,13 @@ async function sendWebhookEvent(eventType, { title, description, brandName, amou
             }] : []),
           ],
         }),
-        signal: AbortSignal.timeout(4000),
+        timeout: 4000,
       }).catch((e) => console.warn('Slack webhook warning:', e.message));
     }
 
     // Send to Discord if configured
-    if (discordUrl && discordUrl.startsWith('http')) {
-      fetch(discordUrl, {
+    if (discordUrl && discordUrl.startsWith('https://')) {
+      safeFetch(discordUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -76,8 +77,8 @@ async function sendWebhookEvent(eventType, { title, description, brandName, amou
  * Send an immediate test ping to verify a webhook URL.
  */
 async function testWebhookUrl(url, service = 'Webhook') {
-  if (!url || !url.startsWith('http')) {
-    return { success: false, error: 'Invalid URL. Must begin with http:// or https://' };
+  if (!url || typeof url !== 'string' || !url.startsWith('https://')) {
+    return { success: false, error: 'Invalid URL. Only secure HTTPS webhooks are permitted.' };
   }
 
   const isDiscord = url.includes('discord.com');
@@ -90,20 +91,19 @@ async function testWebhookUrl(url, service = 'Webhook') {
       };
 
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(5000),
+      timeout: 5000,
     });
 
     if (res.ok || res.status === 204) {
       return { success: true, message: `Successfully delivered test message to ${service}!` };
     }
-    const errText = await res.text().catch(() => '');
-    return { success: false, error: `Webhook returned HTTP ${res.status}: ${errText.slice(0, 100)}` };
+    return { success: false, error: 'Destination webhook returned a non-success response.' };
   } catch (err) {
-    return { success: false, error: `Connection failed: ${err.message}` };
+    return { success: false, error: 'Unable to connect to the webhook destination URL.' };
   }
 }
 

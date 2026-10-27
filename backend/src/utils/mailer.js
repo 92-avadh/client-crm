@@ -49,7 +49,9 @@ function createTransporter() {
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
-    tls: { rejectUnauthorized: process.env.SMTP_ALLOW_SELF_SIGNED !== 'true' }
+    tls: {
+      rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : process.env.SMTP_ALLOW_SELF_SIGNED !== 'true'
+    }
   });
 }
 

@@ -39,13 +39,14 @@ app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true, preload: true }
 /*    CORS_ORIGINS=https://client-crm.pages.dev,https://app.retentio.co*/
 /* ------------------------------------------------------------------ */
 const DEFAULT_ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
-  ? 'http://localhost:5173,http://localhost:4173,https://client-crm.pages.dev,https://client-crm.dhameliyaavadh592.workers.dev,https://*.client-crm.dhameliyaavadh592.workers.dev'
+  ? 'http://localhost:5173,http://localhost:4173,https://client-crm.pages.dev,https://client-crm.dhameliyaavadh592.workers.dev'
   : 'http://localhost:5173,http://localhost:4173';
 const RAW_ORIGINS = (process.env.CORS_ORIGINS || DEFAULT_ALLOWED_ORIGINS)
   .split(',').map(s => s.trim()).filter(Boolean);
 
+// Strict subdomain matching: * matches a single valid DNS label [a-zA-Z0-9-]+ only
 const toRegex = (pattern) =>
-  new RegExp('^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+  new RegExp('^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[a-zA-Z0-9-]+') + '$');
 
 const ALLOWED_ORIGINS = RAW_ORIGINS.filter(o => !o.includes('*'));
 const ALLOWED_PATTERNS = RAW_ORIGINS.filter(o => o.includes('*')).map(toRegex);
@@ -72,8 +73,8 @@ app.use(cors({
 /* ------------------------------------------------------------------ */
 /*  Body parsing                                                       */
 /* ------------------------------------------------------------------ */
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 /* ------------------------------------------------------------------ */
 /*  Rate limiting                                                      */
@@ -116,6 +117,8 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/send-otp', otpLimiter);
 app.use('/api/auth/resend-otp', otpLimiter);
 app.use('/api/auth/verify-otp', otpLimiter);
+app.use('/api/auth/forgot-password', otpLimiter);
+app.use('/api/auth/reset-password', otpLimiter);
 
 /* ------------------------------------------------------------------ */
 /*  In-memory read cache to protect PostgreSQL from repeated queries   */
