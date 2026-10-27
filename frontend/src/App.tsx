@@ -552,6 +552,9 @@ export const App: React.FC = () => {
               try {
                 localStorage.setItem('retentio_user', JSON.stringify(res.user));
               } catch {}
+              const isOwnerAdmin = res.user.role === 'admin' || res.user.role === 'owner';
+              const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
+              setShowOnboarding(!onboardingDone && isOwnerAdmin);
             }
           })
           .catch((err: any) => {
@@ -562,8 +565,11 @@ export const App: React.FC = () => {
           });
 
         const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
-        if (!onboardingDone) {
+        const isOwnerAdmin = user.role === 'admin' || user.role === 'owner';
+        if (!onboardingDone && isOwnerAdmin) {
           setShowOnboarding(true);
+        } else {
+          setShowOnboarding(false);
         }
       } catch (_) {
         clearToken();
@@ -660,6 +666,9 @@ export const App: React.FC = () => {
         localStorage.setItem('retentio_user', JSON.stringify(res.user));
         setLoginUser(res.user);
         setIsLoggedIn(true);
+        const isOwnerAdmin = res.user.role === 'admin' || res.user.role === 'owner';
+        const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
+        setShowOnboarding(!onboardingDone && isOwnerAdmin);
         return;
       }
     } catch (err: any) {
@@ -711,7 +720,7 @@ export const App: React.FC = () => {
         />
       </ErrorBoundary>
 
-      {showOnboarding && loginUser && (
+      {showOnboarding && loginUser && (loginUser.role === 'admin' || loginUser.role === 'owner') && (
         <OnboardingWizard
           userName={loginUser.name || 'there'}
           userCompany={loginUser.company || loginUser.email || 'your workspace'}

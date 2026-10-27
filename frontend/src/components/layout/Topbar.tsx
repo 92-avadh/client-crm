@@ -903,7 +903,11 @@ export const Topbar: React.FC = () => {
             <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid var(--border, #f0f0f0)', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div
                 style={{ position: 'relative', cursor: isPhotoBusy ? 'not-allowed' : 'pointer', flexShrink: 0 }}
-                onClick={() => !isPhotoBusy && photoInputRef.current?.click()}
+                onClick={() => {
+                  if (!isPhotoBusy) {
+                    setTimeout(() => photoInputRef.current?.click(), 50);
+                  }
+                }}
                 title={isPhotoBusy ? 'Updating photo...' : 'Click to change profile photo'}
               >
                 {currentUser.avatar ? (
@@ -995,7 +999,9 @@ export const Topbar: React.FC = () => {
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
-                  if (!isPhotoBusy) photoInputRef.current?.click();
+                  if (!isPhotoBusy) {
+                    setTimeout(() => photoInputRef.current?.click(), 50);
+                  }
                 }}
                 style={{ fontSize: 13.5, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: isPhotoBusy ? 'not-allowed' : 'pointer' }}
                 disabled={isPhotoBusy}
@@ -1036,15 +1042,6 @@ export const Topbar: React.FC = () => {
               </DropdownMenuItem>
             </DropdownMenuGroup>
 
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              disabled={isPhotoBusy}
-              onChange={handlePhotoUpload}
-            />
-
             <DropdownMenuSeparator style={{ margin: 0 }} />
 
             <DropdownMenuGroup style={{ padding: 6 }}>
@@ -1059,6 +1056,15 @@ export const Topbar: React.FC = () => {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/*"
+          style={{ display: 'none' }}
+          disabled={isPhotoBusy}
+          onChange={handlePhotoUpload}
+        />
       </div>
 
       {/* Full-screen loader overlay */}

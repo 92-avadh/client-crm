@@ -24,8 +24,6 @@ import {
   Loader2,
   AlertTriangle,
 } from 'lucide-react';
-import { AnimatedSelect } from '../ui/AnimatedSelect';
-import { DatePicker } from '../ui/DatePicker';
 import { DeleteExpenseModal } from '../expenses/ExpenseFormModal';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import {
@@ -76,7 +74,6 @@ export const FinanceManager: React.FC = () => {
     payments,
     expenses,
     brands,
-    addExpense,
     deleteExpense,
     deleteExpenses,
     invoices,
@@ -103,7 +100,6 @@ export const FinanceManager: React.FC = () => {
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<any | null>(null);
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
-  const [isSubmittingExpense, setIsSubmittingExpense] = useState(false);
 
   const headerCheckboxRef = React.useRef<HTMLInputElement>(null);
   const allExpensesSelected = expenses.length > 0 && selectedExpenseIds.size > 0 && expenses.every(e => selectedExpenseIds.has(e.id));
@@ -174,7 +170,6 @@ export const FinanceManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'payments' | 'expenses' | 'profitability'>('payments');
   const [paymentFilterStatus, setPaymentFilterStatus] = useState<'all' | 'Success' | 'Pending'>('all');
   const [paymentSearch, setPaymentSearch] = useState('');
-  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
 
   // ── STRICT USER DATA SCOPING: Associate data exclusively with the active user ──
   // An account must only see payments, revenue, and expenses belonging to their own clients/brands
@@ -272,18 +267,6 @@ export const FinanceManager: React.FC = () => {
     }
   };
 
-  const emptyExpenseForm = () => ({
-    category: 'Brand Expenses' as ExpenseCategory,
-    amount: '' as any,
-    date: new Date().toISOString().split('T')[0],
-    paymentMode: 'Bank Transfer',
-    note: '',
-    brandId: '',
-    isRecurring: false
-  });
-
-  const [expenseForm, setExpenseForm] = useState(emptyExpenseForm);
-
   const exportToCSV = () => {
     const headers = ['Date', 'Client', 'Amount', 'Mode', 'Reference', 'Status'];
     const rows = payments.filter(Boolean).map(p => [p.paymentDate, p.brandName, p.amount, p.mode, p.referenceNo, p.status]);
@@ -299,30 +282,6 @@ export const FinanceManager: React.FC = () => {
   const exportToPDF = () => {
     showToast('Opening print dialog for PDF export...', 'info');
     window.print();
-  };
-
-  const handleAddExpenseSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsedAmount = Number(expenseForm.amount);
-    if (!parsedAmount || parsedAmount <= 0) {
-      showToast('Please enter a valid expense amount greater than 0', 'error');
-      return;
-    }
-    setIsSubmittingExpense(true);
-    try {
-      await addExpense({
-        ...expenseForm,
-        title: expenseForm.note || `${expenseForm.category} Expense`,
-        description: expenseForm.note,
-        paymentStatus: 'Paid',
-        amount: parsedAmount,
-        brandId: expenseForm.brandId || undefined
-      });
-      setExpenseForm(emptyExpenseForm());
-      setShowAddExpenseModal(false);
-    } finally {
-      setIsSubmittingExpense(false);
-    }
   };
 
   const handleDeletePayment = (p: any) => {
@@ -438,18 +397,6 @@ export const FinanceManager: React.FC = () => {
             <Download style={{ width: 13, height: 13 }} />
             <span>Print</span>
           </button>
-          {isAdmin && (
-            <button
-              onClick={() => {
-                setExpenseForm(emptyExpenseForm());
-                setShowAddExpenseModal(true);
-              }}
-              style={btnPrimary}
-            >
-              <Plus style={{ width: 14, height: 14 }} />
-              <span>Record Expense</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -1194,125 +1141,6 @@ export const FinanceManager: React.FC = () => {
         </div>
       )}
 
-      {/* Record Expense Modal */}
-      {showAddExpenseModal && isAdmin && (
-        <div style={modalOverlay} onClick={() => setShowAddExpenseModal(false)}>
-          <div
-            style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 448, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ padding: 20, borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h3 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14, margin: 0 }}>Record Agency Expense</h3>
-                <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '4px 0 0' }}>Add operational or client-specific cost</p>
-              </div>
-              <button
-                onClick={() => setShowAddExpenseModal(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
-              >
-                <X style={{ width: 16, height: 16 }} />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddExpenseSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, fontSize: 12 }}>
-              <AnimatedSelect
-                label="Expense Category"
-                value={expenseForm.category}
-                onChange={(val) => setExpenseForm({ ...expenseForm, category: val as any })}
-                options={[
-                  { value: 'Salary', label: 'Staff & CA Payroll' },
-                  { value: 'Tools & Software', label: 'Software & Cloud Subscriptions' },
-                  { value: 'Ads & Marketing', label: 'Ads & Client Acquisition' },
-                  { value: 'Office & Rent', label: 'Studio Lease & Utilities' },
-                  { value: 'Freelancer Payout', label: 'Freelancer / Specialist Payout' },
-                  { value: 'Travel', label: 'Client Travel & Meetings' },
-                  { value: 'Other', label: 'Other Miscellaneous' },
-                ]}
-              />
-
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Amount (INR)</label>
-                <input
-                  type="number"
-                  required
-                  value={expenseForm.amount}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, amount: Number(e.target.value) })}
-                  className="font-amount"
-                  style={{ ...inputFieldStyle, fontWeight: 700, fontSize: 13 }}
-                />
-              </div>
-
-              <div>
-                <DatePicker
-                  value={expenseForm.date}
-                  onChange={(date) => setExpenseForm({ ...expenseForm, date })}
-                  label="Payment Date"
-                  placeholder="Select date"
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Payment Mode</label>
-                <input
-                  type="text"
-                  placeholder="Corporate Card, Bank NEFT, UPI..."
-                  value={expenseForm.paymentMode}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, paymentMode: e.target.value })}
-                  style={inputFieldStyle}
-                />
-              </div>
-
-              <AnimatedSelect
-                label="Link to Client (Optional for client profitability)"
-                value={expenseForm.brandId}
-                onChange={(val) => setExpenseForm({ ...expenseForm, brandId: val })}
-                options={[
-                  { value: '', label: 'General Overhead (No client)' },
-                  ...brands.map((b) => ({ value: b.id, label: b.name })),
-                ]}
-              />
-
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Note / Description</label>
-                <input
-                  type="text"
-                  placeholder="Details of expense..."
-                  value={expenseForm.note}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
-                  style={inputFieldStyle}
-                />
-              </div>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', paddingTop: 4 }}>
-                <input
-                  type="checkbox"
-                  checked={expenseForm.isRecurring}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, isRecurring: e.target.checked })}
-                  style={{ width: 16, height: 16, accentColor: 'var(--accent-text)' }}
-                />
-                <span style={{ color: 'var(--text-primary)' }}>Recurring Monthly Expense</span>
-              </label>
-
-              <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button type="button" onClick={() => setShowAddExpenseModal(false)} disabled={isSubmittingExpense} style={{ ...btnSecondary, fontSize: 12, opacity: isSubmittingExpense ? 0.6 : 1, cursor: isSubmittingExpense ? 'not-allowed' : 'pointer' }}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={isSubmittingExpense} style={{ ...btnPrimary, fontSize: 12, opacity: isSubmittingExpense ? 0.7 : 1, cursor: isSubmittingExpense ? 'not-allowed' : 'pointer' }}>
-                  {isSubmittingExpense ? (
-                    <>
-                      <Loader2 style={{ width: 13, height: 13, animation: 'spin 1s linear infinite' }} />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <span>Save Expense</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Delete confirmation modal */}
       <DeleteExpenseModal
