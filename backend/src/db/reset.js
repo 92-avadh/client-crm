@@ -52,7 +52,10 @@ async function reset() {
     // the normal self-registration flow.
     await client.query('DELETE FROM users');
 
-    // Reset settings to defaults (keep the row so the app does not error)
+    // Remove any created agency settings rows
+    await client.query("DELETE FROM settings WHERE id != 'main'");
+
+    // Reset default settings (keep the main row so the app does not error)
     await client.query(`
       UPDATE settings SET
         company_name        = NULL,
