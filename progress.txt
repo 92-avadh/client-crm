@@ -21,4 +21,9 @@
 - Scoped portal client intake to target agency/owner and scoped portal settings by brand's agency instead of global 'main'.
 - Scoped payments initiateRazorpay, recordPayment, updatePayment, and deletePayment by agency; disallowed post-hoc payment amount edits.
 - Sanitized auth status (removed totalUsers count leak) and sanitized searchAgencies (removed email matching and phone leaks).
-[2026-10-27] Next up: Task 3 (Wave 3: Financial Integrity & Razorpay Verification).
+[2026-10-27] Completed Task 3: Financial Integrity & Razorpay Verification (Wave 3).
+- In payments.controller.js (razorpayVerify), fetched invoice server-side, verified workspace ownership, calculated true remaining balance, and rejected payments exceeding the invoice balance.
+- Replaced client-provided brandId and brandName with database-verified values.
+- Persisted Razorpay order reference on invoice upon initiation for reconciliation.
+- Locked down post-hoc payment amount mutations in payments controller/service.
+[2026-10-27] Next up: Task 4 (Wave 4: SSRF Defense, MeetingsCalendar XSS & Network Hardening).

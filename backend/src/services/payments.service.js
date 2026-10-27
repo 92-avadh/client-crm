@@ -235,9 +235,16 @@ async function initiateRazorpay(user, invoiceId) {
   }
 
   const remainingBalance = Math.max(0, parseFloat(rows[0].total_amount) - parseFloat(rows[0].paid_amount || 0));
+  const orderId = 'order_' + crypto.randomBytes(10).toString('hex');
+
+  // Persist order reference on invoice for reconciliation
+  await pool.query(
+    'UPDATE invoices SET razorpay_payment_id = $1 WHERE id = $2',
+    [orderId, invoiceId]
+  ).catch(e => console.warn('Order reference persistence warning:', e.message));
 
   return {
-    razorpayOrderId: 'order_' + crypto.randomBytes(10).toString('hex'),
+    razorpayOrderId: orderId,
     amount: Math.round(remainingBalance * 100),
     currency: 'INR',
     keyId,

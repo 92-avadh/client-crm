@@ -1,6 +1,8 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { makeValidator } = require('../utils/validate');
 const crypto = require('crypto');
+const pool = require('../db');
+const { getAgencyId } = require('../utils/agency');
 const payments = require('../services/payments.service');
 
 const list = asyncHandler(async (req, res) => {
@@ -36,15 +38,37 @@ const razorpayInitiate = asyncHandler(async (req, res) => {
 const razorpayVerify = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .requiredString('invoiceId', { max: 80, label: 'Invoice' })
-    .requiredString('brandId', { max: 80, label: 'Client' })
-    .requiredString('brandName', { max: 200, label: 'Client name' })
+    .optionalString('brandId', { max: 80, label: 'Client' })
+    .optionalString('brandName', { max: 200, label: 'Client name' })
     .number('amount', { min: 0.01, required: true, label: 'Amount' })
     .requiredString('razorpayOrderId', { max: 120, label: 'Razorpay order ID' })
     .requiredString('razorpayPaymentId', { max: 120, label: 'Payment reference' })
     .requiredString('razorpaySignature', { max: 200, label: 'Razorpay signature' })
     .validate();
 
-  // Verify Razorpay signature using HMAC-SHA256
+  // 1. Fetch invoice server-side to prevent untrusted amount/client tampering
+  const invRes = await pool.query(
+    `SELECT i.id, i.brand_id, i.total_amount, i.paid_amount, i.agency_id, b.name as brand_name
+     FROM invoices i
+     LEFT JOIN brands b ON b.id = i.brand_id
+     WHERE i.id = $1`,
+    [body.invoiceId]
+  );
+  if (!invRes.rows.length) {
+    return res.status(404).json({ error: 'Invoice not found.' });
+  }
+  const invoice = invRes.rows[0];
+  const userAgencyId = req.user ? getAgencyId(req.user) : null;
+  if (userAgencyId && invoice.agency_id && String(invoice.agency_id) !== String(userAgencyId)) {
+    return res.status(403).json({ error: 'Access denied. Invoice belongs to another workspace.' });
+  }
+
+  const remainingBalance = Math.max(0, parseFloat(invoice.total_amount) - parseFloat(invoice.paid_amount || 0));
+  if (body.amount > remainingBalance + 0.01) {
+    return res.status(400).json({ error: `Payment amount (${body.amount}) exceeds remaining invoice balance (${remainingBalance}).` });
+  }
+
+  // 2. Verify Razorpay signature using HMAC-SHA256
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keySecret) {
     return res.status(503).json({ error: 'Online payments are not set up yet. Please contact support.' });
@@ -70,7 +94,10 @@ const razorpayVerify = asyncHandler(async (req, res) => {
   }
 
   res.status(201).json(await payments.recordPayment({
-    ...body,
+    invoiceId: invoice.id,
+    brandId: invoice.brand_id,
+    brandName: invoice.brand_name || 'Client',
+    amount: body.amount,
     mode: 'Razorpay',
     referenceNo: body.razorpayPaymentId,
     actor: req.user,
