@@ -132,85 +132,95 @@ export const LandingNav: React.FC<LandingNavProps> = ({
               </span>
             </a>
           ) : (
-            <>
-              {/* Sign In Dropdown (Company & Employee) */}
-              <div className="nav__signin-wrapper" ref={dropdownRef}>
-                <button
-                  type="button"
-                  className={`nav__signin-btn ${signinDropdownOpen ? 'open' : ''}`}
-                  onClick={() => setSigninDropdownOpen(prev => !prev)}
-                  aria-expanded={signinDropdownOpen}
-                  aria-haspopup="true"
-                >
+            /* Unified Single Sign In CTA Button with Dropdown */
+            <div className="nav__signin-wrapper" ref={dropdownRef}>
+              <button
+                type="button"
+                className="m-btn-3 nav__cta"
+                onClick={() => setSigninDropdownOpen(prev => !prev)}
+                aria-expanded={signinDropdownOpen}
+                aria-haspopup="true"
+                style={{ cursor: 'pointer' }}
+              >
+                <span className="m-btn__label" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <span>Sign In</span>
                   <ChevronDown size={14} className={`chevron-icon ${signinDropdownOpen ? 'rotate' : ''}`} />
-                </button>
-
-                {signinDropdownOpen && (
-                  <div className="nav__signin-menu" role="menu">
-                    <a
-                      href="/login/company"
-                      className="nav__signin-item"
-                      role="menuitem"
-                      onClick={() => setSigninDropdownOpen(false)}
-                    >
-                      <div className="item-icon-circle company">
-                        <Building2 size={16} />
-                      </div>
-                      <div className="item-copy">
-                        <div className="item-headline">Company Sign In</div>
-                        <div className="item-sub">For founders & operations</div>
-                      </div>
-                    </a>
-
-                    <a
-                      href="/login/employee"
-                      className="nav__signin-item"
-                      role="menuitem"
-                      onClick={() => setSigninDropdownOpen(false)}
-                    >
-                      <div className="item-icon-circle employee">
-                        <Users size={16} />
-                      </div>
-                      <div className="item-copy">
-                        <div className="item-headline">Employee Sign In</div>
-                        <div className="item-sub">For team members & staff</div>
-                      </div>
-                    </a>
-
-                    <div className="nav__signin-divider" />
-
-                    <a
-                      href="/portal/login"
-                      className="nav__signin-item portal"
-                      role="menuitem"
-                      onClick={() => setSigninDropdownOpen(false)}
-                    >
-                      <div className="item-icon-circle portal">
-                        <Globe size={16} />
-                      </div>
-                      <div className="item-copy">
-                        <div className="item-headline">Client Portal</div>
-                        <div className="item-sub">For client deliverables & invoices</div>
-                      </div>
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              {/* Primary CTA: Create Agency */}
-              <a
-                className="m-btn-3 nav__cta"
-                href="/signup"
-              >
-                <span className="m-btn__label">Create Agency</span>
+                </span>
                 <span className="m-btn__wave" aria-hidden="true">
                   <i></i>
                   <i></i>
                   <i></i>
                 </span>
-              </a>
-            </>
+              </button>
+
+              {signinDropdownOpen && (
+                <div className="nav__signin-menu" role="menu">
+                  <a
+                    href="/login/company"
+                    className="nav__signin-item"
+                    role="menuitem"
+                    onClick={() => setSigninDropdownOpen(false)}
+                  >
+                    <div className="item-icon-circle company">
+                      <Building2 size={16} />
+                    </div>
+                    <div className="item-copy">
+                      <div className="item-headline">Company Sign In</div>
+                      <div className="item-sub">For founders & operations</div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="/login/employee"
+                    className="nav__signin-item"
+                    role="menuitem"
+                    onClick={() => setSigninDropdownOpen(false)}
+                  >
+                    <div className="item-icon-circle employee">
+                      <Users size={16} />
+                    </div>
+                    <div className="item-copy">
+                      <div className="item-headline">Employee Sign In</div>
+                      <div className="item-sub">For team members & staff</div>
+                    </div>
+                  </a>
+
+                  <div className="nav__signin-divider" />
+
+                  <a
+                    href="/portal/login"
+                    className="nav__signin-item portal"
+                    role="menuitem"
+                    onClick={() => setSigninDropdownOpen(false)}
+                  >
+                    <div className="item-icon-circle portal">
+                      <Globe size={16} />
+                    </div>
+                    <div className="item-copy">
+                      <div className="item-headline">Client Portal</div>
+                      <div className="item-sub">For client deliverables & invoices</div>
+                    </div>
+                  </a>
+
+                  <div className="nav__signin-divider" />
+
+                  <a
+                    href="/signup"
+                    className="nav__signin-item signup"
+                    role="menuitem"
+                    onClick={() => setSigninDropdownOpen(false)}
+                  >
+                    <div className="item-icon-circle signup" style={{ background: 'rgba(0, 208, 94, 0.15)', color: '#00d05e', border: '1px solid rgba(0, 208, 94, 0.25)' }}>
+                      <Sparkles size={16} />
+                    </div>
+                    <div className="item-copy">
+                      <div className="item-headline">Create New Agency</div>
+                      <div className="item-sub">Register a new workspace</div>
+                    </div>
+                  </a>
+                </div>
+              )}
+            </div>
           )}
 
           <button
@@ -335,10 +345,10 @@ export const LandingNav: React.FC<LandingNavProps> = ({
 
             <a
               className="m-btn mt-4"
-              href="/signup"
+              href="/login"
               onClick={closeMenu}
             >
-              <span className="m-btn__label">Create Agency</span>
+              <span className="m-btn__label">Sign In</span>
               <span className="m-btn__wave" aria-hidden="true">
                 <i></i>
                 <i></i>
