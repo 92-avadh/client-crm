@@ -172,15 +172,68 @@ async function getAuthStatus() {
   return { hasUsers: count > 0, totalUsers: count };
 }
 
-async function login({ email, password }) {
-  const emailNorm = email.toLowerCase().trim();
+async function searchAgencies(query) {
+  const term = `%${query.toLowerCase().trim()}%`;
   const { rows } = await pool.query(
-    'SELECT * FROM users WHERE LOWER(email) = $1',
-    [emailNorm]
+    `SELECT DISTINCT 
+       COALESCE(s.agency_id, u.id) AS agency_id,
+       COALESCE(NULLIF(s.company_name, ''), NULLIF(u.designation, ''), u.name || '''s Agency') AS company_name,
+       u.name AS founder_name
+     FROM users u
+     LEFT JOIN settings s ON (s.agency_id = u.id OR s.id = 'set_' || u.id OR (u.id = 'usr_admin' AND s.id = 'main'))
+     WHERE u.role = 'admin'
+       AND (
+         LOWER(COALESCE(s.company_name, '')) LIKE $1
+         OR LOWER(COALESCE(u.designation, '')) LIKE $1
+         OR LOWER(u.name) LIKE $1
+         OR LOWER(u.email) LIKE $1
+       )
+     ORDER BY company_name ASC
+     LIMIT 10`,
+    [term]
   );
+
+  return rows.map(r => {
+    let cleanName = r.company_name;
+    if (cleanName.startsWith('Founder, ')) {
+      cleanName = cleanName.replace('Founder, ', '');
+    }
+    return {
+      agencyId: r.agency_id,
+      companyName: cleanName,
+      founderName: r.founder_name,
+    };
+  });
+}
+
+async function login({ email, password, agencyId, portalType }) {
+  const emailNorm = email.toLowerCase().trim();
+
+  let query = 'SELECT * FROM users WHERE LOWER(email) = $1';
+  const params = [emailNorm];
+
+  if (portalType === 'employee' && agencyId) {
+    query += ' AND (agency_id = $2 OR created_by = $2 OR id = $2)';
+    params.push(agencyId);
+  }
+
+  const { rows } = await pool.query(query, params);
   const user = rows[0];
 
   if (!user) {
+    if (portalType === 'employee' && agencyId) {
+      const { rows: existsAnywhere } = await pool.query(
+        'SELECT id, agency_id FROM users WHERE LOWER(email) = $1',
+        [emailNorm]
+      );
+      if (existsAnywhere.length > 0) {
+        const err = new Error('This account does not belong to the selected company. Please verify your company selection.');
+        err.status = 401;
+        err.code = 'WRONG_AGENCY';
+        throw err;
+      }
+    }
+
     const { rows: countRows } = await pool.query('SELECT COUNT(*) FROM users');
     const totalUsers = parseInt(countRows[0]?.count || '0', 10);
     if (totalUsers === 0) {
@@ -192,6 +245,13 @@ async function login({ email, password }) {
     const err = new Error('Invalid email or password. check your credentials');
     err.status = 401;
     err.code = 'INVALID_CREDENTIALS';
+    throw err;
+  }
+
+  if (portalType === 'company' && user.role !== 'admin') {
+    const err = new Error('This portal is reserved for Agency / Company owners. Please sign in through the Employee portal.');
+    err.status = 403;
+    err.code = 'EMPLOYEE_ON_COMPANY_PORTAL';
     throw err;
   }
 
@@ -335,5 +395,5 @@ async function resetPassword({ email, code, newPassword }) {
 module.exports = {
   JWT_SECRET, MAX_OTP_ATTEMPTS,
   makeToken, requestRegistrationOtp, resendOtp, verifyOtpAndRegister, login,
-  forgotPassword, resetPassword, getAuthStatus,
+  forgotPassword, resetPassword, getAuthStatus, searchAgencies,
 };

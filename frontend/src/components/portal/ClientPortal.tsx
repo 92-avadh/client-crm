@@ -22,13 +22,15 @@ import {
   Meh,
   Frown,
   Sparkles,
+  Globe,
 } from 'lucide-react';
 
 export const ClientPortal: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const [data, setData] = useState<PortalData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(token));
   const [error, setError] = useState<string | null>(null);
+  const [manualToken, setManualToken] = useState('');
 
   // Proactive 1-Click Micro-Survey State
   const [rating, setRating] = useState<number | null>(null);
@@ -44,7 +46,6 @@ export const ClientPortal: React.FC = () => {
 
   useEffect(() => {
     if (!token) {
-      setError('Invalid or missing portal security token.');
       setLoading(false);
       return;
     }
@@ -163,6 +164,105 @@ export const ClientPortal: React.FC = () => {
         message="Authenticating secure client session..."
         size="lg"
       />
+    );
+  }
+
+  if (!token) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#080c14',
+        padding: 24,
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+      }}>
+        <div style={{
+          maxWidth: 460,
+          width: '100%',
+          background: 'rgba(15, 23, 42, 0.92)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(52, 211, 153, 0.25)',
+          borderRadius: 20,
+          padding: '36px 32px',
+          textAlign: 'center',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.6)'
+        }}>
+          <div style={{
+            width: 56,
+            height: 56,
+            borderRadius: 16,
+            background: 'rgba(52, 211, 153, 0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+            color: '#34d399'
+          }}>
+            <Globe style={{ width: 28, height: 28 }} />
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f8fafc', margin: '0 0 10px', letterSpacing: '-0.01em' }}>
+            Client Portal Access
+          </h2>
+          <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, margin: '0 0 24px' }}>
+            Enter your secure access token or portal link provided by your agency to view deliverables and invoices.
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              let clean = manualToken.trim();
+              if (clean.includes('/portal/')) {
+                clean = clean.split('/portal/')[1].split('/')[0].split('?')[0];
+              }
+              if (!clean) return;
+              window.location.href = `/portal/${clean}`;
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}
+          >
+            <input
+              type="text"
+              placeholder="Paste portal link or access token..."
+              value={manualToken}
+              onChange={e => setManualToken(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.16)',
+                borderRadius: 12,
+                color: '#f8fafc',
+                fontSize: 14,
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+            <button
+              type="submit"
+              disabled={!manualToken.trim()}
+              style={{
+                padding: '12px 20px',
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: manualToken.trim() ? 'pointer' : 'not-allowed',
+                opacity: manualToken.trim() ? 1 : 0.6,
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+              }}
+            >
+              Access Client Portal →
+            </button>
+          </form>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 12, color: '#64748b' }}>
+            <a href="/login/company" style={{ color: '#34d399', textDecoration: 'none' }}>Company Sign In</a>
+            <span>·</span>
+            <a href="/login/employee" style={{ color: '#38bdf8', textDecoration: 'none' }}>Employee Sign In</a>
+          </div>
+        </div>
+      </div>
     );
   }
 

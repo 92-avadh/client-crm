@@ -276,7 +276,13 @@ async function req<T>(method: string, path: string, body?: any): Promise<T> {
 // Auth
 export const api = {
   auth: {
-    login: (email: string, password: string) => req<{token: string; user: any}>('POST', '/auth/login', { email, password }),
+    searchAgencies: (q: string) => req<Array<{ agencyId: string; companyName: string; founderName: string }>>('GET', `/auth/search-agencies?q=${encodeURIComponent(q)}`),
+    login: (credentials: { email: string; password: string; agencyId?: string; portalType?: 'company' | 'employee' } | string, password?: string) => {
+      const payload = typeof credentials === 'string'
+        ? { email: credentials, password: password || '' }
+        : credentials;
+      return req<{token: string; user: any}>('POST', '/auth/login', payload);
+    },
     sendOtp: (data: { name: string; email: string; password: string; company: string }) =>
       req<{ success: boolean; message: string }>('POST', '/auth/send-otp', data),
     verifyOtp: (data: { name: string; email: string; password: string; company: string; otp: string }) =>

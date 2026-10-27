@@ -12,28 +12,36 @@ import { api, setToken } from '../../services/api';
 import { getNaturalErrorMessage } from '../../services/errors';
 
 interface LoginScreenProps {
-  onLogin: (email: string, password: string) => void;
+  onLogin: (credentials: { email: string; password: string; agencyId?: string; portalType?: 'company' | 'employee' } | string, password?: string) => void;
   loginError?: string;
   loginLoading?: boolean;
   defaultMode?: 'signin' | 'register';
+  defaultPortal?: 'company' | 'employee';
   onClearError?: () => void;
 }
 
 type RegStep = 'details' | 'otp' | 'success';
 type ForgotStep = 'email' | 'code' | 'newpassword' | 'done';
 
-const features = [
+const companyFeatures = [
   { icon: <Sparkles size={16} />, title: 'Client Retention Intelligence', desc: 'Proactive at-risk alerts & relationship health' },
   { icon: <Users size={16} />, title: 'Team & Brand Management', desc: 'Assign roles, track performance' },
   { icon: <Receipt size={16} />, title: 'Invoicing & Payments', desc: 'Automated billing, UPI, net banking' },
   { icon: <BarChart3 size={16} />, title: 'Real-time Analytics', desc: 'Revenue, profit & growth insights' },
 ];
 
+const employeeFeatures = [
+  { icon: <Sparkles size={16} />, title: 'Client & Task Hub', desc: 'Direct view of assigned projects and deliverables' },
+  { icon: <Users size={16} />, title: 'Team Collaboration', desc: 'Real-time alignment with founders and teammates' },
+  { icon: <ShieldCheck size={16} />, title: 'Gated Agency Workspace', desc: 'Isolated environment authenticated by your company' },
+  { icon: <BarChart3 size={16} />, title: 'Deliverables & Timelines', desc: 'Keep milestones on track with clear priorities' },
+];
+
 const PATH_RIGHT = 'M 0,0 L 0.92,0 C 0.98,0.18 1.0,0.34 0.94,0.50 C 0.88,0.66 0.96,0.84 0.92,1.0 L 0,1.0 Z';
 const PATH_LEFT  = 'M 1,0 L 0.08,0 C 0.02,0.18 0.0,0.34 0.06,0.50 C 0.12,0.66 0.04,0.84 0.08,1.0 L 1,1.0 Z';
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
-  onLogin, loginError = '', loginLoading = false, defaultMode = 'signin', onClearError,
+  onLogin, loginError = '', loginLoading = false, defaultMode = 'signin', defaultPortal = 'company', onClearError,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,10 +49,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [mode, setMode] = useState<'signin' | 'register'>(() => {
     if (typeof window !== 'undefined') {
       if (window.location.pathname === '/signup') return 'register';
-      if (window.location.pathname === '/login') return 'signin';
+      if (window.location.pathname.startsWith('/login')) return 'signin';
     }
     return defaultMode;
   });
+
+  const [portalType, setPortalType] = useState<'company' | 'employee'>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname === '/login/employee') return 'employee';
+      if (window.location.pathname === '/login/company') return 'company';
+    }
+    return defaultPortal || 'company';
+  });
+
+  // Employee Agency Search & Selection State (min 4 chars)
+  const [agencySearchQuery, setAgencySearchQuery] = useState('');
+  const [matchingAgencies, setMatchingAgencies] = useState<Array<{ agencyId: string; companyName: string; founderName?: string; email?: string }>>([]);
+  const [selectedAgency, setSelectedAgency] = useState<{ agencyId: string; companyName: string; founderName?: string } | null>(null);
+  const [isSearchingAgency, setIsSearchingAgency] = useState(false);
+  const [showAgencyDropdown, setShowAgencyDropdown] = useState(false);
+  const [stayLoggedIn, setStayLoggedIn] = useState(true);
+  const agencyDropdownRef = useRef<HTMLDivElement>(null);
 
   const clearAllErrors = () => {
     setError('');
@@ -57,13 +82,80 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     if (location.pathname === '/signup') {
       setMode('register');
       document.title = 'Create Your Agency — Retentio';
+    } else if (location.pathname === '/login/employee') {
+      setMode('signin');
+      setPortalType('employee');
+      document.title = 'Employee Sign In — Retentio';
+    } else if (location.pathname === '/login/company') {
+      setMode('signin');
+      setPortalType('company');
+      document.title = 'Company Sign In — Retentio';
     } else if (location.pathname === '/login') {
       setMode('signin');
+      if (defaultPortal) setPortalType(defaultPortal);
       document.title = 'Sign In — Retentio';
     } else if (defaultMode) {
       setMode(defaultMode);
     }
-  }, [location.pathname, defaultMode]);
+  }, [location.pathname, defaultMode, defaultPortal]);
+
+  // Debounced Agency Search (min 4 characters)
+  useEffect(() => {
+    const query = agencySearchQuery.trim();
+    if (query.length < 4) {
+      setMatchingAgencies([]);
+      setShowAgencyDropdown(false);
+      setIsSearchingAgency(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsSearchingAgency(true);
+    const timer = setTimeout(async () => {
+      try {
+        const results = await api.auth.searchAgencies(query);
+        if (isMounted) {
+          setMatchingAgencies(Array.isArray(results) ? results : []);
+          setShowAgencyDropdown(true);
+        }
+      } catch (_err) {
+        if (isMounted) {
+          setMatchingAgencies([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsSearchingAgency(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [agencySearchQuery]);
+
+  // Click outside to close agency dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (agencyDropdownRef.current && !agencyDropdownRef.current.contains(e.target as Node)) {
+        setShowAgencyDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectPortal = (type: 'company' | 'employee') => {
+    clearAllErrors();
+    setPortalType(type);
+    if (type === 'employee') {
+      navigate('/login/employee');
+    } else {
+      navigate('/login/company');
+    }
+  };
+
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [regStep, setRegStep] = useState<RegStep>('details');
@@ -758,14 +850,51 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             {/* Normal sign-in form */}
             {!forgotStep && (
               <>
+                {/* Portal Switcher Tabs */}
+                <div className="portal-tabs-container" role="tablist" aria-label="Sign-in portal selection">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={portalType === 'company'}
+                    className={`portal-tab-btn ${portalType === 'company' ? 'active' : ''}`}
+                    onClick={() => selectPortal('company')}
+                  >
+                    <Building2 size={15} />
+                    <span>Company</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={portalType === 'employee'}
+                    className={`portal-tab-btn ${portalType === 'employee' ? 'active' : ''}`}
+                    onClick={() => selectPortal('employee')}
+                  >
+                    <Users size={15} />
+                    <span>Employee</span>
+                  </button>
+                </div>
+
                 <div className="form-header">
-                  <h2 className="form-title">Welcome back</h2>
-                  <p className="form-subtitle">Sign in to access your agency dashboard</p>
+                  <h2 className="form-title">
+                    {portalType === 'employee' ? 'Employee Sign In' : 'Company Sign In'}
+                  </h2>
+                  <p className="form-subtitle">
+                    {portalType === 'employee'
+                      ? 'Sign in to access your agency workspace'
+                      : 'Sign in to manage your agency and team operations'}
+                  </p>
                 </div>
 
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
+                    clearAllErrors();
+                    if (portalType === 'employee') {
+                      if (!selectedAgency) {
+                        setError('Please search and select your agency first (minimum 4 characters).');
+                        return;
+                      }
+                    }
                     if (!siEmail.trim()) {
                       setError('Email address is required.');
                       return;
@@ -775,17 +904,133 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       return;
                     }
                     setError('');
-                    onLogin(siEmail.trim(), siPassword);
+                    onLogin({
+                      email: siEmail.trim(),
+                      password: siPassword,
+                      agencyId: portalType === 'employee' ? selectedAgency?.agencyId : undefined,
+                      portalType,
+                    });
                   }}
                   className="form-fields"
                 >
+                  {/* If employee portal: Agency Search & Select (min 4 chars) */}
+                  {portalType === 'employee' && (
+                    <div className="agency-picker-wrapper" ref={agencyDropdownRef}>
+                      <div className="field-label-between">
+                        <label className="field-label">
+                          Agency / Company <span className="text-emerald-600">*</span>
+                        </label>
+                        {selectedAgency && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedAgency(null);
+                              setAgencySearchQuery('');
+                              setMatchingAgencies([]);
+                              setShowAgencyDropdown(false);
+                            }}
+                            className="change-agency-btn"
+                          >
+                            Change Agency
+                          </button>
+                        )}
+                      </div>
+
+                      {selectedAgency ? (
+                        <div className="selected-agency-card">
+                          <div className="agency-icon-badge">
+                            <Building2 size={18} />
+                          </div>
+                          <div className="agency-details">
+                            <div className="agency-name">{selectedAgency.companyName}</div>
+                            <div className="agency-subtext">
+                              {selectedAgency.founderName ? `Managed by ${selectedAgency.founderName}` : 'Verified Agency Workspace'}
+                            </div>
+                          </div>
+                          <CheckCircle2 size={18} className="selected-check-icon text-emerald-600" />
+                        </div>
+                      ) : (
+                        <div className="agency-search-container">
+                          <div className="field-input-box">
+                            <Building2 size={15} className="field-icon" />
+                            <input
+                              type="text"
+                              placeholder="Type at least 4 characters to search..."
+                              value={agencySearchQuery}
+                              onChange={e => {
+                                clearAllErrors();
+                                setAgencySearchQuery(e.target.value);
+                              }}
+                              onFocus={() => {
+                                if (matchingAgencies.length > 0) setShowAgencyDropdown(true);
+                              }}
+                              className="text-input"
+                              autoComplete="off"
+                            />
+                            {isSearchingAgency && (
+                              <div className="agency-search-spinner">
+                                <Loader2 size={15} className="animate-spin text-emerald-600" />
+                              </div>
+                            )}
+                          </div>
+
+                          {agencySearchQuery.trim().length > 0 && agencySearchQuery.trim().length < 4 && (
+                            <div className="agency-search-hint">
+                              Type at least {4 - agencySearchQuery.trim().length} more character{4 - agencySearchQuery.trim().length > 1 ? 's' : ''} to search
+                            </div>
+                          )}
+
+                          {showAgencyDropdown && (
+                            <div className="agency-dropdown-menu">
+                              {matchingAgencies.length > 0 ? (
+                                matchingAgencies.map((agency) => (
+                                  <button
+                                    key={agency.agencyId}
+                                    type="button"
+                                    className="agency-dropdown-item"
+                                    onClick={() => {
+                                      setSelectedAgency(agency);
+                                      setShowAgencyDropdown(false);
+                                      setAgencySearchQuery('');
+                                      clearAllErrors();
+                                    }}
+                                  >
+                                    <div className="item-icon-box">
+                                      <Building2 size={15} />
+                                    </div>
+                                    <div className="item-text">
+                                      <div className="item-title">{agency.companyName}</div>
+                                      <div className="item-subtitle">
+                                        {agency.founderName ? `Admin: ${agency.founderName}` : 'Active Workspace'}
+                                      </div>
+                                    </div>
+                                    <ArrowRight size={13} className="item-arrow" />
+                                  </button>
+                                ))
+                              ) : (
+                                !isSearchingAgency && agencySearchQuery.trim().length >= 4 && (
+                                  <div className="agency-no-results">
+                                    <AlertCircle size={14} className="shrink-0" />
+                                    <span>No agency found matching "{agencySearchQuery}". Please check the spelling or ask your administrator.</span>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div>
-                    <label className="field-label">Email address</label>
+                    <label className="field-label">
+                      {portalType === 'employee' ? 'Work Email' : 'Email address'}
+                    </label>
                     <div className="field-input-box">
                       <Mail size={15} className="field-icon" />
                       <input
                         type="email"
-                        placeholder="you@agency.com"
+                        placeholder={portalType === 'employee' ? 'your.name@agency.com' : 'you@agency.com'}
                         value={siEmail}
                         onChange={e => { clearAllErrors(); setSiEmail(e.target.value); }}
                         className="text-input"
@@ -815,20 +1060,66 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     </div>
                   </div>
 
+                  <div className="stay-logged-in-row">
+                    <label className="stay-logged-in-label">
+                      <input
+                        type="checkbox"
+                        checked={stayLoggedIn}
+                        onChange={e => setStayLoggedIn(e.target.checked)}
+                        className="checkbox-custom"
+                      />
+                      <span>Stay logged in on this device</span>
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={loginLoading}
                     className="btn-primary-action"
                   >
-                    {loginLoading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                    <span>{loginLoading ? 'Signing in…' : 'Sign In'}</span>
+                    {loginLoading ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
+                    <span>
+                      {loginLoading
+                        ? 'Signing in…'
+                        : portalType === 'employee'
+                        ? 'Sign In to Workspace'
+                        : 'Sign In to Agency'}
+                    </span>
                   </button>
                 </form>
 
-                <p className="switch-prompt">
-                  New agency?{' '}
-                  <button type="button" onClick={switchToRegister} className="switch-link-btn">Create your account</button>
-                </p>
+                {portalType === 'employee' ? (
+                  <div className="employee-info-box">
+                    <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <p className="employee-info-text">
+                      Team member accounts are created exclusively by your agency administrator from their dashboard. If you need access, contact your company owner.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="switch-prompt">
+                    New agency?{' '}
+                    <button type="button" onClick={switchToRegister} className="switch-link-btn">Create your account</button>
+                  </p>
+                )}
+
+                <div className="portal-footer-links">
+                  <span className="footer-links-label">Other portals:</span>
+                  {portalType === 'employee' ? (
+                    <button type="button" onClick={() => selectPortal('company')} className="footer-portal-link">
+                      <Building2 size={12} />
+                      <span>Company Sign In</span>
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => selectPortal('employee')} className="footer-portal-link">
+                      <Users size={12} />
+                      <span>Employee Sign In</span>
+                    </button>
+                  )}
+                  <span className="footer-dot">·</span>
+                  <a href="/portal/login" className="footer-portal-link">
+                    <span>Client Portal</span>
+                  </a>
+                </div>
               </>
             )}
 
@@ -853,13 +1144,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </div>
               <div className="hero-headline-stack">
                 <div className={`hero-headline-layer ${isSignIn ? 'layer-active' : 'layer-inactive-exit'}`}>
-                  <h1 className="hero-main-title">
-                    Keep every client.<br />
-                    <span className="hero-gradient-text">Grow every month.</span>
-                  </h1>
-                  <p className="hero-description">
-                    The all-in-one platform for agencies to manage clients, invoices, teams, and retention — intelligently.
-                  </p>
+                  {portalType === 'employee' ? (
+                    <>
+                      <h1 className="hero-main-title">
+                        Built for team focus.<br />
+                        <span className="hero-gradient-text">Your daily workspace.</span>
+                      </h1>
+                      <p className="hero-description">
+                        Access your assigned projects, submit deliverables, collaborate with your agency team, and stay aligned seamlessly.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h1 className="hero-main-title">
+                        The operations desk.<br />
+                        <span className="hero-gradient-text">Grow every month.</span>
+                      </h1>
+                      <p className="hero-description">
+                        The all-in-one platform for agencies to manage clients, invoices, teams, and retention — intelligently.
+                      </p>
+                    </>
+                  )}
                 </div>
                 <div className={`hero-headline-layer ${!isSignIn ? 'layer-active' : 'layer-inactive-enter'}`}>
                   <h1 className="hero-main-title">
@@ -872,7 +1177,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 </div>
               </div>
               <div className="hero-features-list">
-                {features.map((f, i) => (
+                {(portalType === 'employee' && isSignIn ? employeeFeatures : companyFeatures).map((f, i) => (
                   <div key={i} className="feature-item-card">
                     <div className="feature-icon-wrapper">{f.icon}</div>
                     <div>
@@ -920,6 +1225,52 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         .hero-logo-link:hover { opacity: 0.88; }
         .hero-home-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); text-decoration: none; padding: 5px 12px; border-radius: 9999px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); transition: all 0.2s ease; }
         .hero-home-badge:hover { color: #ffffff; background: rgba(255,255,255,0.22); transform: translateX(-2px); }
+
+        /* Portal Switcher Segmented Control */
+        .portal-tabs-container { display: flex; align-items: center; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 20px; gap: 4px; }
+        .portal-tab-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 12px; border-radius: 9px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
+        .portal-tab-btn:hover:not(.active) { color: #0f172a; background: rgba(255, 255, 255, 0.5); }
+        .portal-tab-btn.active { background: #ffffff; color: #0a2540; font-weight: 700; box-shadow: 0 2px 8px rgba(10, 37, 64, 0.08); }
+
+        /* Agency Picker & Search */
+        .agency-picker-wrapper { position: relative; margin-bottom: 2px; }
+        .change-agency-btn { background: none; border: none; padding: 0; font-size: 12px; font-weight: 600; color: #059639; cursor: pointer; font-family: inherit; }
+        .change-agency-btn:hover { text-decoration: underline; }
+        .selected-agency-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; animation: fadeSlideUp 0.2s ease; }
+        .agency-icon-badge { width: 34px; height: 34px; border-radius: 10px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .agency-details { flex: 1; min-width: 0; }
+        .agency-name { font-size: 13.5px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .agency-subtext { font-size: 11.5px; color: #64748b; margin-top: 1px; }
+        .selected-check-icon { flex-shrink: 0; }
+        .agency-search-container { position: relative; }
+        .agency-search-spinner { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; pointer-events: none; }
+        .agency-search-hint { font-size: 11.5px; color: #64748b; margin-top: 6px; padding-left: 4px; font-weight: 500; }
+        .agency-dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 60; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 12px 32px rgba(10, 37, 64, 0.14); max-height: 220px; overflow-y: auto; padding: 6px; animation: fadeSlideUp 0.15s ease; }
+        .agency-dropdown-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: none; background: transparent; border-radius: 8px; cursor: pointer; text-align: left; transition: background 0.15s ease; font-family: inherit; }
+        .agency-dropdown-item:hover { background: #f1f5f9; }
+        .item-icon-box { width: 30px; height: 30px; border-radius: 8px; background: #f1f5f9; color: #475569; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .item-text { flex: 1; min-width: 0; }
+        .item-title { font-size: 13px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-subtitle { font-size: 11px; color: #64748b; margin-top: 1px; }
+        .item-arrow { color: #94a3b8; flex-shrink: 0; }
+        .agency-no-results { display: flex; align-items: center; gap: 8px; padding: 12px; font-size: 12px; color: #64748b; line-height: 1.4; }
+
+        /* Stay logged in checkbox */
+        .stay-logged-in-row { display: flex; align-items: center; margin-top: 2px; }
+        .stay-logged-in-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: #475569; font-weight: 500; cursor: pointer; user-select: none; }
+        .checkbox-custom { width: 16px; height: 16px; border-radius: 4px; accent-color: #059639; cursor: pointer; }
+
+        /* Employee Informational Callout */
+        .employee-info-box { display: flex; align-items: flex-start; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-top: 16px; }
+        .employee-info-text { font-size: 11.5px; color: #64748b; line-height: 1.5; margin: 0; }
+
+        /* Portal Footer Cross-Links */
+        .portal-footer-links { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; font-size: 12px; color: #64748b; }
+        .footer-links-label { color: #94a3b8; font-size: 11.5px; font-weight: 600; }
+        .footer-portal-link { display: inline-flex; align-items: center; gap: 4px; background: none; border: none; padding: 0; font-size: 12px; font-weight: 600; color: #059639; cursor: pointer; text-decoration: none; font-family: inherit; }
+        .footer-portal-link:hover { text-decoration: underline; }
+        .footer-dot { color: #cbd5e1; }
+
         .form-header { margin-bottom: 26px; }
         .form-title { font-size: 26px; font-weight: 800; color: #0a0a0a; margin: 0 0 6px; letter-spacing: -0.025em; }
         .form-subtitle { font-size: 13.5px; color: #64748b; margin: 0; line-height: 1.5; }

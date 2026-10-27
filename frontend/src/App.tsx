@@ -321,7 +321,7 @@ interface AppRoutesProps {
   loginUser: any;
   loginError: string;
   loginLoading: boolean;
-  onLogin: (email: string, password: string) => Promise<void>;
+  onLogin: (credentials: { email: string; password: string; agencyId?: string; portalType?: 'company' | 'employee' } | string, password?: string) => Promise<void>;
   onLogout: () => void;
   onClearError?: () => void;
 }
@@ -385,6 +385,22 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         }
       />
       <Route
+        path="/portal"
+        element={
+          <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg-app)' }} />}>
+            <ClientPortal />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/portal/login"
+        element={
+          <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg-app)' }} />}>
+            <ClientPortal />
+          </Suspense>
+        }
+      />
+      <Route
         path="/onboard"
         element={
           <Suspense fallback={<PageLoader />}>
@@ -406,7 +422,27 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           isLoggedIn ? (
             <Navigate to={intendedPath} replace />
           ) : (
-            <LoginScreen defaultMode="signin" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} onClearError={onClearError} />
+            <LoginScreen defaultMode="signin" defaultPortal="company" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} onClearError={onClearError} />
+          )
+        }
+      />
+      <Route
+        path="/login/company"
+        element={
+          isLoggedIn ? (
+            <Navigate to={intendedPath} replace />
+          ) : (
+            <LoginScreen defaultMode="signin" defaultPortal="company" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} onClearError={onClearError} />
+          )
+        }
+      />
+      <Route
+        path="/login/employee"
+        element={
+          isLoggedIn ? (
+            <Navigate to={intendedPath} replace />
+          ) : (
+            <LoginScreen defaultMode="signin" defaultPortal="employee" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} onClearError={onClearError} />
           )
         }
       />
@@ -416,7 +452,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           isLoggedIn ? (
             <Navigate to={intendedPath} replace />
           ) : (
-            <LoginScreen defaultMode="register" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} onClearError={onClearError} />
+            <LoginScreen defaultMode="register" defaultPortal="company" onLogin={onLogin} loginError={loginError} loginLoading={loginLoading} onClearError={onClearError} />
           )
         }
       />
@@ -601,12 +637,22 @@ export const App: React.FC = () => {
     setShowOnboarding(false);
   }, []);
 
-  const handleLogin = async (email: string, password: string) => {
+  const handleLogin = async (
+    credentials: { email: string; password: string; agencyId?: string; portalType?: 'company' | 'employee' } | string,
+    passwordArg?: string
+  ) => {
     setLoginError('');
     setLoginLoading(true);
 
     try {
-      const res = await api.auth.login(email.trim().toLowerCase(), password);
+      const payload = typeof credentials === 'string'
+        ? { email: credentials.trim().toLowerCase(), password: passwordArg || '' }
+        : {
+            ...credentials,
+            email: credentials.email.trim().toLowerCase(),
+          };
+
+      const res = await api.auth.login(payload);
       if (res && res.user) {
         if (res.token) {
           setToken(res.token);
@@ -618,7 +664,11 @@ export const App: React.FC = () => {
       }
     } catch (err: any) {
       const msg = err?.message || '';
-      if (/invalid email or password|invalid credentials|incorrect password/i.test(msg)) {
+      if (/does not belong to the selected company/i.test(msg)) {
+        setLoginError(msg);
+      } else if (/reserved for Agency \/ Company owners/i.test(msg)) {
+        setLoginError(msg);
+      } else if (/invalid email or password|invalid credentials|incorrect password/i.test(msg)) {
         setLoginError('Invalid email or password. check your credentials');
       } else {
         setLoginError(msg || 'Invalid email or password. check your credentials');

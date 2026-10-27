@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 router.post('/send-otp', controller.sendOtp);
 router.post('/resend-otp', controller.resendOtp);
 router.post('/verify-otp', controller.verifyOtp);
+router.get('/search-agencies', controller.searchAgencies);
 router.post('/login', controller.login);
 router.get('/status', controller.status);
 router.post('/logout', controller.logout);

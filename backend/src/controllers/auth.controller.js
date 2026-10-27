@@ -55,10 +55,21 @@ const verifyOtp = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, user: result.user, token: result.token });
 });
 
+const searchAgencies = asyncHandler(async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (q.length < 4) {
+    return res.json([]);
+  }
+  const results = await auth.searchAgencies(q);
+  res.json(results);
+});
+
 const login = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .email('email', { required: true, label: 'Email' })
     .requiredString('password', { max: 200, label: 'Password' })
+    .optionalString('agencyId', { max: 50, label: 'Agency ID' })
+    .optionalString('portalType', { max: 30, label: 'Portal type' })
     .validate();
 
   const result = await auth.login(body);
@@ -130,4 +141,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
-module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword, status };
+module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword, status, searchAgencies };
