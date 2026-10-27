@@ -67,17 +67,27 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
 
     {/* Template */}
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Template Style</label>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        {(['minimal', 'classic', 'modern'] as const).map((t) => (
-          <button key={t} type="button" onClick={() => onChange({ template: t })}
+      <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Default Template Style</label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+        {([
+          { id: 'modern', label: 'Modern Clean', sub: 'DMart / Amazon Style' },
+          { id: 'classic', label: 'Classic Framed', sub: 'Tata Motors GST Style' },
+          { id: 'navy', label: 'Vibrant Navy', sub: 'Samsung Style' },
+          { id: 'executive', label: 'Executive Card', sub: 'Marico Style' },
+        ] as const).map((t) => (
+          <button key={t.id} type="button" onClick={() => {
+            onChange({ template: t.id });
+            localStorage.setItem('retentio_invoice_template', t.id);
+          }}
             style={{
-              padding: '14px 24px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              border: design.template === t ? '2px solid var(--border-focus)' : '1px solid var(--border)',
-              background: design.template === t ? 'var(--bg-subtle)' : 'var(--bg-card)',
-              color: 'var(--text-primary)', textTransform: 'capitalize', transition: 'all 0.15s ease',
+              padding: '12px 16px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              border: design.template === t.id ? '2px solid var(--accent, #2563eb)' : '1px solid var(--border)',
+              background: design.template === t.id ? 'var(--bg-subtle)' : 'var(--bg-card)',
+              color: 'var(--text-primary)', textAlign: 'left', transition: 'all 0.15s ease',
+              display: 'flex', flexDirection: 'column', gap: 2,
             }}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            <span style={{ fontSize: 13 }}>{t.label}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 }}>{t.sub}</span>
           </button>
         ))}
       </div>

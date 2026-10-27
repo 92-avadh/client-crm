@@ -547,6 +547,7 @@ export const InvoicesManager: React.FC = () => {
       <InvoicePreviewModal
         invoice={activeInvoice}
         settings={settings}
+        brand={brands.find((b) => b.id === activeInvoice?.brandId)}
         onClose={() => setSelectedInvoiceId(null)}
         onWhatsApp={openWhatsAppShare}
       />

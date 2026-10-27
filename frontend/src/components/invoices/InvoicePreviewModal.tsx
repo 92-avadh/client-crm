@@ -1,167 +1,249 @@
-import React from 'react';
-import { X, Printer, Share2, QrCode } from 'lucide-react';
-import type { Invoice, AppSettings } from '../../types';
-import { btnSecondary, modalOverlay, modalCard, getStatusBadgeStyle } from './invoiceStyles';
+import React, { useState } from 'react';
+import { X, Printer, Share2, Sparkles, Check, FileSpreadsheet } from 'lucide-react';
+import type { Invoice, AppSettings, Brand } from '../../types';
+import { btnSecondary, modalOverlay, modalCard } from './invoiceStyles';
+import type { SwipeTemplateId } from './SwipeInvoiceTemplates';
+import {
+  SwipeModernTemplate,
+  SwipeClassicFramedTemplate,
+  SwipeVibrantNavyTemplate,
+  SwipeExecutiveCardTemplate,
+} from './SwipeInvoiceTemplates';
 
 interface Props {
   invoice: Invoice | null;
   settings: AppSettings;
+  brand?: Brand;
   onClose: () => void;
   onWhatsApp: (inv: Invoice) => void;
 }
 
-const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+const TEMPLATE_OPTIONS: Array<{
+  id: SwipeTemplateId;
+  label: string;
+  badge: string;
+  desc: string;
+}> = [
+  { id: 'modern', label: 'Modern Clean', badge: 'DMart / Amazon', desc: 'Minimalist hairline GST layout with instant QR' },
+  { id: 'classic', label: 'Classic Framed', badge: 'Tata Motors', desc: 'Outer boxed grid with dedicated HSN/SAC table' },
+  { id: 'navy', label: 'Vibrant Navy', badge: 'Samsung', desc: 'Solid deep navy header bar & compact two-column' },
+  { id: 'executive', label: 'Executive Card', badge: 'Marico', desc: 'Tinted metadata card & receiver acknowledgment' },
+];
 
-/** Printable / downloadable invoice document. */
-export const InvoicePreviewModal: React.FC<Props> = ({ invoice, settings, onClose, onWhatsApp }) => {
+/**
+ * High-Fidelity Swipe-Inspired Tax Invoice Document Modal
+ */
+export const InvoicePreviewModal: React.FC<Props> = ({
+  invoice,
+  settings,
+  brand,
+  onClose,
+  onWhatsApp,
+}) => {
+  const [activeTemplate, setActiveTemplate] = useState<SwipeTemplateId>(() => {
+    const saved = localStorage.getItem('retentio_invoice_template');
+    if (saved && ['modern', 'classic', 'navy', 'executive'].includes(saved)) {
+      return saved as SwipeTemplateId;
+    }
+    return 'modern';
+  });
+
   if (!invoice) return null;
+
+  const handleSelectTemplate = (tmplId: SwipeTemplateId) => {
+    setActiveTemplate(tmplId);
+    try {
+      localStorage.setItem('retentio_invoice_template', tmplId);
+    } catch {
+      /* ignore */
+    }
+  };
 
   return (
     <div style={modalOverlay} onClick={onClose}>
-      <div style={{ ...modalCard, maxWidth: 768 }} onClick={(e) => e.stopPropagation()}>
-        {/* Controls bar (hidden when printing) */}
-        <div className="no-print" style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Invoice Preview</span>
-            <span style={{ fontFamily: 'monospace', color: 'var(--accent-text)', fontWeight: 600, fontSize: 12 }}>
+      <div
+        style={{
+          ...modalCard,
+          maxWidth: 900,
+          maxHeight: '94vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--bg-card)',
+          borderRadius: 14,
+          overflow: 'hidden',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.3)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Controls Bar (Hidden during Print) */}
+        <div
+          className="no-print"
+          style={{
+            padding: '12px 18px',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--bg-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          {/* Left: Invoice Number and Live Status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <FileSpreadsheet style={{ width: 16, height: 16, color: 'var(--accent-text)' }} />
+              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
+                Tax Invoice
+              </span>
+            </div>
+            <span
+              style={{
+                fontFamily: 'monospace',
+                color: 'var(--accent-text)',
+                fontWeight: 700,
+                fontSize: 12,
+                background: 'var(--bg-raised)',
+                padding: '2px 8px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+              }}
+            >
               {invoice.invoiceNumber}
             </span>
           </div>
+
+          {/* Center: Template Picker Pills */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              background: 'var(--bg-raised)',
+              padding: 3,
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+            }}
+          >
+            {TEMPLATE_OPTIONS.map((opt) => {
+              const isSelected = activeTemplate === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => handleSelectTemplate(opt.id)}
+                  title={`${opt.label} (${opt.badge}) — ${opt.desc}`}
+                  style={{
+                    border: 'none',
+                    background: isSelected ? 'var(--solid-btn-bg, #2563eb)' : 'transparent',
+                    color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                    fontWeight: isSelected ? 700 : 500,
+                    fontSize: 11.5,
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {isSelected && <Check style={{ width: 12, height: 12 }} />}
+                  <span>{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={() => window.print()} style={{ ...btnSecondary, fontSize: 12 }}>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              style={{
+                ...btnSecondary,
+                fontSize: 12,
+                background: 'var(--bg-raised)',
+                fontWeight: 650,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
               <Printer style={{ width: 14, height: 14 }} />
               <span>Print / PDF</span>
             </button>
-            <button onClick={() => onWhatsApp(invoice)} style={{ ...btnSecondary, fontSize: 12, color: 'var(--success-text)' }}>
+            <button
+              type="button"
+              onClick={() => onWhatsApp(invoice)}
+              style={{
+                ...btnSecondary,
+                fontSize: 12,
+                background: 'var(--bg-raised)',
+                color: 'var(--success-text)',
+                fontWeight: 650,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
               <Share2 style={{ width: 14, height: 14 }} />
               <span>WhatsApp</span>
             </button>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
-              <X style={{ width: 20, height: 20 }} />
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close Preview"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                padding: 4,
+                borderRadius: 6,
+              }}
+            >
+              <X style={{ width: 18, height: 18 }} />
             </button>
           </div>
         </div>
 
-        {/* Document body */}
-        <div className="printable-invoice" style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 24, color: 'var(--text-secondary)', fontSize: 12 }}>
-          {/* Agency branding */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 24 }}>
-            <div>
-              <div style={{ background: '#ffffff', padding: '4px 10px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', marginBottom: 10, width: 'fit-content' }}>
-                <img src="/retentio-logo-horizontal.png" alt={settings.companyName}
-                  style={{ height: 26, width: 'auto', objectFit: 'contain' }} />
-              </div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>{settings.companyName}</div>
-              <p style={{ color: 'var(--text-secondary)', marginTop: 4, maxWidth: 320, lineHeight: 1.6 }}>{settings.companyAddress}</p>
-              <div style={{ marginTop: 8, color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 11 }}>
-                GSTIN: <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}>{settings.companyGst}</span> • PAN: {settings.companyPan}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent-text)', fontFamily: 'monospace' }}>TAX INVOICE</div>
-              <div style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--text-primary)', marginTop: 4 }}>{invoice.invoiceNumber}</div>
-              <div style={{ color: 'var(--text-secondary)', marginTop: 4 }}>Date: {invoice.issueDate}</div>
-              <div style={{ color: 'var(--danger-text)', fontWeight: 600, marginTop: 2 }}>Due: {invoice.dueDate}</div>
-            </div>
-          </div>
-
-          {/* Billed to */}
-          <div className="rg-2" style={{ padding: 16, borderRadius: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' as const, fontWeight: 700 }}>Billed To</span>
-              <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14, marginTop: 2 }}>{invoice.brandName}</div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' as const, fontWeight: 700 }}>Payment Status</span>
-              <div style={{ marginTop: 4 }}>
-                <span style={getStatusBadgeStyle(invoice?.status || 'Draft')}>{invoice?.status || 'Draft'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Items */}
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', textAlign: 'left' }}>
-                <th style={{ paddingBottom: 8 }}>Description</th>
-                <th style={{ paddingBottom: 8 }}>HSN/SAC</th>
-                <th style={{ paddingBottom: 8, textAlign: 'right' }}>Qty</th>
-                <th style={{ paddingBottom: 8, textAlign: 'right' }}>Amount (INR)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoice.items.map((it) => (
-                <tr key={it.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ paddingTop: 12, paddingBottom: 12, color: 'var(--text-primary)', fontWeight: 500 }}>{it.description}</td>
-                  <td style={{ paddingTop: 12, paddingBottom: 12, fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{it.hsnSac}</td>
-                  <td style={{ paddingTop: 12, paddingBottom: 12, textAlign: 'right', fontFamily: 'monospace' }}>{it.quantity}</td>
-                  <td className="font-amount" style={{ paddingTop: 12, paddingBottom: 12, textAlign: 'right', color: 'var(--text-primary)', fontWeight: 750, fontSize: 13 }}>
-                    {inr(it.amount)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Totals */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
-            <div style={{ width: 288, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 12, fontSize: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                <span>Taxable Subtotal:</span>
-                <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>{inr(invoice.subtotal)}</span>
-              </div>
-              {invoice.hasGst && (
-                <>
-                  {invoice.cgstAmount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                      <span>CGST (9%):</span>
-                      <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{inr(invoice.cgstAmount)}</span>
-                    </div>
-                  )}
-                  {invoice.sgstAmount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                      <span>SGST (9%):</span>
-                      <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{inr(invoice.sgstAmount)}</span>
-                    </div>
-                  )}
-                  {invoice.igstAmount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                      <span>IGST (18%):</span>
-                      <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{inr(invoice.igstAmount)}</span>
-                    </div>
-                  )}
-                </>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: 14, color: 'var(--text-primary)', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-                <span>Total (Incl. Taxes):</span>
-                <span className="font-amount" style={{ color: 'var(--accent-text)', fontSize: 16, fontWeight: 850 }}>{inr(invoice.totalAmount)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Banking */}
-          <div className="rg-2" style={{ padding: 16, borderRadius: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' as const }}>
-                Bank Account Details (NEFT / RTGS)
-              </div>
-              <div style={{ color: 'var(--text-primary)', marginTop: 4, fontWeight: 600 }}>{settings.bankAccountName}</div>
-              <div style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 11 }}>
-                A/C: {settings.bankAccountNumber} • IFSC: {settings.bankIfsc}
-              </div>
-              <div style={{ color: 'var(--accent-text)', fontFamily: 'monospace', fontSize: 11, marginTop: 2 }}>
-                UPI ID: {settings.upiId}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>Instant UPI Payment</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>Scan to Pay</div>
-              </div>
-              <div style={{ padding: 8, borderRadius: 8, background: 'var(--bg-raised)', color: 'var(--text-primary)' }}>
-                <QrCode style={{ width: 36, height: 36 }} />
-              </div>
-            </div>
+        {/* Scrollable Container with White Paper Sheet Preview */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '24px 16px',
+            background: 'var(--bg-canvas, #090d16)',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            className="printable-invoice"
+            style={{
+              width: '100%',
+              maxWidth: 800,
+              background: '#ffffff',
+              borderRadius: 6,
+              boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
+              overflow: 'hidden',
+            }}
+          >
+            {activeTemplate === 'modern' && (
+              <SwipeModernTemplate invoice={invoice} settings={settings} brand={brand} />
+            )}
+            {activeTemplate === 'classic' && (
+              <SwipeClassicFramedTemplate invoice={invoice} settings={settings} brand={brand} />
+            )}
+            {activeTemplate === 'navy' && (
+              <SwipeVibrantNavyTemplate invoice={invoice} settings={settings} brand={brand} />
+            )}
+            {activeTemplate === 'executive' && (
+              <SwipeExecutiveCardTemplate invoice={invoice} settings={settings} brand={brand} />
+            )}
           </div>
         </div>
       </div>
