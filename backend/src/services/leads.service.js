@@ -8,6 +8,7 @@ const LEAD_STAGES = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation',
 const LEAD_SOURCES = ['Referral', 'Website', 'Social Media', 'Cold Call', 'Event', 'Other'];
 
 const { formatDateOnly } = require('../utils/dateUtils');
+const { getAgencyId } = require('../utils/agency');
 
 function mapLead(l) {
   return {
@@ -23,19 +24,25 @@ async function listLeads(user, { stage } = {}) {
   const params = [];
   let idx = 1;
 
-  // Scope by role, never by a hardcoded user id. Keying off a specific id
-  // meant every other internal user (including team members) could read every
-  // lead in the workspace.
-  if (user && user.role === 'brand') {
-    query += ` AND owner_id = $${idx}`;
-    params.push(user.brandId || user.id);
-    idx += 1;
-  } else if (user && user.role !== 'admin' && user.role !== 'hr') {
-    const perms = Array.isArray(user.permissions) ? user.permissions : [];
-    if (!perms.includes('leads')) {
+  if (user) {
+    const agencyId = getAgencyId(user);
+    if (user.role === 'brand') {
       query += ` AND owner_id = $${idx}`;
-      params.push(user.id);
+      params.push(user.brandId || user.id);
       idx += 1;
+    } else {
+      query += ` AND (agency_id = $${idx} OR (agency_id IS NULL AND owner_id = $${idx}))`;
+      params.push(agencyId);
+      idx += 1;
+
+      if (user.role !== 'admin' && user.role !== 'hr') {
+        const perms = Array.isArray(user.permissions) ? user.permissions : [];
+        if (!perms.includes('leads')) {
+          query += ` AND owner_id = $${idx}`;
+          params.push(user.id);
+          idx += 1;
+        }
+      }
     }
   }
   if (stage) {
@@ -49,14 +56,16 @@ async function listLeads(user, { stage } = {}) {
 }
 
 async function createLead(user, data) {
+  const agencyId = getAgencyId(user);
   const { rows } = await pool.query(
-    `INSERT INTO leads (id,name,company,contact,email,phone,source,stage,value,follow_up_date,notes,owner_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    `INSERT INTO leads (id,name,company,contact,email,phone,source,stage,value,follow_up_date,notes,owner_id,agency_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
     [
       genId(), data.name, data.company || null, data.contact || null,
       data.email || null, data.phone || null, data.source || null,
       data.stage || 'New', data.value || 0, formatDateOnly(data.followUpDate),
       data.notes || null, user ? user.id : null,
+      agencyId,
     ]
   );
   const lead = mapLead(rows[0]);
@@ -68,6 +77,7 @@ async function createLead(user, data) {
       message: `Lead "${lead.name}" (${lead.company || 'Direct'}) added to pipeline.`,
       linkModule: 'leads',
       recipientRoles: ['admin', 'manager'],
+      agencyId,
     });
   } catch (err) {
     console.warn('Failed to dispatch lead notification:', err.message);
@@ -99,12 +109,13 @@ async function convertLeadToBrand(id, user) {
     }
     const lead = leadRows[0];
     const brandId = newBrandId();
+    const agencyId = getAgencyId(user);
 
     await client.query(
-      `INSERT INTO brands (id,name,owner_name,email,phone,status,monthly_fee,owner_id)
-       VALUES ($1,$2,$3,$4,$5,'Active',0,$6)`,
+      `INSERT INTO brands (id,name,owner_name,email,phone,status,monthly_fee,owner_id,agency_id)
+       VALUES ($1,$2,$3,$4,$5,'Active',0,$6,$7)`,
       [brandId, lead.company || lead.name, lead.contact || lead.name,
-       lead.email, lead.phone, user ? user.id : null]
+       lead.email, lead.phone, user ? user.id : null, agencyId]
     );
     const { rows: updatedLead } = await client.query(
       "UPDATE leads SET stage='Won' WHERE id=$1 RETURNING *", [id]

@@ -25,17 +25,20 @@ const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
  * Lives in the service layer so any caller — API, cron, webhook — gets the
  * same consistent behaviour instead of re-implementing the SQL.
  */
+const { getAgencyId } = require('../utils/agency');
+
 async function recordPayment({ invoiceId, brandId, brandName, amount, mode, referenceNo, proofUrl, actor }) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const id = genId();
     const today = new Date().toISOString().split('T')[0];
+    const agencyId = actor ? getAgencyId(actor) : null;
 
     const payRes = await client.query(
-      `INSERT INTO payments (id,invoice_id,brand_id,brand_name,amount,payment_date,mode,reference_no,status,proof_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'Success',$9) RETURNING *`,
-      [id, invoiceId, brandId, brandName, amount, today, mode, referenceNo, proofUrl || null]
+      `INSERT INTO payments (id,invoice_id,brand_id,brand_name,amount,payment_date,mode,reference_no,status,proof_url,owner_id,agency_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'Success',$9,$10,$11) RETURNING *`,
+      [id, invoiceId, brandId, brandName, amount, today, mode, referenceNo, proofUrl || null, actor ? actor.id : null, agencyId]
     );
 
     const invRes = await client.query(
@@ -114,14 +117,15 @@ async function listPayments(user, { brandId, invoiceId } = {}) {
   const params = [];
   let idx = 1;
 
+  const agencyId = getAgencyId(user);
   if (user.role === 'brand') {
     query += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin') {
-    // Admins see payments across their agency workspace
-    query += ` AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx} OR owner_id IS NULL) OR brand_id IS NULL OR owner_id = $${idx} OR owner_id IS NULL)`;
-    params.push(user.id);
+  } else if (user.role === 'admin' || user.role === 'hr') {
+    // Admins and HR see payments across their agency workspace
+    query += ` AND (agency_id = $${idx} OR owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE agency_id = $${idx} OR owner_id = $${idx}))`;
+    params.push(agencyId);
     idx += 1;
   } else {
     // Team members must not read agency-wide financial records.

@@ -1,5 +1,6 @@
 const pool = require('../db');
 const crypto = require('crypto');
+const { getAgencyId } = require('../utils/agency');
 
 const genId = () => 'conv_' + crypto.randomBytes(6).toString('hex');
 const msgId = () => 'msg_' + crypto.randomBytes(6).toString('hex');
@@ -115,14 +116,20 @@ async function getAttachmentsForMessages(messageIds) {
 
 async function ensureDirectConversations(userId) {
   try {
-    const { rows: meRows } = await pool.query('SELECT id, name, role FROM users WHERE id = $1', [userId]);
+    const { rows: meRows } = await pool.query('SELECT id, name, role, agency_id, created_by FROM users WHERE id = $1', [userId]);
     if (!meRows.length) return;
     const me = meRows[0];
     if (me.role === 'brand') return;
 
+    const agencyId = getAgencyId(me);
+
     const { rows: colleagues } = await pool.query(
-      `SELECT id, name, avatar, role, designation FROM users WHERE role != 'brand' AND id != $1 AND (status IS NULL OR status != 'inactive')`,
-      [userId]
+      `SELECT id, name, avatar, role, designation FROM users 
+       WHERE role != 'brand' 
+         AND id != $1 
+         AND (agency_id = $2 OR (agency_id IS NULL AND (created_by = $2 OR id = $2)))
+         AND (status IS NULL OR status != 'inactive')`,
+      [userId, agencyId]
     );
 
     for (const colleague of colleagues) {
@@ -141,10 +148,10 @@ async function ensureDirectConversations(userId) {
         try {
           await client.query('BEGIN');
           await client.query(
-            `INSERT INTO conversations (id, type, title, last_message, last_message_time, unread_count)
-             VALUES ($1, 'direct', $2, 'Direct conversation ready', 'Just now', 0)
+            `INSERT INTO conversations (id, type, title, last_message, last_message_time, unread_count, agency_id)
+             VALUES ($1, 'direct', $2, 'Direct conversation ready', 'Just now', 0, $3)
              ON CONFLICT (id) DO NOTHING`,
-            [convId, colleague.name]
+            [convId, colleague.name, agencyId]
           );
           await client.query(
             `INSERT INTO conversation_participants (conversation_id, user_id)
@@ -297,11 +304,12 @@ async function sendMessage(conversationId, user, { text, attachments = [] }) {
         const uids = parts.filter(p => p.startsWith('usr_') && p !== user.id);
         if (uids.length > 0) otherUserId = uids[0];
       }
+      const agencyId = getAgencyId(user);
       await client.query(
-        `INSERT INTO conversations (id, type, title, last_message, last_message_time, unread_count)
-         VALUES ($1, 'direct', 'Direct Chat', $2, $3, 0)
+        `INSERT INTO conversations (id, type, title, last_message, last_message_time, unread_count, agency_id)
+         VALUES ($1, 'direct', 'Direct Chat', $2, $3, 0, $4)
          ON CONFLICT (id) DO UPDATE SET last_message = EXCLUDED.last_message, last_message_time = EXCLUDED.last_message_time`,
-        [conversationId, text, ts]
+        [conversationId, text, ts, agencyId]
       );
       await client.query(
         `INSERT INTO conversation_participants (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
@@ -415,10 +423,11 @@ async function createConversation(user, { type, title, brandId, participantIds =
   try {
     await client.query('BEGIN');
 
+    const agencyId = getAgencyId(user);
     const id = genId();
     const { rows } = await client.query(
-      'INSERT INTO conversations (id,type,title,brand_id) VALUES ($1,$2,$3,$4) RETURNING *',
-      [id, type || 'team', title, brandId || null]
+      'INSERT INTO conversations (id,type,title,brand_id,agency_id) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [id, type || 'team', title, brandId || null, agencyId]
     );
     const allParticipants = [...new Set([...participantIds, user.id])];
     for (const uid of allParticipants) {

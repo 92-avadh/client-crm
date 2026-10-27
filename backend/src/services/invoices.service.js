@@ -52,7 +52,10 @@ async function getItemsForInvoices(invoiceIds) {
   return map;
 }
 
+const { getAgencyId } = require('../utils/agency');
+
 async function listInvoices(user, { brandId, status, search, page = 1, pageSize = 50 } = {}) {
+  const agencyId = getAgencyId(user);
   let whereClause = 'WHERE 1=1';
   const params = [];
   let idx = 1;
@@ -61,14 +64,14 @@ async function listInvoices(user, { brandId, status, search, page = 1, pageSize 
     whereClause += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin') {
-    whereClause += ` AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx} OR owner_id IS NULL) OR brand_id IS NULL OR owner_id = $${idx} OR owner_id IS NULL)`;
-    params.push(user.id);
+  } else if (user.role === 'admin' || user.role === 'hr') {
+    whereClause += ` AND (agency_id = $${idx} OR owner_id = $${idx})`;
+    params.push(agencyId);
     idx += 1;
   } else {
-    whereClause += ` AND brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx})`;
-    params.push(user.id);
-    idx += 1;
+    whereClause += ` AND (agency_id = $${idx} OR owner_id = $${idx}) AND brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1})`;
+    params.push(agencyId, user.id);
+    idx += 2;
   }
   if (brandId) {
     whereClause += ` AND brand_id=$${idx}`;
@@ -167,11 +170,12 @@ async function createInvoice(user, data) {
     const currency = data.currency || 'INR';
     const currencySymbol = data.currencySymbol || (currency === 'USD' ? '$' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'AED' ? 'AED' : (currency === 'CAD' ? 'CA$' : '₹')))));
 
+    const agencyId = getAgencyId(user);
     await client.query(
       `INSERT INTO invoices (id,invoice_number,brand_id,brand_name,issue_date,due_date,subtotal,has_gst,gst_type,
        cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring,owner_id,
-       currency,currency_symbol)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16,$17,$18,$19)`,
+       currency,currency_symbol,agency_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16,$17,$18,$19,$20)`,
       [
         id, invoiceNumber, data.brandId, data.brandName,
         formatDateOnly(data.issueDate), formatDateOnly(data.dueDate),
@@ -179,7 +183,7 @@ async function createInvoice(user, data) {
         data.cgstAmount || 0, data.sgstAmount || 0, data.igstAmount || 0,
         data.totalAmount || 0, data.notes || null, data.paymentMode || null,
         data.isRecurring || false, user.id,
-        currency, currencySymbol
+        currency, currencySymbol, agencyId
       ]
     );
 

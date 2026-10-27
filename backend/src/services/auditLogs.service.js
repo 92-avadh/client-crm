@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { getAgencyId } = require('../utils/agency');
 
 const MAX_LIMIT = 200;
 
@@ -12,25 +13,25 @@ function mapAuditLog(r) {
 async function listAuditLogs(user, { limit, offset } = {}) {
   const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), MAX_LIMIT);
   const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+  const agencyId = getAgencyId(user);
 
-  let query = 'SELECT * FROM audit_logs';
-  let countQuery = 'SELECT COUNT(*) FROM audit_logs';
-  const params = [];
+  let whereClause = "WHERE (agency_id = $1 OR (agency_id IS NULL AND $1 = 'usr_admin'))";
+  const params = [agencyId];
 
   // Non-admins only see their own activity.
   if (user.role !== 'admin') {
-    query += ' WHERE actor_name = $1';
-    countQuery += ' WHERE actor_name = $1';
+    whereClause += ' AND actor_name = $2';
     params.push(user.name);
   }
 
+  const countQuery = `SELECT COUNT(*) FROM audit_logs ${whereClause}`;
+  const total = await pool.query(countQuery, params);
+
   const pIdx = params.length + 1;
-  query += ` ORDER BY created_at DESC LIMIT $${pIdx} OFFSET $${pIdx + 1}`;
+  const query = `SELECT * FROM audit_logs ${whereClause} ORDER BY created_at DESC LIMIT $${pIdx} OFFSET $${pIdx + 1}`;
   params.push(safeLimit, safeOffset);
 
   const { rows } = await pool.query(query, params);
-  const countParams = user.role !== 'admin' ? [user.name] : [];
-  const total = await pool.query(countQuery, countParams);
 
   return {
     data: rows.map(mapAuditLog),

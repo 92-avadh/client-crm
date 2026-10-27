@@ -124,7 +124,7 @@ const serverMemoryCache = new Map();
 function cacheMiddleware(ttlSeconds = 20) {
   return (req, res, next) => {
     if (req.method !== 'GET') return next();
-    const key = `${req.baseUrl || ''}${req.path}_${req.user?.id || 'anon'}`;
+    const key = `${req.baseUrl || ''}${req.path}_${req.user?.agencyId || req.user?.id || 'anon'}`;
     const cached = serverMemoryCache.get(key);
     if (cached && Date.now() < cached.expiry) {
       res.setHeader('X-Cache', 'HIT');
@@ -286,6 +286,43 @@ connectWithRetry()
         UPDATE expenses SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE meetings SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE leads SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+
+        -- Multi-Agency Workspace Isolation
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE invoices ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE payments ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE expenses ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE meetings ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE leads ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE holidays ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE conversations ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE recurring_invoices ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+        ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
+
+        -- Backfill legacy records to legacy admin agency ('usr_admin') or user's own admin id
+        UPDATE users SET agency_id = id WHERE role = 'admin' AND agency_id IS NULL;
+        UPDATE users SET agency_id = created_by WHERE created_by IS NOT NULL AND agency_id IS NULL;
+        UPDATE users SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
+
+        UPDATE brands SET agency_id = COALESCE(owner_id, 'usr_admin') WHERE agency_id IS NULL;
+        UPDATE tasks SET agency_id = COALESCE(owner_id, 'usr_admin') WHERE agency_id IS NULL;
+        UPDATE projects SET agency_id = COALESCE(owner_id, 'usr_admin') WHERE agency_id IS NULL;
+        UPDATE invoices SET agency_id = COALESCE(owner_id, 'usr_admin') WHERE agency_id IS NULL;
+        UPDATE payments SET agency_id = COALESCE(owner_id, 'usr_admin') WHERE agency_id IS NULL;
+        UPDATE expenses SET agency_id = COALESCE(owner_id, 'usr_admin') WHERE agency_id IS NULL;
+        UPDATE meetings SET agency_id = COALESCE(owner_id, 'usr_admin') WHERE agency_id IS NULL;
+        UPDATE leads SET agency_id = COALESCE(owner_id, 'usr_admin') WHERE agency_id IS NULL;
+        UPDATE notifications SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
+        UPDATE settings SET agency_id = 'usr_admin' WHERE id = 'main' AND agency_id IS NULL;
+        UPDATE holidays SET agency_id = 'usr_admin' WHERE agency_id IS NULL AND type != 'National';
+        UPDATE conversations SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
+        UPDATE recurring_invoices SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
+        UPDATE audit_logs SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
       `).catch(e => console.warn('Migration warning:', e.message));
 
       await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (

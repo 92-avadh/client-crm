@@ -1,6 +1,7 @@
 const pool = require('../db');
 const crypto = require('crypto');
 const invoicesService = require('./invoices.service');
+const { getAgencyId } = require('../utils/agency');
 
 const genId = () => 'rec_' + crypto.randomBytes(6).toString('hex');
 const notifId = () => 'notif_' + crypto.randomBytes(6).toString('hex');
@@ -16,6 +17,10 @@ async function listRecurring(user) {
   if (user.role === 'brand') {
     query += ' WHERE ri.brand_id = $1';
     params.push(user.brandId || '');
+  } else {
+    const agencyId = getAgencyId(user);
+    query += ` WHERE (ri.agency_id = $1 OR b.agency_id = $1 OR (b.agency_id IS NULL AND (b.owner_id = $1 OR $1 = 'usr_admin')))`;
+    params.push(agencyId);
   }
   query += ' ORDER BY ri.created_at DESC';
   const { rows } = await pool.query(query, params);
@@ -39,11 +44,12 @@ async function getRecurring(id) {
  * Create a new recurring schedule.
  */
 async function createRecurring(user, data) {
+  const agencyId = getAgencyId(user);
   const id = genId();
   const { rows } = await pool.query(
-    `INSERT INTO recurring_invoices (id, invoice_id, brand_id, frequency, next_due_date, status)
-     VALUES ($1, $2, $3, $4, $5, 'Active') RETURNING *`,
-    [id, data.invoiceId || null, data.brandId || null, data.frequency || 'Monthly', data.nextDueDate || null]
+    `INSERT INTO recurring_invoices (id, invoice_id, brand_id, frequency, next_due_date, status, agency_id)
+     VALUES ($1, $2, $3, $4, $5, 'Active', $6) RETURNING *`,
+    [id, data.invoiceId || null, data.brandId || null, data.frequency || 'Monthly', data.nextDueDate || null, agencyId]
   );
   return rows[0];
 }

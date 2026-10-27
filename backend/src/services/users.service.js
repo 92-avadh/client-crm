@@ -30,22 +30,24 @@ function mapUser(u, brandIds) {
   };
 }
 
+const { getAgencyId } = require('../utils/agency');
+
 async function listUsers(user, { page = 1, pageSize = 50, includeInactive = false } = {}) {
+  const agencyId = getAgencyId(user);
   let where = (user?.role === 'admin' || includeInactive) ? 'WHERE 1=1' : 'WHERE is_active = true';
   const params = [];
   let idx = 1;
 
   if (user) {
-    if (user.role === 'admin') {
-      // Admins manage the workspace and see all internal agency users
-      where += ` AND role != 'brand'`;
+    if (user.role === 'admin' || user.role === 'hr' || user.role === 'team') {
+      // Internal agency staff only see users belonging to their agency
+      where += ` AND (agency_id = $${idx} OR created_by = $${idx} OR id = $${idx}) AND role != 'brand'`;
+      params.push(agencyId);
+      idx += 1;
     } else if (user.role === 'brand') {
       where += ` AND (id = $${idx} OR brand_id = $${idx + 1} OR id IN (SELECT member_id FROM brand_assignments WHERE brand_id = $${idx + 1}))`;
       params.push(user.id, user.brandId || 'none');
       idx += 2;
-    } else {
-      // Internal agency staff (hr, project managers, team) see all colleagues in the agency
-      where += ` AND role != 'brand'`;
     }
   }
 
@@ -92,14 +94,15 @@ async function createUser(actor, data) {
   const id = genId();
   const permissionsJson = JSON.stringify(Array.isArray(data.permissions) ? data.permissions : []);
   const actorId = actor ? actor.id : null;
+  const agencyId = getAgencyId(actor);
 
   const { rows } = await pool.query(
-    `INSERT INTO users (id,name,email,phone,password_hash,role,designation,avatar,brand_id,permissions,created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11) RETURNING *`,
+    `INSERT INTO users (id,name,email,phone,password_hash,role,designation,avatar,brand_id,permissions,created_by,agency_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12) RETURNING *`,
     [
       id, data.name, data.email.toLowerCase(), data.phone || null, hash,
       data.role || 'team', data.designation || null, data.avatar || null,
-      data.brandId || null, permissionsJson, actorId
+      data.brandId || null, permissionsJson, actorId, agencyId
     ]
   );
   return mapUser(rows[0], []);

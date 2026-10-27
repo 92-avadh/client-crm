@@ -48,12 +48,15 @@ function mapDoc(d) {
   };
 }
 
+const { getAgencyId } = require('../utils/agency');
+
 async function verifyBrandAccess(user, id) {
   if (!user) return false;
-  if (user.role === 'admin') {
+  const agencyId = getAgencyId(user);
+  if (user.role === 'admin' || user.role === 'hr') {
     const ownerCheck = await pool.query(
-      'SELECT 1 FROM brands WHERE id = $1 AND (owner_id = $2 OR owner_id IS NULL)',
-      [id, user.id]
+      'SELECT 1 FROM brands WHERE id = $1 AND (agency_id = $2 OR owner_id = $2)',
+      [id, agencyId]
     );
     return ownerCheck.rows.length > 0;
   }
@@ -85,6 +88,7 @@ async function getBrandWithDetails(userOrId, maybeId) {
 }
 
 async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}) {
+  const agencyId = getAgencyId(user);
   const params = [];
   let idx = 1;
   let baseWhere;
@@ -95,17 +99,17 @@ async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}
     baseWhere = `id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin') {
+  } else if (user.role === 'admin' || user.role === 'hr') {
     alias = '';
-    baseWhere = `(owner_id = $${idx} OR owner_id IS NULL)`;
-    params.push(user.id);
+    baseWhere = `(agency_id = $${idx} OR owner_id = $${idx})`;
+    params.push(agencyId);
     idx += 1;
   } else {
-    // All internal roles (team, hr, corporate presets, custom roles)
+    // All internal roles (team, project managers, etc)
     alias = 'b';
-    baseWhere = `b.id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx})`;
-    params.push(user.id);
-    idx += 1;
+    baseWhere = `(b.agency_id = $${idx} OR b.owner_id = $${idx}) AND b.id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1})`;
+    params.push(agencyId, user.id);
+    idx += 2;
   }
 
   const col = (name) => (alias ? `${alias}.${name}` : name);
@@ -179,12 +183,13 @@ async function createBrand(user, data) {
     const npsScore = data.npsScore != null ? parseInt(data.npsScore, 10) : null;
 
     const deliverables = Array.isArray(data.deliverables) ? JSON.stringify(data.deliverables) : '[]';
+    const agencyId = getAgencyId(user);
 
     await client.query(
       `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,city,state,pincode,gst_number,pan,
        service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date,owner_id,
-       currency, currency_symbol, retainer_hours, used_hours, nps_score, contract_start_date, contract_end_date, magic_token, deliverables)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,
+       currency, currency_symbol, retainer_hours, used_hours, nps_score, contract_start_date, contract_end_date, magic_token, deliverables, agency_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)`,
       [
         id, data.name, data.ownerName || null, data.mobile || null, data.email || null,
         data.billingAddress || null, data.city || null, data.state || null, data.pincode || null,
@@ -192,7 +197,7 @@ async function createBrand(user, data) {
         fee, data.billingCycleDay || 1, today, data.notes || null,
         status, paymentStatus, lastPaymentDate, today, user.id,
         currency, currencySymbol, retainerHours, 0, npsScore,
-        contractStartDate, contractEndDate, magicToken, deliverables
+        contractStartDate, contractEndDate, magicToken, deliverables, agencyId
       ]
     );
 
@@ -207,12 +212,13 @@ async function createBrand(user, data) {
     // Never fabricate an unconfirmed payment for a pending client.
     if (fee > 0 && paymentStatus === 'Paid') {
       await client.query(
-        `INSERT INTO payments (id, invoice_id, brand_id, brand_name, amount, payment_date, mode, reference_no, status, owner_id)
-         VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, 'Success', $7)`,
+        `INSERT INTO payments (id, invoice_id, brand_id, brand_name, amount, payment_date, mode, reference_no, status, owner_id, agency_id)
+         VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, 'Success', $7, $8)`,
         [
           payId(), id, data.name, fee, today,
           'RET-' + id.replace('brand_', '').toUpperCase(),
           user.id,
+          agencyId,
         ]
       );
     }

@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const genId = () => 'meet_' + crypto.randomBytes(6).toString('hex');
 
 const { formatDateOnly } = require('../utils/dateUtils');
+const { getAgencyId } = require('../utils/agency');
 
 function mapMeeting(m, attendeeIds) {
   return {
@@ -51,18 +52,19 @@ async function listMeetings(user, { brandId, leadId, page = 1, pageSize = 50 } =
   let idx = 1;
 
   if (user) {
+    const agencyId = getAgencyId(user);
     if (user.role === 'brand') {
       whereClause += ` AND brand_id = $${idx}`;
       params.push(user.brandId || 'none');
       idx += 1;
     } else if (user.role === 'admin') {
-      whereClause += ` AND (owner_id = $${idx} OR owner_id IS NULL OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx} OR owner_id IS NULL) OR brand_id IS NULL)`;
-      params.push(user.id);
+      whereClause += ` AND (agency_id = $${idx} OR (agency_id IS NULL AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE agency_id = $${idx} OR owner_id = $${idx}))))`;
+      params.push(agencyId);
       idx += 1;
     } else {
-      whereClause += ` AND (owner_id = $${idx} OR id IN (SELECT meeting_id FROM meeting_attendees WHERE user_id = $${idx}) OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx}))`;
-      params.push(user.id);
-      idx += 1;
+      whereClause += ` AND (agency_id = $${idx} OR (agency_id IS NULL AND owner_id = $${idx})) AND (owner_id = $${idx + 1} OR id IN (SELECT meeting_id FROM meeting_attendees WHERE user_id = $${idx + 1}) OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1}))`;
+      params.push(agencyId, user.id);
+      idx += 2;
     }
   }
   if (brandId) {
@@ -99,14 +101,16 @@ async function createMeeting(user, data) {
   try {
     await client.query('BEGIN');
 
+    const agencyId = getAgencyId(user);
     const id = genId();
     await client.query(
-      `INSERT INTO meetings (id,title,brand_id,lead_id,date,time,duration_minutes,link_or_location,notes,owner_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      `INSERT INTO meetings (id,title,brand_id,lead_id,date,time,duration_minutes,link_or_location,notes,owner_id,agency_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
         id, data.title, data.brandId || null, data.leadId || null,
         formatDateOnly(data.date), data.time || null, data.durationMinutes || 60,
         data.linkOrLocation || null, data.notes || null, user ? user.id : null,
+        agencyId,
       ]
     );
     for (const uid of data.attendeeIds || []) {
@@ -127,6 +131,7 @@ async function createMeeting(user, data) {
         linkModule: 'meetings',
         brandId: meeting.brandId || null,
         recipientRoles: ['admin', 'manager', 'team'],
+        agencyId,
       });
     } catch (err) {
       console.warn('Failed to dispatch meeting notification:', err.message);

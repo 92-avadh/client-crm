@@ -27,7 +27,10 @@ async function getProject(id) {
   return mapProject(rows[0], members.rows.map(r => r.member_id));
 }
 
+const { getAgencyId } = require('../utils/agency');
+
 async function listProjects(user, { brandId, page = 1, pageSize = 50 } = {}) {
+  const agencyId = getAgencyId(user);
   let where = 'WHERE 1=1';
   const params = [];
   let idx = 1;
@@ -36,14 +39,14 @@ async function listProjects(user, { brandId, page = 1, pageSize = 50 } = {}) {
     where += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin') {
-    where += ` AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx} OR owner_id IS NULL) OR brand_id IS NULL OR owner_id = $${idx} OR owner_id IS NULL)`;
-    params.push(user.id);
+  } else if (user.role === 'admin' || user.role === 'hr') {
+    where += ` AND (agency_id = $${idx} OR owner_id = $${idx})`;
+    params.push(agencyId);
     idx += 1;
   } else {
-    where += ` AND (brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx}) OR id IN (SELECT project_id FROM project_assignments WHERE member_id = $${idx}))`;
-    params.push(user.id);
-    idx += 1;
+    where += ` AND (agency_id = $${idx} OR owner_id = $${idx}) AND (brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1}) OR id IN (SELECT project_id FROM project_assignments WHERE member_id = $${idx + 1}))`;
+    params.push(agencyId, user.id);
+    idx += 2;
   }
   if (brandId) {
     where += ` AND brand_id=$${idx}`;
@@ -82,15 +85,15 @@ async function createProject(user, data) {
   try {
     await client.query('BEGIN');
 
-    const id = genId();
+    const agencyId = getAgencyId(user);
     await client.query(
-      `INSERT INTO projects (id,brand_id,name,scope,start_date,end_date,status,billing_amount,progress,owner_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      `INSERT INTO projects (id,brand_id,name,scope,start_date,end_date,status,billing_amount,progress,owner_id,agency_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
         id, data.brandId, data.name, data.scope || null,
         formatDateOnly(data.startDate), formatDateOnly(data.endDate),
         data.status || 'Not started', data.billingAmount || 0,
-        data.progress || 0, user.id,
+        data.progress || 0, user.id, agencyId,
       ]
     );
     for (const mid of data.memberIds || []) {

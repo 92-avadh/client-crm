@@ -51,6 +51,8 @@ module.exports = (req, res, next) => {
 
   try {
     req.user = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    const { getAgencyId } = require('../utils/agency');
+    req.user.agencyId = getAgencyId(req.user);
 
     const COOKIE_OPTIONS = {
       httpOnly: true,
@@ -59,7 +61,15 @@ module.exports = (req, res, next) => {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     };
     const newToken = jwt.sign(
-      { id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, brandId: req.user.brandId, permissions: req.user.permissions || [] },
+      {
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        brandId: req.user.brandId,
+        agencyId: req.user.agencyId,
+        permissions: req.user.permissions || [],
+      },
       JWT_SECRET,
       { expiresIn: '30d', algorithm: 'HS256' }
     );

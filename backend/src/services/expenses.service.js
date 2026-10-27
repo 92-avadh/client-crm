@@ -57,21 +57,22 @@ async function writeAudit(user, action, details) {
   }
 }
 
-const formatAmount = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+const { getAgencyId } = require('../utils/agency');
 
 async function listExpenses(user, filters = {}) {
+  const agencyId = getAgencyId(user);
   let whereClause = 'WHERE 1=1';
   const params = [];
   let idx = 1;
 
-  if (user && user.role === 'admin') {
-    whereClause += ` AND (owner_id = $${idx} OR owner_id IS NULL OR brand_id IN (SELECT id FROM brands WHERE owner_id = $${idx} OR owner_id IS NULL) OR brand_id IS NULL)`;
-    params.push(user.id);
+  if (user && (user.role === 'admin' || user.role === 'hr')) {
+    whereClause += ` AND (agency_id = $${idx} OR (agency_id IS NULL AND owner_id = $${idx}))`;
+    params.push(agencyId);
     idx += 1;
   } else if (user && user.role !== 'admin') {
-    whereClause += ` AND (owner_id = $${idx} OR employee_id = $${idx} OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx}))`;
-    params.push(user.id);
-    idx += 1;
+    whereClause += ` AND (agency_id = $${idx} OR owner_id = $${idx}) AND (employee_id = $${idx + 1} OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1}))`;
+    params.push(agencyId, user.id);
+    idx += 2;
   }
 
   if (filters.brandId) {
@@ -137,12 +138,13 @@ async function createExpense(user, data) {
     const cleanDesc = data.description !== undefined ? data.description : (data.note || '');
     const cleanDate = formatDateOnly(data.date) || new Date().toISOString().split('T')[0];
 
+    const agencyId = getAgencyId(user);
     const { rows } = await client.query(
       `INSERT INTO expenses (
         id, title, description, category, amount, date,
         payment_mode, payment_status, employee_name, employee_id,
-        note, receipt_url, brand_id, is_recurring, owner_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+        note, receipt_url, brand_id, is_recurring, owner_id, agency_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
       [
         id, cleanTitle, cleanDesc, data.category, cleanAmount, cleanDate,
         data.paymentMode || 'Corporate Card',
@@ -154,6 +156,7 @@ async function createExpense(user, data) {
         (data.brandId && data.brandId !== 'other') ? data.brandId : null,
         Boolean(data.isRecurring),
         user ? user.id : null,
+        agencyId,
       ]
     );
 

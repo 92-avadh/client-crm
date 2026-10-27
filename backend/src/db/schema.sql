@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   brand_id VARCHAR(50),
   is_active BOOLEAN DEFAULT true,
   permissions JSONB DEFAULT '[]',
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -52,6 +53,7 @@ CREATE TABLE IF NOT EXISTS brands (
   last_activity_date DATE DEFAULT CURRENT_DATE,
   last_payment_date DATE DEFAULT CURRENT_DATE,
   owner_id VARCHAR(50),
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -87,6 +89,7 @@ CREATE TABLE IF NOT EXISTS projects (
   status VARCHAR(50) DEFAULT 'Not started',
   billing_amount NUMERIC(12,2),
   progress INTEGER DEFAULT 0,
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -108,6 +111,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   due_date DATE,
   priority VARCHAR(20) DEFAULT 'Medium',
   status VARCHAR(30) DEFAULT 'To Do',
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -135,6 +139,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   is_recurring BOOLEAN DEFAULT false,
   currency VARCHAR(10) DEFAULT 'INR',
   currency_symbol VARCHAR(10) DEFAULT '₹',
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -157,6 +162,7 @@ CREATE TABLE IF NOT EXISTS recurring_invoices (
   frequency VARCHAR(20) DEFAULT 'Monthly',
   next_due_date DATE,
   status VARCHAR(20) DEFAULT 'Active',
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -172,6 +178,7 @@ CREATE TABLE IF NOT EXISTS payments (
   reference_no VARCHAR(100),
   status VARCHAR(20) DEFAULT 'Success',
   proof_url TEXT,
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -191,6 +198,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   receipt_url TEXT,
   brand_id VARCHAR(50),
   is_recurring BOOLEAN DEFAULT false,
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -206,6 +214,8 @@ CREATE TABLE IF NOT EXISTS meetings (
   link_or_location TEXT,
   notes TEXT,
   reminder_sent BOOLEAN DEFAULT false,
+  owner_id VARCHAR(50),
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -229,6 +239,8 @@ CREATE TABLE IF NOT EXISTS leads (
   value NUMERIC(12,2) DEFAULT 0,
   follow_up_date DATE,
   notes TEXT,
+  owner_id VARCHAR(50),
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -244,6 +256,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   brand_id VARCHAR(50),
   recipient_roles TEXT[],
   target_user_id VARCHAR(50),
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -256,6 +269,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   last_message TEXT,
   last_message_time VARCHAR(50),
   unread_count INTEGER DEFAULT 0,
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -332,6 +346,7 @@ CREATE TABLE IF NOT EXISTS settings (
   dashboard_focus VARCHAR(30) DEFAULT 'balanced',
   slack_webhook_url TEXT,
   discord_webhook_url TEXT,
+  agency_id VARCHAR(50),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -340,7 +355,8 @@ CREATE TABLE IF NOT EXISTS holidays (
   id VARCHAR(50) PRIMARY KEY,
   title VARCHAR(200),
   date DATE,
-  type VARCHAR(50) DEFAULT 'Agency Custom'
+  type VARCHAR(50) DEFAULT 'Agency Custom',
+  agency_id VARCHAR(50)
 );
 
 -- Audit logs
@@ -352,6 +368,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   action VARCHAR(200),
   details TEXT,
   ip_address VARCHAR(50),
+  agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
 

@@ -3,7 +3,7 @@ const { makeValidator } = require('../utils/validate');
 const settings = require('../services/settings.service');
 
 const get = asyncHandler(async (req, res) => {
-  const data = await settings.getSettings();
+  const data = await settings.getSettings(req.user);
   if (!data) return res.status(404).json({ error: 'Settings have not been set up yet.' });
   res.json(data);
 });
@@ -55,7 +55,7 @@ const update = asyncHandler(async (req, res) => {
     razorpayConnected: req.body.razorpayConnected,
   };
 
-  res.json(await settings.updateSettings(fullPayload));
+  res.json(await settings.updateSettings(req.user, fullPayload));
 });
 
 const testWebhook = asyncHandler(async (req, res) => {

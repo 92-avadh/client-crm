@@ -58,13 +58,34 @@ function mapSettings(r) {
   };
 }
 
-async function getSettings() {
-  const { rows } = await pool.query("SELECT * FROM settings WHERE id='main'");
+const { getAgencyId } = require('../utils/agency');
+
+async function getSettings(user) {
+  const agencyId = user ? getAgencyId(user) : 'usr_admin';
+  const settingsId = agencyId === 'usr_admin' ? 'main' : 'set_' + agencyId;
+
+  let { rows } = await pool.query(
+    "SELECT * FROM settings WHERE agency_id = $1 OR id = $2 OR id = $1 LIMIT 1",
+    [agencyId, settingsId]
+  );
+  if (!rows.length) {
+    const fallback = await pool.query("SELECT * FROM settings WHERE id = 'main' LIMIT 1");
+    if (fallback.rows.length) {
+      rows = fallback.rows;
+    }
+  }
   return rows.length ? mapSettings(rows[0]) : null;
 }
 
-async function updateSettings(data) {
+async function updateSettings(user, data) {
+  if (!data && user && typeof user === 'object' && !user.id && !user.agencyId) {
+    data = user;
+    user = null;
+  }
+  const agencyId = user ? getAgencyId(user) : 'usr_admin';
+  const settingsId = agencyId === 'usr_admin' ? 'main' : 'set_' + agencyId;
   const sp = data.subscriptionPlan || {};
+
   const { rows } = await pool.query(
     `INSERT INTO settings (
       id, company_name, company_email, company_phone, company_address, company_gst, company_pan, company_state,
@@ -72,9 +93,9 @@ async function updateSettings(data) {
       razorpay_key_id, razorpay_connected, subscription_plan_name, subscription_price, subscription_billing_cycle,
       subscription_renewal_date, subscription_status, retention_threshold_days, whatsapp_enabled, invoice_design,
       currency, currency_symbol, industry, team_size, goals, dashboard_layout, dashboard_focus,
-      slack_webhook_url, discord_webhook_url, updated_at
+      slack_webhook_url, discord_webhook_url, agency_id, updated_at
     )
-    VALUES ('main', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, NOW())
+    VALUES ($35, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $36, NOW())
     ON CONFLICT (id) DO UPDATE SET
       company_name = COALESCE($1, settings.company_name),
       company_email = COALESCE($2, settings.company_email),
@@ -110,6 +131,7 @@ async function updateSettings(data) {
       dashboard_focus = COALESCE($32, settings.dashboard_focus),
       slack_webhook_url = COALESCE($33, settings.slack_webhook_url),
       discord_webhook_url = COALESCE($34, settings.discord_webhook_url),
+      agency_id = COALESCE(settings.agency_id, $36),
       updated_at = NOW()
     RETURNING *`,
     [
@@ -147,6 +169,8 @@ async function updateSettings(data) {
       data.dashboardFocus ?? null,
       data.slackWebhookUrl !== undefined ? data.slackWebhookUrl : null,
       data.discordWebhookUrl !== undefined ? data.discordWebhookUrl : null,
+      settingsId,
+      agencyId,
     ]
   );
   return mapSettings(rows[0]);

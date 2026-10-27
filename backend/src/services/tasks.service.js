@@ -7,6 +7,7 @@ const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 const STATUSES = ['To Do', 'In Progress', 'In Review', 'Review', 'Completed'];
 
 const { formatDateOnly } = require('../utils/dateUtils');
+const { getAgencyId } = require('../utils/agency');
 
 /** Row → API shape. */
 function mapTask(t) {
@@ -33,14 +34,18 @@ function scopeForUser(user) {
   if (user.role === 'brand') {
     return { sql: ' AND brand_id = $1', params: [user.brandId || ''] };
   }
+  const agencyId = getAgencyId(user);
   if (user.role === 'admin') {
     // Admins see tasks across their agency workspace
-    return { sql: ' AND (brand_id IN (SELECT id FROM brands WHERE owner_id = $1 OR owner_id IS NULL) OR brand_id IS NULL OR assignee_id = $1 OR owner_id = $1 OR owner_id IS NULL)', params: [user.id] };
+    return {
+      sql: ' AND (agency_id = $1 OR (agency_id IS NULL AND (owner_id = $1 OR brand_id IN (SELECT id FROM brands WHERE agency_id = $1 OR owner_id = $1))))',
+      params: [agencyId],
+    };
   }
   // Internal team members (standard, corporate presets, or custom roles)
   return {
-    sql: ' AND (assignee_id = $1 OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $1))',
-    params: [user.id],
+    sql: ' AND (agency_id = $1 OR (agency_id IS NULL AND owner_id = $1)) AND (assignee_id = $2 OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $2))',
+    params: [agencyId, user.id],
   };
 }
 
@@ -70,10 +75,11 @@ async function listTasks(user, filters = {}) {
 }
 
 async function createTask(user, data) {
+  const agencyId = getAgencyId(user);
   const id = genId();
   const { rows } = await pool.query(
-    `INSERT INTO tasks (id,project_id,brand_id,title,description,assignee_id,due_date,priority,status,owner_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    `INSERT INTO tasks (id,project_id,brand_id,title,description,assignee_id,due_date,priority,status,owner_id,agency_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
     [
       id,
       data.projectId || null,
@@ -85,6 +91,7 @@ async function createTask(user, data) {
       data.priority || 'Medium',
       data.status || 'To Do',
       user.id,
+      agencyId,
     ]
   );
   const task = mapTask(rows[0]);
@@ -98,6 +105,7 @@ async function createTask(user, data) {
       brandId: task.brandId,
       targetUserId: task.assigneeId || null,
       recipientRoles: ['admin', 'manager', 'team'],
+      agencyId,
     });
   } catch (err) {
     console.warn('Failed to dispatch task notification:', err.message);

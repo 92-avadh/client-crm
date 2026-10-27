@@ -194,15 +194,21 @@ async function calculateBrandHealth(brandId) {
 /**
  * Returns health scores for all active brands in the agency.
  */
+const { getAgencyId } = require('../utils/agency');
+
 async function getAgencyHealthOverview(user) {
+  const agencyId = getAgencyId(user);
   let query = "SELECT id FROM brands WHERE status != 'Churned'";
   const params = [];
   if (user && user.role === 'brand') {
     query += ' AND id = $1';
     params.push(user.brandId || '');
-  } else if (user && user.role !== 'admin' && user.role !== 'hr') {
-    query += ' AND id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $1)';
-    params.push(user.id);
+  } else if (user && (user.role === 'admin' || user.role === 'hr')) {
+    query += ' AND (agency_id = $1 OR owner_id = $1)';
+    params.push(agencyId);
+  } else if (user) {
+    query += ' AND (agency_id = $1 OR owner_id = $1) AND id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $2)';
+    params.push(agencyId, user.id);
   }
   query += ' ORDER BY name ASC';
 

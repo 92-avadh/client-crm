@@ -13,6 +13,8 @@ const JWT_SECRET = (process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 3
   : DEFAULT_SECRET;
 
 
+const { getAgencyId } = require('../utils/agency');
+
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_COOLDOWN_S = 60;
 const MAX_OTP_ATTEMPTS = 5;
@@ -24,8 +26,9 @@ function makeToken(user) {
   else if (typeof user.permissions === 'string') {
     try { perms = JSON.parse(user.permissions); } catch { perms = []; }
   }
+  const agencyId = getAgencyId(user);
   return jwt.sign(
-    { id: user.id, name: user.name, email: user.email, role: user.role, brandId: user.brand_id, permissions: perms },
+    { id: user.id, name: user.name, email: user.email, role: user.role, brandId: user.brand_id, agencyId, permissions: perms },
     JWT_SECRET,
     { expiresIn: '30d' }
   );
@@ -133,17 +136,22 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
     'expenses', 'retention', 'chat', 'meetings', 'leads', 'team', 'inbox', 'settings'
   ]);
 
+  const agencyId = id;
   const { rows: userRows } = await pool.query(
-    `INSERT INTO users (id, name, email, password_hash, role, designation, is_active, permissions)
-     VALUES ($1, $2, $3, $4, 'admin', $5, true, $6::jsonb) RETURNING *`,
-    [id, name, email.toLowerCase(), hash, `Founder, ${company}`, defaultAdminPerms]
+    `INSERT INTO users (id, name, email, password_hash, role, designation, is_active, permissions, agency_id, created_by)
+     VALUES ($1, $2, $3, $4, 'admin', $5, true, $6::jsonb, $7, $8) RETURNING *`,
+    [id, name, email.toLowerCase(), hash, `Founder, ${company}`, defaultAdminPerms, agencyId, id]
   );
   const user = userRows[0];
 
+  // Provision distinct agency settings
   await pool.query(
-    `INSERT INTO settings (id, company_name, company_email, retention_threshold_days)
-     VALUES ('main', $1, $2, 30) ON CONFLICT DO NOTHING`,
-    [company, email.toLowerCase()]
+    `INSERT INTO settings (id, agency_id, company_name, company_email, retention_threshold_days)
+     VALUES ($1, $2, $3, $4, 30) ON CONFLICT (id) DO UPDATE SET 
+       agency_id = EXCLUDED.agency_id,
+       company_name = EXCLUDED.company_name,
+       company_email = EXCLUDED.company_email`,
+    ['set_' + agencyId, agencyId, company, email.toLowerCase()]
   );
 
   await pool.query('DELETE FROM otp_verifications WHERE email = $1', [email.toLowerCase()]);
@@ -225,6 +233,7 @@ async function login({ email, password }) {
       avatar: user.avatar,
       designation: user.designation || 'Team Member',
       brandId: user.brand_id,
+      agencyId: getAgencyId(user),
       permissions: perms,
     },
   };
