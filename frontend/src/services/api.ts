@@ -152,7 +152,6 @@ const isPublicRoute = (path: string) =>
   path.startsWith('/auth/reset-password') ||
   path.startsWith('/auth/status') ||
   path.startsWith('/auth/search-agencies') ||
-  path.startsWith('/auth/clean-data') ||
   path.startsWith('/portal') ||
   path === '/health';
 
@@ -298,8 +297,6 @@ export const api = {
     resetPassword: (data: { email: string; code: string; newPassword: string }) =>
       req<{ message: string }>('POST', '/auth/reset-password', data),
     status: () => req<{ hasUsers: boolean; totalUsers: number }>('GET', '/auth/status'),
-    cleanData: (secretKey = 'retentio-reset-2026') =>
-      req<{ success: boolean; message: string }>('POST', '/auth/clean-data', { secretKey }),
   },
   users: {
     list: () => req<any[]>('GET', '/users'),

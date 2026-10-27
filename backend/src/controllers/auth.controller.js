@@ -140,14 +140,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
-const resetDatabase = asyncHandler(async (req, res) => {
-  const key = req.headers['x-reset-key'] || req.body?.secretKey || req.query?.secretKey;
-  if (key !== 'retentio-reset-2026') {
-    return res.status(403).json({ error: 'Unauthorized reset request. Invalid secret key.' });
-  }
-  const reset = require('../db/reset');
-  const result = await reset();
-  res.json({ success: true, message: 'All database records cleared successfully. Workspace is completely fresh.', result });
-});
-
-module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword, status, searchAgencies, resetDatabase };
+module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword, status, searchAgencies };

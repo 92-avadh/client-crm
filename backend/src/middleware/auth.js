@@ -1,19 +1,11 @@
 const jwt = require('jsonwebtoken');
 
-const isProd = process.env.NODE_ENV === 'production';
-if (isProd && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
-  console.error('❌ FATAL: JWT_SECRET environment variable is missing or shorter than 32 characters in production.');
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('❌ FATAL: JWT_SECRET environment variable is missing or shorter than 32 characters. All environments require a secure 32+ character key.');
   process.exit(1);
 }
 
-const DEFAULT_SECRET = 'retentio_jwt_secret_2026_default_secure_key_min32chars';
-const JWT_SECRET = (process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32)
-  ? process.env.JWT_SECRET
-  : DEFAULT_SECRET;
-
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  console.warn('⚠️  JWT_SECRET env var is not set or < 32 chars. Using dev fallback key. Set JWT_SECRET in production for security.');
-}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function getCookie(req, name) {
   const cookieHeader = req.headers.cookie;

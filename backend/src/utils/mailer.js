@@ -164,11 +164,8 @@ async function sendOtpEmail(toEmail, otp, agencyName = '') {
     </div>
   `;
 
-  // Log dispatch attempt without leaking the secret OTP code in production
+  // Log dispatch attempt without leaking the secret OTP code
   console.log(`📤 Dispatching verification code to ${toEmail}...`);
-  if (process.env.DEV_LOG_OTP === 'true') {
-    console.log(`🔑 [DEV ONLY] OTP for ${toEmail}: [ ${otp} ]`);
-  }
 
   // Priority 1: Resend HTTP API (HTTPS port 443, never blocked by Render)
   if (process.env.RESEND_API_KEY) {

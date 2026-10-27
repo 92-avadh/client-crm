@@ -7,10 +7,11 @@ const { sendOtpEmail } = require('../utils/mailer');
 const genId = () => 'usr_' + crypto.randomBytes(8).toString('hex');
 const genOtp = () => String(crypto.randomInt(100000, 1000000));
 
-const DEFAULT_SECRET = 'retentio_jwt_secret_2026_default_secure_key_min32chars';
-const JWT_SECRET = (process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32)
-  ? process.env.JWT_SECRET
-  : DEFAULT_SECRET;
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('❌ FATAL: JWT_SECRET environment variable is missing or shorter than 32 characters. All environments require a secure 32+ character key.');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 
 const { getAgencyId } = require('../utils/agency');
@@ -342,9 +343,6 @@ async function forgotPassword({ email }) {
   `;
 
   console.log(`Dispatching password reset code to ${email}...`);
-  if (process.env.DEV_LOG_OTP === 'true') {
-    console.log(`[DEV ONLY] Reset code for ${email}: [ ${resetCode} ]`);
-  }
 
   sendOtpEmail(email, resetCode, brandName).catch((err) => {
     console.error(`Background reset email dispatch failure for ${email}: ${err.message}`);

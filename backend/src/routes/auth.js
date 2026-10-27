@@ -13,7 +13,5 @@ router.post('/logout', controller.logout);
 router.get('/me', auth, controller.me);
 router.post('/forgot-password', controller.forgotPassword);
 router.post('/reset-password', controller.resetPassword);
-router.post('/clean-data', controller.resetDatabase);
-router.get('/clean-data', controller.resetDatabase);
 
 module.exports = router;

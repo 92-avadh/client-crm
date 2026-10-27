@@ -1,0 +1,10 @@
+# Progress Log — Security Remediation & Hardening
+
+[2026-10-27] Initialized GSD planning artifacts (.planning/PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md) and PRD.md.
+[2026-10-27] Initialized GSD planning artifacts (.planning/PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md) and PRD.md.
+[2026-10-27] Completed Task 1: Eliminate Hardcoded JWT Secret & Backdoor Clean-Data Endpoint (Wave 1).
+- Removed DEFAULT_SECRET fallback; enforced unconditional fail-fast (process.exit(1)) if JWT_SECRET is missing or < 32 characters in backend/server.js, backend/src/middleware/auth.js, and backend/src/services/auth.service.js.
+- Deleted unauthenticated /clean-data route and resetDatabase controller with hardcoded secret 'retentio-reset-2026'; cleaned up api.ts.
+- Removed DEV_LOG_OTP printing from mailer.js and auth.service.js.
+- Frontend build & node syntax checks passed with 0 errors.
+[2026-10-27] Next up: Task 2 (Wave 2: Multi-Tenant Access Control & IDOR Remediation).
