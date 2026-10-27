@@ -375,14 +375,35 @@ async function resetPassword({ email, code, newPassword }) {
     err.status = 400;
     throw err;
   }
-  if (record.otp_code !== String(code).trim()) {
+
+  const trimmedCode = String(code || '').trim();
+  const isMatch = record.otp_code.length === trimmedCode.length &&
+    crypto.timingSafeEqual(Buffer.from(record.otp_code), Buffer.from(trimmedCode));
+
+  if (!isMatch) {
+    const attempts = (record.attempts || 0) + 1;
+    if (attempts >= MAX_OTP_ATTEMPTS) {
+      await pool.query("DELETE FROM otp_verifications WHERE email = $1 AND purpose = 'reset'", [email.toLowerCase()]);
+      const err = new Error('Too many incorrect attempts. Please request a new code.');
+      err.status = 429;
+      throw err;
+    }
+    await pool.query('UPDATE otp_verifications SET attempts = $1 WHERE id = $2', [attempts, record.id]);
     const err = new Error('That code is not correct. Please check and try again.');
     err.status = 400;
     throw err;
   }
 
+  const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+  if (userRes.rows.length === 0) {
+    await pool.query("DELETE FROM otp_verifications WHERE email = $1 AND purpose = 'reset'", [email.toLowerCase()]);
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
   const hash = await bcrypt.hash(newPassword, 10);
-  await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [hash, email.toLowerCase()]);
+  await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userRes.rows[0].id]);
   await pool.query("DELETE FROM otp_verifications WHERE email = $1 AND purpose = 'reset'", [email.toLowerCase()]);
 
   return { message: 'Password has been reset successfully. Please sign in.' };

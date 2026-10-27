@@ -33,5 +33,12 @@
 - Restricted Express body limits from 10mb to 1mb in server.js to prevent body payload DoS.
 - Hardened CORS subdomain matching with strict single-DNS label matching.
 - Enforced strict TLS certificate verification in production in mailer.js (disallowing bypass via SMTP_ALLOW_SELF_SIGNED).
-[2026-10-27] Next up: Task 5 (Wave 5: Error Honesty, Rate Limiting & Admin Wipe Audit).
+[2026-10-27] Completed Task 5: Error Honesty, Rate Limiting & Admin Wipe Audit (Wave 5).
+- Removed silent mock fallbacks across frontend/src/context/AppContext.tsx (addBrand, assignMembersToBrand, addProject, addTask, createInvoice, recordPayment, addExpense, addMeeting, addLead, convertLeadToBrand, addHoliday); honest error toasts are now surfaced and errors re-thrown so forms remain open for correction.
+- Hardened resetPassword in backend/src/services/auth.service.js: enforced timing-safe OTP verification via crypto.timingSafeEqual, OTP attempt counting with MAX_OTP_ATTEMPTS invalidation, and scoped password update to single verified user ID.
+- Attached rate limiters to /api/auth/forgot-password and /api/auth/reset-password (otpLimiter) and /api/settings/reset-data (sensitiveOpLimiter: 5 max per 15 min).
+- Scoped workspace data wipe in settings.controller.js strictly to caller's agency_id in a transaction; required confirmation phrase 'RESET_MY_WORKSPACE'; preserved initiating admin; recorded audit entry in audit_logs.
+- Full frontend production build (tsc -b && vite build) and backend syntax validations passed with 0 errors.
+[2026-10-27] All 5 tasks in PRD.md successfully completed and verified!
+
 

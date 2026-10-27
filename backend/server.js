@@ -111,6 +111,14 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
   validate: { xForwardedForHeader: false },
 });
+const sensitiveOpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many reset attempts. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});
 app.use('/api/', generalLimiter);
 app.use('/api/', burstLimiter);
 app.use('/api/auth/login', authLimiter);
@@ -119,6 +127,7 @@ app.use('/api/auth/resend-otp', otpLimiter);
 app.use('/api/auth/verify-otp', otpLimiter);
 app.use('/api/auth/forgot-password', otpLimiter);
 app.use('/api/auth/reset-password', otpLimiter);
+app.use('/api/settings/reset-data', sensitiveOpLimiter);
 
 /* ------------------------------------------------------------------ */
 /*  In-memory read cache to protect PostgreSQL from repeated queries   */

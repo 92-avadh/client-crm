@@ -404,7 +404,7 @@ export const api = {
     get: () => req<any>('GET', '/settings'),
     update: (data: any) => req<any>('PATCH', '/settings', data),
     testWebhook: (data: { url: string; service: string }) => req<any>('POST', '/settings/test-webhook', data),
-    resetData: () => req<{ success: boolean; message: string }>('POST', '/settings/reset-data'),
+    resetData: (confirmPhrase = 'RESET_MY_WORKSPACE') => req<{ success: boolean; message: string }>('POST', '/settings/reset-data', { confirmPhrase }),
   },
   holidays: {
     list: () => req<any[]>('GET', '/holidays'),

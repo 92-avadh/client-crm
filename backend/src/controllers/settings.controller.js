@@ -1,6 +1,8 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { makeValidator } = require('../utils/validate');
 const settings = require('../services/settings.service');
+const pool = require('../db');
+const { getAgencyId } = require('../utils/agency');
 
 const get = asyncHandler(async (req, res) => {
   const data = await settings.getSettings(req.user);
@@ -75,9 +77,68 @@ const resetData = asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: "Only administrators can reset workspace data." });
   }
-  const resetDb = require('../db/reset');
-  await resetDb();
-  res.json({ success: true, message: 'All workspace data cleared successfully. Admin user preserved.' });
+
+  if (req.body.confirmPhrase !== 'RESET_MY_WORKSPACE') {
+    return res.status(400).json({
+      error: 'Confirmation phrase required. Send { confirmPhrase: "RESET_MY_WORKSPACE" } to confirm workspace wipe.'
+    });
+  }
+
+  const agencyId = getAgencyId(req.user);
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Scope all deletions strictly to caller's agency
+    await client.query('DELETE FROM payments WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM invoice_items WHERE invoice_id IN (SELECT id FROM invoices WHERE agency_id = $1)', [agencyId]);
+    await client.query('DELETE FROM recurring_invoices WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM invoices WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM expenses WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM leads WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM tasks WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM projects WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM brand_documents WHERE brand_id IN (SELECT id FROM brands WHERE agency_id = $1)', [agencyId]);
+    await client.query('DELETE FROM user_brand_assignments WHERE brand_id IN (SELECT id FROM brands WHERE agency_id = $1)', [agencyId]);
+    await client.query('DELETE FROM brand_assignments WHERE brand_id IN (SELECT id FROM brands WHERE agency_id = $1)', [agencyId]);
+    await client.query('DELETE FROM brands WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM meetings WHERE agency_id = $1', [agencyId]);
+    await client.query('DELETE FROM holidays WHERE agency_id = $1 AND type != $2', [agencyId, 'National']);
+    await client.query('DELETE FROM notifications WHERE agency_id = $1', [agencyId]);
+
+    // Preserve the initiating admin user
+    await client.query('DELETE FROM users WHERE agency_id = $1 AND id != $2', [agencyId, req.user.id]);
+
+    // Reset agency-specific settings if not main
+    if (agencyId !== 'main' && agencyId !== 'usr_admin') {
+      await client.query('DELETE FROM settings WHERE id = $1', [agencyId]);
+    }
+
+    // Record an audit log entry for this sensitive administrative action
+    await client.query(
+      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address, agency_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        'aud_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        new Date().toISOString(),
+        req.user.name || 'Admin',
+        req.user.role || 'admin',
+        'WORKSPACE_DATA_RESET',
+        `Workspace data was reset by ${req.user.name || req.user.email}. Admin user preserved.`,
+        req.ip || 'unknown',
+        agencyId
+      ]
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Workspace data cleared successfully. Admin user preserved.' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 });
 
 module.exports = { get, update, testWebhook, resetData };

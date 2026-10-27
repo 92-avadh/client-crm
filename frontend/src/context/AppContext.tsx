@@ -1400,36 +1400,9 @@ export const AppProvider: React.FC<{
         retainerHours: created.retainerHours ?? brandData.retainerHours ?? 40,
       };
     } catch (_apiErr: any) {
-      // Local fallback in bypass mode or API error
-      created = {
-        id: 'brand_' + Date.now(),
-        name: brandData.name,
-        ownerName: brandData.ownerName,
-        mobile: brandData.mobile,
-        email: brandData.email,
-        billingAddress: brandData.billingAddress || '',
-        city: brandData.city || '',
-        state: brandData.state || '',
-        pincode: brandData.pincode || '',
-        gstNumber: brandData.gstNumber || '',
-        pan: brandData.pan || '',
-        serviceDetails: brandData.serviceDetails || '',
-        currency: brandData.currency || 'INR',
-        currencySymbol: brandData.currencySymbol || '₹',
-        retainerHours: Number(brandData.retainerHours) || 40,
-        monthlyFee: fee,
-        billingCycleDay: Number(brandData.billingCycleDay) || 1,
-        contractStartDate: normalizeDateStr(brandData.contractStartDate),
-        contractEndDate: normalizeDateStr(brandData.contractEndDate),
-        onboardingDate: today,
-        notes: brandData.notes || '',
-        status: selectedStatus,
-        paymentStatus: payStatus,
-        lastActivityDate: today,
-        lastPaymentDate: payStatus === 'Paid' ? today : '',
-        assignedMemberIds,
-        documents: []
-      };
+      const msg = _apiErr?.message || 'Failed to onboard client. Please check connection and permissions.';
+      showToast(msg, 'error');
+      throw _apiErr;
     }
 
     setBrands(prev => {
@@ -1527,16 +1500,17 @@ export const AppProvider: React.FC<{
   const assignMembersToBrand = async (brandId: string, memberIds: string[]) => {
     try {
       await api.brands.assignMembers(brandId, memberIds);
-    } catch (_err) {
-      // Local fallback
+      setBrands(prev => {
+        const next = prev.map(b => (b.id === brandId ? { ...b, assignedMemberIds: memberIds } : b));
+        try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      const brand = brands.find(b => b.id === brandId);
+      showToast(`Team assignments updated for ${brand?.name || 'client'}`, 'success');
+    } catch (_err: any) {
+      showToast(_err?.message || 'Failed to update team assignments', 'error');
+      throw _err;
     }
-    setBrands(prev => {
-      const next = prev.map(b => (b.id === brandId ? { ...b, assignedMemberIds: memberIds } : b));
-      try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
-      return next;
-    });
-    const brand = brands.find(b => b.id === brandId);
-    showToast(`Team assignments updated for ${brand?.name || 'client'}`, 'success');
   };
 
   const logBrandActivity = async (brandId: string, actionName: string) => {
@@ -1573,55 +1547,48 @@ export const AppProvider: React.FC<{
 
   // ---- Projects & Tasks ----
   const addProject = async (projData: any) => {
-    let created: Project;
     try {
-      created = await api.projects.create(projData);
-    } catch {
-      created = {
-        id: 'proj_' + Date.now(),
-        progress: 0,
-        ...projData,
-      };
+      const created: Project = await api.projects.create(projData);
+      setProjects(prev => {
+        const next = [created, ...prev];
+        try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast(`Project "${created.name}" created`, 'success');
+      pushNotification({
+        type: 'task',
+        title: 'New Project Started',
+        message: `Project "${created.name}" was launched.`,
+        linkModule: 'projects',
+        brandId: created.brandId,
+      });
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to create project', 'error');
+      throw err;
     }
-    setProjects(prev => {
-      const next = [created, ...prev];
-      try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(next)); } catch {}
-      return next;
-    });
-    showToast(`Project "${created.name}" created`, 'success');
-    pushNotification({
-      type: 'task',
-      title: 'New Project Started',
-      message: `Project "${created.name}" was launched.`,
-      linkModule: 'projects',
-      brandId: created.brandId,
-    });
   };
 
   const addTask = async (taskData: any) => {
-    let created: Task;
     try {
-      created = await api.tasks.create(taskData);
-    } catch {
-      created = {
-        id: 'task_' + Date.now(),
-        ...taskData,
-      };
+      const created: Task = await api.tasks.create(taskData);
+      setTasks(prev => {
+        const next = [created, ...prev];
+        try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast('Task added', 'success');
+      pushNotification({
+        type: 'task',
+        title: 'Task Assigned',
+        message: `${created.title} has been assigned.`,
+        linkModule: 'projects',
+        brandId: created.brandId,
+        targetUserId: created.assigneeId,
+      });
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to add task', 'error');
+      throw err;
     }
-    setTasks(prev => {
-      const next = [created, ...prev];
-      try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
-      return next;
-    });
-    showToast('Task added', 'success');
-    pushNotification({
-      type: 'task',
-      title: 'Task Assigned',
-      message: `${created.title} has been assigned.`,
-      linkModule: 'projects',
-      brandId: created.brandId,
-      targetUserId: created.assigneeId,
-    });
   };
 
   const updateTaskStatus = async (taskId: string, status: Task['status']) => {
@@ -1654,44 +1621,30 @@ export const AppProvider: React.FC<{
 
   // ---- Invoices & Payments ----
   const createInvoice = async (invoiceData: any): Promise<Invoice> => {
-    let created: Invoice;
     try {
       const res = await api.invoices.create(invoiceData);
-      if (res && typeof res === 'object' && res.id) {
-        created = res;
-      } else {
-        throw new Error('Fallback to local');
+      if (!res || typeof res !== 'object' || !res.id) {
+        throw new Error('Failed to create invoice on server');
       }
-    } catch {
-      const subtotal = (invoiceData.items || []).reduce((acc: number, it: any) => acc + (Number(it?.amount) || 0), 0);
-      const gst = invoiceData.hasGst ? Math.round(subtotal * 0.18) : 0;
-      created = {
-        id: 'inv_' + Date.now(),
-        invoiceNumber: 'INV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 900) + 100),
-        paidAmount: 0,
-        status: 'Draft',
-        subtotal,
-        cgstAmount: invoiceData.hasGst ? Math.round(gst / 2) : 0,
-        sgstAmount: invoiceData.hasGst ? Math.round(gst / 2) : 0,
-        igstAmount: 0,
-        totalAmount: subtotal + gst,
-        ...invoiceData,
-      };
+      const created: Invoice = res;
+      setInvoices(prev => {
+        const next = [created, ...(prev || []).filter(Boolean)];
+        try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast(`Invoice ${created.invoiceNumber || 'Record'} generated for ${created.brandName || 'Client'}`, 'success');
+      pushNotification({
+        type: 'invoice',
+        title: 'Invoice Generated',
+        message: `Invoice ${created.invoiceNumber || ''} created for ${created.brandName || 'Client'}.`,
+        linkModule: 'invoices',
+        brandId: created.brandId,
+      });
+      return created;
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to generate invoice', 'error');
+      throw err;
     }
-    setInvoices(prev => {
-      const next = [created, ...(prev || []).filter(Boolean)];
-      try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
-      return next;
-    });
-    showToast(`Invoice ${created.invoiceNumber || 'Record'} generated for ${created.brandName || 'Client'}`, 'success');
-    pushNotification({
-      type: 'invoice',
-      title: 'Invoice Generated',
-      message: `Invoice ${created.invoiceNumber || ''} created for ${created.brandName || 'Client'}.`,
-      linkModule: 'invoices',
-      brandId: created.brandId,
-    });
-    return created;
   };
 
   const updateInvoiceStatus = async (id: string, status: Invoice['status']) => {
@@ -1757,15 +1710,11 @@ export const AppProvider: React.FC<{
       if (payObj && payObj.id) {
         created = payObj;
       } else {
-        throw new Error('Fallback to local');
+        throw new Error('Failed to record payment on server');
       }
-    } catch {
-      created = {
-        id: 'pay_' + Date.now(),
-        status: 'Success',
-        ...paymentData,
-        amount: Number(paymentData.amount) || 0,
-      };
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to record payment', 'error');
+      throw err;
     }
     setPayments(prev => {
       const next = [created, ...(prev || []).filter(Boolean)];
@@ -1889,14 +1838,11 @@ export const AppProvider: React.FC<{
       if (expObj && expObj.id) {
         created = expObj;
       } else {
-        throw new Error('Fallback to local');
+        throw new Error('Failed to record expense on server');
       }
-    } catch {
-      created = {
-        id: 'exp_' + Date.now(),
-        ...expenseData,
-        amount: Number(expenseData.amount) || 0,
-      };
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to add expense', 'error');
+      throw err;
     }
     setExpenses(prev => {
       const next = [created, ...(prev || []).filter(Boolean)];
@@ -1960,11 +1906,9 @@ export const AppProvider: React.FC<{
     let created: Meeting;
     try {
       created = await api.meetings.create(meetingData);
-    } catch {
-      created = {
-        id: 'meet_' + Date.now(),
-        ...meetingData,
-      };
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to schedule meeting', 'error');
+      throw err;
     }
     setMeetings(prev => {
       const next = [created, ...prev];
@@ -2006,11 +1950,9 @@ export const AppProvider: React.FC<{
     let created: Lead;
     try {
       created = await api.leads.create(leadData);
-    } catch {
-      created = {
-        id: 'lead_' + Date.now(),
-        ...leadData,
-      };
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to add lead', 'error');
+      throw err;
     }
     setLeads(prev => {
       const next = [created, ...prev];
@@ -2040,44 +1982,9 @@ export const AppProvider: React.FC<{
     let result: any = null;
     try {
       result = await api.leads.convert(leadId);
-    } catch (_err) {
-      // Local fallback for offline / bypass mode
-      const lead = leads.find(l => l.id === leadId);
-      if (lead) {
-        const newBrand: Brand = {
-          id: 'brand_' + Date.now(),
-          name: lead.company,
-          ownerName: lead.name || lead.contact,
-          mobile: lead.phone || '',
-          email: lead.email || '',
-          billingAddress: '',
-          state: '',
-          pincode: '',
-          gstNumber: '',
-          pan: '',
-          serviceDetails: lead.notes || 'Retainer Services',
-          monthlyFee: lead.value || 0,
-          billingCycleDay: 1,
-          onboardingDate: today,
-          status: 'Active',
-          paymentStatus: 'Paid',
-          lastActivityDate: today,
-          lastPaymentDate: today,
-          assignedMemberIds: currentUser?.id ? [currentUser.id] : [],
-          documents: [],
-        };
-        result = { brand: newBrand };
-        setBrands(prev => {
-          const next = [newBrand, ...prev];
-          try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
-          return next;
-        });
-        setLeads(prev => {
-          const next = prev.filter(l => l.id !== leadId);
-          try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(next)); } catch {}
-          return next;
-        });
-      }
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to convert lead to client', 'error');
+      throw err;
     }
     // Reload from API if backend is connected
     const [newBrands, newLeads] = await Promise.all([
@@ -2583,11 +2490,9 @@ export const AppProvider: React.FC<{
     let created: Holiday;
     try {
       created = await api.holidays.create(data);
-    } catch {
-      created = {
-        id: `hol-${Date.now()}`,
-        ...data,
-      };
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to add holiday', 'error');
+      throw err;
     }
     setHolidays(prev => [...prev, created]);
     showToast('Holiday added', 'success');
@@ -2666,7 +2571,9 @@ export const AppProvider: React.FC<{
     try {
       if (mode === 'empty') {
         if (currentUser?.role === 'admin') {
-          await api.settings.resetData().catch(() => {});
+          await api.settings.resetData('RESET_MY_WORKSPACE').catch((err) => {
+            console.error('Failed to reset workspace on server:', err?.message);
+          });
         }
 
         const emptyArr = JSON.stringify([]);
