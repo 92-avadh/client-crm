@@ -85,10 +85,16 @@ async function createLead(user, data) {
   return lead;
 }
 
-async function updateLeadStage(id, stage) {
-  const { rows } = await pool.query(
-    'UPDATE leads SET stage=$1 WHERE id=$2 RETURNING *', [stage, id]
-  );
+async function updateLeadStage(user, id, stage) {
+  const agencyId = user ? getAgencyId(user) : null;
+  let query = 'UPDATE leads SET stage=$1 WHERE id=$2';
+  const params = [stage, id];
+  if (agencyId) {
+    query += ' AND (agency_id=$3 OR (agency_id IS NULL AND (owner_id=$3 OR $3=\'usr_admin\')))';
+    params.push(agencyId);
+  }
+  query += ' RETURNING *';
+  const { rows } = await pool.query(query, params);
   return rows[0] ? mapLead(rows[0]) : null;
 }
 
@@ -108,8 +114,15 @@ async function convertLeadToBrand(id, user) {
       return null;
     }
     const lead = leadRows[0];
-    const brandId = newBrandId();
     const agencyId = getAgencyId(user);
+    if (agencyId && lead.agency_id && String(lead.agency_id) !== String(agencyId)) {
+      await client.query('ROLLBACK');
+      const err = new Error('Access denied. Lead belongs to another workspace.');
+      err.status = 403;
+      throw err;
+    }
+
+    const brandId = newBrandId();
 
     await client.query(
       `INSERT INTO brands (id,name,owner_name,email,phone,status,monthly_fee,owner_id,agency_id)

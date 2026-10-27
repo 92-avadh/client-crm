@@ -30,13 +30,23 @@ async function listRecurring(user) {
 /**
  * Get a single recurring schedule by ID.
  */
-async function getRecurring(id) {
-  const { rows } = await pool.query(
-    `SELECT ri.*, b.name as brand_name
-     FROM recurring_invoices ri
-     LEFT JOIN brands b ON b.id = ri.brand_id
-     WHERE ri.id = $1`, [id]
-  );
+async function getRecurring(user, id) {
+  let query = `SELECT ri.*, b.name as brand_name
+               FROM recurring_invoices ri
+               LEFT JOIN brands b ON b.id = ri.brand_id
+               WHERE ri.id = $1`;
+  const params = [id];
+  if (user) {
+    if (user.role === 'brand') {
+      query += ' AND ri.brand_id = $2';
+      params.push(user.brandId || '');
+    } else {
+      const agencyId = getAgencyId(user);
+      query += ` AND (ri.agency_id = $2 OR b.agency_id = $2 OR (b.agency_id IS NULL AND (b.owner_id = $2 OR $2 = 'usr_admin')))`;
+      params.push(agencyId);
+    }
+  }
+  const { rows } = await pool.query(query, params);
   return rows[0] || null;
 }
 
@@ -57,7 +67,10 @@ async function createRecurring(user, data) {
 /**
  * Update a recurring schedule.
  */
-async function updateRecurring(id, data) {
+async function updateRecurring(user, id, data) {
+  const existing = await getRecurring(user, id);
+  if (!existing) return null;
+
   const { rows } = await pool.query(
     `UPDATE recurring_invoices SET
        frequency = COALESCE($1, frequency),
@@ -72,7 +85,10 @@ async function updateRecurring(id, data) {
 /**
  * Delete a recurring schedule.
  */
-async function deleteRecurring(id) {
+async function deleteRecurring(user, id) {
+  const existing = await getRecurring(user, id);
+  if (!existing) return null;
+
   const { rows } = await pool.query(
     'DELETE FROM recurring_invoices WHERE id = $1 RETURNING id', [id]
   );

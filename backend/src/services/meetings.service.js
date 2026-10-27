@@ -145,19 +145,25 @@ async function createMeeting(user, data) {
   }
 }
 
-async function updateMeeting(id, data) {
-  const { rows } = await pool.query(
-    `UPDATE meetings SET title=COALESCE($1,title), brand_id=COALESCE($2,brand_id), lead_id=COALESCE($3,lead_id),
+async function updateMeeting(user, id, data) {
+  const agencyId = user ? getAgencyId(user) : null;
+  let query = `UPDATE meetings SET title=COALESCE($1,title), brand_id=COALESCE($2,brand_id), lead_id=COALESCE($3,lead_id),
      date=COALESCE($4,date), time=COALESCE($5,time), duration_minutes=COALESCE($6,duration_minutes),
      link_or_location=COALESCE($7,link_or_location), notes=COALESCE($8,notes)
-     WHERE id=$9 RETURNING *`,
-    [
-      data.title ?? null, data.brandId ?? null, data.leadId ?? null,
-      data.date !== undefined ? formatDateOnly(data.date) : null,
-      data.time ?? null, data.durationMinutes ?? null,
-      data.linkOrLocation ?? null, data.notes ?? null, id,
-    ]
-  );
+     WHERE id=$9`;
+  const params = [
+    data.title ?? null, data.brandId ?? null, data.leadId ?? null,
+    data.date !== undefined ? formatDateOnly(data.date) : null,
+    data.time ?? null, data.durationMinutes ?? null,
+    data.linkOrLocation ?? null, data.notes ?? null, id,
+  ];
+  if (agencyId) {
+    query += ` AND (agency_id = $10 OR (agency_id IS NULL AND (owner_id = $10 OR $10 = 'usr_admin')))`;
+    params.push(agencyId);
+  }
+  query += ' RETURNING *';
+
+  const { rows } = await pool.query(query, params);
   if (!rows.length) return null;
 
   if (data.attendeeIds !== undefined) {
@@ -172,8 +178,15 @@ async function updateMeeting(id, data) {
   return mapMeeting(rows[0], await attachAttendees(id));
 }
 
-async function deleteMeeting(id) {
-  const { rowCount } = await pool.query('DELETE FROM meetings WHERE id=$1', [id]);
+async function deleteMeeting(user, id) {
+  const agencyId = user ? getAgencyId(user) : null;
+  let query = 'DELETE FROM meetings WHERE id=$1';
+  const params = [id];
+  if (agencyId) {
+    query += ` AND (agency_id = $2 OR (agency_id IS NULL AND (owner_id = $2 OR $2 = 'usr_admin')))`;
+    params.push(agencyId);
+  }
+  const { rowCount } = await pool.query(query, params);
   return rowCount > 0;
 }
 

@@ -37,8 +37,12 @@ async function createHoliday(user, data) {
   return mapHoliday(rows[0]);
 }
 
-async function deleteHoliday(id) {
-  const { rowCount } = await pool.query('DELETE FROM holidays WHERE id=$1', [id]);
+async function deleteHoliday(user, id) {
+  const agencyId = user ? getAgencyId(user) : 'usr_admin';
+  const { rowCount } = await pool.query(
+    "DELETE FROM holidays WHERE id=$1 AND (agency_id=$2 OR (agency_id IS NULL AND $2 = 'usr_admin')) AND type != 'National'",
+    [id, agencyId]
+  );
   return rowCount > 0;
 }
 

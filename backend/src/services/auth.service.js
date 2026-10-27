@@ -168,9 +168,8 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
 }
 
 async function getAuthStatus() {
-  const { rows } = await pool.query('SELECT COUNT(*) FROM users');
-  const count = parseInt(rows[0]?.count || '0', 10);
-  return { hasUsers: count > 0, totalUsers: count };
+  const { rows } = await pool.query('SELECT EXISTS(SELECT 1 FROM users) AS has_users');
+  return { hasUsers: !!rows[0]?.has_users };
 }
 
 async function searchAgencies(query) {
@@ -187,7 +186,6 @@ async function searchAgencies(query) {
          LOWER(COALESCE(s.company_name, '')) LIKE $1
          OR LOWER(COALESCE(u.designation, '')) LIKE $1
          OR LOWER(u.name) LIKE $1
-         OR LOWER(u.email) LIKE $1
        )
      ORDER BY company_name ASC
      LIMIT 10`,
@@ -289,7 +287,7 @@ async function login({ email, password, agencyId, portalType }) {
       id: user.id,
       name: user.name,
       email: user.email,
-      phone: user.phone || '+91 98765 43210',
+      phone: user.phone || null,
       role: user.role || 'staff',
       avatar: user.avatar,
       designation: user.designation || 'Team Member',

@@ -84,10 +84,16 @@ async function markAllRead(user) {
   return result.rowCount;
 }
 
-async function markRead(id) {
+async function markRead(user, id) {
+  const isTeamMember = user.role !== 'brand';
+  const agencyId = getAgencyId(user);
   const { rows } = await pool.query(
-    'UPDATE notifications SET is_read=true WHERE id=$1 RETURNING *',
-    [id]
+    `UPDATE notifications SET is_read=true
+     WHERE id=$1
+       AND (agency_id = $5 OR (agency_id IS NULL AND brand_id IN (SELECT id FROM brands WHERE agency_id = $5 OR owner_id = $5)))
+       AND ($2 = ANY(recipient_roles) OR ($4::boolean = true AND 'team' = ANY(recipient_roles)) OR recipient_roles IS NULL OR target_user_id = $3)
+     RETURNING *`,
+    [id, user.role, user.id, isTeamMember, agencyId]
   );
   return rows[0] ? mapNotif(rows[0]) : null;
 }

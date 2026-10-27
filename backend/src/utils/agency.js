@@ -17,6 +17,21 @@ function getAgencyId(user) {
   return user.id;
 }
 
+function assertAgencyAccess(user, resourceAgencyId, resourceName = 'resource') {
+  if (!user) {
+    const err = new Error('Authentication required');
+    err.status = 401;
+    throw err;
+  }
+  const userAgencyId = getAgencyId(user);
+  if (!userAgencyId || !resourceAgencyId || String(userAgencyId) !== String(resourceAgencyId)) {
+    const err = new Error(`Access denied. You do not have permission to access this ${resourceName.toLowerCase()}.`);
+    err.status = 403;
+    throw err;
+  }
+}
+
 module.exports = {
   getAgencyId,
+  assertAgencyAccess,
 };

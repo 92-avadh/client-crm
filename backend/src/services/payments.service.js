@@ -35,6 +35,23 @@ async function recordPayment({ invoiceId, brandId, brandName, amount, mode, refe
     const today = new Date().toISOString().split('T')[0];
     const agencyId = actor ? getAgencyId(actor) : null;
 
+    if (invoiceId) {
+      const invCheck = await client.query('SELECT agency_id, brand_id, total_amount, paid_amount FROM invoices WHERE id = $1', [invoiceId]);
+      if (!invCheck.rows.length) {
+        await client.query('ROLLBACK');
+        const err = new Error('Invoice not found');
+        err.status = 404;
+        throw err;
+      }
+      const inv = invCheck.rows[0];
+      if (agencyId && inv.agency_id && String(inv.agency_id) !== String(agencyId)) {
+        await client.query('ROLLBACK');
+        const err = new Error('Access denied. Invoice belongs to another workspace.');
+        err.status = 403;
+        throw err;
+      }
+    }
+
     const payRes = await client.query(
       `INSERT INTO payments (id,invoice_id,brand_id,brand_name,amount,payment_date,mode,reference_no,status,proof_url,owner_id,agency_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'Success',$9,$10,$11) RETURNING *`,
@@ -147,19 +164,28 @@ async function listPayments(user, { brandId, invoiceId } = {}) {
   return rows.map(mapPayment);
 }
 
-async function updatePayment(id, data) {
+async function updatePayment(user, id, data) {
+  const agencyId = user ? getAgencyId(user) : null;
+  const existing = await pool.query('SELECT * FROM payments WHERE id = $1', [id]);
+  if (!existing.rows.length) return null;
+  const prev = existing.rows[0];
+
+  if (agencyId && prev.agency_id && String(prev.agency_id) !== String(agencyId)) {
+    const err = new Error('Access denied. Payment belongs to another workspace.');
+    err.status = 403;
+    throw err;
+  }
+
   const { rows } = await pool.query(
     `UPDATE payments SET
      status = COALESCE($1, status),
      mode = COALESCE($2, mode),
      payment_date = COALESCE($3, payment_date),
-     reference_no = COALESCE($4, reference_no),
-     amount = COALESCE($5, amount)
-     WHERE id = $6 RETURNING *`,
+     reference_no = COALESCE($4, reference_no)
+     WHERE id = $5 RETURNING *`,
     [
       data.status ?? null, data.mode ?? null, data.paymentDate ?? null,
       data.referenceNo ?? null,
-      data.amount !== undefined ? parseFloat(data.amount) : null,
       id,
     ]
   );
@@ -189,8 +215,15 @@ async function updatePayment(id, data) {
 }
 
 /** Prepare a Razorpay order for an invoice. */
-async function initiateRazorpay(invoiceId) {
-  const { rows } = await pool.query('SELECT total_amount FROM invoices WHERE id=$1', [invoiceId]);
+async function initiateRazorpay(user, invoiceId) {
+  const agencyId = user ? getAgencyId(user) : null;
+  let query = 'SELECT total_amount, paid_amount, agency_id FROM invoices WHERE id=$1';
+  const params = [invoiceId];
+  if (agencyId) {
+    query += ' AND (agency_id = $2 OR owner_id = $2)';
+    params.push(agencyId);
+  }
+  const { rows } = await pool.query(query, params);
   if (!rows.length) return null;
 
   const settings = await pool.query("SELECT razorpay_key_id FROM settings WHERE id='main'");
@@ -201,9 +234,11 @@ async function initiateRazorpay(invoiceId) {
     throw err;
   }
 
+  const remainingBalance = Math.max(0, parseFloat(rows[0].total_amount) - parseFloat(rows[0].paid_amount || 0));
+
   return {
     razorpayOrderId: 'order_' + crypto.randomBytes(10).toString('hex'),
-    amount: Math.round(parseFloat(rows[0].total_amount) * 100),
+    amount: Math.round(remainingBalance * 100),
     currency: 'INR',
     keyId,
   };
@@ -224,6 +259,13 @@ async function deletePayment(user, id) {
       return null;
     }
     const pay = prev.rows[0];
+    const agencyId = user ? getAgencyId(user) : null;
+    if (agencyId && pay.agency_id && String(pay.agency_id) !== String(agencyId)) {
+      await client.query('ROLLBACK');
+      const err = new Error('Access denied. Payment belongs to another workspace.');
+      err.status = 403;
+      throw err;
+    }
 
     // Revert invoice paid amount if payment was Success
     if (pay.invoice_id && pay.status === 'Success') {

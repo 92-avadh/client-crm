@@ -7,4 +7,18 @@
 - Deleted unauthenticated /clean-data route and resetDatabase controller with hardcoded secret 'retentio-reset-2026'; cleaned up api.ts.
 - Removed DEV_LOG_OTP printing from mailer.js and auth.service.js.
 - Frontend build & node syntax checks passed with 0 errors.
-[2026-10-27] Next up: Task 2 (Wave 2: Multi-Tenant Access Control & IDOR Remediation).
+[2026-10-27] Completed Task 2: Multi-Tenant Access Control & IDOR Remediation (Wave 2).
+- Added assertAgencyAccess helper to backend/src/utils/agency.js.
+- Enforced verifyBrandAccess on brands assignMembers and churn endpoints.
+- Scoped holiday deletion by agency_id (and prevented deleting National holidays).
+- Scoped invoice status updates and invoice deletion by caller agency.
+- Scoped recurring invoice get, update, and delete operations by agency.
+- Scoped lead stage updates and lead-to-brand conversion by agency.
+- Scoped meetings update and delete operations by agency.
+- Scoped projects update by agency.
+- Scoped notifications markRead by user and agency.
+- Scoped users getUser (preventing PII scraping for non-admins and isolating by agency for admins) and added self-deactivation and last-active-admin guards to deactivateUser.
+- Scoped portal client intake to target agency/owner and scoped portal settings by brand's agency instead of global 'main'.
+- Scoped payments initiateRazorpay, recordPayment, updatePayment, and deletePayment by agency; disallowed post-hoc payment amount edits.
+- Sanitized auth status (removed totalUsers count leak) and sanitized searchAgencies (removed email matching and phone leaks).
+[2026-10-27] Next up: Task 3 (Wave 3: Financial Integrity & Razorpay Verification).

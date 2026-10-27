@@ -12,20 +12,31 @@ async function getPortalDataByToken(token) {
   const brandRes = await pool.query(
     `SELECT id, name, owner_name, email, mobile, service_details, monthly_fee, billing_cycle_day,
             currency, currency_symbol, retainer_hours, used_hours, nps_score, contract_start_date,
-            contract_end_date, status, payment_status, last_payment_date, deliverables
+            contract_end_date, status, payment_status, last_payment_date, deliverables,
+            agency_id, owner_id
      FROM brands WHERE magic_token = $1`,
     [token]
   );
   if (!brandRes.rows.length) return null;
   const brand = brandRes.rows[0];
 
-  // Fetch Agency / Platform Settings for Branded Header
+  // Fetch Agency / Platform Settings for Branded Header scoped to brand's agency
+  const brandAgencyId = brand.agency_id || brand.owner_id;
   const settingsRes = await pool.query(
     `SELECT company_name, company_email, company_phone, company_address,
             bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id
-     FROM settings WHERE id = 'main'`
+     FROM settings WHERE id = $1 OR user_id = $1 LIMIT 1`,
+    [brandAgencyId || 'main']
   );
-  const agency = settingsRes.rows[0] || { company_name: 'Agency CRM' };
+  let agency = settingsRes.rows[0];
+  if (!agency) {
+    const mainSettings = await pool.query(
+      `SELECT company_name, company_email, company_phone, company_address,
+              bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id
+       FROM settings WHERE id = 'main'`
+    );
+    agency = mainSettings.rows[0] || { company_name: 'Agency CRM' };
+  }
 
   // Fetch Deliverables / Tasks for this Client
   const tasksRes = await pool.query(
@@ -247,9 +258,37 @@ async function intakeClient(data) {
   const currency = data.currency || 'INR';
   const currencySymbol = data.currencySymbol || '₹';
 
-  // Find owner/admin user to link if possible
-  const adminRes = await pool.query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
-  const ownerId = adminRes.rows.length ? adminRes.rows[0].id : null;
+  // Resolve agency and owner
+  let agencyId = data.agencyId || null;
+  let ownerId = null;
+
+  if (agencyId) {
+    const adminRes = await pool.query(
+      "SELECT id, agency_id FROM users WHERE (id = $1 OR agency_id = $1) AND role = 'admin' LIMIT 1",
+      [agencyId]
+    );
+    if (adminRes.rows.length) {
+      ownerId = adminRes.rows[0].id;
+      agencyId = adminRes.rows[0].agency_id || adminRes.rows[0].id;
+    }
+  } else if (data.agencySlug) {
+    const settingsRes = await pool.query(
+      "SELECT id, user_id FROM settings WHERE company_name ILIKE $1 OR id = $1 LIMIT 1",
+      [data.agencySlug]
+    );
+    if (settingsRes.rows.length) {
+      agencyId = settingsRes.rows[0].id;
+      ownerId = settingsRes.rows[0].user_id || agencyId;
+    }
+  }
+
+  if (!ownerId) {
+    const adminRes = await pool.query("SELECT id, agency_id FROM users WHERE role = 'admin' ORDER BY created_at ASC LIMIT 1");
+    if (adminRes.rows.length) {
+      ownerId = adminRes.rows[0].id;
+      agencyId = adminRes.rows[0].agency_id || ownerId;
+    }
+  }
 
   const deliverables = Array.isArray(data.deliverables) ? JSON.stringify(data.deliverables) : '[]';
 
@@ -259,13 +298,13 @@ async function intakeClient(data) {
       gst_number, pan, service_details, monthly_fee, billing_cycle_day, onboarding_date,
       notes, status, payment_status, last_payment_date, last_activity_date, owner_id,
       currency, currency_symbol, retainer_hours, used_hours, contract_start_date,
-      magic_token, deliverables
+      magic_token, deliverables, agency_id
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9,
       $10, $11, $12, $13, 1, $14,
       $15, 'Active', 'Pending', NULL, $16, $17,
       $18, $19, $20, 0, $21,
-      $22, $23
+      $22, $23, $24
     )`,
     [
       id, data.name.trim(), data.ownerName?.trim() || null, data.mobile?.trim() || null, data.email?.trim() || null,
@@ -273,7 +312,7 @@ async function intakeClient(data) {
       data.gstNumber?.trim() || null, data.pan?.trim() || null, data.serviceDetails?.trim() || null, fee, today,
       data.notes?.trim() || 'Self-onboarded via intake link', today, ownerId,
       currency, currencySymbol, parseFloat(data.retainerHours || 40), data.contractStartDate || today,
-      magicToken, deliverables
+      magicToken, deliverables, agencyId
     ]
   );
 

@@ -225,10 +225,17 @@ async function createInvoice(user, data) {
   }
 }
 
-async function updateInvoiceStatus(id, status) {
-  const { rows } = await pool.query(
-    'UPDATE invoices SET status=$1 WHERE id=$2 RETURNING *', [status, id]
-  );
+async function updateInvoiceStatus(user, id, status) {
+  const agencyId = user ? getAgencyId(user) : null;
+  let query = 'UPDATE invoices SET status=$1 WHERE id=$2';
+  const params = [status, id];
+  if (agencyId) {
+    query += ' AND (agency_id=$3 OR owner_id=$3)';
+    params.push(agencyId);
+  }
+  query += ' RETURNING *';
+
+  const { rows } = await pool.query(query, params);
   if (!rows.length) return null;
   const invoice = mapInvoice(rows[0], await getItems(id));
   if (status === 'Paid') {
@@ -241,6 +248,7 @@ async function updateInvoiceStatus(id, status) {
         linkModule: 'invoices',
         brandId: invoice.brandId,
         recipientRoles: ['admin', 'manager'],
+        agencyId,
       });
     } catch {}
   }
@@ -276,6 +284,13 @@ async function deleteInvoice(user, id) {
       return null;
     }
     const inv = prev.rows[0];
+    const agencyId = user ? getAgencyId(user) : null;
+    if (agencyId && inv.agency_id && String(inv.agency_id) !== String(agencyId)) {
+      await client.query('ROLLBACK');
+      const err = new Error('Access denied. Invoice belongs to another workspace.');
+      err.status = 403;
+      throw err;
+    }
 
     // Clean up relations
     await client.query('DELETE FROM recurring_invoices WHERE invoice_id=$1', [id]);

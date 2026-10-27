@@ -40,13 +40,13 @@ const update = asyncHandler(async (req, res) => {
     .array('attendeeIds', { ofStrings: true, max: 100, label: 'Attendees' })
     .validate();
 
-  const updated = await meetings.updateMeeting(req.params.id, body);
+  const updated = await meetings.updateMeeting(req.user, req.params.id, body);
   if (!updated) return res.status(404).json({ error: 'We could not find that meeting.' });
   res.json(updated);
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const deleted = await meetings.deleteMeeting(req.params.id);
+  const deleted = await meetings.deleteMeeting(req.user, req.params.id);
   if (!deleted) return res.status(404).json({ error: 'We could not find that meeting.' });
   res.json({ success: true });
 });

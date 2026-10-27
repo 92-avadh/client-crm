@@ -38,7 +38,7 @@ const update = asyncHandler(async (req, res) => {
     .array('memberIds', { ofStrings: true, max: 100, label: 'Team members' })
     .validate();
 
-  const updated = await projects.updateProject(req.params.id, body);
+  const updated = await projects.updateProject(req.user, req.params.id, body);
   if (!updated) return res.status(404).json({ error: 'We could not find that project.' });
   res.json(updated);
 });

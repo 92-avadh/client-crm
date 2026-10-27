@@ -28,7 +28,7 @@ const updateStage = asyncHandler(async (req, res) => {
     .oneOf('stage', leads.LEAD_STAGES, { required: true, label: 'Stage' })
     .validate();
 
-  const updated = await leads.updateLeadStage(req.params.id, body.stage);
+  const updated = await leads.updateLeadStage(req.user, req.params.id, body.stage);
   if (!updated) return res.status(404).json({ error: 'We could not find that lead.' });
   res.json(updated);
 });

@@ -113,19 +113,25 @@ async function createProject(user, data) {
   }
 }
 
-async function updateProject(id, data) {
-  const { rows } = await pool.query(
-    `UPDATE projects SET name=COALESCE($1,name), scope=COALESCE($2,scope), start_date=COALESCE($3,start_date),
+async function updateProject(user, id, data) {
+  const agencyId = user ? getAgencyId(user) : null;
+  let query = `UPDATE projects SET name=COALESCE($1,name), scope=COALESCE($2,scope), start_date=COALESCE($3,start_date),
      end_date=COALESCE($4,end_date), status=COALESCE($5,status), billing_amount=COALESCE($6,billing_amount),
-     progress=COALESCE($7,progress) WHERE id=$8 RETURNING *`,
-    [
-      data.name ?? null, data.scope ?? null,
-      data.startDate !== undefined ? formatDateOnly(data.startDate) : null,
-      data.endDate !== undefined ? formatDateOnly(data.endDate) : null,
-      data.status ?? null,
-      data.billingAmount ?? null, data.progress ?? null, id,
-    ]
-  );
+     progress=COALESCE($7,progress) WHERE id=$8`;
+  const params = [
+    data.name ?? null, data.scope ?? null,
+    data.startDate !== undefined ? formatDateOnly(data.startDate) : null,
+    data.endDate !== undefined ? formatDateOnly(data.endDate) : null,
+    data.status ?? null,
+    data.billingAmount ?? null, data.progress ?? null, id,
+  ];
+  if (agencyId) {
+    query += ` AND (agency_id = $9 OR (agency_id IS NULL AND (owner_id = $9 OR $9 = 'usr_admin')))`;
+    params.push(agencyId);
+  }
+  query += ' RETURNING *';
+
+  const { rows } = await pool.query(query, params);
   if (!rows.length) return null;
 
   if (data.memberIds !== undefined) {

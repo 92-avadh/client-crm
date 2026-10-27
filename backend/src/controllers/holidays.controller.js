@@ -26,7 +26,7 @@ const remove = asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: "You don't have permission to manage holidays." });
   }
-  const deleted = await holidays.deleteHoliday(req.params.id);
+  const deleted = await holidays.deleteHoliday(req.user, req.params.id);
   if (!deleted) return res.status(404).json({ error: 'We could not find that holiday.' });
   res.json({ success: true });
 });

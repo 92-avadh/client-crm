@@ -77,6 +77,9 @@ const assignMembers = asyncHandler(async (req, res) => {
   if (!['admin', 'hr'].includes(req.user.role)) {
     return res.status(403).json({ error: "Only administrators can assign team members." });
   }
+  if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to assign members to this client." });
+  }
   const body = makeValidator(req.body)
     .array('memberIds', { ofStrings: true, max: 100, label: 'Team members' })
     .validate();
@@ -98,6 +101,9 @@ const logActivity = asyncHandler(async (req, res) => {
 const churn = asyncHandler(async (req, res) => {
   if (!['admin', 'hr'].includes(req.user.role)) {
     return res.status(403).json({ error: "Only administrators can mark clients as churned." });
+  }
+  if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
+    return res.status(403).json({ error: "You don't have permission to churn this client." });
   }
   const updated = await brands.markChurned(req.params.id);
   if (!updated) return res.status(404).json({ error: 'We could not find that client.' });

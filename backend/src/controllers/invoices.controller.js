@@ -53,7 +53,7 @@ const updateStatus = asyncHandler(async (req, res) => {
     .oneOf('status', invoices.INVOICE_STATUSES, { required: true, label: 'Status' })
     .validate();
 
-  const updated = await invoices.updateInvoiceStatus(req.params.id, body.status);
+  const updated = await invoices.updateInvoiceStatus(req.user, req.params.id, body.status);
   if (!updated) return res.status(404).json({ error: 'We could not find that invoice.' });
   res.json(updated);
 });

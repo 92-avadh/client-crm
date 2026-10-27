@@ -13,7 +13,7 @@ const markAllRead = asyncHandler(async (req, res) => {
 });
 
 const markRead = asyncHandler(async (req, res) => {
-  const updated = await notifications.markRead(req.params.id);
+  const updated = await notifications.markRead(req.user, req.params.id);
   if (!updated) return res.status(404).json({ error: 'We could not find that notification.' });
   res.json(updated);
 });

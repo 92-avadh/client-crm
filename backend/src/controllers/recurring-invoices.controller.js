@@ -9,7 +9,7 @@ const list = asyncHandler(async (req, res) => {
 });
 
 const get = asyncHandler(async (req, res) => {
-  const item = await svc.getRecurring(req.params.id);
+  const item = await svc.getRecurring(req.user, req.params.id);
   if (!item) return res.status(404).json({ error: 'Recurring schedule not found.' });
   res.json(item);
 });
@@ -31,13 +31,13 @@ const update = asyncHandler(async (req, res) => {
     .optionalString('nextDueDate', { max: 20 })
     .oneOf('status', ['Active', 'Paused', 'Cancelled'])
     .validate();
-  const item = await svc.updateRecurring(req.params.id, body);
+  const item = await svc.updateRecurring(req.user, req.params.id, body);
   if (!item) return res.status(404).json({ error: 'Recurring schedule not found.' });
   res.json(item);
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const item = await svc.deleteRecurring(req.params.id);
+  const item = await svc.deleteRecurring(req.user, req.params.id);
   if (!item) return res.status(404).json({ error: 'Recurring schedule not found.' });
   res.json({ success: true, message: 'Recurring schedule deleted' });
 });

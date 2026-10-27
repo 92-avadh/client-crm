@@ -77,10 +77,29 @@ async function listUsers(user, { page = 1, pageSize = 50, includeInactive = fals
   return { data, total, page, pageSize };
 }
 
-async function getUser(id) {
-  const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+async function getUser(actor, id) {
+  // Support both getUser(id) and getUser(actor, id)
+  const targetId = id || actor;
+  const user = id ? actor : null;
+
+  const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [targetId]);
   if (!rows.length) return null;
-  return mapUser(rows[0], await getAssignedBrandIds(id));
+  const target = rows[0];
+
+  if (user) {
+    if (user.role !== 'admin' && user.id !== targetId) {
+      return null;
+    }
+    if (user.role === 'admin' && user.id !== targetId) {
+      const userAgencyId = getAgencyId(user);
+      const targetAgencyId = target.agency_id || target.created_by || target.id;
+      if (String(userAgencyId) !== String(targetAgencyId)) {
+        return null;
+      }
+    }
+  }
+
+  return mapUser(target, await getAssignedBrandIds(targetId));
 }
 
 async function createUser(actor, data) {
@@ -157,9 +176,41 @@ async function updateUser(actor, userId, data) {
   return { user: mapUser(rows[0], await getAssignedBrandIds(userId)) };
 }
 
-async function deactivateUser(id) {
+async function deactivateUser(actor, id) {
+  const targetId = id || actor;
+  const user = id ? actor : null;
+
+  if (user) {
+    if (user.id === targetId) {
+      const err = new Error('You cannot deactivate your own account.');
+      err.status = 400;
+      throw err;
+    }
+    const actorAgencyId = getAgencyId(user);
+    const { rows: targetRows } = await pool.query('SELECT * FROM users WHERE id = $1', [targetId]);
+    if (!targetRows.length) return null;
+    const target = targetRows[0];
+    const targetAgencyId = target.agency_id || target.created_by || target.id;
+    if (String(actorAgencyId) !== String(targetAgencyId)) {
+      const err = new Error('Access denied. User belongs to another workspace.');
+      err.status = 403;
+      throw err;
+    }
+    if (target.role === 'admin') {
+      const { rows: adminCountRows } = await pool.query(
+        "SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin' AND is_active = true AND (agency_id = $1 OR created_by = $1 OR id = $1)",
+        [actorAgencyId]
+      );
+      if (adminCountRows[0].n <= 1) {
+        const err = new Error('You cannot deactivate the last active admin account.');
+        err.status = 400;
+        throw err;
+      }
+    }
+  }
+
   const { rows } = await pool.query(
-    'UPDATE users SET is_active=false WHERE id=$1 RETURNING *', [id]
+    'UPDATE users SET is_active=false WHERE id=$1 RETURNING *', [targetId]
   );
   return rows[0] ? mapUser(rows[0], []) : null;
 }

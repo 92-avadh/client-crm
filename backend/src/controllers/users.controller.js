@@ -10,7 +10,10 @@ const list = asyncHandler(async (req, res) => {
 });
 
 const get = asyncHandler(async (req, res) => {
-  const user = await users.getUser(req.params.id);
+  if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
+    return res.status(403).json({ error: "You don't have permission to view this team member." });
+  }
+  const user = await users.getUser(req.user, req.params.id);
   if (!user) return res.status(404).json({ error: 'We could not find that team member.' });
   res.json(user);
 });
@@ -77,19 +80,7 @@ const deactivate = asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: "You don't have permission to deactivate team members." });
   }
-  if (req.params.id === req.user.id) {
-    return res.status(400).json({ error: 'You cannot deactivate your own account.' });
-  }
-  const target = await users.getUser(req.params.id);
-  if (target && target.role === 'admin') {
-    const { rows } = await require('../db').query(
-      "SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin' AND is_active = true"
-    );
-    if (rows[0].n <= 1) {
-      return res.status(400).json({ error: 'You cannot deactivate the last active admin account.' });
-    }
-  }
-  const user = await users.deactivateUser(req.params.id);
+  const user = await users.deactivateUser(req.user, req.params.id);
   if (!user) return res.status(404).json({ error: 'We could not find that team member.' });
   res.json({ success: true, user });
 });

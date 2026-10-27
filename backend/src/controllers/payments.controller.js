@@ -28,7 +28,7 @@ const razorpayInitiate = asyncHandler(async (req, res) => {
     .requiredString('invoiceId', { max: 80, label: 'Invoice' })
     .validate();
 
-  const order = await payments.initiateRazorpay(body.invoiceId);
+  const order = await payments.initiateRazorpay(req.user, body.invoiceId);
   if (!order) return res.status(404).json({ error: 'We could not find that invoice.' });
   res.json(order);
 });
@@ -84,11 +84,10 @@ const update = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .oneOf('status', payments.PAYMENT_STATUSES, { label: 'Status' })
     .oneOf('mode', payments.PAYMENT_MODES, { label: 'Payment mode' })
-    .number('amount', { min: 0.01, label: 'Amount' })
     .optionalString('referenceNo', { max: 120, label: 'Reference number' })
     .validate();
 
-  const updated = await payments.updatePayment(req.params.id, body);
+  const updated = await payments.updatePayment(req.user, req.params.id, body);
   if (!updated) return res.status(404).json({ error: 'We could not find that payment.' });
   res.json(updated);
 });
