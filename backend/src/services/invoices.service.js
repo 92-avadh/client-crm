@@ -60,42 +60,46 @@ async function listInvoices(user, { brandId, status, search, page = 1, pageSize 
   const params = [];
   let idx = 1;
 
+  const userPerms = Array.isArray(user?.permissions) ? user.permissions : [];
+  const hasInvoiceAccess = user.role === 'admin' || user.role === 'hr' || userPerms.includes('invoices') || userPerms.includes('finance') || userPerms.includes('*') || userPerms.includes('all');
+
   if (user.role === 'brand') {
-    whereClause += ` AND brand_id = $${idx}`;
+    whereClause += ` AND i.brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin' || user.role === 'hr') {
-    whereClause += ` AND (agency_id = $${idx} OR owner_id = $${idx})`;
+  } else if (hasInvoiceAccess) {
+    whereClause += ` AND (i.agency_id = $${idx} OR i.owner_id = $${idx} OR i.agency_id IS NULL)`;
     params.push(agencyId);
     idx += 1;
   } else {
-    whereClause += ` AND (agency_id = $${idx} OR owner_id = $${idx}) AND brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1})`;
+    whereClause += ` AND (i.agency_id = $${idx} OR i.owner_id = $${idx} OR i.agency_id IS NULL) AND (i.brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1}) OR i.owner_id = $${idx + 1})`;
     params.push(agencyId, user.id);
     idx += 2;
   }
   if (brandId) {
-    whereClause += ` AND brand_id=$${idx}`;
+    whereClause += ` AND i.brand_id=$${idx}`;
     params.push(brandId);
     idx += 1;
   }
   if (status) {
-    whereClause += ` AND status=$${idx}`;
+    whereClause += ` AND i.status=$${idx}`;
     params.push(status);
     idx += 1;
   }
   if (search) {
-    whereClause += ` AND (invoice_number ILIKE $${idx} OR brand_name ILIKE $${idx})`;
+    whereClause += ` AND (i.invoice_number ILIKE $${idx} OR i.brand_name ILIKE $${idx} OR b.name ILIKE $${idx})`;
     params.push('%' + search + '%');
+    idx += 1;
   }
 
   // Count total matching rows
-  const countQuery = `SELECT COUNT(*) FROM invoices ${whereClause}`;
+  const countQuery = `SELECT COUNT(*) FROM invoices i LEFT JOIN brands b ON b.id = i.brand_id ${whereClause}`;
   const { rows: countRows } = await pool.query(countQuery, params);
   const total = parseInt(countRows[0].count, 10);
 
   // Paginated query
   const offset = (page - 1) * pageSize;
-  const query = `SELECT * FROM invoices ${whereClause} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`;
+  const query = `SELECT i.*, COALESCE(NULLIF(i.brand_name, ''), b.name, 'Client') AS brand_name FROM invoices i LEFT JOIN brands b ON b.id = i.brand_id ${whereClause} ORDER BY i.created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`;
   params.push(pageSize, offset);
 
   const { rows } = await pool.query(query, params);
@@ -108,12 +112,21 @@ async function listInvoices(user, { brandId, status, search, page = 1, pageSize 
 }
 
 async function getInvoice(user, id) {
-  const { rows } = await pool.query('SELECT * FROM invoices WHERE id=$1', [id]);
+  const { rows } = await pool.query(
+    `SELECT i.*, COALESCE(NULLIF(i.brand_name, ''), b.name, 'Client') AS brand_name 
+     FROM invoices i 
+     LEFT JOIN brands b ON b.id = i.brand_id 
+     WHERE i.id=$1`,
+    [id]
+  );
   if (!rows.length) return null;
   const inv = rows[0];
 
   // BOLA authorization check
-  if (user && user.role !== 'admin') {
+  const userPerms = Array.isArray(user?.permissions) ? user.permissions : [];
+  const hasInvoiceAccess = !user || user.role === 'admin' || user.role === 'hr' || userPerms.includes('invoices') || userPerms.includes('finance') || userPerms.includes('*') || userPerms.includes('all');
+
+  if (user && !hasInvoiceAccess) {
     if (user.role === 'brand') {
       if (user.brandId !== inv.brand_id) return { error: 'forbidden' };
     } else {
@@ -121,7 +134,7 @@ async function getInvoice(user, id) {
         'SELECT 1 FROM brand_assignments WHERE brand_id = $1 AND member_id = $2',
         [inv.brand_id, user.id]
       );
-      if (!assignCheck.rows.length) return { error: 'forbidden' };
+      if (!assignCheck.rows.length && inv.owner_id !== user.id) return { error: 'forbidden' };
     }
   }
 
@@ -171,13 +184,24 @@ async function createInvoice(user, data) {
     const currencySymbol = data.currencySymbol || (currency === 'USD' ? '$' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'AED' ? 'AED' : (currency === 'CAD' ? 'CA$' : '₹')))));
 
     const agencyId = getAgencyId(user);
+    let resolvedBrandName = data.brandName;
+    if (!resolvedBrandName && data.brandId) {
+      const bRes = await client.query('SELECT name FROM brands WHERE id = $1', [data.brandId]);
+      if (bRes.rows.length) {
+        resolvedBrandName = bRes.rows[0].name;
+      }
+    }
+    if (!resolvedBrandName) {
+      resolvedBrandName = 'Client';
+    }
+
     await client.query(
       `INSERT INTO invoices (id,invoice_number,brand_id,brand_name,issue_date,due_date,subtotal,has_gst,gst_type,
        cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring,owner_id,
        currency,currency_symbol,agency_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16,$17,$18,$19,$20)`,
       [
-        id, invoiceNumber, data.brandId, data.brandName,
+        id, invoiceNumber, data.brandId, resolvedBrandName,
         formatDateOnly(data.issueDate), formatDateOnly(data.dueDate),
         data.subtotal || 0, data.hasGst || false, data.gstType || 'NONE',
         data.cgstAmount || 0, data.sgstAmount || 0, data.igstAmount || 0,

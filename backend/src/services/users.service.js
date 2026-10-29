@@ -39,12 +39,12 @@ async function listUsers(user, { page = 1, pageSize = 50, includeInactive = fals
   let idx = 1;
 
   if (user) {
-    if (user.role === 'admin' || user.role === 'hr' || user.role === 'team') {
+    if (user.role !== 'brand') {
       // Internal agency staff only see users belonging to their agency
       where += ` AND (agency_id = $${idx} OR created_by = $${idx} OR id = $${idx}) AND role != 'brand'`;
       params.push(agencyId);
       idx += 1;
-    } else if (user.role === 'brand') {
+    } else {
       where += ` AND (id = $${idx} OR brand_id = $${idx + 1} OR id IN (SELECT member_id FROM brand_assignments WHERE brand_id = $${idx + 1}))`;
       params.push(user.id, user.brandId || 'none');
       idx += 2;

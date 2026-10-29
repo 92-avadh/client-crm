@@ -8,7 +8,7 @@ export const LandingFooter: React.FC = () => {
         <div className="footer__top">
           <div className="footer__pitch">
             <h2 className="m-text-5" id="footer-title">
-              Live client retention for high-performance agencies.
+              Live client operations & CRM for high-performance agencies.
             </h2>
             <p className="m-text-4">
               Built by agency operators, for teams who believe recurring revenue should compound quietly without constant fires.
@@ -62,7 +62,7 @@ export const LandingFooter: React.FC = () => {
         </div>
 
         <div className="footer__legal m-text-7">
-          <p>© 2026 Retentio Inc. All rights reserved. · Client Retention & Operating System</p>
+          <p>© 2026 Retentio Inc. All rights reserved. · Client CRM & Operating System</p>
           <ul>
             <li><a className="m-link" href="#hero">Privacy Policy</a></li>
             <li><a className="m-link" href="#hero">Terms of Service</a></li>
@@ -71,7 +71,7 @@ export const LandingFooter: React.FC = () => {
         </div>
 
         <p className="footer__note m-text-7">
-          Retentio is an enterprise-grade client retention intelligence engine. All client communications, contract addendums, and Stripe billing streams are encrypted using AES-256 and never utilized to train external public machine learning models.
+          Retentio is an enterprise-grade agency operations and CRM platform. All client communications, contract addendums, and billing streams are encrypted using AES-256 and never utilized to train external public machine learning models.
         </p>
       </div>
     </footer>

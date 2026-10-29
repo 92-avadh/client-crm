@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Building2, ChevronRight, Edit3, UserX, Loader2, MessageSquare } from 'lucide-react';
+import { Mail, Building2, ChevronRight, Edit3, UserX, Loader2 } from 'lucide-react';
 import type { User } from '../../types';
 import { Avatar, RoleBadge } from './teamUi';
 
@@ -67,28 +67,6 @@ export const TeamTable: React.FC<Props> = ({
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
-              {user.id !== currentUserId && onDirectChat && (
-                <button
-                  onClick={() => onDirectChat(user.id)}
-                  title={`Chat with ${user.name}`}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    padding: '7px 11px',
-                    background: 'var(--brand-green-subtle, #ecfdf5)',
-                    color: 'var(--brand-green, #059639)',
-                    border: '1px solid var(--brand-green-subtle, #a7f3d0)',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <MessageSquare style={{ width: 13, height: 13 }} /> Chat
-                </button>
-              )}
               <button onClick={() => onView(user)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'var(--bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
                 View <ChevronRight style={{ width: 13, height: 13 }} />
               </button>

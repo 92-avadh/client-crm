@@ -95,9 +95,9 @@ export const SettingsManager: React.FC = () => {
           },
           {
             id: 'notifications',
-            label: 'Retention & Notifications',
+            label: 'Notifications & Alerts',
             shortLabel: 'Notifications & Alerts',
-            description: 'Health thresholds and WhatsApp messaging',
+            description: 'Alert rules and WhatsApp messaging',
             icon: Bell,
           },
         ],

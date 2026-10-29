@@ -293,7 +293,6 @@ export const TeamManager: React.FC = () => {
         onView={setSelectedMember}
         onEdit={openEditModal}
         onDeactivate={handleDeactivate}
-        onDirectChat={startDirectChat}
       />
 
       <Pagination

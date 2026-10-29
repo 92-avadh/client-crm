@@ -45,7 +45,7 @@ export const PhoneMockup: React.FC<PhoneMockupProps> = ({
                     </div>
                     <div>
                       <div className="text-xs font-bold text-[var(--land-forest-dark)]">Retentio OS</div>
-                      <div className="text-[0.65rem] text-slate-500">Agency Health 360</div>
+                      <div className="text-[0.65rem] text-slate-500">Agency Operations 360</div>
                     </div>
                   </div>
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
@@ -54,13 +54,13 @@ export const PhoneMockup: React.FC<PhoneMockupProps> = ({
                 {/* Big Score Card */}
                 <div className="p-4 rounded-2xl bg-[var(--land-surface-subtle)] border border-black/5 text-center mb-4">
                   <div className="text-[0.68rem] uppercase tracking-wider font-extrabold text-slate-500 mb-1">
-                    Aggregate Retention Health
+                    Deliverables &amp; Invoicing Rate
                   </div>
                   <div className="text-4xl font-black text-[var(--land-forest-base)] tracking-tight">
-                    98.4%
+                    99.4%
                   </div>
                   <div className="text-[0.7rem] text-emerald-700 font-bold mt-1">
-                    0 at-risk clients this quarter
+                    100% invoices cleared on schedule
                   </div>
                 </div>
 
@@ -105,15 +105,15 @@ export const PhoneMockup: React.FC<PhoneMockupProps> = ({
             </div>
           )}
 
-          {screen === 'client-health' && (
+          {(screen === 'client-health' || (screen as string) === 'client-overview') && (
             <div className="flex flex-col h-full justify-between">
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2">
-                  Client Health Overview
+                  Client Deliverables Overview
                 </div>
                 <div className="p-4 rounded-2xl bg-[var(--land-forest-base)] text-white text-center mb-4">
-                  <div className="text-3xl font-black mb-1">98 / 100</div>
-                  <div className="text-xs text-emerald-300 font-semibold">Health Score: Excellent</div>
+                  <div className="text-3xl font-black mb-1">98%</div>
+                  <div className="text-xs text-emerald-300 font-semibold">Deliverables: 100% On-Track</div>
                 </div>
                 <div className="space-y-2">
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-black/5 text-xs flex justify-between">

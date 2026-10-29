@@ -35,16 +35,19 @@ function scopeForUser(user) {
     return { sql: ' AND brand_id = $1', params: [user.brandId || ''] };
   }
   const agencyId = getAgencyId(user);
-  if (user.role === 'admin') {
-    // Admins see tasks across their agency workspace
+  const perms = Array.isArray(user.permissions) ? user.permissions : [];
+  const hasGlobalTaskAccess = user.role === 'admin' || user.role === 'hr' || perms.includes('tasks') || perms.includes('projects');
+
+  if (hasGlobalTaskAccess) {
+    // Admins, HR, or staff with tasks/projects permission see tasks across their agency workspace
     return {
-      sql: ' AND (agency_id = $1 OR (agency_id IS NULL AND (owner_id = $1 OR brand_id IN (SELECT id FROM brands WHERE agency_id = $1 OR owner_id = $1))))',
-      params: [agencyId],
+      sql: ' AND (agency_id = $1 OR owner_id = $1 OR (agency_id IS NULL AND brand_id IN (SELECT id FROM brands WHERE agency_id = $1 OR owner_id = $1)) OR assignee_id = $2 OR owner_id = $2)',
+      params: [agencyId, user.id],
     };
   }
-  // Internal team members (standard, corporate presets, or custom roles)
+  // Internal team members: always see tasks assigned to them, created by them, or for their assigned brands
   return {
-    sql: ' AND (agency_id = $1 OR (agency_id IS NULL AND owner_id = $1)) AND (assignee_id = $2 OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $2))',
+    sql: ' AND (assignee_id = $2 OR owner_id = $2 OR ( (agency_id = $1 OR owner_id = $1) AND brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $2) ))',
     params: [agencyId, user.id],
   };
 }
@@ -171,12 +174,15 @@ async function updateTask(id, data) {
 
 async function verifyTaskAccess(user, id) {
   if (!user) return false;
-  if (['admin', 'hr', 'manager'].includes(user.role)) return true;
-  const { rows } = await pool.query('SELECT brand_id, assignee_id, owner_id FROM tasks WHERE id=$1', [id]);
+  const perms = Array.isArray(user.permissions) ? user.permissions : [];
+  if (['admin', 'hr', 'manager'].includes(user.role) || perms.includes('tasks') || perms.includes('projects')) return true;
+  const { rows } = await pool.query('SELECT brand_id, assignee_id, owner_id, agency_id FROM tasks WHERE id=$1', [id]);
   if (!rows.length) return false;
   const task = rows[0];
   if (user.id === task.assignee_id || user.id === task.owner_id) return true;
   if (user.role === 'brand') return user.brandId === task.brand_id;
+  const agencyId = getAgencyId(user);
+  if (task.agency_id && String(task.agency_id) === String(agencyId)) return true;
   const assignCheck = await pool.query(
     'SELECT 1 FROM brand_assignments WHERE brand_id = $1 AND member_id = $2',
     [task.brand_id, user.id]

@@ -35,16 +35,23 @@ async function listProjects(user, { brandId, page = 1, pageSize = 50 } = {}) {
   const params = [];
   let idx = 1;
 
+  const userPerms = Array.isArray(user?.permissions) ? user.permissions : [];
+  const hasProjectPerm = user.role === 'admin' || user.role === 'hr' || userPerms.includes('projects') || userPerms.includes('*') || userPerms.includes('all');
+
   if (user.role === 'brand') {
     where += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin' || user.role === 'hr') {
-    where += ` AND (agency_id = $${idx} OR owner_id = $${idx})`;
+  } else if (hasProjectPerm) {
+    where += ` AND (agency_id = $${idx} OR owner_id = $${idx} OR agency_id IS NULL)`;
     params.push(agencyId);
     idx += 1;
   } else {
-    where += ` AND (agency_id = $${idx} OR owner_id = $${idx}) AND (brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1}) OR id IN (SELECT project_id FROM project_assignments WHERE member_id = $${idx + 1}))`;
+    where += ` AND (agency_id = $${idx} OR owner_id = $${idx} OR agency_id IS NULL) AND (
+      brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1}) 
+      OR id IN (SELECT project_id FROM project_assignments WHERE member_id = $${idx + 1})
+      OR id IN (SELECT project_id FROM tasks WHERE assignee_id = $${idx + 1} AND project_id IS NOT NULL)
+    )`;
     params.push(agencyId, user.id);
     idx += 2;
   }
@@ -85,6 +92,7 @@ async function createProject(user, data) {
   try {
     await client.query('BEGIN');
 
+    const id = genId();
     const agencyId = getAgencyId(user);
     await client.query(
       `INSERT INTO projects (id,brand_id,name,scope,start_date,end_date,status,billing_amount,progress,owner_id,agency_id)

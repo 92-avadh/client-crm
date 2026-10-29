@@ -49,12 +49,6 @@ export const AVAILABLE_PERMISSIONS: ModulePermission[] = [
     category: 'finance',
   },
   {
-    id: 'retention',
-    label: 'Client Health & Retention',
-    description: 'Client inactivity monitoring, health alerts & account protection',
-    category: 'core',
-  },
-  {
     id: 'team',
     label: 'Team Directory',
     description: 'Member directory, designations, contact info & role manager',
@@ -143,7 +137,7 @@ export const CORPORATE_ROLES: CorporateRoleOption[] = [
     value: 'marketing',
     label: 'Marketing Strategist',
     category: 'Growth',
-    description: 'Brand campaigns, retention engine, client engagement & leads',
+    description: 'Brand campaigns, client engagements, marketing operations & leads',
   },
   {
     value: 'account_executive',
@@ -184,7 +178,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         'tasks',
         'invoices',
         'expenses',
-        'retention',
         'team',
         'inbox',
         'chat',
@@ -197,10 +190,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
     case 'sales':
       return ['dashboard', 'leads', 'clients', 'meetings', 'chat', 'inbox'];
     case 'marketing':
-      return ['dashboard', 'clients', 'projects', 'tasks', 'retention', 'leads', 'chat', 'meetings'];
+      return ['dashboard', 'clients', 'projects', 'tasks', 'leads', 'chat', 'meetings'];
     case 'project_manager':
     case 'operations_manager':
-      return ['dashboard', 'clients', 'projects', 'tasks', 'retention', 'team', 'inbox', 'chat', 'meetings'];
+      return ['dashboard', 'clients', 'projects', 'tasks', 'team', 'inbox', 'chat', 'meetings'];
     case 'account_executive':
       return ['dashboard', 'clients', 'projects', 'tasks', 'invoices', 'chat', 'meetings'];
     case 'creative_designer':
@@ -211,7 +204,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
       return ['inbox', 'chat', 'meetings', 'settings'];
     case 'team':
     default:
-      return ['dashboard', 'clients', 'projects', 'tasks', 'retention', 'inbox', 'chat', 'meetings'];
+      return ['dashboard', 'clients', 'projects', 'tasks', 'inbox', 'chat', 'meetings'];
   }
 }
 
@@ -230,7 +223,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
   {
     name: 'Operations & Execution',
     description: 'Projects, tasks, calendar, clients & team chat',
-    permissions: ['dashboard', 'clients', 'projects', 'tasks', 'retention', 'team', 'inbox', 'chat', 'meetings'],
+    permissions: ['dashboard', 'clients', 'projects', 'tasks', 'team', 'inbox', 'chat', 'meetings'],
   },
   {
     name: 'Finance & Billing',

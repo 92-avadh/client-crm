@@ -135,7 +135,7 @@ export const TestimonialWall: React.FC = () => {
                   <StarIcon /><StarIcon /><StarIcon /><StarIcon /><StarIcon />
                 </p>
                 <p className="m-text">
-                  Retentio keeps up with our 120 client accounts effortlessly. Our net retention is 118% this year.
+                  Retentio keeps up with our 120 client accounts effortlessly. Our client satisfaction is at an all-time high.
                 </p>
                 <p className="m-text-6">Evelyn C. · Managing Director, Apex Agency</p>
               </li>
@@ -145,7 +145,7 @@ export const TestimonialWall: React.FC = () => {
                   <StarIcon /><StarIcon /><StarIcon /><StarIcon /><StarIcon />
                 </p>
                 <p className="m-text">
-                  Ten years running agencies. This is the single most valuable retention tool we’ve ever deployed.
+                  Ten years running agencies. This is the single most valuable agency operating tool we’ve ever deployed.
                 </p>
                 <p className="m-text-6">Ruth A. · Founder, Method & Scale</p>
               </li>

@@ -115,6 +115,7 @@ export interface Task {
   dueDate: string;
   priority: TaskPriority;
   status: TaskStatus;
+  ownerId?: string;
 }
 
 export interface InvoiceItem {
@@ -238,7 +239,8 @@ export type NotificationType =
   | 'task'
   | 'meeting'
   | 'lead'
-  | 'subscription';
+  | 'subscription'
+  | 'system';
 
 export interface AppNotification {
   id: string;

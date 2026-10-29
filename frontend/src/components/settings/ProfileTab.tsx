@@ -657,39 +657,14 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
   return (
     <div style={tabBodyStyle}>
       <TabHeader
-        title="Retention Alert Rules & Channels"
-        subtitle="Configure how and when the system alerts team leads about inactive clients and recurring invoice generation."
+        title="Alert Rules & Notifications"
+        subtitle="Configure notifications for payments, task assignments, and recurring invoice generation."
       />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {isAdmin && (
-          <div style={{ padding: '18px 20px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Inactivity Warning Threshold (Days)</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                Trigger warning when no chat, task, meeting or payment is detected for this many days:
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[7, 15, 30, 45].map((d) => (
-                <button key={d} type="button" onClick={() => onThresholdChange(d)}
-                  style={{
-                    padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    border: formData.retentionThresholdDays === d ? '1px solid var(--border-focus)' : '1px solid var(--border)',
-                    background: formData.retentionThresholdDays === d ? 'var(--solid-btn-bg)' : 'var(--bg-card)',
-                    color: formData.retentionThresholdDays === d ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
-                    transition: 'all 0.15s ease',
-                  }}>
-                  {d} Days
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <ToggleRow
           title="WhatsApp Click-to-Share Links"
-          description="Enable 1-click WhatsApp messaging for payment reminders & retention re-engagement."
+          description="Enable 1-click WhatsApp messaging for invoices and payment reminders."
           checked={formData.whatsappClickToShareEnabled}
           onChange={onWhatsAppToggle}
         />

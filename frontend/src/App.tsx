@@ -21,7 +21,6 @@ const importClients = () => import('./components/clients/ClientsManager').then(m
 const importInvoices = () => import('./components/invoices/InvoicesManager').then(m => ({ default: m.InvoicesManager }));
 const importFinance = () => import('./components/finance/FinanceManager').then(m => ({ default: m.FinanceManager }));
 const importExpenses = () => import('./components/expenses/ExpensesManager').then(m => ({ default: m.ExpensesManager }));
-const importRetention = () => import('./components/retention/RetentionEngine').then(m => ({ default: m.RetentionEngine }));
 const importChat = () => import('./components/chat/ChatManager').then(m => ({ default: m.ChatManager }));
 const importProjectsAndTasks = () => import('./components/projects/ProjectsAndTasks').then(m => ({ default: m.ProjectsAndTasks }));
 const importMeetings = () => import('./components/calendar/MeetingsCalendar').then(m => ({ default: m.MeetingsCalendar }));
@@ -38,7 +37,6 @@ const ClientsManager = lazy(importClients);
 const InvoicesManager = lazy(importInvoices);
 const FinanceManager = lazy(importFinance);
 const ExpensesManager = lazy(importExpenses);
-const RetentionEngine = lazy(importRetention);
 const ChatManager = lazy(importChat);
 const ProjectsAndTasks = lazy(importProjectsAndTasks);
 const MeetingsCalendar = lazy(importMeetings);
@@ -57,7 +55,6 @@ export const prefetchRoute = (tab: string) => {
     case 'invoices': importInvoices(); break;
     case 'finance': importFinance(); break;
     case 'expenses': importExpenses(); break;
-    case 'retention': importRetention(); break;
     case 'projects':
     case 'tasks': importProjectsAndTasks(); break;
     case 'meetings': importMeetings(); break;
@@ -166,7 +163,7 @@ const MainLayout: React.FC = () => {
     const timer = setTimeout(() => {
       [
         'clients', 'projects', 'tasks', 'invoices', 'finance', 'expenses',
-        'retention', 'chat', 'meetings', 'leads', 'team', 'inbox', 'settings'
+        'chat', 'meetings', 'leads', 'team', 'inbox', 'settings'
       ].forEach(prefetchRoute);
     }, 1200);
     return () => clearTimeout(timer);
@@ -474,7 +471,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path={ROUTES.invoices} element={<PermissionGate module="invoices"><InvoicesManager /></PermissionGate>} />
         <Route path={ROUTES.finance} element={<PermissionGate module="finance"><FinanceManager /></PermissionGate>} />
         <Route path={ROUTES.expenses} element={<PermissionGate module="expenses"><ExpensesManager /></PermissionGate>} />
-        <Route path={ROUTES.retention} element={<PermissionGate module="retention"><RetentionEngine /></PermissionGate>} />
+        <Route path={ROUTES.retention} element={<Navigate to={DEFAULT_ROUTE} replace />} />
         <Route path={ROUTES.chat} element={<Navigate to={DEFAULT_ROUTE} replace />} />
         <Route path={ROUTES.meetings} element={<PermissionGate module="meetings"><MeetingsCalendar /></PermissionGate>} />
         <Route path={ROUTES.leads} element={<PermissionGate module="leads"><LeadsPipeline /></PermissionGate>} />

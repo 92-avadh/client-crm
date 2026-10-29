@@ -52,18 +52,25 @@ const { getAgencyId } = require('../utils/agency');
 
 async function verifyBrandAccess(user, id) {
   if (!user) return false;
+  if (user.role === 'brand') return user.brandId === id;
   const agencyId = getAgencyId(user);
-  if (user.role === 'admin' || user.role === 'hr') {
+  const perms = Array.isArray(user.permissions) ? user.permissions : [];
+  const hasGlobalClientAccess = user.role === 'admin' || user.role === 'hr' || perms.includes('clients') || perms.includes('invoices');
+  if (hasGlobalClientAccess) {
     const ownerCheck = await pool.query(
       'SELECT 1 FROM brands WHERE id = $1 AND (agency_id = $2 OR owner_id = $2)',
       [id, agencyId]
     );
     return ownerCheck.rows.length > 0;
   }
-  if (user.role === 'brand') return user.brandId === id;
   const assignCheck = await pool.query(
-    'SELECT 1 FROM brand_assignments WHERE brand_id = $1 AND member_id = $2',
-    [id, user.id]
+    `SELECT 1 FROM brands b WHERE b.id = $1 AND (b.agency_id = $2 OR b.owner_id = $2)
+     AND (
+       b.id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $3)
+       OR b.id IN (SELECT brand_id FROM tasks WHERE assignee_id = $3 OR owner_id = $3)
+       OR b.id IN (SELECT brand_id FROM projects WHERE id IN (SELECT project_id FROM project_assignments WHERE member_id = $3))
+     )`,
+    [id, agencyId, user.id]
   );
   return assignCheck.rows.length > 0;
 }
@@ -99,17 +106,25 @@ async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}
     baseWhere = `id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin' || user.role === 'hr') {
-    alias = '';
-    baseWhere = `(agency_id = $${idx} OR owner_id = $${idx})`;
-    params.push(agencyId);
-    idx += 1;
   } else {
-    // All internal roles (team, project managers, etc)
-    alias = 'b';
-    baseWhere = `(b.agency_id = $${idx} OR b.owner_id = $${idx}) AND b.id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1})`;
-    params.push(agencyId, user.id);
-    idx += 2;
+    const perms = Array.isArray(user.permissions) ? user.permissions : [];
+    const hasGlobalClientAccess = user.role === 'admin' || user.role === 'hr' || perms.includes('clients') || perms.includes('invoices');
+    if (hasGlobalClientAccess) {
+      alias = '';
+      baseWhere = `(agency_id = $${idx} OR owner_id = $${idx})`;
+      params.push(agencyId);
+      idx += 1;
+    } else {
+      // Internal roles: assigned brands, brands with assigned tasks, or assigned projects
+      alias = 'b';
+      baseWhere = `(b.agency_id = $${idx} OR b.owner_id = $${idx}) AND (
+        b.id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1})
+        OR b.id IN (SELECT brand_id FROM tasks WHERE assignee_id = $${idx + 1} OR owner_id = $${idx + 1})
+        OR b.id IN (SELECT brand_id FROM projects WHERE id IN (SELECT project_id FROM project_assignments WHERE member_id = $${idx + 1}))
+      )`;
+      params.push(agencyId, user.id);
+      idx += 2;
+    }
   }
 
   const col = (name) => (alias ? `${alias}.${name}` : name);

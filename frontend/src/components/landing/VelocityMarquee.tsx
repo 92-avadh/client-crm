@@ -9,12 +9,12 @@ const INTEGRATIONS = [
 ];
 
 const CAPABILITIES = [
-  'Client Health Scores (0–100)',
+  'Client Portal & Approvals',
   'GST Invoicing & Recurring Billing',
   'Razorpay Online Payments',
   'Offline Payment Recording',
-  'Client Portal with NPS',
-  'Client Retention & Growth Tiers',
+  'Deliverable Milestones & Deadlines',
+  'Agency Finance & Profit Analytics',
   'Projects, Tasks & Meetings',
   'Leads Pipeline to Conversion',
   '13-Currency Support',

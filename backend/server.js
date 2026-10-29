@@ -181,7 +181,6 @@ app.post('/api/intake', require('./src/controllers/portal.controller').intakeCli
 
 app.use('/api/users', auth, require('./src/routes/users'));
 app.use('/api/brands', auth, require('./src/routes/brands'));
-app.use('/api/retention', auth, require('./src/routes/health'));
 app.use('/api/projects', auth, require('./src/routes/projects'));
 app.use('/api/tasks', auth, require('./src/routes/tasks'));
 app.use('/api/invoices', auth, require('./src/routes/invoices'));
@@ -299,6 +298,13 @@ connectWithRetry()
         UPDATE expenses SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE meetings SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
         UPDATE leads SET owner_id = 'usr_admin' WHERE owner_id IS NULL;
+
+        -- Backfill missing brand_name on invoices from brands table
+        UPDATE invoices i
+        SET brand_name = b.name
+        FROM brands b
+        WHERE i.brand_id = b.id
+          AND (i.brand_name IS NULL OR i.brand_name = '' OR i.brand_name = 'Client');
 
         -- Multi-Agency Workspace Isolation
         ALTER TABLE users ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);

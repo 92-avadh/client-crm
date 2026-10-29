@@ -995,16 +995,7 @@ export const AppProvider: React.FC<{
             if (usersList && usersList.length > 0) setAllUsers(usersList);
             break;
           }
-          case 'retention': {
-            const [brandsData, settingsData] = await Promise.all([
-              req('clients', api.brands.listAll()),
-              req('settings', api.settings.get()),
-            ]);
-            const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
-            if (settingsData) setSettings(settingsData);
-            break;
-          }
+
           case 'leads': {
             const [leadsData, brandsData] = await Promise.all([
               req('leads', api.leads.listAll()),
@@ -1233,7 +1224,7 @@ export const AppProvider: React.FC<{
       setApiError(null);
       const domains = [
         'dashboard', 'clients', 'projects', 'tasks', 'invoices', 'finance', 'expenses',
-        'retention', 'leads', 'meetings', 'team', 'inbox', 'chat', 'settings',
+        'leads', 'meetings', 'team', 'inbox', 'chat', 'settings',
       ];
       await Promise.all(domains.map((d) => loadDomain(d)));
     } finally {
@@ -1262,12 +1253,12 @@ export const AppProvider: React.FC<{
             const starterAlerts: AppNotification[] = [
               {
                 id: 'notif_welcome',
-                type: 'retention',
-                title: 'Workspace Active & Healthy',
-                message: 'All client health monitors and revenue tracking are active.',
+                type: 'system',
+                title: 'Workspace Active & Ready',
+                message: 'All client management, deliverables, and revenue tracking are active.',
                 timestamp: 'Just now',
                 isRead: false,
-                linkModule: 'retention',
+                linkModule: 'dashboard',
               },
               {
                 id: 'notif_team_sync',
@@ -2631,29 +2622,30 @@ export const AppProvider: React.FC<{
     }
   }, [currentUser]);
 
-  // Strict user association & access control filtering
+  // User association & access control filtering
   const visibleBrands = useMemo((): Brand[] => {
     if (!currentUser || isWorkspaceOwner(currentUser)) {
       return brands;
     }
     const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
-    if (perms.includes('clients') || currentUser.role === 'hr') {
+    if (perms.includes('clients') || currentUser.role === 'hr' || currentUser.role === 'admin') {
       return brands;
     }
-    // Team members only access clients explicitly assigned to them
-    return brands.filter((b: Brand) => Array.isArray(b.assignedMemberIds) && b.assignedMemberIds.includes(currentUser.id));
-  }, [brands, currentUser]);
+    // Team members access clients explicitly assigned to them or where they have assigned tasks
+    const taskBrandIds = new Set((tasks || []).filter(t => t && (t.assigneeId === currentUser.id || t.ownerId === currentUser.id)).map(t => t.brandId));
+    return brands.filter((b: Brand) => (Array.isArray(b.assignedMemberIds) && b.assignedMemberIds.includes(currentUser.id)) || taskBrandIds.has(b.id));
+  }, [brands, tasks, currentUser]);
 
   const visibleTasks = useMemo((): Task[] => {
     if (!currentUser || isWorkspaceOwner(currentUser)) {
       return tasks;
     }
     const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
-    if (perms.includes('tasks') || currentUser.role === 'hr') {
+    if (perms.includes('tasks') || perms.includes('projects') || currentUser.role === 'hr' || currentUser.role === 'admin') {
       return tasks;
     }
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
-    return tasks.filter((t: Task) => t.assigneeId === currentUser.id || !t.brandId || myBrandIds.has(t.brandId));
+    return tasks.filter((t: Task) => t.assigneeId === currentUser.id || t.ownerId === currentUser.id || !t.brandId || myBrandIds.has(t.brandId));
   }, [tasks, visibleBrands, currentUser]);
 
   const visibleProjects = useMemo((): Project[] => {
@@ -2661,7 +2653,7 @@ export const AppProvider: React.FC<{
       return projects;
     }
     const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
-    if (perms.includes('projects') || currentUser.role === 'hr') {
+    if (perms.includes('projects') || currentUser.role === 'hr' || currentUser.role === 'admin') {
       return projects;
     }
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
@@ -2673,9 +2665,9 @@ export const AppProvider: React.FC<{
       return invoices;
     }
     const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
-    if (!perms.includes('invoices') && !perms.includes('finance') && currentUser.role !== 'hr') return [];
+    if (!perms.includes('invoices') && !perms.includes('finance') && currentUser.role !== 'hr' && currentUser.role !== 'admin') return [];
     const myBrandIds = new Set(visibleBrands.map((b: Brand) => b.id));
-    return invoices.filter((i: Invoice) => !i.brandId || myBrandIds.has(i.brandId));
+    return invoices.filter((i: Invoice) => !i.brandId || myBrandIds.has(i.brandId) || perms.includes('invoices') || perms.includes('finance'));
   }, [invoices, visibleBrands, currentUser]);
 
   const visiblePayments = useMemo((): Payment[] => {

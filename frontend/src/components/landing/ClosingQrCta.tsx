@@ -31,7 +31,7 @@ export const ClosingQrCta: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
               Ready to Keep Every Client & Protect Your Monthly Retainers?
             </h2>
             <p className="text-base sm:text-lg text-slate-300 leading-relaxed mb-8 max-w-[560px]">
-              Join over 1,400+ leading agencies protecting $84M+ in client revenue. Set up your agency workspace and client health radar in under 2 minutes.
+              Join over 1,400+ leading agencies managing $84M+ in client revenue. Set up your agency workspace, billing, and task tracking in under 2 minutes.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 mb-6">

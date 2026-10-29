@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import type { Invoice } from '../../types';
+import type { Invoice, Brand } from '../../types';
 import confetti from 'canvas-confetti';
 import { Plus, Search, Filter, Trash2, Loader2 } from 'lucide-react';
 import { btnPrimary, btnSecondary } from './invoiceStyles';
@@ -547,7 +547,7 @@ export const InvoicesManager: React.FC = () => {
       <InvoicePreviewModal
         invoice={activeInvoice}
         settings={settings}
-        brand={brands.find((b) => b.id === activeInvoice?.brandId)}
+        brand={brands.find((b) => b.id === activeInvoice?.brandId) || (activeInvoice ? { id: activeInvoice.brandId, name: activeInvoice.brandName || 'Client' } as Brand : undefined)}
         onClose={() => setSelectedInvoiceId(null)}
         onWhatsApp={openWhatsAppShare}
       />
@@ -642,7 +642,7 @@ export const InvoicesManager: React.FC = () => {
               <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete invoice &quot;{invoiceToDelete?.invoiceNumber}&quot; for {invoiceToDelete?.brandName}.
+                  This action cannot be undone. This will permanently delete invoice &quot;{invoiceToDelete?.invoiceNumber}&quot; for {invoiceToDelete?.brandName || 'Client'}.
                 </AlertDialogDescription>
               </div>
             </div>

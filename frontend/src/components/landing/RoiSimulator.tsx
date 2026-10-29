@@ -37,10 +37,10 @@ export const RoiSimulator: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
             <span>Interactive Profit Calculator</span>
           </div>
           <h2 className="land-display-section mb-3">
-            Estimate Your Agency's Retention ROI
+            Estimate Your Agency's Revenue & Operational ROI
           </h2>
           <p className="land-subhead">
-            Move the sliders to see how much client revenue Retentio protects for your firm each year.
+            Move the sliders to see how much client revenue and billable hours Retentio unlocks for your firm each year.
           </p>
         </div>
 
@@ -164,7 +164,7 @@ export const RoiSimulator: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
               {/* Major Output: Revenue Saved */}
               <div className="mb-6">
                 <span className="text-xs text-slate-400 block mb-1">
-                  Projected Saved Client Revenue (Annual)
+                  Projected Revenue Unlocked (Annual)
                 </span>
                 <div className="text-3xl sm:text-4xl md:text-5xl font-black text-emerald-400 font-mono tracking-tight">
                   +${churnSavedAnnual.toLocaleString()}

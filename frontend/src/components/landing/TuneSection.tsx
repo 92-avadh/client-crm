@@ -16,7 +16,7 @@ export const TuneSection: React.FC = () => {
         <div className="tune__body">
           <div className="tune__head">
             <h2 className="m-text-3" id="tune-title" data-8b-motion="captionIn">
-              Retention rules, calibrated your way.
+              Workflow rules, calibrated your way.
             </h2>
             <ScrollReveal
               highlightColor=""
@@ -34,7 +34,7 @@ export const TuneSection: React.FC = () => {
               as="p"
               className="m-text-4"
             >
-              From urgent at-risk client alerts to gentle quarterly check-ins. Retentio adapts to your agency’s client tiers, profit margins, and communication style.
+              From client milestone deliverables to automated monthly invoicing. Retentio adapts to your agency’s client tiers, profit margins, and communication style.
             </ScrollReveal>
           </div>
 
@@ -52,13 +52,13 @@ export const TuneSection: React.FC = () => {
             className="tune__settings"
           >
             <li className="tune__row">
-              <h3 className="m-text-5">Health sensitivity</h3>
-              <p className="m-text-8">From conservative triggers to ultra-sensitive early warnings.</p>
+              <h3 className="m-text-5">Billing sensitivity</h3>
+              <p className="m-text-8">From conservative grace periods to ultra-punctual payment reminders.</p>
               <div
                 className="tune__ctl tune__slider"
                 data-ctl="size"
                 role="slider"
-                aria-label="Health sensitivity"
+                aria-label="Billing sensitivity"
                 aria-valuenow={sensitivity}
                 aria-valuemin={0}
                 aria-valuemax={100}
@@ -74,13 +74,13 @@ export const TuneSection: React.FC = () => {
               </div>
             </li>
             <li className="tune__row">
-              <h3 className="m-text-5">Risk weight</h3>
-              <p className="m-text-8">Heavier weight on payment delays vs communication latency.</p>
+              <h3 className="m-text-5">Deliverables priority</h3>
+              <p className="m-text-8">Priority weight on critical client milestones vs sprint tasks.</p>
               <div
                 className="tune__ctl tune__slider"
                 data-ctl="weight"
                 role="slider"
-                aria-label="Risk weight"
+                aria-label="Deliverables priority"
                 aria-valuenow={riskWeight}
                 aria-valuemin={0}
                 aria-valuemax={100}

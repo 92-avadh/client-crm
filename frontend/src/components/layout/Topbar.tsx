@@ -40,7 +40,6 @@ export const Topbar: React.FC = () => {
     markNotificationAsRead,
     markAllNotificationsAsRead,
     setActiveTab,
-    retentionAlerts,
     brands,
     invoices,
     tasks,
@@ -591,31 +590,7 @@ export const Topbar: React.FC = () => {
 
       {/* ── Right: Actions ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'flex-end' }}>
-        {/* Churn pill */}
-        {retentionAlerts.length > 0 && currentUser.role !== 'brand' && (
-          <button
-            onClick={() => setActiveTab('retention')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-              height: 38,
-              padding: '0 14px',
-              fontSize: 13,
-              fontWeight: 650,
-              fontFamily: 'var(--font-sans)',
-              color: 'var(--text-primary, #333333)',
-              background: 'var(--bg-raised, #f7f7f7)',
-              border: '1px solid var(--border-strong, #d4d4d4)',
-              borderRadius: 8,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <AlertTriangle style={{ width: 15, height: 15 }} />
-            {retentionAlerts.length} At Risk
-          </button>
-        )}
+
 
         {/* Theme Toggle (Dark / Light with Circular Reveal & Icon Animation) */}
         <button

@@ -50,7 +50,7 @@ export const RazorpayModal: React.FC<OnlineProps> = ({
               {formatCurrency(invoice.totalAmount - invoice.paidAmount, settings.currencySymbol || '₹')}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-              Invoice #{invoice.invoiceNumber} • {invoice.brandName}
+              Invoice #{invoice.invoiceNumber} • {invoice.brandName || 'Client'}
             </div>
           </div>
 

@@ -13,7 +13,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
           src="/images/hero-executive.jpg"
           width={1600}
           height={1200}
-          alt="Agency team reviewing client health scores and invoicing in the Retentio dashboard"
+          alt="Agency team managing client projects and invoicing in the Retentio dashboard"
           fetchPriority="high"
           decoding="async"
         />
@@ -37,7 +37,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                 <i></i>
                 <i></i>
               </span>
-              <span className="m-caption__text">Health score 0–100, scored per client</span>
+              <span className="m-caption__text">Project deliverables tracked per client</span>
             </p>
           </div>
           <div className="hero__chip hero__chip--2">
@@ -48,7 +48,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                 <i></i>
                 <i></i>
               </span>
-              <span className="m-caption__text">At-risk accounts flagged before you lose revenue</span>
+              <span className="m-caption__text">Automated invoices &amp; recurring billing</span>
             </p>
           </div>
           <div className="hero__chip hero__chip--3">
@@ -87,7 +87,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
               as="p"
               className="m-text-4 hero__lead"
             >
-              Retentio is the client CRM built for agencies that bill retainers. Track client happiness, raise GST-ready invoices, collect payments, and spot at-risk accounts before you lose business.
+              Retentio is the client CRM built for agencies that bill retainers. Manage client relationships, raise GST-ready invoices, collect payments, and deliver projects on schedule.
             </ScrollReveal>
             <ScrollReveal
               mode="enter"
@@ -109,7 +109,7 @@ export const HeroIntersect: React.FC<HeroIntersectProps> = ({ onStartTrial }) =>
                     d="M8 1.2l2 4.3 4.7.5-3.5 3.2 1 4.6L8 11.4l-4.2 2.4 1-4.6L1.3 6l4.7-.5z"
                   />
                 </svg>
-                Health scoring across deliverables, payments, reviews &amp; NPS
+                Milestone tracking across deliverables, tasks, and deadlines
               </li>
               <li>
                 <svg viewBox="0 0 16 16" aria-hidden="true">

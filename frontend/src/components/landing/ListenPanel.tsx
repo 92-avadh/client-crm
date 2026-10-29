@@ -75,7 +75,7 @@ export const ListenPanel: React.FC = () => {
                       <i></i>
                     </span>
                     <span className="m-caption__text">
-                      At-risk alert: health score 42 · 31 days since last activity
+                      Deliverable alert: Milestone deadline approaching in 3 days
                     </span>
                   </p>
                 </div>
@@ -88,7 +88,7 @@ export const ListenPanel: React.FC = () => {
                       <i></i>
                     </span>
                     <span className="m-caption__text">
-                      Invoice INV-2026-041 is 6 days overdue · payment health dropping
+                      Invoice INV-2026-041 is 6 days overdue · WhatsApp reminder triggered
                     </span>
                   </p>
                 </div>
@@ -101,7 +101,7 @@ export const ListenPanel: React.FC = () => {
                       <i></i>
                     </span>
                     <span className="m-caption__text">
-                      Growth opportunity: score 91 · NPS 10 · ready for plan upgrade
+                      Contract renewal: Client contract up for renewal · proposal ready
                     </span>
                   </p>
                 </div>

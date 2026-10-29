@@ -250,9 +250,10 @@ export const Dashboard: React.FC = () => {
   const totalPending = unpaidInvoicesBalance + pendingBrandFees;
 
   const activeBrands = safeBrands.filter(b => b?.status === 'Active');
-  const relevantTasks = role === 'team' ? safeTasks.filter(t => t?.assigneeId === currentUser?.id) : safeTasks;
+  const hasAllTasksPerm = role === 'admin' || role === 'hr' || userPerms.includes('tasks') || userPerms.includes('projects');
+  const relevantTasks = hasAllTasksPerm ? safeTasks : safeTasks.filter(t => t && (t.assigneeId === currentUser?.id || t.ownerId === currentUser?.id));
   const pendingTasks = relevantTasks.filter(t => t?.status !== 'Completed');
-  const myMeetings = safeMeetings.filter(m => (role === 'team' ? (m?.attendeeIds || []).includes(currentUser?.id) : true));
+  const myMeetings = safeMeetings.filter(m => (role === 'team' || !userPerms.includes('meetings') ? (m?.attendeeIds || []).includes(currentUser?.id) : true));
 
   // ── Monthly Revenue / Expense Maps ─────────────────────────
   const monthlyIncomeMap: Record<string, number> = {};

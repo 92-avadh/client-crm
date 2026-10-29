@@ -21,7 +21,7 @@ export const StartCta: React.FC<StartCtaProps> = ({ onStartTrial }) => {
             sizes="(max-width: 767px) 269vw, 92vw"
             width={1600}
             height={1067}
-            alt="Agency leadership team smiling and celebrating client retention success"
+            alt="Agency leadership team smiling and celebrating client operations success"
             loading="lazy"
             decoding="async"
           />

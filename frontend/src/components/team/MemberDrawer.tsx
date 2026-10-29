@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, Mail, Phone, Camera, Trash2, Edit3, Loader2, MessageSquare } from 'lucide-react';
+import { X, Mail, Phone, Camera, Trash2, Edit3, Loader2 } from 'lucide-react';
 import type { User, Brand } from '../../types';
 import { Avatar, RoleBadge } from './teamUi';
 import { useApp } from '../../context/AppContext';
@@ -124,38 +124,14 @@ export const MemberDrawer: React.FC<Props> = ({
         </div>
 
         {/* Actions Bar */}
-        <div style={{ padding: '12px 28px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          {member.id !== currentUser?.id && (
-            <button
-              onClick={() => {
-                onClose();
-                startDirectChat(member.id);
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 16px',
-                background: 'var(--brand-green, #059639)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(5, 150, 57, 0.2)',
-              }}
-            >
-              <MessageSquare style={{ width: 13, height: 13 }} /> Message
-            </button>
-          )}
-          {isAdmin && (
+        {isAdmin && (
+          <div style={{ padding: '12px 28px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
             <button onClick={() => onEdit(member)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               <Edit3 style={{ width: 13, height: 13 }} /> Edit Team Member
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Contact */}
         <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border)' }}>

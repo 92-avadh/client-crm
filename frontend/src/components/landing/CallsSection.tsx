@@ -31,7 +31,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
               as="p"
               className="m-text-4 calls__lead"
             >
-              Working with clients should be simple, clear, and calm. With Retentio you see client health, paid invoices, and upcoming renewals all in one clean place.
+              Working with clients should be simple, clear, and calm. With Retentio you see client deliverables, paid invoices, and upcoming renewals all in one clean place.
             </ScrollReveal>
             <a
               className="m-btn"
@@ -68,9 +68,9 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
             className="calls__list"
           >
             <li className="calls__item">
-              <h3 className="m-text-5">Live health scoring, account by account</h3>
+              <h3 className="m-text-5">Live account tracking, account by account</h3>
               <p className="m-text-8">
-                Every email response, team update, and paid invoice updates client health in real time so nothing slips through the cracks.
+                Every team deliverable, milestone update, and paid invoice updates account status in real time so nothing slips through the cracks.
               </p>
             </li>
             <li className="calls__item">
@@ -92,7 +92,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
               </p>
             </li>
             <li className="calls__item">
-              <h3 className="m-text-5">Audit-proof retention histories</h3>
+              <h3 className="m-text-5">Audit-proof account histories</h3>
               <p className="m-text-8">
                 Every client meeting, invoice, and agreement is safely saved so you never lose track of anything.
               </p>
@@ -143,7 +143,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
                           </div>
                           <p className="phone__state">
                             <span className="phone__dot" aria-hidden="true"></span>
-                            Health 98% · Monitored
+                            Active Account · Monitored
                           </p>
                         </div>
                       </div>

@@ -150,7 +150,7 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           </div>
           <div style={{ marginTop: 6 }}>
             <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Customer Details:</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', marginTop: 1 }}>{invoice.brandName}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', marginTop: 1 }}>{invoice.brandName || brand?.name || 'Client'}</div>
             <div style={{ fontSize: 10.5, color: '#475569', marginTop: 1 }}>Ph: {brand?.mobile || '9999999999'}</div>
             {brand?.email && <div style={{ fontSize: 10.5, color: '#475569' }}>{brand.email}</div>}
           </div>
@@ -445,7 +445,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderBottom: '1.5px solid #0f172a', fontSize: 10.5 }}>
           <div style={{ padding: '8px 14px', borderRight: '1px solid #0f172a' }}>
             <span style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Customer Details:</span>
-            <div style={{ fontWeight: 800, fontSize: 12, color: '#0f172a', marginTop: 1 }}>{invoice.brandName}</div>
+            <div style={{ fontWeight: 800, fontSize: 12, color: '#0f172a', marginTop: 1 }}>{invoice.brandName || brand?.name || 'Client'}</div>
             <div style={{ fontWeight: 600, color: '#475569', marginTop: 2 }}>Billing address:</div>
             <div style={{ color: '#475569', lineHeight: 1.35 }}>
               {brand?.billingAddress || 'Survey 115/1, ISB Rd, Financial District, Gachibowli, Nanakramguda, Hyderabad, 500032'}
@@ -684,7 +684,7 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Bill To:</div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName}</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName || brand?.name || 'Client'}</div>
           <div style={{ fontSize: 10.5, color: '#475569' }}>Ph: {brand?.mobile || '9999999999'}</div>
           <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2 }}>{brand?.billingAddress || 'Babuganj, Hasanganj, Lucknow, UTTARPRADESH, 226007'}</div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#002c6c', marginTop: 3 }}>
@@ -871,7 +871,7 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '12px 14px', display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1fr', gap: 14, marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Bill to</div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName}</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName || brand?.name || 'Client'}</div>
           <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2, lineHeight: 1.4 }}>
             {brand?.billingAddress || 'Flat No. 302, Sai Residency, Madhapur Main Road, Hyderabad, 500081'}
           </div>
@@ -879,7 +879,7 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
 
         <div>
           <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ship to</div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName}</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName || brand?.name || 'Client'}</div>
           <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2, lineHeight: 1.4 }}>
             {brand?.billingAddress || 'Flat No. 302, Sai Residency, Madhapur Main Road, Hyderabad, 500081'}
           </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldAlert, CreditCard, ExternalLink, Activity, Check } from 'lucide-react';
+import { ShieldCheck, CreditCard, ExternalLink, FolderKanban, Check } from 'lucide-react';
 import { PhoneMockup } from './PhoneMockup';
 
 export const SymmetricalCenterpiece: React.FC = () => {
@@ -14,7 +14,7 @@ export const SymmetricalCenterpiece: React.FC = () => {
           Benefits of Using Retentio
         </h2>
         <p className="editorial-lead">
-          Discover how our platform transforms client retention. From automated retainer invoicing to early client health alerts, it is your agency's unfair retention advantage.
+          Discover how our platform transforms agency workflows. From automated retainer invoicing to seamless milestone delivery, it is your agency's unfair operational advantage.
         </p>
       </div>
 
@@ -25,17 +25,17 @@ export const SymmetricalCenterpiece: React.FC = () => {
           {/* Feature Card 1 */}
           <div className="symmetrical-card-float">
             <div className="symmetrical-badge-circle">
-              <ShieldAlert size={26} />
+              <ShieldCheck size={26} />
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-[var(--land-text-title)] mb-3">
-              Client Health Monitor
+              Client Account Management
             </h3>
             <p className="text-sm sm:text-base text-[var(--land-text-body)] leading-relaxed mb-4">
-              Continuous activity monitoring across client projects. Detects inactive clients and delayed responses weeks before renewal dates.
+              Continuous project visibility across all your client accounts. Track active contracts, billing schedules, and team assignments in one hub.
             </p>
             <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
               <Check size={16} />
-              <span>99.4% Predictive Accuracy</span>
+              <span>Full Contract & Billing Lifecycle</span>
             </div>
           </div>
 
@@ -60,7 +60,7 @@ export const SymmetricalCenterpiece: React.FC = () => {
         {/* Center Column: Prominent Realistic iPhone 16 Pro */}
         <div className="lg:col-span-4 flex justify-center py-4">
           <PhoneMockup
-            screen="client-health"
+            screen="portal-view"
             className="w-[280px] sm:w-[310px] md:w-[330px] h-[580px] sm:h-[630px] md:h-[660px] shadow-2xl transition-transform hover:scale-105 duration-300"
           />
         </div>
@@ -87,17 +87,17 @@ export const SymmetricalCenterpiece: React.FC = () => {
           {/* Feature Card 4 */}
           <div className="symmetrical-card-float">
             <div className="symmetrical-badge-circle">
-              <Activity size={26} />
+              <FolderKanban size={26} />
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-[var(--land-text-title)] mb-3">
-              Automated Health Scoring
+              Projects &amp; Deliverables
             </h3>
             <p className="text-sm sm:text-base text-[var(--land-text-body)] leading-relaxed mb-4">
-              Combines payment speed, milestone approvals, and communication frequency into a single clear 0–100 health score for every client.
+              Streamline project deliverables, sprint timelines, and task assignments across team members with built-in accountability.
             </p>
             <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
               <Check size={16} />
-              <span>Live Account Health Alerts</span>
+              <span>Real-Time Deliverable Tracking</span>
             </div>
           </div>
         </div>

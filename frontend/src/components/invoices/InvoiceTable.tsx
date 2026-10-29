@@ -99,7 +99,7 @@ export const InvoiceTable: React.FC<Props> = ({
                     </div>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{inv.brandName}</div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{inv.brandName || 'Client'}</div>
                   </td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{inv.issueDate}</td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{inv.dueDate}</td>

@@ -131,10 +131,11 @@ export const ProjectsAndTasks: React.FC = () => {
   };
 
   const safeTasks = (tasks || []).filter(Boolean);
-  const relevantTasks =
-    role === 'team'
-      ? safeTasks.filter((t) => t && currentUser && t.assigneeId === currentUser.id)
-      : safeTasks;
+  const perms = Array.isArray(currentUser?.permissions) ? currentUser.permissions : [];
+  const hasAllTasksPerm = role === 'admin' || role === 'hr' || perms.includes('tasks') || perms.includes('projects');
+  const relevantTasks = hasAllTasksPerm
+    ? safeTasks
+    : safeTasks.filter((t) => t && currentUser && (t.assigneeId === currentUser.id || t.ownerId === currentUser.id));
 
   /* ── Pagination for the list view (kanban shows every card) ── */
   const [taskPage, setTaskPage] = useState(0);
@@ -175,7 +176,7 @@ export const ProjectsAndTasks: React.FC = () => {
             Projects &amp; Task Deliverables
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            Track client milestones, statutory deadlines, CA audits, and retention activities.
+            Track client milestones, statutory deadlines, deliverables, and team activities.
           </p>
         </div>
 
