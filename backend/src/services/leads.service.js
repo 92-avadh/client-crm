@@ -57,6 +57,19 @@ async function listLeads(user, { stage } = {}) {
 
 async function createLead(user, data) {
   const agencyId = getAgencyId(user);
+
+  if (data.email) {
+    const dupLead = await pool.query(
+      "SELECT id, name FROM leads WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) AND (agency_id = $2 OR owner_id = $2) AND stage NOT IN ('Won', 'Lost')",
+      [data.email, agencyId]
+    ).catch(() => ({ rows: [] }));
+    if (dupLead.rows.length) {
+      const err = new Error(`A lead with the email "${data.email}" is already in your active pipeline (${dupLead.rows[0].name}).`);
+      err.status = 409;
+      throw err;
+    }
+  }
+
   const { rows } = await pool.query(
     `INSERT INTO leads (id,name,company,contact,email,phone,source,stage,value,follow_up_date,notes,owner_id,agency_id)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,

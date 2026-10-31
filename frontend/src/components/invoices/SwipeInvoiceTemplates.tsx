@@ -26,6 +26,56 @@ export function getGstBreakdown(invoice: Invoice, settings: AppSettings) {
   return { effectiveRate, gstRateDec, halfRate };
 }
 
+export const BankDetailsBlock: React.FC<{ settings: AppSettings; titleColor?: string }> = ({ settings, titleColor = '#0f172a' }) => {
+  const hasBankDetails = Boolean(settings.bankName || settings.bankAccountNumber || settings.bankIfsc);
+  if (!hasBankDetails) {
+    return (
+      <div style={{ padding: '8px 10px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 6, fontSize: 10, color: '#64748b' }}>
+        <div style={{ fontWeight: 700, color: titleColor, marginBottom: 2 }}>Bank Details:</div>
+        <div>No bank account configured yet.</div>
+        <div style={{ color: '#2563eb', fontWeight: 600, marginTop: 2 }}>Add in Settings &gt; Banking &amp; Gateways</div>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: titleColor, marginBottom: 4 }}>Bank Details:</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: '3px 8px', fontSize: 10.5, color: '#334155' }}>
+        {settings.bankName && (
+          <>
+            <span style={{ color: '#64748b' }}>Bank:</span>
+            <span style={{ fontWeight: 700, color: titleColor }}>{settings.bankName}</span>
+          </>
+        )}
+        {settings.bankAccountName && (
+          <>
+            <span style={{ color: '#64748b' }}>A/c Name:</span>
+            <span style={{ fontWeight: 700, color: titleColor }}>{settings.bankAccountName}</span>
+          </>
+        )}
+        {settings.bankAccountNumber && (
+          <>
+            <span style={{ color: '#64748b' }}>Account #:</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber}</span>
+          </>
+        )}
+        {settings.bankIfsc && (
+          <>
+            <span style={{ color: '#64748b' }}>IFSC:</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankIfsc}</span>
+          </>
+        )}
+        {settings.bankBranch && (
+          <>
+            <span style={{ color: '#64748b' }}>Branch:</span>
+            <span>{settings.bankBranch}</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 /**
  * Authentic Circular Stamp matching Swipe's signature badge
  */
@@ -334,25 +384,7 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           />
         </div>
 
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Bank Details:</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: '3px 8px', fontSize: 10.5, color: '#334155' }}>
-            <span style={{ color: '#64748b' }}>Bank:</span>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>{settings.bankName || 'YES BANK'}</span>
-            {settings.bankAccountName && (
-              <>
-                <span style={{ color: '#64748b' }}>A/c Name:</span>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>{settings.bankAccountName}</span>
-              </>
-            )}
-            <span style={{ color: '#64748b' }}>Account #:</span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber || '667899992222445'}</span>
-            <span style={{ color: '#64748b' }}>IFSC:</span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankIfsc || 'YESBBIN4567'}</span>
-            <span style={{ color: '#64748b' }}>Branch:</span>
-            <span>{settings.bankBranch || 'Kodihalli'}</span>
-          </div>
-        </div>
+        <BankDetailsBlock settings={settings} />
 
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
           <div style={{ fontSize: 10.5, color: '#475569', marginBottom: 4 }}>
@@ -606,23 +638,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
         {/* Footer 3-Grid: Bank Details | Pay using UPI | Signatory */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', borderBottom: '1px solid #0f172a', fontSize: 10.5 }}>
           <div style={{ padding: '10px 12px', borderRight: '1px solid #0f172a' }}>
-            <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Bank Details:</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '65px 1fr', gap: '2px 6px', color: '#334155' }}>
-              <span style={{ color: '#64748b' }}>Bank:</span>
-              <span style={{ fontWeight: 700 }}>{settings.bankName || 'YES BANK'}</span>
-              {settings.bankAccountName && (
-                <>
-                  <span style={{ color: '#64748b' }}>A/c Name:</span>
-                  <span style={{ fontWeight: 700 }}>{settings.bankAccountName}</span>
-                </>
-              )}
-              <span style={{ color: '#64748b' }}>Account #:</span>
-              <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber || '667899992222445'}</span>
-              <span style={{ color: '#64748b' }}>IFSC:</span>
-              <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankIfsc || 'YESBBIN4567'}</span>
-              <span style={{ color: '#64748b' }}>Branch:</span>
-              <span>{settings.bankBranch || 'Kodihalli'}</span>
-            </div>
+            <BankDetailsBlock settings={settings} />
           </div>
 
           <div style={{ padding: '10px 12px', borderRight: '1px solid #0f172a', display: 'flex', justifyContent: 'center' }}>
@@ -823,25 +839,7 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
             invoiceNumber={invoice.invoiceNumber}
           />
         </div>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#002c6c', marginBottom: 4 }}>Bank Details:</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: '3px 8px', fontSize: 10.5, color: '#334155' }}>
-            <span style={{ color: '#64748b' }}>Bank:</span>
-            <span style={{ fontWeight: 700 }}>{settings.bankName || 'YES BANK'}</span>
-            {settings.bankAccountName && (
-              <>
-                <span style={{ color: '#64748b' }}>A/c Name:</span>
-                <span style={{ fontWeight: 700 }}>{settings.bankAccountName}</span>
-              </>
-            )}
-            <span style={{ color: '#64748b' }}>Account #:</span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber || '667899992222445'}</span>
-            <span style={{ color: '#64748b' }}>IFSC:</span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankIfsc || 'YESBBIN4567'}</span>
-            <span style={{ color: '#64748b' }}>Branch:</span>
-            <span>{settings.bankBranch || 'Kodihalli'}</span>
-          </div>
-        </div>
+        <BankDetailsBlock settings={settings} titleColor="#002c6c" />
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
           <div style={{ fontSize: 10, color: '#64748b' }}>For {settings.companyName || 'Samsung'}</div>
           <AuthorizedSignatoryStamp companyName={settings.companyName} />
@@ -1035,25 +1033,7 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
           />
         </div>
 
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Bank Details:</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: '3px 8px', fontSize: 10.5, color: '#334155' }}>
-            <span style={{ color: '#64748b' }}>Bank:</span>
-            <span style={{ fontWeight: 700 }}>{settings.bankName || 'HDFC Bank'}</span>
-            {settings.bankAccountName && (
-              <>
-                <span style={{ color: '#64748b' }}>A/c Name:</span>
-                <span style={{ fontWeight: 700 }}>{settings.bankAccountName}</span>
-              </>
-            )}
-            <span style={{ color: '#64748b' }}>Account #:</span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber || '50200034567891'}</span>
-            <span style={{ color: '#64748b' }}>IFSC Code:</span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankIfsc || 'HDFC0000240'}</span>
-            <span style={{ color: '#64748b' }}>Branch:</span>
-            <span>{settings.bankBranch || 'Kalina, Santacruz East, Mumbai'}</span>
-          </div>
-        </div>
+        <BankDetailsBlock settings={settings} />
 
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
           <div style={{ fontSize: 10, color: '#64748b' }}>For {settings.companyName || 'Marico Limited'}</div>

@@ -226,7 +226,8 @@ export const Dashboard: React.FC = () => {
         b?.status === 'Active' &&
         (Number(b?.monthlyFee) || 0) > 0 &&
         b?.paymentStatus === 'Paid' &&
-        !safePayments.some(p => p && p.brandId === b.id && p.status === 'Success')
+        !safePayments.some(p => p && p.brandId === b.id) &&
+        !safeInvoices.some(i => i && i.brandId === b.id && (i.status === 'Paid' || (Number(i.paidAmount) || 0) > 0))
     )
     .reduce((a, b) => a + (Number(b?.monthlyFee) || 0), 0);
 
@@ -403,34 +404,36 @@ export const Dashboard: React.FC = () => {
   const activityFeed = useMemo(() => {
     const items: { id: string; icon: React.ReactNode; text: string; time: string; color: string }[] = [];
 
-    safePayments
-      .filter(p => {
-        if (!p || p?.status !== 'Success') return false;
-        if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
-        return true;
-      })
-      .slice(0, 3)
-      .forEach(p => {
-        if (!p) return;
+    if (hasFinanceAccess) {
+      safePayments
+        .filter(p => {
+          if (!p || p?.status !== 'Success') return false;
+          if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
+          return true;
+        })
+        .slice(0, 3)
+        .forEach(p => {
+          if (!p) return;
+          items.push({
+            id: `pay_${p.id}`,
+            icon: <DollarSign size={14} />,
+            text: `Payment received: ${formatCurrency(p.amount)} from ${p.brandName || 'Client'}`,
+            time: p.paymentDate ? formatDateDisplay(p.paymentDate) : 'Recent',
+            color: BRAND.green,
+          });
+        });
+
+      safeInvoices.slice(0, 2).forEach(inv => {
+        if (!inv) return;
         items.push({
-          id: `pay_${p.id}`,
-          icon: <DollarSign size={14} />,
-          text: `Payment received: ${formatCurrency(p.amount)} from ${p.brandName || 'Client'}`,
-          time: p.paymentDate ? formatDateDisplay(p.paymentDate) : 'Recent',
-          color: BRAND.green,
+          id: `inv_${inv.id}`,
+          icon: <Receipt size={14} />,
+          text: `Invoice #${inv.invoiceNumber} (${inv.status || 'Draft'}) for ${inv.brandName || 'Client'}`,
+          time: inv.issueDate ? formatDateDisplay(inv.issueDate) : 'Recent',
+          color: inv.status === 'Paid' ? BRAND.green : BRAND.navy,
         });
       });
-
-    safeInvoices.slice(0, 2).forEach(inv => {
-      if (!inv) return;
-      items.push({
-        id: `inv_${inv.id}`,
-        icon: <Receipt size={14} />,
-        text: `Invoice #${inv.invoiceNumber} (${inv.status || 'Draft'}) for ${inv.brandName || 'Client'}`,
-        time: inv.issueDate ? formatDateDisplay(inv.issueDate) : 'Recent',
-        color: inv.status === 'Paid' ? BRAND.green : BRAND.navy,
-      });
-    });
+    }
 
     activeBrands.slice(0, 2).forEach(b => {
       if (!b) return;
@@ -466,7 +469,7 @@ export const Dashboard: React.FC = () => {
     });
 
     return items.slice(0, 6);
-  }, [safePayments, safeInvoices, safeBrands, pendingTasks, myMeetings, formatCurrency]);
+  }, [hasFinanceAccess, safePayments, safeInvoices, safeBrands, activeBrands, pendingTasks, myMeetings, formatCurrency, churnedOrInactiveBrandIds]);
 
   const formattedCurrentDate = new Date().toLocaleDateString('en-IN', {
     weekday: 'long',
@@ -846,9 +849,11 @@ export const Dashboard: React.FC = () => {
         <div className="dashboard-grid-ops">
           {[
             {
-              label: 'Active Clients',
+              label: isFullAdmin || userPerms.includes('clients') ? 'Active Clients' : 'My Active Clients',
               value: animatedActiveBrands,
-              sub: `${brands.length} total onboarded`,
+              sub: isFullAdmin || userPerms.includes('clients')
+                ? `${brands.length} total onboarded`
+                : `${activeBrands.length} assigned to you`,
               icon: <Building2 className="w-4 h-4" />,
               color: BRAND.greenDark,
               bg: BRAND.greenSubtle,

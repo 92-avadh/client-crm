@@ -38,6 +38,9 @@ const create = asyncHandler(async (req, res) => {
   if (result.error === 'password_required') {
     return res.status(400).json({ error: 'Please set a password for this team member.' });
   }
+  if (result.error === 'email_taken') {
+    return res.status(409).json({ error: 'That email address is already in use by another team member.' });
+  }
   res.status(201).json(result);
 });
 

@@ -145,32 +145,55 @@ async function getInvoice(user, id) {
  * Derive the next invoice number from the configured prefix.
  * Kept in the service so other callers (recurring jobs) can reuse it.
  */
-async function nextInvoiceNumber() {
-  const settings = await pool.query("SELECT invoice_prefix FROM settings WHERE id='main'");
+async function nextInvoiceNumber(user) {
+  const agencyId = user ? getAgencyId(user) : 'main';
+  const settings = await pool.query(
+    "SELECT invoice_prefix FROM settings WHERE agency_id = $1 OR id = 'main' ORDER BY CASE WHEN agency_id = $1 THEN 0 ELSE 1 END LIMIT 1",
+    [agencyId]
+  ).catch(() => ({ rows: [] }));
   const prefix = settings.rows[0]?.invoice_prefix || 'INV-2026-';
-  // Use a row lock on a counter row to avoid race conditions under concurrent creates.
-  // Fall back to COUNT(*) + 42 if the sequence row doesn't exist yet.
-  const counterRes = await pool.query(
-    `INSERT INTO invoice_sequence (id, next_num) VALUES ('main', 43)
-     ON CONFLICT (id) DO UPDATE SET next_num = invoice_sequence.next_num + 1
-     RETURNING next_num`
-  ).catch(async (e) => {
-    if (e.code === '42P01' || e.code === '42703') {
-      // Table doesn't exist yet — create it and retry
-      await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (
-        id VARCHAR(50) PRIMARY KEY,
-        next_num INTEGER NOT NULL DEFAULT 42
-      )`);
-      return pool.query(
-        `INSERT INTO invoice_sequence (id, next_num) VALUES ('main', 43)
-         ON CONFLICT (id) DO UPDATE SET next_num = invoice_sequence.next_num + 1
-         RETURNING next_num`
-      );
+  const seqId = agencyId || 'main';
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (
+    id VARCHAR(50) PRIMARY KEY,
+    next_num INTEGER NOT NULL DEFAULT 42
+  )`).catch(() => {});
+
+  let invoiceNumber = '';
+  let attempts = 0;
+  while (attempts < 10) {
+    attempts++;
+    const counterRes = await pool.query(
+      `INSERT INTO invoice_sequence (id, next_num) VALUES ($1, 43)
+       ON CONFLICT (id) DO UPDATE SET next_num = invoice_sequence.next_num + 1
+       RETURNING next_num`,
+      [seqId]
+    ).catch(async (e) => {
+      if (e.code === '42P01' || e.code === '42703') {
+        await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (
+          id VARCHAR(50) PRIMARY KEY,
+          next_num INTEGER NOT NULL DEFAULT 42
+        )`);
+        return pool.query(
+          `INSERT INTO invoice_sequence (id, next_num) VALUES ($1, 43)
+           ON CONFLICT (id) DO UPDATE SET next_num = invoice_sequence.next_num + 1
+           RETURNING next_num`,
+          [seqId]
+        );
+      }
+      throw e;
+    });
+    const candidate = prefix + String(counterRes.rows[0].next_num).padStart(4, '0');
+    const existing = await pool.query(
+      'SELECT id FROM invoices WHERE invoice_number = $1 AND (agency_id = $2 OR owner_id = $2)',
+      [candidate, agencyId]
+    ).catch(() => ({ rows: [] }));
+    if (!existing.rows.length) {
+      invoiceNumber = candidate;
+      break;
     }
-    throw e;
-  });
-  const nextNum = counterRes.rows[0].next_num;
-  return prefix + String(nextNum).padStart(4, '0');
+  }
+  return invoiceNumber || (prefix + String(Date.now()).slice(-4));
 }
 
 async function createInvoice(user, data) {
@@ -179,7 +202,7 @@ async function createInvoice(user, data) {
     await client.query('BEGIN');
 
     const id = genId();
-    const invoiceNumber = await nextInvoiceNumber();
+    const invoiceNumber = await nextInvoiceNumber(user);
     const currency = data.currency || 'INR';
     const currencySymbol = data.currencySymbol || (currency === 'USD' ? '$' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'AED' ? 'AED' : (currency === 'CAD' ? 'CA$' : '₹')))));
 

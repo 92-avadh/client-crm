@@ -201,6 +201,31 @@ async function createBrand(user, data) {
     const deliverables = Array.isArray(data.deliverables) ? JSON.stringify(data.deliverables) : '[]';
     const agencyId = getAgencyId(user);
 
+    // Duplicate client checks within agency workspace
+    if (data.name) {
+      const dupName = await client.query(
+        'SELECT id, name FROM brands WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) AND (agency_id = $2 OR owner_id = $2)',
+        [data.name, agencyId]
+      );
+      if (dupName.rows.length) {
+        const err = new Error(`A client with the name "${data.name}" already exists in your workspace.`);
+        err.status = 409;
+        throw err;
+      }
+    }
+
+    if (data.email) {
+      const dupEmail = await client.query(
+        'SELECT id, name FROM brands WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) AND (agency_id = $2 OR owner_id = $2)',
+        [data.email, agencyId]
+      );
+      if (dupEmail.rows.length) {
+        const err = new Error(`A client with the email "${data.email}" already exists in your workspace (${dupEmail.rows[0].name}).`);
+        err.status = 409;
+        throw err;
+      }
+    }
+
     await client.query(
       `INSERT INTO brands (id,name,owner_name,mobile,email,billing_address,city,state,pincode,gst_number,pan,
        service_details,monthly_fee,billing_cycle_day,onboarding_date,notes,status,payment_status,last_payment_date,last_activity_date,owner_id,
@@ -264,6 +289,34 @@ async function createBrand(user, data) {
 }
 
 async function updateBrand(id, data) {
+  const existing = await pool.query('SELECT agency_id, owner_id FROM brands WHERE id = $1', [id]);
+  if (!existing.rows.length) return null;
+  const brandAgencyId = existing.rows[0].agency_id || existing.rows[0].owner_id;
+
+  if (data.name) {
+    const dupName = await pool.query(
+      'SELECT id, name FROM brands WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) AND (agency_id = $2 OR owner_id = $2) AND id != $3',
+      [data.name, brandAgencyId, id]
+    );
+    if (dupName.rows.length) {
+      const err = new Error(`Another client with the name "${data.name}" already exists in your workspace.`);
+      err.status = 409;
+      throw err;
+    }
+  }
+
+  if (data.email) {
+    const dupEmail = await pool.query(
+      'SELECT id, name FROM brands WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) AND (agency_id = $2 OR owner_id = $2) AND id != $3',
+      [data.email, brandAgencyId, id]
+    );
+    if (dupEmail.rows.length) {
+      const err = new Error(`Another client with the email "${data.email}" already exists (${dupEmail.rows[0].name}).`);
+      err.status = 409;
+      throw err;
+    }
+  }
+
   const fields = [];
   const values = [];
   let idx = 1;

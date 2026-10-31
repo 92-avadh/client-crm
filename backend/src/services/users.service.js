@@ -107,6 +107,14 @@ async function createUser(actor, data) {
   if (!data.password || String(data.password).trim().length === 0) {
     return { error: 'password_required' };
   }
+
+  // Email must be unique across all accounts
+  const emailCheck = await pool.query(
+    'SELECT id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1))',
+    [data.email]
+  );
+  if (emailCheck.rows.length > 0) return { error: 'email_taken' };
+
   const hash = await bcrypt.hash(String(data.password).trim(), 10);
   const id = genId();
   const permissionsJson = JSON.stringify(Array.isArray(data.permissions) ? data.permissions : []);

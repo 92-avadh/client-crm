@@ -12,7 +12,7 @@ const get = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
   const perms = req.user.permissions || [];
-  if (req.user.role !== 'admin' && req.user.role !== 'hr' && !perms.includes('settings')) {
+  if (req.user.role !== 'admin' && req.user.role !== 'hr' && !perms.includes('settings') && !perms.includes('finance')) {
     return res.status(403).json({ error: "You don't have permission to update settings." });
   }
 

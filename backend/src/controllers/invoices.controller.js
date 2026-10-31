@@ -1,14 +1,13 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { makeValidator } = require('../utils/validate');
 const invoices = require('../services/invoices.service');
+const { resolvePermissions } = require('../utils/permissions');
 
 function canWriteInvoices(user) {
   if (!user) return false;
   if (['admin', 'hr', 'manager'].includes(user.role)) return true;
-  const perms = Array.isArray(user.permissions)
-    ? user.permissions
-    : (typeof user.permissions === 'string' ? (() => { try { return JSON.parse(user.permissions || '[]'); } catch { return []; } })() : []);
-  return perms.includes('invoices') || perms.includes('invoices_write');
+  const perms = resolvePermissions(user.role, user.permissions);
+  return perms.includes('invoices') || perms.includes('invoices_write') || perms.includes('finance');
 }
 
 const list = asyncHandler(async (req, res) => {

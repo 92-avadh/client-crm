@@ -5,6 +5,7 @@ import { ProfileTab, NotificationsTab } from './ProfileTab';
 import { CompanyTab, TaxTab, BankingTab } from './CompanyTabs';
 import { SubscriptionTab, HolidaysTab, SecurityTab } from './AdminTabs';
 import { InvoiceDesignTab, type InvoiceDesign } from './InvoiceDesignTab';
+import { getDefaultPermissionsForRole } from '../team/permissionsConfig';
 import {
   User,
   Bell,
@@ -45,6 +46,11 @@ export const SettingsManager: React.FC = () => {
 
   const role = currentUser.role;
   const isAdmin = role === 'admin';
+  const userPerms = Array.isArray(currentUser.permissions) && currentUser.permissions.length > 0
+    ? currentUser.permissions
+    : (role ? getDefaultPermissionsForRole(role) : []);
+  const canManageSettings = isAdmin || role === 'hr' || userPerms.includes('settings');
+  const canManageFinancialSettings = canManageSettings || userPerms.includes('finance');
 
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -112,18 +118,22 @@ export const SettingsManager: React.FC = () => {
           },
         ],
       },
-      ...(isAdmin
+      ...(canManageFinancialSettings
         ? [
             {
               title: 'Agency & Financials',
               items: [
-                {
-                  id: 'company',
-                  label: 'Agency Profile & Business Details',
-                  shortLabel: 'Agency Details',
-                  description: 'Legal entity name, GSTIN, PAN, and address',
-                  icon: Building2,
-                },
+                ...(canManageSettings
+                  ? [
+                      {
+                        id: 'company',
+                        label: 'Agency Profile & Business Details',
+                        shortLabel: 'Agency Details',
+                        description: 'Legal entity name, GSTIN, PAN, and address',
+                        icon: Building2,
+                      },
+                    ]
+                  : []),
                 {
                   id: 'tax',
                   label: 'Tax & GST Configuration',
@@ -138,14 +148,18 @@ export const SettingsManager: React.FC = () => {
                   description: 'Bank payouts and payment gateway APIs',
                   icon: Landmark,
                 },
-                {
-                  id: 'subscription',
-                  label: 'Software Plan & Billing',
-                  shortLabel: 'Software Plan',
-                  description: 'Active subscription tier and usage limits',
-                  icon: Sparkles,
-                  badge: 'Active Tier',
-                },
+                ...(isAdmin
+                  ? [
+                      {
+                        id: 'subscription',
+                        label: 'Software Plan & Billing',
+                        shortLabel: 'Software Plan',
+                        description: 'Active subscription tier and usage limits',
+                        icon: Sparkles,
+                        badge: 'Active Tier',
+                      },
+                    ]
+                  : []),
               ],
             },
             {
@@ -158,13 +172,17 @@ export const SettingsManager: React.FC = () => {
                   description: 'Branded colors, logo, and footer terms',
                   icon: Palette,
                 },
-                {
-                  id: 'holidays',
-                  label: 'Holidays & Calendar',
-                  shortLabel: 'Holidays & Calendar',
-                  description: 'Agency work calendar and official holidays',
-                  icon: Calendar,
-                },
+                ...(canManageSettings
+                  ? [
+                      {
+                        id: 'holidays',
+                        label: 'Holidays & Calendar',
+                        shortLabel: 'Holidays & Calendar',
+                        description: 'Agency work calendar and official holidays',
+                        icon: Calendar,
+                      },
+                    ]
+                  : []),
               ],
             },
           ]
@@ -461,7 +479,7 @@ export const SettingsManager: React.FC = () => {
               />
             )}
 
-            {activeTab === 'company' && isAdmin && (
+            {activeTab === 'company' && canManageSettings && (
               <CompanyTab
                 formData={formData}
                 onChange={patchSettings}
@@ -469,7 +487,7 @@ export const SettingsManager: React.FC = () => {
               />
             )}
 
-            {activeTab === 'tax' && isAdmin && (
+            {activeTab === 'tax' && canManageFinancialSettings && (
               <TaxTab
                 formData={formData}
                 onChange={patchSettings}
@@ -477,7 +495,7 @@ export const SettingsManager: React.FC = () => {
               />
             )}
 
-            {activeTab === 'banking' && isAdmin && (
+            {activeTab === 'banking' && canManageFinancialSettings && (
               <BankingTab
                 formData={formData}
                 onChange={patchSettings}
@@ -489,7 +507,7 @@ export const SettingsManager: React.FC = () => {
               <SubscriptionTab formData={formData} />
             )}
 
-            {activeTab === 'invoiceDesign' && isAdmin && (
+            {activeTab === 'invoiceDesign' && canManageFinancialSettings && (
               <InvoiceDesignTab
                 design={invoiceDesign}
                 onChange={(patch) => setInvoiceDesign((prev) => ({ ...prev, ...patch }))}
@@ -507,7 +525,7 @@ export const SettingsManager: React.FC = () => {
               />
             )}
 
-            {activeTab === 'holidays' && isAdmin && (
+            {activeTab === 'holidays' && canManageSettings && (
               <HolidaysTab
                 holidays={holidays}
                 showAdd={showAddHoliday}

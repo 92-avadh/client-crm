@@ -334,9 +334,9 @@ export const FinanceManager: React.FC = () => {
 
   const paymentsTotal = receivedPayments.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
 
-  // Unrecorded brand fees ONLY for active brands explicitly marked 'Paid' that don't have a payment row yet
+  // Unrecorded brand fees ONLY for active brands explicitly marked 'Paid' that don't have ANY payment row yet
   const unrecordedBrandFees = (brands || [])
-    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id && p.status === 'Success'))
+    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id))
     .reduce((acc, b) => acc + (Number(b.monthlyFee) || 0), 0);
 
   const totalCollections = paymentsTotal + unrecordedBrandFees;
@@ -365,7 +365,7 @@ export const FinanceManager: React.FC = () => {
     // Only actual received payments for this brand count as collected revenue
     const revenue = scopedPayments
       .filter((p) => p && p.brandId === b.id && p.status === 'Success' && (!isChurned || !(p.referenceNo || '').startsWith('RET-')))
-      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id && p.status === 'Success') ? (Number(b.monthlyFee) || 0) : 0);
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
     const pendingRevenue = scopedPayments
       .filter((p) => p && p.brandId === b.id && p.status === 'Pending' && (!isChurned || !(p.referenceNo || '').startsWith('RET-')))
       .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);

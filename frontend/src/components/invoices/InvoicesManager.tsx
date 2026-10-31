@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import type { Invoice, Brand } from '../../types';
 import confetti from 'canvas-confetti';
-import { Plus, Search, Filter, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Trash2, Loader2, Landmark } from 'lucide-react';
 import { btnPrimary, btnSecondary } from './invoiceStyles';
 import { useInvoiceBuilder } from './useInvoiceBuilder';
 import { InvoiceTable } from './InvoiceTable';
@@ -11,6 +11,7 @@ import { InvoiceBuilderModal } from './InvoiceBuilderModal';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { RazorpayModal, OfflinePaymentModal, type OfflineForm } from './PaymentModals';
 import { RecurringPanel } from './RecurringPanel';
+import { getDefaultPermissionsForRole } from '../team/permissionsConfig';
 import {
   AlertDialog,
   AlertDialogPopup,
@@ -44,9 +45,13 @@ export const InvoicesManager: React.FC = () => {
     setSelectedInvoiceId,
     settings,
     showToast,
+    setActiveTab,
   } = useApp();
 
-  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'hr' || (Array.isArray(currentUser?.permissions) && currentUser.permissions.includes('invoices'));
+  const userPerms = Array.isArray(currentUser?.permissions) && currentUser.permissions.length > 0
+    ? currentUser.permissions
+    : (currentUser?.role ? getDefaultPermissionsForRole(currentUser.role) : []);
+  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'hr' || userPerms.includes('invoices') || userPerms.includes('finance');
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -361,22 +366,35 @@ export const InvoicesManager: React.FC = () => {
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             Generate GST-compliant invoices in 1 click, collect payments via Razorpay, and share via WhatsApp.
           </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '5px 12px', borderRadius: 8, border: '1px solid var(--border)', marginTop: 8 }}>
+            <Landmark style={{ width: 13, height: 13, color: 'var(--accent-text)' }} />
+            <span>Bank details &amp; UPI QR code on invoices are configured in</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab('settings')}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-text)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Settings &gt; Banking &amp; Gateways
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
           <button onClick={() => setShowRecurringPanel(true)} style={btnSecondary}>
             <span>🔄 Recurring Schedules</span>
           </button>
-          <button
-            onClick={() => {
-              builder.reset();
-              setShowCreateModal(true);
-            }}
-            style={btnPrimary}
-          >
-            <Plus style={{ width: 14, height: 14 }} />
-            <span>Generate 1-Click Invoice</span>
-          </button>
+          {canManage && (
+            <button
+              onClick={() => {
+                builder.reset();
+                setShowCreateModal(true);
+              }}
+              style={btnPrimary}
+            >
+              <Plus style={{ width: 14, height: 14 }} />
+              <span>Generate 1-Click Invoice</span>
+            </button>
+          )}
         </div>
       </div>
 
