@@ -1,6 +1,8 @@
 const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { getAgencyId } = require('../utils/agency');
+const { resolvePermissions } = require('../utils/permissions');
 
 const genId = () => 'usr_' + crypto.randomBytes(8).toString('hex');
 
@@ -14,12 +16,7 @@ async function getAssignedBrandIds(userId) {
 }
 
 function mapUser(u, brandIds) {
-  let perms = [];
-  if (Array.isArray(u.permissions)) {
-    perms = u.permissions;
-  } else if (typeof u.permissions === 'string') {
-    try { perms = JSON.parse(u.permissions); } catch { perms = []; }
-  }
+  const perms = resolvePermissions(u.role, u.permissions);
   return {
     id: u.id, name: u.name, email: u.email, phone: u.phone,
     role: u.role, avatar: u.avatar, designation: u.designation,
@@ -27,10 +24,9 @@ function mapUser(u, brandIds) {
     permissions: perms,
     assignedBrandIds: brandIds || [],
     createdBy: u.created_by || null,
+    agencyId: u.agency_id || u.created_by || u.id,
   };
 }
-
-const { getAgencyId } = require('../utils/agency');
 
 async function listUsers(user, { page = 1, pageSize = 50, includeInactive = false } = {}) {
   const agencyId = getAgencyId(user);
@@ -87,12 +83,14 @@ async function getUser(actor, id) {
   const target = rows[0];
 
   if (user) {
-    if (user.role !== 'admin' && user.id !== targetId) {
-      return null;
-    }
-    if (user.role === 'admin' && user.id !== targetId) {
-      const userAgencyId = getAgencyId(user);
-      const targetAgencyId = target.agency_id || target.created_by || target.id;
+    const userAgencyId = getAgencyId(user);
+    const targetAgencyId = target.agency_id || target.created_by || target.id;
+    if (user.role === 'brand') {
+      const assignedBrands = await getAssignedBrandIds(targetId);
+      if (targetId !== user.id && !assignedBrands.includes(user.brandId) && target.role !== 'admin') {
+        return null;
+      }
+    } else {
       if (String(userAgencyId) !== String(targetAgencyId)) {
         return null;
       }
@@ -150,9 +148,10 @@ async function updateUser(actor, userId, data) {
     ? prev.permissions
     : (typeof prev.permissions === 'string' ? JSON.parse(prev.permissions || '[]') : []);
 
-  // Privilege Escalation Defense: Only administrators may change roles or permissions
-  const nextRole = (actor && actor.role === 'admin' && data.role !== undefined) ? data.role : prev.role;
-  const permissionsJson = (actor && actor.role === 'admin' && data.permissions !== undefined)
+  // Privilege Escalation Defense: Admins or HR (for non-admin roles) may change roles/permissions
+  const canManageRoles = actor && (actor.role === 'admin' || (actor.role === 'hr' && prev.role !== 'admin' && data.role !== 'admin'));
+  const nextRole = (canManageRoles && data.role !== undefined) ? data.role : prev.role;
+  const permissionsJson = (canManageRoles && data.permissions !== undefined)
     ? JSON.stringify(Array.isArray(data.permissions) ? data.permissions : [])
     : JSON.stringify(prevPerms);
 
@@ -197,6 +196,11 @@ async function deactivateUser(actor, id) {
       throw err;
     }
     if (target.role === 'admin') {
+      if (user.role !== 'admin') {
+        const err = new Error('Only administrators can deactivate administrator accounts.');
+        err.status = 403;
+        throw err;
+      }
       const { rows: adminCountRows } = await pool.query(
         "SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin' AND is_active = true AND (agency_id = $1 OR created_by = $1 OR id = $1)",
         [actorAgencyId]

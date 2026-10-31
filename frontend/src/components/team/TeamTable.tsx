@@ -7,6 +7,7 @@ interface Props {
   users: User[];
   currentUserId: string;
   isAdmin: boolean;
+  canManage?: boolean;
   deactivatingId: string | null;
   getBrandCount: (userId: string) => number;
   onView: (user: User) => void;
@@ -19,8 +20,10 @@ const GRID = '2.3fr 1.1fr 0.9fr 0.8fr 1.5fr 0.9fr';
 
 /** Team members table (horizontally scrollable on mobile). */
 export const TeamTable: React.FC<Props> = ({
-  users, currentUserId, isAdmin, deactivatingId, getBrandCount, onView, onEdit, onDeactivate, onDirectChat,
-}) => (
+  users, currentUserId, isAdmin, canManage, deactivatingId, getBrandCount, onView, onEdit, onDeactivate, onDirectChat,
+}) => {
+  const hasManageRights = canManage ?? isAdmin;
+  return (
   <div className="table-scroll" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
     <div className="rg-team" style={{ display: 'grid', gridTemplateColumns: GRID, gap: 12, padding: '12px 24px', background: 'var(--bg-raised)', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
       <span>Member</span><span>Role</span><span>Brands</span><span>Status</span>
@@ -70,7 +73,7 @@ export const TeamTable: React.FC<Props> = ({
               <button onClick={() => onView(user)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'var(--bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
                 View <ChevronRight style={{ width: 13, height: 13 }} />
               </button>
-              {isAdmin && (
+              {(hasManageRights || user.id === currentUserId) && (
                 <button onClick={() => onEdit(user)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
                   <Edit3 style={{ width: 13, height: 13 }} /> Edit
                 </button>
@@ -79,7 +82,7 @@ export const TeamTable: React.FC<Props> = ({
           </div>
 
           <div>
-            {isAdmin && user.id !== currentUserId && isActive ? (
+            {hasManageRights && user.id !== currentUserId && isActive && (isAdmin || user.role !== 'admin') ? (
               <button onClick={() => onDeactivate(user)} disabled={deactivatingId === user.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 14px', background: 'var(--bg-card)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: deactivatingId === user.id ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' as const }}>
                 {deactivatingId === user.id ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <UserX style={{ width: 12, height: 12 }} />}
                 Deactivate
@@ -96,6 +99,7 @@ export const TeamTable: React.FC<Props> = ({
       </div>
     )}
   </div>
-);
+  );
+};
 
 export default TeamTable;

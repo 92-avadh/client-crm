@@ -10,7 +10,8 @@ const list = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'admin') {
+  const perms = req.user.permissions || [];
+  if (req.user.role !== 'admin' && req.user.role !== 'hr' && !perms.includes('settings')) {
     return res.status(403).json({ error: "You don't have permission to manage holidays." });
   }
   const body = makeValidator(req.body)
@@ -23,7 +24,8 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'admin') {
+  const perms = req.user.permissions || [];
+  if (req.user.role !== 'admin' && req.user.role !== 'hr' && !perms.includes('settings')) {
     return res.status(403).json({ error: "You don't have permission to manage holidays." });
   }
   const deleted = await holidays.deleteHoliday(req.user, req.params.id);

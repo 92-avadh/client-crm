@@ -44,20 +44,21 @@ function mapExpense(e) {
   };
 }
 
+const { getAgencyId } = require('../utils/agency');
+
 /** Append an audit entry. Never let logging failure break the operation. */
 async function writeAudit(user, action, details) {
   try {
+    const agencyId = getAgencyId(user);
     await pool.query(
-      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address)
-       VALUES ($1, $2, $3, $4, $5, $6, 'unknown')`,
-      [auditId(), new Date().toISOString(), user.name, user.role, action, details]
+      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address, agency_id)
+       VALUES ($1, $2, $3, $4, $5, $6, 'unknown', $7)`,
+      [auditId(), new Date().toISOString(), user?.name || 'System', user?.role || 'system', action, details, agencyId]
     );
   } catch (err) {
     console.error('Audit log write failed:', err.message);
   }
 }
-
-const { getAgencyId } = require('../utils/agency');
 
 async function listExpenses(user, filters = {}) {
   const agencyId = getAgencyId(user);
@@ -65,11 +66,14 @@ async function listExpenses(user, filters = {}) {
   const params = [];
   let idx = 1;
 
-  if (user && (user.role === 'admin' || user.role === 'hr')) {
+  const perms = Array.isArray(user?.permissions) ? user.permissions : [];
+  const hasGlobalAccess = user && (user.role === 'admin' || user.role === 'hr' || perms.includes('expenses') || perms.includes('finance'));
+
+  if (hasGlobalAccess) {
     whereClause += ` AND (agency_id = $${idx} OR (agency_id IS NULL AND owner_id = $${idx}))`;
     params.push(agencyId);
     idx += 1;
-  } else if (user && user.role !== 'admin') {
+  } else if (user) {
     whereClause += ` AND (agency_id = $${idx} OR owner_id = $${idx}) AND (employee_id = $${idx + 1} OR brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1}))`;
     params.push(agencyId, user.id);
     idx += 2;

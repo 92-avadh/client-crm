@@ -56,7 +56,8 @@ const get = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr'].includes(req.user.role)) {
+  const perms = req.user.permissions || [];
+  if (!['admin', 'hr'].includes(req.user.role) && !perms.includes('clients')) {
     return res.status(403).json({ error: "You don't have permission to add clients." });
   }
   const body = validateClient(req.body, { requireName: true });
@@ -74,8 +75,9 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const assignMembers = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr'].includes(req.user.role)) {
-    return res.status(403).json({ error: "Only administrators can assign team members." });
+  const perms = req.user.permissions || [];
+  if (!['admin', 'hr'].includes(req.user.role) && !perms.includes('clients') && !perms.includes('team')) {
+    return res.status(403).json({ error: "You don't have permission to assign team members." });
   }
   if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
     return res.status(403).json({ error: "You don't have permission to assign members to this client." });
@@ -99,8 +101,9 @@ const logActivity = asyncHandler(async (req, res) => {
 });
 
 const churn = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr'].includes(req.user.role)) {
-    return res.status(403).json({ error: "Only administrators can mark clients as churned." });
+  const perms = req.user.permissions || [];
+  if (!['admin', 'hr'].includes(req.user.role) && !perms.includes('clients')) {
+    return res.status(403).json({ error: "You don't have permission to mark clients as churned." });
   }
   if (!await brands.verifyBrandAccess(req.user, req.params.id)) {
     return res.status(403).json({ error: "You don't have permission to churn this client." });

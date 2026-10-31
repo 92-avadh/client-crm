@@ -396,7 +396,8 @@ export const SettingsManager: React.FC = () => {
                   if (patch.phone !== undefined) setProfilePhone(patch.phone);
                 }}
                 onAvatarChange={async (dataUrl: string) => {
-                  const targetId = currentUser?.id || 'usr_admin';
+                  const targetId = currentUser?.id;
+                  if (!targetId) return;
                   try {
                     await updateTeamMember(targetId, { avatar: dataUrl });
                     showToast(

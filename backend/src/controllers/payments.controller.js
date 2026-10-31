@@ -105,7 +105,9 @@ const razorpayVerify = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr'].includes(req.user.role)) {
+  const perms = req.user.permissions || [];
+  const canEdit = ['admin', 'hr', 'manager'].includes(req.user.role) || perms.includes('finance') || perms.includes('invoices');
+  if (!canEdit) {
     return res.status(403).json({ error: "You don't have permission to edit payments." });
   }
   const body = makeValidator(req.body)
@@ -120,7 +122,9 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr', 'manager'].includes(req.user.role)) {
+  const perms = req.user.permissions || [];
+  const canDelete = ['admin', 'hr', 'manager'].includes(req.user.role) || perms.includes('finance');
+  if (!canDelete) {
     return res.status(403).json({ error: "You don't have permission to delete payments." });
   }
   const deleted = await payments.deletePayment(req.user, req.params.id);
@@ -130,7 +134,9 @@ const remove = asyncHandler(async (req, res) => {
 
 /** POST /api/payments/bulk-delete — batch delete payments. */
 const bulkRemove = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr', 'manager'].includes(req.user.role)) {
+  const perms = req.user.permissions || [];
+  const canDelete = ['admin', 'hr', 'manager'].includes(req.user.role) || perms.includes('finance');
+  if (!canDelete) {
     return res.status(403).json({ error: "You don't have permission to delete payments." });
   }
   const { ids } = req.body || {};

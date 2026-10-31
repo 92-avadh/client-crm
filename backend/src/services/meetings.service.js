@@ -53,11 +53,12 @@ async function listMeetings(user, { brandId, leadId, page = 1, pageSize = 50 } =
 
   if (user) {
     const agencyId = getAgencyId(user);
+    const perms = Array.isArray(user.permissions) ? user.permissions : [];
     if (user.role === 'brand') {
       whereClause += ` AND brand_id = $${idx}`;
       params.push(user.brandId || 'none');
       idx += 1;
-    } else if (user.role === 'admin') {
+    } else if (user.role === 'admin' || user.role === 'hr' || perms.includes('meetings')) {
       whereClause += ` AND (agency_id = $${idx} OR (agency_id IS NULL AND (owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE agency_id = $${idx} OR owner_id = $${idx}))))`;
       params.push(agencyId);
       idx += 1;

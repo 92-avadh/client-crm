@@ -8,6 +8,7 @@ import { useApp } from '../../context/AppContext';
 interface Props {
   member: User | null;
   isAdmin: boolean;
+  canManage?: boolean;
   assignedBrands: Brand[];
   updatingAvatar: boolean;
   onClose: () => void;
@@ -26,12 +27,15 @@ function brandColor(name: string): string {
 
 /** Slide-over drawer showing one member's profile and assignments. */
 export const MemberDrawer: React.FC<Props> = ({
-  member, isAdmin, assignedBrands, updatingAvatar,
+  member, isAdmin, canManage = false, assignedBrands, updatingAvatar,
   onClose, onEdit, onAvatarChange, onAvatarRemove,
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
-  const { currentUser, startDirectChat } = useApp();
+  const { currentUser } = useApp();
   if (!member) return null;
+
+  const isSelf = Boolean(currentUser && currentUser.id === member.id);
+  const canModify = isAdmin || canManage || isSelf;
 
   return (
     <>
@@ -90,7 +94,7 @@ export const MemberDrawer: React.FC<Props> = ({
                   <Loader2 style={{ width: 18, height: 18, color: '#4ade80' }} className="animate-spin" />
                 </div>
               )}
-              {isAdmin && (
+              {canModify && (
                 <label title="Upload or change member photo"
                   style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: updatingAvatar ? 'not-allowed' : 'pointer', border: '2px solid var(--bg)', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', pointerEvents: updatingAvatar ? 'none' : 'auto' }}>
                   {updatingAvatar ? <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" /> : <Camera style={{ width: 11, height: 11 }} />}
@@ -104,7 +108,7 @@ export const MemberDrawer: React.FC<Props> = ({
               <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '3px 0 6px' }}>{member.designation || 'No designation'}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <RoleBadge role={member.role} />
-                {isAdmin && member.avatar && (
+                {canModify && member.avatar && (
                   <button onClick={onAvatarRemove} disabled={updatingAvatar}
                     style={{ background: 'none', border: 'none', color: 'var(--danger-text)', fontSize: 11, fontWeight: 600, cursor: updatingAvatar ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, opacity: updatingAvatar ? 0.6 : 1 }}>
                     {updatingAvatar ? (
@@ -124,11 +128,11 @@ export const MemberDrawer: React.FC<Props> = ({
         </div>
 
         {/* Actions Bar */}
-        {isAdmin && (
+        {canModify && (
           <div style={{ padding: '12px 28px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
             <button onClick={() => onEdit(member)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              <Edit3 style={{ width: 13, height: 13 }} /> Edit Team Member
+              <Edit3 style={{ width: 13, height: 13 }} /> {isSelf ? 'Edit My Profile' : 'Edit Team Member'}
             </button>
           </div>
         )}

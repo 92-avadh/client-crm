@@ -545,11 +545,16 @@ export const App: React.FC = () => {
         api.auth.me()
           .then((res) => {
             if (res?.user) {
-              setLoginUser(res.user);
+              const mergedUser = {
+                ...user,
+                ...res.user,
+                agencyId: res.user.agencyId || user.agencyId,
+              };
+              setLoginUser(mergedUser);
               try {
-                localStorage.setItem('retentio_user', JSON.stringify(res.user));
+                localStorage.setItem('retentio_user', JSON.stringify(mergedUser));
               } catch {}
-              const isOwnerAdmin = res.user.role === 'admin' || res.user.role === 'owner';
+              const isOwnerAdmin = mergedUser.role === 'admin' || mergedUser.role === 'owner';
               const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
               setShowOnboarding(!onboardingDone && isOwnerAdmin);
             }

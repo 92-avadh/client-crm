@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { getAgencyId } = require('../utils/agency');
+const { resolvePermissions } = require('../utils/permissions');
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   console.error('❌ FATAL: JWT_SECRET environment variable is missing or shorter than 32 characters. All environments require a secure 32+ character key.');
@@ -53,6 +54,7 @@ module.exports = (req, res, next) => {
   try {
     req.user = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     req.user.agencyId = getAgencyId(req.user);
+    req.user.permissions = resolvePermissions(req.user.role, req.user.permissions);
 
     const newToken = jwt.sign(
       {
@@ -62,7 +64,7 @@ module.exports = (req, res, next) => {
         role: req.user.role,
         brandId: req.user.brandId,
         agencyId: req.user.agencyId,
-        permissions: req.user.permissions || [],
+        permissions: req.user.permissions,
       },
       JWT_SECRET,
       { expiresIn: '30d', algorithm: 'HS256' }

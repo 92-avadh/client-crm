@@ -106,12 +106,13 @@ async function recordPayment({ invoiceId, brandId, brandName, amount, mode, refe
     } catch {}
 
     await client.query(
-      `INSERT INTO audit_logs (id,timestamp,actor_name,actor_role,action,details,ip_address)
-       VALUES ($1,$2,$3,$4,'PAYMENT_RECORDED',$5,'unknown')`,
+      `INSERT INTO audit_logs (id,timestamp,actor_name,actor_role,action,details,ip_address,agency_id)
+       VALUES ($1,$2,$3,$4,'PAYMENT_RECORDED',$5,'unknown',$6)`,
       [
         auditId(), new Date().toISOString(),
         actor?.name || 'System', actor?.role || 'system',
         `Recorded payment of ${inr(amount)} for invoice ${invoiceId} from ${brandName}.`,
+        agencyId,
       ]
     );
 
@@ -135,18 +136,22 @@ async function listPayments(user, { brandId, invoiceId } = {}) {
   let idx = 1;
 
   const agencyId = getAgencyId(user);
+  const perms = Array.isArray(user?.permissions) ? user.permissions : [];
+
   if (user.role === 'brand') {
     query += ` AND brand_id = $${idx}`;
     params.push(user.brandId || '');
     idx += 1;
-  } else if (user.role === 'admin' || user.role === 'hr') {
-    // Admins and HR see payments across their agency workspace
+  } else if (user.role === 'admin' || user.role === 'hr' || perms.includes('finance') || perms.includes('invoices')) {
+    // Admins, HR, and finance/invoice permission holders see payments across their agency workspace
     query += ` AND (agency_id = $${idx} OR owner_id = $${idx} OR brand_id IN (SELECT id FROM brands WHERE agency_id = $${idx} OR owner_id = $${idx}))`;
     params.push(agencyId);
     idx += 1;
   } else {
-    // Team members must not read agency-wide financial records.
-    return [];
+    // Team members only see payments for their assigned brands
+    query += ` AND (agency_id = $${idx} OR owner_id = $${idx}) AND brand_id IN (SELECT brand_id FROM brand_assignments WHERE member_id = $${idx + 1})`;
+    params.push(agencyId, user.id);
+    idx += 2;
   }
   if (brandId) {
     query += ` AND brand_id=$${idx}`;
@@ -313,14 +318,15 @@ async function deletePayment(user, id) {
     await client.query('DELETE FROM payments WHERE id=$1', [id]);
 
     await client.query(
-      `INSERT INTO audit_logs (id,timestamp,actor_name,actor_role,action,details,ip_address)
-       VALUES ($1,$2,$3,$4,'PAYMENT_DELETED',$5,'unknown')`,
+      `INSERT INTO audit_logs (id,timestamp,actor_name,actor_role,action,details,ip_address,agency_id)
+       VALUES ($1,$2,$3,$4,'PAYMENT_DELETED',$5,'unknown',$6)`,
       [
         auditId(),
         new Date().toISOString(),
         user?.name || 'System',
         user?.role || 'system',
         `Deleted payment record ${pay.reference_no || pay.id} of ₹${pay.amount} for ${pay.brand_name}.`,
+        agencyId,
       ]
     );
 

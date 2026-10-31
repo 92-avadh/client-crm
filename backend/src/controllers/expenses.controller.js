@@ -2,9 +2,10 @@ const asyncHandler = require('../utils/asyncHandler');
 const { makeValidator } = require('../utils/validate');
 const expenses = require('../services/expenses.service');
 
-/** Expenses are restricted to admin/HR. */
+/** Expenses are accessible to admin, HR, or finance/expense permission holders. */
 const requireFinanceRole = (req, res) => {
-  if (!['admin', 'hr'].includes(req.user.role)) {
+  const perms = req.user?.permissions || [];
+  if (!['admin', 'hr'].includes(req.user.role) && !perms.includes('expenses') && !perms.includes('finance')) {
     res.status(403).json({ error: "You don't have permission to manage expenses." });
     return false;
   }

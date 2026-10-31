@@ -43,8 +43,9 @@ const remove = asyncHandler(async (req, res) => {
 });
 
 const runNow = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr'].includes(req.user.role)) {
-    return res.status(403).json({ error: "Only administrators can trigger invoice generation." });
+  const perms = req.user.permissions || [];
+  if (!['admin', 'hr'].includes(req.user.role) && !perms.includes('invoices') && !perms.includes('finance')) {
+    return res.status(403).json({ error: "Only administrators and billing managers can trigger invoice generation." });
   }
   const generated = await svc.generateDueRecurring();
   res.json({ success: true, count: generated.length, generated });

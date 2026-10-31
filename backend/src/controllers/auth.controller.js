@@ -92,17 +92,16 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 const pool = require('../db');
+const { getAgencyId } = require('../utils/agency');
+const { resolvePermissions } = require('../utils/permissions');
 
 const me = asyncHandler(async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
     if (rows.length) {
       const u = rows[0];
-      let perms = [];
-      if (Array.isArray(u.permissions)) perms = u.permissions;
-      else if (typeof u.permissions === 'string') {
-        try { perms = JSON.parse(u.permissions); } catch { perms = []; }
-      }
+      const perms = resolvePermissions(u.role, u.permissions);
+      const agencyId = getAgencyId(u);
       return res.json({
         user: {
           id: u.id,
@@ -113,12 +112,20 @@ const me = asyncHandler(async (req, res) => {
           avatar: u.avatar,
           designation: u.designation,
           brandId: u.brand_id,
+          agencyId,
+          createdBy: u.created_by || null,
           permissions: perms,
         }
       });
     }
   } catch (_e) {}
-  res.json({ user: req.user });
+  res.json({
+    user: {
+      ...req.user,
+      agencyId: getAgencyId(req.user),
+      permissions: resolvePermissions(req.user?.role, req.user?.permissions),
+    }
+  });
 });
 
 const forgotPassword = asyncHandler(async (req, res) => {

@@ -53,6 +53,7 @@ export const TeamManager: React.FC = () => {
     deactivateTeamMember,
   } = useApp() as any;
   const isAdmin = currentUser.role === 'admin';
+  const canManageTeam = isAdmin || currentUser.role === 'hr' || (currentUser.permissions && currentUser.permissions.includes('team'));
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -97,14 +98,13 @@ export const TeamManager: React.FC = () => {
 
   /* ── Photo handling ──────────────────────────────────────────── */
 
-  const pickPhoto = async (file: File, apply: (dataUrl: string) => void) => {
+  const pickPhoto = async (file: File, apply: (dataUrl: string) => Promise<void> | void) => {
     const result = await processImageFile(file);
     if (!result.ok) {
       showToast(result.error || 'Could not process that image', 'error');
       return;
     }
-    apply(result.dataUrl!);
-    showToast('Photo uploaded successfully', 'success');
+    await apply(result.dataUrl!);
   };
 
   const handleUpdateAvatar = async (file: File) => {
@@ -268,7 +268,7 @@ export const TeamManager: React.FC = () => {
             Manage your team members, roles and brand assignments
           </p>
         </div>
-        {isAdmin && (
+        {canManageTeam && (
           <button onClick={openAddModal} className="w-fit self-start sm:self-auto" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
             <UserPlus style={{ width: 16, height: 16 }} /> Add Member
           </button>
@@ -288,6 +288,7 @@ export const TeamManager: React.FC = () => {
         users={pagedTeamUsers}
         currentUserId={currentUser.id}
         isAdmin={isAdmin}
+        canManage={canManageTeam}
         deactivatingId={deactivating}
         getBrandCount={getBrandCount}
         onView={setSelectedMember}
@@ -313,6 +314,7 @@ export const TeamManager: React.FC = () => {
             key={selectedMember.id}
             member={selectedMember}
             isAdmin={isAdmin}
+            canManage={canManageTeam}
             assignedBrands={getAssignedBrands(selectedMember.id)}
             updatingAvatar={updatingAvatar}
             onClose={() => setSelectedMember(null)}

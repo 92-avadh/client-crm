@@ -283,10 +283,11 @@ const auditId = () => 'audit_' + crypto.randomBytes(6).toString('hex');
 
 async function writeAudit(user, action, details) {
   try {
+    const agencyId = getAgencyId(user);
     await pool.query(
-      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address)
-       VALUES ($1, $2, $3, $4, $5, $6, 'unknown')`,
-      [auditId(), new Date().toISOString(), user?.name || 'System', user?.role || 'system', action, details]
+      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address, agency_id)
+       VALUES ($1, $2, $3, $4, $5, $6, 'unknown', $7)`,
+      [auditId(), new Date().toISOString(), user?.name || 'System', user?.role || 'system', action, details, agencyId]
     );
   } catch (err) {
     console.error('Audit log write failed:', err.message);

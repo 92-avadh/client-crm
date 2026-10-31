@@ -18,8 +18,9 @@ async function listAuditLogs(user, { limit, offset } = {}) {
   let whereClause = "WHERE (agency_id = $1 OR (agency_id IS NULL AND $1 = 'usr_admin'))";
   const params = [agencyId];
 
-  // Non-admins only see their own activity.
-  if (user.role !== 'admin') {
+  // Admins and HR see agency-wide activity; standard collaborators only see their own.
+  const perms = Array.isArray(user?.permissions) ? user.permissions : [];
+  if (user.role !== 'admin' && user.role !== 'hr' && !perms.includes('settings')) {
     whereClause += ' AND actor_name = $2';
     params.push(user.name);
   }

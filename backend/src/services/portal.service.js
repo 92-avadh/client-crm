@@ -163,13 +163,14 @@ async function submitPortalFeedback(token, score, comment = '') {
 
   // Add audit log
   await pool.query(
-    `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address)
-     VALUES ($1, $2, $3, 'client', 'Portal Feedback Submitted', $4, 'client-portal')`,
+    `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address, agency_id)
+     VALUES ($1, $2, $3, 'client', 'Portal Feedback Submitted', $4, 'client-portal', $5)`,
     [
       auditId(),
       new Date().toISOString(),
       brand.owner_name || brand.name,
       `Submitted NPS score ${score}/10.${comment ? ` Comment: ${comment}` : ''}`,
+      brand.agency_id || brand.owner_id || null,
     ]
   );
 
@@ -388,12 +389,13 @@ async function processScheduledSurveyReminders() {
       // Log in audit trail
       try {
         await pool.query(
-          `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address)
-           VALUES ($1, $2, 'Retentio Automation', 'system', 'Automated 1-Click Survey Sent', $3, 'system')`,
+          `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, ip_address, agency_id)
+           VALUES ($1, $2, 'Retentio Automation', 'system', 'Automated 1-Click Survey Sent', $3, 'system', $4)`,
           [
             auditId(),
             new Date().toISOString(),
             `Dispatched automated micro-survey to ${brand.name} (${brand.email || 'client'}) after 1-hour reminder delay.`,
+            brand.agency_id || brand.owner_id || null,
           ]
         );
       } catch (e) {}

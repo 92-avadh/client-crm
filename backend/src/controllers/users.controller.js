@@ -10,16 +10,15 @@ const list = asyncHandler(async (req, res) => {
 });
 
 const get = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
-    return res.status(403).json({ error: "You don't have permission to view this team member." });
-  }
   const user = await users.getUser(req.user, req.params.id);
   if (!user) return res.status(404).json({ error: 'We could not find that team member.' });
   res.json(user);
 });
 
 const create = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'admin') {
+  const perms = req.user.permissions || [];
+  const canManage = req.user.role === 'admin' || req.user.role === 'hr' || perms.includes('team');
+  if (!canManage) {
     return res.status(403).json({ error: "You don't have permission to add team members." });
   }
   const body = makeValidator(req.body)
@@ -43,8 +42,11 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  // Admins may edit anyone; other users may edit only themselves.
-  if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
+  // Admins, HR and team managers may edit others; users may always edit themselves.
+  const perms = req.user.permissions || [];
+  const isSelf = req.user.id === req.params.id;
+  const canManage = req.user.role === 'admin' || req.user.role === 'hr' || perms.includes('team');
+  if (!canManage && !isSelf) {
     return res.status(403).json({ error: "You don't have permission to edit this team member." });
   }
   const body = makeValidator(req.body)
@@ -77,7 +79,9 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const deactivate = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'admin') {
+  const perms = req.user.permissions || [];
+  const canManage = req.user.role === 'admin' || req.user.role === 'hr' || perms.includes('team');
+  if (!canManage) {
     return res.status(403).json({ error: "You don't have permission to deactivate team members." });
   }
   const user = await users.deactivateUser(req.user, req.params.id);

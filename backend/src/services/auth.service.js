@@ -15,6 +15,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 
 const { getAgencyId } = require('../utils/agency');
+const { resolvePermissions } = require('../utils/permissions');
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_COOLDOWN_S = 60;
@@ -22,11 +23,7 @@ const MAX_OTP_ATTEMPTS = 5;
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 function makeToken(user) {
-  let perms = [];
-  if (Array.isArray(user.permissions)) perms = user.permissions;
-  else if (typeof user.permissions === 'string') {
-    try { perms = JSON.parse(user.permissions); } catch { perms = []; }
-  }
+  const perms = resolvePermissions(user.role, user.permissions);
   const agencyId = getAgencyId(user);
   return jwt.sign(
     { id: user.id, name: user.name, email: user.email, role: user.role, brandId: user.brand_id, agencyId, permissions: perms },
@@ -247,8 +244,8 @@ async function login({ email, password, agencyId, portalType }) {
     throw err;
   }
 
-  if (portalType === 'company' && user.role !== 'admin') {
-    const err = new Error('This portal is reserved for Agency / Company owners. Please sign in through the Employee portal.');
+  if (portalType === 'company' && user.role !== 'admin' && user.role !== 'hr') {
+    const err = new Error('This portal is reserved for Agency / Company owners and managers. Please sign in through the Employee portal.');
     err.status = 403;
     err.code = 'EMPLOYEE_ON_COMPANY_PORTAL';
     throw err;
@@ -275,11 +272,7 @@ async function login({ email, password, agencyId, portalType }) {
     throw err;
   }
 
-  let perms = [];
-  if (Array.isArray(user.permissions)) perms = user.permissions;
-  else if (typeof user.permissions === 'string') {
-    try { perms = JSON.parse(user.permissions); } catch { perms = []; }
-  }
+  const perms = resolvePermissions(user.role, user.permissions);
 
   return {
     token: makeToken(user),
@@ -293,6 +286,7 @@ async function login({ email, password, agencyId, portalType }) {
       designation: user.designation || 'Team Member',
       brandId: user.brand_id,
       agencyId: getAgencyId(user),
+      createdBy: user.created_by || null,
       permissions: perms,
     },
   };
