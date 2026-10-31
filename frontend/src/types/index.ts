@@ -325,6 +325,8 @@ export interface AppSettings {
   defaultGstRate: number;
   defaultHsnSac: string;
   invoicePrefix: string;
+  invoiceDesign?: any;
+  bankName?: string;
   bankAccountName: string;
   bankAccountNumber: string;
   bankIfsc: string;

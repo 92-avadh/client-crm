@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultGstRate: 18,
   defaultHsnSac: '998231',
   invoicePrefix: 'INV-',
+  bankName: '',
   bankAccountName: '',
   bankAccountNumber: '',
   bankIfsc: '',

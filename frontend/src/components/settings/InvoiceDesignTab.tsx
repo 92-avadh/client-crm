@@ -29,6 +29,13 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
       subtitle="Customize the look and feel of invoices sent to clients."
     />
 
+    <div style={{ padding: '14px 18px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+      <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Bank Details & Statutory Compliance:</span>{' '}
+      Settlement bank accounts, IFSC, branch, and UPI QR codes printed on invoices are configured under{' '}
+      <strong style={{ color: 'var(--accent-text)' }}>Agency & Financials &gt; Banking & Gateways</strong>.{' '}
+      Default GST rates and GSTIN are configured under <strong style={{ color: 'var(--accent-text)' }}>Tax & GST</strong>.
+    </div>
+
     {/* Logo */}
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Company Logo</label>

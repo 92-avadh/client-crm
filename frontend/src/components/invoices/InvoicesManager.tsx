@@ -287,7 +287,8 @@ export const InvoicesManager: React.FC = () => {
 
       try {
         const hasGst = !!brand.gstNumber;
-        const gstRate = 0.18;
+        const defaultRate = typeof settings.defaultGstRate === 'number' && settings.defaultGstRate >= 0 ? settings.defaultGstRate : 18;
+        const gstRate = defaultRate / 100;
         const subtotal = brand.monthlyFee;
         const cgst = hasGst ? (subtotal * gstRate) / 2 : 0;
         const sgst = hasGst ? (subtotal * gstRate) / 2 : 0;

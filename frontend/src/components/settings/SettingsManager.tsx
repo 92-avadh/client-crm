@@ -61,15 +61,25 @@ export const SettingsManager: React.FC = () => {
   const [showAddHoliday, setShowAddHoliday] = useState(false);
   const [newHoliday, setNewHoliday] = useState({ title: '', date: '', type: 'Agency Custom' });
 
-  const [invoiceDesign, setInvoiceDesign] = useState<InvoiceDesign>({
-    primaryColor: 'var(--text-primary)',
-    accentColor: 'var(--bg-raised)',
-    template: 'minimal',
-    headerText: '',
-    footerText: '',
-    termsAndConditions: 'Payment due within 15 days of invoice date. Late payment may attract interest.',
-    showLogo: true,
-    showSignature: false,
+  const [invoiceDesign, setInvoiceDesign] = useState<InvoiceDesign>(() => {
+    let saved: Partial<InvoiceDesign> = {};
+    try {
+      const raw = localStorage.getItem('retentio_invoice_design');
+      if (raw) saved = JSON.parse(raw);
+    } catch {}
+    const savedTemplate = localStorage.getItem('retentio_invoice_template') || 'modern';
+    return {
+      primaryColor: 'var(--text-primary)',
+      accentColor: 'var(--bg-raised)',
+      template: savedTemplate,
+      headerText: '',
+      footerText: '',
+      termsAndConditions: 'Payment due within 15 days of invoice date. Late payment may attract interest.',
+      showLogo: true,
+      showSignature: false,
+      ...(settings.invoiceDesign || {}),
+      ...saved,
+    };
   });
 
   const patchSettings = (patch: Partial<AppSettings>) =>
@@ -482,7 +492,16 @@ export const SettingsManager: React.FC = () => {
                 design={invoiceDesign}
                 onChange={(patch) => setInvoiceDesign((prev) => ({ ...prev, ...patch }))}
                 settings={settings}
-                onSave={() => showToast('Invoice design saved', 'success')}
+                onSave={async () => {
+                  try {
+                    localStorage.setItem('retentio_invoice_template', invoiceDesign.template);
+                    localStorage.setItem('retentio_invoice_design', JSON.stringify(invoiceDesign));
+                    await updateSettings({ invoiceDesign });
+                    showToast('Invoice design saved successfully', 'success');
+                  } catch {
+                    showToast('Failed to save invoice design', 'error');
+                  }
+                }}
               />
             )}
 

@@ -347,7 +347,7 @@ export const BankingTab: React.FC<Props> = ({ formData, onChange, onSave }) => (
   <form onSubmit={onSave} style={tabBodyStyle}>
     <TabHeader
       title="Direct Settlement Bank & Razorpay Credentials"
-      subtitle="Client payments settle straight into this account via Razorpay Route."
+      subtitle="Client payments settle straight into this account. These details appear automatically on all client invoices."
     />
 
     <div style={{ padding: '16px 20px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
@@ -356,6 +356,8 @@ export const BankingTab: React.FC<Props> = ({ formData, onChange, onSave }) => (
     </div>
 
     <div style={fieldGridStyle}>
+      <Field label="Bank Name" value={formData.bankName || ''}
+        onChange={(v) => onChange({ bankName: v })} />
       <Field label="Account Beneficiary Name" value={formData.bankAccountName}
         onChange={(v) => onChange({ bankAccountName: v })} />
       <Field label="Bank Account Number" value={formData.bankAccountNumber} mono

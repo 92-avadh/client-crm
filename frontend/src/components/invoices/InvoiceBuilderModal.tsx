@@ -36,6 +36,8 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
 }) => {
   const { settings, currencySymbol = '₹' } = useApp();
   const formatAmt = (n: number) => `${currencySymbol}${Number(n || 0).toLocaleString()}`;
+  const effectiveGstRate = typeof settings.defaultGstRate === 'number' && settings.defaultGstRate >= 0 ? settings.defaultGstRate : 18;
+  const halfGstRate = (effectiveGstRate / 2).toFixed(1).replace(/\.0$/, '');
   if (!open) return null;
 
   return (
@@ -99,11 +101,26 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               <div>
                 <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' as const }}>Tax Mechanism</span>
                 <div style={{ color: 'var(--success-text)', fontWeight: 600, marginTop: 2 }}>
-                  {totals.isInterstate ? 'Interstate (IGST 18%)' : 'Intrastate (CGST 9% + SGST 9%)'}
+                  {totals.isInterstate ? `Interstate (IGST ${effectiveGstRate}%)` : `Intrastate (CGST ${halfGstRate}% + SGST ${halfGstRate}%)`}
                 </div>
               </div>
             </div>
           )}
+
+          {/* Invoice Settlement Account pill */}
+          <div style={{ padding: '9px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+            <div>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Bank Details on Invoice:</span>{' '}
+              {settings.bankName ? (
+                <span>
+                  <strong>{settings.bankName}</strong> (A/C: {settings.bankAccountNumber || 'Not set'}, IFSC: {settings.bankIfsc || 'Not set'})
+                </span>
+              ) : (
+                <span>{settings.bankAccountNumber ? `A/C ${settings.bankAccountNumber} (${settings.bankIfsc || ''})` : 'Default Bank (Configure in Settings > Banking & Gateways)'}</span>
+              )}
+            </div>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Configured in Settings</span>
+          </div>
 
           {/* Line items */}
           <div>
@@ -141,7 +158,7 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               <label style={{ fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input type="checkbox" checked={hasGst} onChange={(e) => onHasGstChange(e.target.checked)}
                   style={{ width: 16, height: 16, accentColor: 'var(--accent-text)' }} />
-                <span>Apply GST ({typeof settings.defaultGstRate === 'number' ? settings.defaultGstRate : 18}%) to this invoice</span>
+                <span>Apply GST ({effectiveGstRate}%) to this invoice</span>
               </label>
               <span className="font-amount" style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
                 Subtotal: <strong style={{ color: 'var(--text-primary)' }}>{formatAmt(totals.subtotal)}</strong>
@@ -152,17 +169,17 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-secondary)' }}>
                 {totals.isInterstate ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>IGST ({typeof settings.defaultGstRate === 'number' ? settings.defaultGstRate : 18}%):</span>
+                    <span>IGST ({effectiveGstRate}%):</span>
                     <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{formatAmt(totals.igst)}</span>
                   </div>
                 ) : (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>CGST ({(typeof settings.defaultGstRate === 'number' ? settings.defaultGstRate : 18) / 2}%):</span>
+                      <span>CGST ({halfGstRate}%):</span>
                       <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{formatAmt(totals.cgst)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>SGST ({(typeof settings.defaultGstRate === 'number' ? settings.defaultGstRate : 18) / 2}%):</span>
+                      <span>SGST ({halfGstRate}%):</span>
                       <span className="font-amount" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{formatAmt(totals.sgst)}</span>
                     </div>
                   </>

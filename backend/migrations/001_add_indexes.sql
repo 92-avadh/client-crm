@@ -34,3 +34,6 @@ CREATE INDEX IF NOT EXISTS idx_message_attachments_message_id ON message_attachm
 CREATE INDEX IF NOT EXISTS idx_otp_verifications_email ON otp_verifications(email);
 CREATE INDEX IF NOT EXISTS idx_otp_verifications_purpose ON otp_verifications(purpose);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
+
+-- Settings bank_name column
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS bank_name VARCHAR(150);

@@ -32,9 +32,10 @@ function mapSettings(r) {
     goals,
     dashboardLayout: r.dashboard_layout || 'default',
     dashboardFocus: r.dashboard_focus || 'balanced',
-    defaultGstRate: parseFloat(r.default_gst_rate || 18),
+    defaultGstRate: parseFloat(r.default_gst_rate != null ? r.default_gst_rate : 18),
     defaultHsnSac: r.default_hsn_sac,
     invoicePrefix: r.invoice_prefix,
+    bankName: r.bank_name || '',
     bankAccountName: r.bank_account_name,
     bankAccountNumber: r.bank_account_number,
     bankIfsc: r.bank_ifsc,
@@ -65,7 +66,7 @@ async function getSettings(user) {
   const settingsId = agencyId === 'usr_admin' ? 'main' : 'set_' + agencyId;
 
   let { rows } = await pool.query(
-    "SELECT * FROM settings WHERE agency_id = $1 OR id = $2 OR id = $1 LIMIT 1",
+    "SELECT * FROM settings WHERE agency_id = $1 OR id = $2 OR id = $1 ORDER BY CASE WHEN agency_id = $1 THEN 0 WHEN id = $2 THEN 1 ELSE 2 END LIMIT 1",
     [agencyId, settingsId]
   );
   if (!rows.length) {
@@ -93,9 +94,9 @@ async function updateSettings(user, data) {
       razorpay_key_id, razorpay_connected, subscription_plan_name, subscription_price, subscription_billing_cycle,
       subscription_renewal_date, subscription_status, retention_threshold_days, whatsapp_enabled, invoice_design,
       currency, currency_symbol, industry, team_size, goals, dashboard_layout, dashboard_focus,
-      slack_webhook_url, discord_webhook_url, agency_id, updated_at
+      slack_webhook_url, discord_webhook_url, agency_id, bank_name, updated_at
     )
-    VALUES ($35, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $36, NOW())
+    VALUES ($35, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $36, $37, NOW())
     ON CONFLICT (id) DO UPDATE SET
       company_name = COALESCE($1, settings.company_name),
       company_email = COALESCE($2, settings.company_email),
@@ -132,6 +133,7 @@ async function updateSettings(user, data) {
       slack_webhook_url = COALESCE($33, settings.slack_webhook_url),
       discord_webhook_url = COALESCE($34, settings.discord_webhook_url),
       agency_id = COALESCE(settings.agency_id, $36),
+      bank_name = COALESCE($37, settings.bank_name),
       updated_at = NOW()
     RETURNING *`,
     [
@@ -171,6 +173,7 @@ async function updateSettings(user, data) {
       data.discordWebhookUrl !== undefined ? data.discordWebhookUrl : null,
       settingsId,
       agencyId,
+      data.bankName ?? null,
     ]
   );
   return mapSettings(rows[0]);

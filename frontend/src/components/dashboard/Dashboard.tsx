@@ -214,7 +214,7 @@ export const Dashboard: React.FC = () => {
         b?.status === 'Active' &&
         (Number(b?.monthlyFee) || 0) > 0 &&
         b?.paymentStatus === 'Paid' &&
-        !safePayments.some(p => p && p.brandId === b.id && p.status === 'Success')
+        !safePayments.some(p => p && p.brandId === b.id)
     )
     .reduce((a, b) => a + (Number(b?.monthlyFee) || 0), 0);
 
@@ -237,7 +237,7 @@ export const Dashboard: React.FC = () => {
         b?.status === 'Active' &&
         (Number(b?.monthlyFee) || 0) > 0 &&
         b?.paymentStatus === 'Pending' &&
-        !safePayments.some(p => p && p.brandId === b.id && p.status === 'Success') &&
+        !safePayments.some(p => p && p.brandId === b.id) &&
         !safeInvoices.some(i => i && i.brandId === b.id && i.status !== 'Draft' && i.status !== 'Cancelled')
     )
     .reduce((a, b) => a + (Number(b?.monthlyFee) || 0), 0);

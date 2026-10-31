@@ -721,8 +721,14 @@ export const AppProvider: React.FC<{
   const [settings, setSettings] = useState<AppSettings>(() => {
     const localCurr = localStorage.getItem('retentio_currency') || 'INR';
     const localSymbol = localStorage.getItem('retentio_currency_symbol') || '₹';
+    let cachedSettings: Partial<AppSettings> = {};
+    try {
+      const raw = localStorage.getItem('retentio_settings');
+      if (raw) cachedSettings = JSON.parse(raw);
+    } catch {}
     return {
       ...DEFAULT_SETTINGS,
+      ...cachedSettings,
       currency: localCurr,
       currencySymbol: localSymbol,
     };
@@ -732,7 +738,11 @@ export const AppProvider: React.FC<{
   useEffect(() => {
     api.settings.get().then((res) => {
       if (res) {
-        setSettings((prev) => ({ ...prev, ...res }));
+        setSettings((prev) => {
+          const next = { ...prev, ...res };
+          try { localStorage.setItem('retentio_settings', JSON.stringify(next)); } catch {}
+          return next;
+        });
         if (res.currency) localStorage.setItem('retentio_currency', res.currency);
         if (res.currencySymbol) localStorage.setItem('retentio_currency_symbol', res.currencySymbol);
       }
@@ -1750,11 +1760,43 @@ export const AppProvider: React.FC<{
     try {
       await api.payments.update(id, { status });
     } catch (_err) {}
-    setPayments(prev => {
-      const next = prev.map(p => (p.id === id ? { ...p, status } : p));
-      try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
-      return next;
-    });
+    const targetPayment = payments.find(p => p.id === id);
+    const nextPayments = payments.map(p => (p.id === id ? { ...p, status } : p));
+    setPayments(nextPayments);
+    try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(nextPayments)); } catch {}
+
+    if (targetPayment) {
+      // 1. Synchronize brand paymentStatus
+      if (targetPayment.brandId) {
+        const brandPayments = nextPayments.filter(p => p.brandId === targetPayment.brandId);
+        const hasVerified = brandPayments.some(p => p.status === 'Success');
+        const newBrandStatus: 'Paid' | 'Pending' = hasVerified ? 'Paid' : 'Pending';
+        setBrands(prev => {
+          const next = prev.map(b => b.id === targetPayment.brandId ? { ...b, paymentStatus: newBrandStatus } : b);
+          try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
+          return next;
+        });
+        try { api.brands.update(targetPayment.brandId, { paymentStatus: newBrandStatus }).catch(() => {}); } catch {}
+      }
+
+      // 2. Synchronize linked invoice if present
+      if (targetPayment.invoiceId) {
+        setInvoices(prev => {
+          const next = prev.map(inv => {
+            if (inv.id === targetPayment.invoiceId) {
+              const invPayments = nextPayments.filter(p => p.invoiceId === inv.id && p.status === 'Success');
+              const totalPaid = invPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+              const newStatus: Invoice['status'] = totalPaid >= inv.totalAmount ? 'Paid' : (totalPaid > 0 ? 'Partially Paid' : 'Sent');
+              return { ...inv, paidAmount: totalPaid, status: newStatus };
+            }
+            return inv;
+          });
+          try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
+          return next;
+        });
+      }
+    }
+
     showToast(
       status === 'Success'
         ? `Payment marked as Received & Settled!`
@@ -1769,14 +1811,44 @@ export const AppProvider: React.FC<{
       showToast('Unauthorized: Admin or Manager access required to delete payments', 'error');
       return;
     }
+    const targetPayment = payments.find(p => p.id === id);
     try {
       await api.payments.delete(id);
     } catch (_err) {}
-    setPayments(prev => {
-      const next = prev.filter(p => p.id !== id);
-      try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
-      return next;
-    });
+    const nextPayments = payments.filter(p => p.id !== id);
+    setPayments(nextPayments);
+    try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(nextPayments)); } catch {}
+
+    if (targetPayment) {
+      if (targetPayment.brandId) {
+        const brandPayments = nextPayments.filter(p => p.brandId === targetPayment.brandId);
+        const hasVerified = brandPayments.some(p => p.status === 'Success');
+        const newBrandStatus: 'Paid' | 'Pending' = hasVerified ? 'Paid' : 'Pending';
+        setBrands(prev => {
+          const next = prev.map(b => b.id === targetPayment.brandId ? { ...b, paymentStatus: newBrandStatus } : b);
+          try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
+          return next;
+        });
+        try { api.brands.update(targetPayment.brandId, { paymentStatus: newBrandStatus }).catch(() => {}); } catch {}
+      }
+
+      if (targetPayment.invoiceId) {
+        setInvoices(prev => {
+          const next = prev.map(inv => {
+            if (inv.id === targetPayment.invoiceId) {
+              const invPayments = nextPayments.filter(p => p.invoiceId === inv.id && p.status === 'Success');
+              const totalPaid = invPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+              const newStatus: Invoice['status'] = totalPaid >= inv.totalAmount ? 'Paid' : (totalPaid > 0 ? 'Partially Paid' : 'Sent');
+              return { ...inv, paidAmount: totalPaid, status: newStatus };
+            }
+            return inv;
+          });
+          try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
+          return next;
+        });
+      }
+    }
+
     showToast('Payment record deleted', 'success');
   };
 
@@ -2457,7 +2529,11 @@ export const AppProvider: React.FC<{
   const updateSettings = async (updates: Partial<AppSettings>) => {
     try {
       const updated = await api.settings.update(updates);
-      setSettings(prev => ({ ...prev, ...updated }));
+      setSettings(prev => {
+        const next = { ...prev, ...updated };
+        try { localStorage.setItem('retentio_settings', JSON.stringify(next)); } catch {}
+        return next;
+      });
       if (updated.currency) {
         localStorage.setItem('retentio_currency', updated.currency);
       }
@@ -2465,7 +2541,11 @@ export const AppProvider: React.FC<{
         localStorage.setItem('retentio_currency_symbol', updated.currencySymbol);
       }
     } catch (err) {
-      setSettings(prev => ({ ...prev, ...updates }));
+      setSettings(prev => {
+        const next = { ...prev, ...updates };
+        try { localStorage.setItem('retentio_settings', JSON.stringify(next)); } catch {}
+        return next;
+      });
       if (updates.currency) {
         localStorage.setItem('retentio_currency', updates.currency);
       }

@@ -31,6 +31,7 @@ const update = asyncHandler(async (req, res) => {
     .number('defaultGstRate', { min: 0, max: 100, label: 'Default GST rate' })
     .optionalString('defaultHsnSac', { max: 20, label: 'HSN/SAC code' })
     .optionalString('invoicePrefix', { max: 20, label: 'Invoice prefix' })
+    .optionalString('bankName', { max: 150, label: 'Bank name' })
     .optionalString('bankAccountName', { max: 150, label: 'Account holder name' })
     .optionalString('bankAccountNumber', { max: 40, label: 'Account number' })
     .optionalString('bankIfsc', { max: 20, label: 'IFSC code' })

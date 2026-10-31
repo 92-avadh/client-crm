@@ -211,6 +211,28 @@ async function updatePayment(user, id, data) {
     }
   }
 
+  // Keep invoice paid_amount consistent when payment status transitions
+  if (data.status && prev.status !== data.status && rows[0].invoice_id) {
+    const payAmount = Number(rows[0].amount) || 0;
+    if (data.status === 'Pending' && prev.status === 'Success') {
+      await pool.query(
+        `UPDATE invoices SET
+         paid_amount = GREATEST(0, paid_amount - $1),
+         status = CASE WHEN GREATEST(0, paid_amount - $1) <= 0 THEN 'Sent' ELSE 'Partially Paid' END
+         WHERE id = $2`,
+        [payAmount, rows[0].invoice_id]
+      );
+    } else if (data.status === 'Success' && prev.status === 'Pending') {
+      await pool.query(
+        `UPDATE invoices SET
+         paid_amount = paid_amount + $1,
+         status = CASE WHEN paid_amount + $1 >= total_amount THEN 'Paid' ELSE 'Partially Paid' END
+         WHERE id = $2`,
+        [payAmount, rows[0].invoice_id]
+      );
+    }
+  }
+
   return payment;
 }
 

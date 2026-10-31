@@ -13,6 +13,19 @@ interface TemplateProps {
 const inr = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const inrPlain = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
+export function getGstBreakdown(invoice: Invoice, settings: AppSettings) {
+  const totalTax = (invoice.igstAmount || 0) + (invoice.cgstAmount || 0) + (invoice.sgstAmount || 0);
+  let effectiveRate = typeof settings.defaultGstRate === 'number' && settings.defaultGstRate >= 0
+    ? settings.defaultGstRate
+    : 18;
+  if (invoice.subtotal > 0 && totalTax > 0) {
+    effectiveRate = Math.round((totalTax / invoice.subtotal) * 100);
+  }
+  const gstRateDec = effectiveRate / 100;
+  const halfRate = (effectiveRate / 2).toFixed(1).replace(/\.0$/, '');
+  return { effectiveRate, gstRateDec, halfRate };
+}
+
 /**
  * Authentic Circular Stamp matching Swipe's signature badge
  */
@@ -101,6 +114,7 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
   const amountInWords = numberToWordsINR(invoice.totalAmount);
   const totalQty = invoice.items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
   const placeOfSupply = brand?.state ? `${settings.companyState || '27'}-${brand.state.toUpperCase()}` : `${settings.companyState || '27-MAHARASHTRA'}`;
+  const { effectiveRate, gstRateDec, halfRate } = getGstBreakdown(invoice, settings);
 
   return (
     <div className="swipe-template-root swipe-modern" style={{ fontFamily: 'Inter, -apple-system, sans-serif', color: '#0f172a', background: '#ffffff', padding: 24, fontSize: 11.5, lineHeight: 1.45 }}>
@@ -212,7 +226,7 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
         </thead>
         <tbody>
           {invoice.items.map((it, idx) => {
-            const itemTax = invoice.hasGst ? ((it.amount * 0.18) / 1.18) : 0;
+            const itemTax = invoice.hasGst && gstRateDec > 0 ? ((it.amount * gstRateDec) / (1 + gstRateDec)) : 0;
             const itemTaxable = it.amount - itemTax;
             return (
               <tr key={it.id || idx} style={{ borderBottom: '1px solid #e2e8f0', verticalAlign: 'top' }}>
@@ -234,7 +248,7 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
                   {Number(itemTaxable || it.amount).toFixed(2)}
                 </td>
                 <td style={{ padding: '8px 8px', textAlign: 'right', color: '#475569' }}>
-                  {invoice.hasGst ? `${Number(itemTax).toFixed(2)} (${invoice.gstType === 'IGST' ? '18%' : '18%'})` : '0.00'}
+                  {invoice.hasGst ? `${Number(itemTax).toFixed(2)} (${effectiveRate}%)` : '0.00'}
                 </td>
                 <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
                   {Number(it.amount).toFixed(2)}
@@ -259,7 +273,7 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
 
           {invoice.hasGst && invoice.gstType === 'IGST' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-              <span>IGST 18.0%</span>
+              <span>IGST {effectiveRate}%</span>
               <span style={{ fontWeight: 600, color: '#0f172a' }}>{inr(invoice.igstAmount)}</span>
             </div>
           )}
@@ -267,11 +281,11 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           {invoice.hasGst && invoice.gstType !== 'IGST' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-                <span>CGST 9.0%</span>
+                <span>CGST {halfRate}%</span>
                 <span style={{ fontWeight: 600, color: '#0f172a' }}>{inr(invoice.cgstAmount)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-                <span>SGST 9.0%</span>
+                <span>SGST {halfRate}%</span>
                 <span style={{ fontWeight: 600, color: '#0f172a' }}>{inr(invoice.sgstAmount)}</span>
               </div>
             </>
@@ -324,7 +338,13 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Bank Details:</div>
           <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: '3px 8px', fontSize: 10.5, color: '#334155' }}>
             <span style={{ color: '#64748b' }}>Bank:</span>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>{settings.bankAccountName || 'YES BANK'}</span>
+            <span style={{ fontWeight: 700, color: '#0f172a' }}>{settings.bankName || 'YES BANK'}</span>
+            {settings.bankAccountName && (
+              <>
+                <span style={{ color: '#64748b' }}>A/c Name:</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{settings.bankAccountName}</span>
+              </>
+            )}
             <span style={{ color: '#64748b' }}>Account #:</span>
             <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber || '667899992222445'}</span>
             <span style={{ color: '#64748b' }}>IFSC:</span>
@@ -372,6 +392,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
   const amountInWords = numberToWordsINR(invoice.totalAmount);
   const totalQty = invoice.items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
   const placeOfSupply = brand?.state ? `${settings.companyState || '36'}-${brand.state.toUpperCase()}` : `${settings.companyState || '36-TELANGANA'}`;
+  const { effectiveRate, gstRateDec, halfRate } = getGstBreakdown(invoice, settings);
 
   return (
     <div className="swipe-template-root swipe-classic" style={{ fontFamily: 'Inter, -apple-system, sans-serif', color: '#0f172a', background: '#ffffff', padding: 20, fontSize: 11 }}>
@@ -476,7 +497,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
           </thead>
           <tbody>
             {invoice.items.map((it, idx) => {
-              const itemTax = invoice.hasGst ? ((it.amount * 0.18) / 1.18) : 0;
+              const itemTax = invoice.hasGst && gstRateDec > 0 ? ((it.amount * gstRateDec) / (1 + gstRateDec)) : 0;
               const itemTaxable = it.amount - itemTax;
               return (
                 <tr key={it.id || idx} style={{ borderBottom: '1px solid #cbd5e1' }}>
@@ -497,7 +518,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
                     {Number(itemTaxable || it.amount).toFixed(2)}
                   </td>
                   <td style={{ padding: '8px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>
-                    {invoice.hasGst ? `${Number(itemTax).toFixed(2)} (18%)` : '0.00'}
+                    {invoice.hasGst ? `${Number(itemTax).toFixed(2)} (${effectiveRate}%)` : '0.00'}
                   </td>
                   <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 800 }}>
                     {Number(it.amount).toFixed(2)}
@@ -520,7 +541,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
             </div>
             {invoice.hasGst && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#475569', fontWeight: 600 }}>{invoice.gstType === 'IGST' ? 'IGST 18.0%' : 'CGST + SGST (18%)'}</span>
+                <span style={{ color: '#475569', fontWeight: 600 }}>{invoice.gstType === 'IGST' ? `IGST ${effectiveRate}%` : `CGST + SGST (${effectiveRate}%)`}</span>
                 <span style={{ fontWeight: 700 }}>₹{(invoice.igstAmount || (invoice.cgstAmount + invoice.sgstAmount)).toFixed(2)}</span>
               </div>
             )}
@@ -549,13 +570,13 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
             </thead>
             <tbody>
               {invoice.items.map((it, i) => {
-                const tax = invoice.hasGst ? ((it.amount * 0.18) / 1.18) : 0;
+                const tax = invoice.hasGst && gstRateDec > 0 ? ((it.amount * gstRateDec) / (1 + gstRateDec)) : 0;
                 const val = it.amount - tax;
                 return (
                   <tr key={i} style={{ borderBottom: '1px solid #cbd5e1' }}>
                     <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', fontFamily: 'monospace' }}>{it.hsnSac || '87038070'}</td>
                     <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>{val.toFixed(2)}</td>
-                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'center' }}>{invoice.hasGst ? '18%' : '0%'}</td>
+                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'center' }}>{invoice.hasGst ? `${effectiveRate}%` : '0%'}</td>
                     <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>{tax.toFixed(2)}</td>
                     <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 700 }}>{tax.toFixed(2)}</td>
                   </tr>
@@ -588,7 +609,13 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
             <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Bank Details:</div>
             <div style={{ display: 'grid', gridTemplateColumns: '65px 1fr', gap: '2px 6px', color: '#334155' }}>
               <span style={{ color: '#64748b' }}>Bank:</span>
-              <span style={{ fontWeight: 700 }}>{settings.bankAccountName || 'YES BANK'}</span>
+              <span style={{ fontWeight: 700 }}>{settings.bankName || 'YES BANK'}</span>
+              {settings.bankAccountName && (
+                <>
+                  <span style={{ color: '#64748b' }}>A/c Name:</span>
+                  <span style={{ fontWeight: 700 }}>{settings.bankAccountName}</span>
+                </>
+              )}
               <span style={{ color: '#64748b' }}>Account #:</span>
               <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber || '667899992222445'}</span>
               <span style={{ color: '#64748b' }}>IFSC:</span>
@@ -642,6 +669,7 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
   const amountInWords = numberToWordsINR(invoice.totalAmount);
   const totalQty = invoice.items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
   const placeOfSupply = brand?.state ? `${settings.companyState || '09'}-${brand.state.toUpperCase()}` : `${settings.companyState || '09-UTTARPRADESH'}`;
+  const { effectiveRate, gstRateDec, halfRate } = getGstBreakdown(invoice, settings);
 
   return (
     <div className="swipe-template-root swipe-navy" style={{ fontFamily: 'Inter, -apple-system, sans-serif', color: '#0f172a', background: '#ffffff', padding: 24, fontSize: 11.5 }}>
@@ -747,11 +775,23 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
             <span>Taxable Amount</span>
             <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.subtotal)}</span>
           </div>
-          {invoice.hasGst && (
+          {invoice.hasGst && invoice.gstType === 'IGST' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-              <span>IGST 18.0%</span>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.igstAmount || (invoice.cgstAmount + invoice.sgstAmount))}</span>
+              <span>IGST {effectiveRate}%</span>
+              <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.igstAmount)}</span>
             </div>
+          )}
+          {invoice.hasGst && invoice.gstType !== 'IGST' && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                <span>CGST {halfRate}%</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.cgstAmount)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                <span>SGST {halfRate}%</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.sgstAmount)}</span>
+              </div>
+            </>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 10.5 }}>
             <span>Round Off</span>
@@ -787,7 +827,13 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
           <div style={{ fontSize: 11, fontWeight: 700, color: '#002c6c', marginBottom: 4 }}>Bank Details:</div>
           <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: '3px 8px', fontSize: 10.5, color: '#334155' }}>
             <span style={{ color: '#64748b' }}>Bank:</span>
-            <span style={{ fontWeight: 700 }}>{settings.bankAccountName || 'YES BANK'}</span>
+            <span style={{ fontWeight: 700 }}>{settings.bankName || 'YES BANK'}</span>
+            {settings.bankAccountName && (
+              <>
+                <span style={{ color: '#64748b' }}>A/c Name:</span>
+                <span style={{ fontWeight: 700 }}>{settings.bankAccountName}</span>
+              </>
+            )}
             <span style={{ color: '#64748b' }}>Account #:</span>
             <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber || '667899992222445'}</span>
             <span style={{ color: '#64748b' }}>IFSC:</span>
@@ -831,6 +877,7 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
   const amountInWords = numberToWordsINR(invoice.totalAmount);
   const totalQty = invoice.items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
   const placeOfSupply = brand?.state ? brand.state.toUpperCase() : 'TELANGANA';
+  const { effectiveRate, gstRateDec, halfRate } = getGstBreakdown(invoice, settings);
 
   return (
     <div className="swipe-template-root swipe-executive" style={{ fontFamily: 'Inter, -apple-system, sans-serif', color: '#0f172a', background: '#ffffff', padding: 24, fontSize: 11.5 }}>
@@ -929,7 +976,7 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
                 {Number(it.unitPrice || it.amount).toFixed(2)}
               </td>
               <td style={{ padding: '9px 8px', textAlign: 'right', color: '#475569' }}>
-                {invoice.hasGst ? `${((it.amount * 0.18) / 1.18).toFixed(2)} (18%)` : '0.00'}
+                {invoice.hasGst ? `${((it.amount * (gstRateDec || 0.18)) / (1 + (gstRateDec || 0.18))).toFixed(2)} (${effectiveRate}%)` : '0.00'}
               </td>
               <td style={{ padding: '9px 8px', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
                 {Number(it.amount).toFixed(2)}
@@ -949,17 +996,17 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
           {invoice.hasGst && invoice.gstType !== 'IGST' ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-                <span>CGST (9%)</span>
+                <span>CGST ({halfRate}%)</span>
                 <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.cgstAmount)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-                <span>SGST (9%)</span>
+                <span>SGST ({halfRate}%)</span>
                 <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.sgstAmount)}</span>
               </div>
             </>
           ) : invoice.hasGst ? (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-              <span>IGST (18%)</span>
+              <span>IGST ({effectiveRate}%)</span>
               <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.igstAmount)}</span>
             </div>
           ) : null}
@@ -992,7 +1039,13 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
           <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Bank Details:</div>
           <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: '3px 8px', fontSize: 10.5, color: '#334155' }}>
             <span style={{ color: '#64748b' }}>Bank:</span>
-            <span style={{ fontWeight: 700 }}>{settings.bankAccountName || 'HDFC Bank'}</span>
+            <span style={{ fontWeight: 700 }}>{settings.bankName || 'HDFC Bank'}</span>
+            {settings.bankAccountName && (
+              <>
+                <span style={{ color: '#64748b' }}>A/c Name:</span>
+                <span style={{ fontWeight: 700 }}>{settings.bankAccountName}</span>
+              </>
+            )}
             <span style={{ color: '#64748b' }}>Account #:</span>
             <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber || '50200034567891'}</span>
             <span style={{ color: '#64748b' }}>IFSC Code:</span>

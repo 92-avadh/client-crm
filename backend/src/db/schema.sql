@@ -322,6 +322,7 @@ CREATE TABLE IF NOT EXISTS settings (
   default_gst_rate NUMERIC(5,2) DEFAULT 18,
   default_hsn_sac VARCHAR(20),
   invoice_prefix VARCHAR(50) DEFAULT 'INV-2026-',
+  bank_name VARCHAR(150),
   bank_account_name VARCHAR(200),
   bank_account_number VARCHAR(50),
   bank_ifsc VARCHAR(20),
