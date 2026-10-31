@@ -192,8 +192,8 @@ export const normalizeBrandsList = (payload: any): Brand[] | null => {
     name: b?.name || 'Unnamed Client',
     ownerName: b?.ownerName || '',
     serviceDetails: b?.serviceDetails || '',
-    paymentStatus: b?.paymentStatus || 'Paid',
     status: b?.status || 'Active',
+    paymentStatus: (b?.status === 'Churned' || b?.status === 'Inactive') ? 'Pending' : (b?.paymentStatus || 'Pending'),
     contractStartDate: normalizeDateStr(b?.contractStartDate),
     contractEndDate: normalizeDateStr(b?.contractEndDate),
     onboardingDate: normalizeDateStr(b?.onboardingDate),
@@ -1368,7 +1368,8 @@ export const AppProvider: React.FC<{
   // ---- Brand CRUD ----
   const addBrand = async (brandData: any): Promise<Brand> => {
     const selectedStatus = brandData.status || 'Active';
-    const payStatus = brandData.paymentStatus === 'Paid' ? 'Paid' : 'Pending';
+    const isChurnedOrInactive = selectedStatus === 'Churned' || selectedStatus === 'Inactive';
+    const payStatus = isChurnedOrInactive ? 'Pending' : (brandData.paymentStatus === 'Paid' ? 'Paid' : 'Pending');
     const fee = Number(brandData.monthlyFee) || 0;
 
     const rawMemberIds = Array.isArray(brandData.assignedMemberIds) ? brandData.assignedMemberIds : [];
@@ -1443,8 +1444,10 @@ export const AppProvider: React.FC<{
   };
 
   const updateBrand = async (id: string, updates: Partial<Brand>) => {
+    const isInactiveOrChurned = updates.status === 'Churned' || updates.status === 'Inactive';
     const normalizedUpdates = {
       ...updates,
+      ...(isInactiveOrChurned ? { paymentStatus: 'Pending' as const } : {}),
       ...(updates.contractStartDate !== undefined ? { contractStartDate: normalizeDateStr(updates.contractStartDate) } : {}),
       ...(updates.contractEndDate !== undefined ? { contractEndDate: normalizeDateStr(updates.contractEndDate) } : {}),
     };
@@ -1461,7 +1464,14 @@ export const AppProvider: React.FC<{
       return next;
     });
 
-    if (updates.paymentStatus || updates.monthlyFee !== undefined) {
+    if (isInactiveOrChurned) {
+      // For churned or inactive clients, ensure any uncollected or pending payments are not marked as active success
+      setPayments(prev => {
+        const next = prev.map(p => p.brandId === id && p.status === 'Pending' ? { ...p, status: 'Pending' as const } : p);
+        try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+    } else if (updates.paymentStatus || updates.monthlyFee !== undefined) {
       const targetPayStatus = updates.paymentStatus === 'Paid' ? 'Success' : 'Pending';
       const fee = updates.monthlyFee !== undefined ? Number(updates.monthlyFee) : 0;
 
@@ -1539,11 +1549,16 @@ export const AppProvider: React.FC<{
       await api.brands.churn(brandId);
     } catch (_err) {}
     setBrands(prev => {
-      const next = prev.map(b => (b.id === brandId ? { ...b, status: 'Churned' as const } : b));
+      const next = prev.map(b => (b.id === brandId ? { ...b, status: 'Churned' as const, paymentStatus: 'Pending' as const } : b));
       try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
       return next;
     });
-    showToast('Client marked as Lost / Inactive', 'info');
+    setPayments(prev => {
+      const next = prev.map(p => (p.brandId === brandId && p.status === 'Pending') ? { ...p, status: 'Pending' as const } : p);
+      try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
+      return next;
+    });
+    showToast('Client marked as Lost / Cancelled (Billing Terminated)', 'info');
   };
 
   // ---- Projects & Tasks ----
@@ -2711,9 +2726,9 @@ export const AppProvider: React.FC<{
     if (perms.includes('clients') || currentUser.role === 'hr' || currentUser.role === 'admin') {
       return brands;
     }
-    // Team members access clients explicitly assigned to them or where they have assigned tasks
+    // Team members access active clients explicitly assigned to them or where they have assigned tasks
     const taskBrandIds = new Set((tasks || []).filter(t => t && (t.assigneeId === currentUser.id || t.ownerId === currentUser.id)).map(t => t.brandId));
-    return brands.filter((b: Brand) => (Array.isArray(b.assignedMemberIds) && b.assignedMemberIds.includes(currentUser.id)) || taskBrandIds.has(b.id));
+    return brands.filter((b: Brand) => b && b.status === 'Active' && ((Array.isArray(b.assignedMemberIds) && b.assignedMemberIds.includes(currentUser.id)) || taskBrandIds.has(b.id)));
   }, [brands, tasks, currentUser]);
 
   const visibleTasks = useMemo((): Task[] => {

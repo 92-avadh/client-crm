@@ -410,7 +410,7 @@ export const Dashboard: React.FC = () => {
       });
     });
 
-    safeBrands.slice(0, 2).forEach(b => {
+    activeBrands.slice(0, 2).forEach(b => {
       if (!b) return;
       items.push({
         id: `brand_${b.id}`,
@@ -1237,7 +1237,7 @@ export const Dashboard: React.FC = () => {
             {/* View 2: Client Revenue Share Distribution */}
             {revenueView === 'clients' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-                {brands.length === 0 ? (
+                {activeBrands.length === 0 ? (
                   <div
                     style={{
                       padding: '28px 16px',
@@ -1246,11 +1246,11 @@ export const Dashboard: React.FC = () => {
                       fontSize: 13,
                     }}
                   >
-                    No clients added yet.
+                    No active clients contributing to recurring revenue.
                   </div>
                 ) : (
-                  safeBrands.slice(0, 5).map(b => {
-                    const total = safeBrands.reduce((a, x) => a + (Number(x?.monthlyFee) || 0), 0);
+                  activeBrands.slice(0, 5).map(b => {
+                    const total = activeBrands.reduce((a, x) => a + (Number(x?.monthlyFee) || 0), 0);
                     const fee = Number(b?.monthlyFee) || 0;
                     const pct = total > 0 ? Math.round((fee / total) * 100) : 0;
                     return (

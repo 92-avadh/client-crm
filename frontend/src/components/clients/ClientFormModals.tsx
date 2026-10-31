@@ -681,9 +681,18 @@ export const EditClientModal: React.FC<EditProps> = ({
 
             <FieldRow>
               <FormSelect label="Account Status" value={formData.status || 'Active'}
-                options={STATUS_OPTIONS} onChange={(v) => onFormChange({ status: v })} />
-              <FormSelect label="Payment Status" value={formData.paymentStatus}
-                options={PAYMENT_OPTIONS} onChange={(v) => onFormChange({ paymentStatus: v as any })} />
+                options={STATUS_OPTIONS} onChange={(v) => {
+                  const isTerminated = v === 'Churned' || v === 'Inactive';
+                  onFormChange({
+                    status: v,
+                    ...(isTerminated ? { paymentStatus: 'Pending' } : {}),
+                  });
+                }} />
+              <FormSelect label="Payment Status" value={(formData.status === 'Churned' || formData.status === 'Inactive') ? 'Pending' : formData.paymentStatus}
+                options={PAYMENT_OPTIONS}
+                disabled={formData.status === 'Churned' || formData.status === 'Inactive'}
+                helper={(formData.status === 'Churned' || formData.status === 'Inactive') ? 'Deactivated for churned/inactive accounts' : undefined}
+                onChange={(v) => onFormChange({ paymentStatus: v as any })} />
             </FieldRow>
           </div>
 

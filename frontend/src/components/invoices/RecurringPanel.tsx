@@ -46,7 +46,7 @@ export const RecurringPanel: React.FC<Props> = ({
   const today = new Date();
   const todayDay = today.getDate();
 
-  const scheduled = brands.filter((brand) => recurringIds.has(brand.id));
+  const scheduled = brands.filter((brand) => recurringIds.has(brand.id) && brand.status === 'Active');
 
   const dueBrands = scheduled.filter(
     (brand) => !pausedIds.has(brand.id) && brand.billingCycleDay <= todayDay,

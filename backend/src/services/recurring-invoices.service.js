@@ -118,7 +118,7 @@ async function generateDueRecurring() {
     `SELECT ri.*, b.name as brand_name, b.monthly_fee, b.currency, b.currency_symbol
      FROM recurring_invoices ri
      LEFT JOIN brands b ON b.id = ri.brand_id
-     WHERE ri.status = 'Active' AND ri.next_due_date <= $1`,
+     WHERE ri.status = 'Active' AND ri.next_due_date <= $1 AND (b.status = 'Active' OR b.status IS NULL)`,
     [today]
   );
 

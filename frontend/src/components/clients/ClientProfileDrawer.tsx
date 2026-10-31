@@ -47,6 +47,18 @@ const capStyle: React.CSSProperties = {
   fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)',
 };
 
+function formatOrdinalDay(day?: number | string | null): string {
+  const d = Number(day) || 1;
+  if (d === 31) return '31st (or Last day) of month';
+  const rem10 = d % 10;
+  const rem100 = d % 100;
+  let suffix = 'th';
+  if (rem10 === 1 && rem100 !== 11) suffix = 'st';
+  else if (rem10 === 2 && rem100 !== 12) suffix = 'nd';
+  else if (rem10 === 3 && rem100 !== 13) suffix = 'rd';
+  return `${d}${suffix} of month`;
+}
+
 /** Client profile drawer with Retainer Scope, Contract Vault, Gross Margin, and Magic Link Portal. */
 export const ClientProfileDrawer: React.FC<Props> = ({
   brand, role, allUsers, invoices, tasks, activeTab, onTabChange, onClose, onChat,
@@ -83,7 +95,8 @@ export const ClientProfileDrawer: React.FC<Props> = ({
   // Client Deliverable / Contractor Expenses & Gross Margin Calculation
   const clientExpenses = (expenses || []).filter(Boolean).filter((e) => e.brandId === brand?.id);
   const totalClientExpenses = clientExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  const monthlyRetainer = Number(brand.monthlyFee || 0);
+  const isChurnedOrInactive = brand.status === 'Churned' || brand.status === 'Inactive';
+  const monthlyRetainer = isChurnedOrInactive ? 0 : Number(brand.monthlyFee || 0);
   const grossProfit = monthlyRetainer - totalClientExpenses;
   const grossMarginPct = monthlyRetainer > 0 ? Math.round((grossProfit / monthlyRetainer) * 100) : 0;
 
@@ -287,15 +300,30 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                 borderRadius: 6,
                 fontSize: 11,
                 fontWeight: 700,
-                background: brand.paymentStatus === 'Paid' ? 'var(--success-bg)' : 'var(--warn-bg)',
-                border: `1px solid ${brand.paymentStatus === 'Paid' ? 'var(--success-border)' : 'var(--warn-border)'}`,
-                color: brand.paymentStatus === 'Paid' ? 'var(--success-text)' : 'var(--warn-text)',
+                background: brand.status === 'Active' ? 'var(--success-bg)' : brand.status === 'Churned' ? 'var(--danger-bg)' : 'var(--bg-card)',
+                border: `1px solid ${brand.status === 'Active' ? 'var(--success-border)' : brand.status === 'Churned' ? 'var(--danger-border)' : 'var(--border)'}`,
+                color: brand.status === 'Active' ? 'var(--success-text)' : brand.status === 'Churned' ? 'var(--danger-text)' : 'var(--text-secondary)',
+              }}>
+                {brand.status || 'Active'}
+              </span>
+              <span style={{
+                padding: '2px 8px',
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 700,
+                background: isChurnedOrInactive
+                  ? 'var(--bg-card)'
+                  : brand.paymentStatus === 'Paid' ? 'var(--success-bg)' : 'var(--warn-bg)',
+                border: `1px solid ${isChurnedOrInactive ? 'var(--border)' : (brand.paymentStatus === 'Paid' ? 'var(--success-border)' : 'var(--warn-border)')}`,
+                color: isChurnedOrInactive
+                  ? 'var(--text-muted)'
+                  : (brand.paymentStatus === 'Paid' ? 'var(--success-text)' : 'var(--warn-text)'),
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 4
               }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: brand.paymentStatus === 'Paid' ? 'var(--success-text)' : 'var(--warn-text)' }} />
-                {brand.paymentStatus === 'Paid' ? 'Paid' : 'Payment Pending'}
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: isChurnedOrInactive ? 'var(--text-muted)' : (brand.paymentStatus === 'Paid' ? 'var(--success-text)' : 'var(--warn-text)') }} />
+                {isChurnedOrInactive ? 'Terminated' : (brand.paymentStatus === 'Paid' ? 'Paid' : 'Payment Pending')}
               </span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>
@@ -628,11 +656,16 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
                   <div style={cardStyle}>
                     <span style={capStyle}>Monthly Retainer Fee</span>
-                    <div className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', marginTop: 4, fontSize: 15 }}>
+                    <div className="font-amount" style={{ fontWeight: 800, color: isChurnedOrInactive ? 'var(--text-muted)' : 'var(--text-primary)', marginTop: 4, fontSize: 15, textDecoration: isChurnedOrInactive ? 'line-through' : 'none' }}>
                       {formatAmt(brand.monthlyFee)}
+                      {isChurnedOrInactive && (
+                        <span style={{ fontSize: 11, textDecoration: 'none', marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--danger-bg)', color: 'var(--danger-text)', fontWeight: 700 }}>
+                          {brand.status}
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                      Cycle Day: {brand.billingCycleDay || 1}st of month
+                      {isChurnedOrInactive ? 'Billing Terminated / Cancelled' : `Cycle Day: ${formatOrdinalDay(brand.billingCycleDay)}`}
                     </div>
                   </div>
                   <div style={cardStyle}>

@@ -25,11 +25,11 @@ export function useFinancials(payments: Payment[], expenses: Expense[], brands: 
     const netProfit = totalReceived - totalExpenses;
 
     const pendingBrandFees = safeBrands
-      .filter(b => b && b.paymentStatus !== 'Paid')
+      .filter(b => b && b.status === 'Active' && b.paymentStatus !== 'Paid')
       .reduce((sum, b) => sum + (Number(b?.monthlyFee) || 0), 0);
 
     const unrecordedBrandFees = safeBrands
-      .filter(b => b && !b.lastPaymentDate)
+      .filter(b => b && b.status === 'Active' && !b.lastPaymentDate)
       .reduce((sum, b) => sum + (Number(b?.monthlyFee) || 0), 0);
 
     return { totalReceived, totalExpenses, netProfit, pendingBrandFees, unrecordedBrandFees };

@@ -149,7 +149,9 @@ export const ClientsManager: React.FC = () => {
     const matchesStatus = statusFilter === 'All'
       ? true
       : (statusFilter === 'Paid' || statusFilter === 'Pending')
-        ? (brand.paymentStatus || 'Paid') === statusFilter
+        ? (statusFilter === 'Paid'
+            ? (brand.paymentStatus === 'Paid' && brand.status !== 'Churned' && brand.status !== 'Inactive')
+            : (brand.paymentStatus === 'Pending' || brand.status === 'Churned' || brand.status === 'Inactive'))
         : (brand?.status || 'Active') === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -199,7 +201,8 @@ export const ClientsManager: React.FC = () => {
     setIsSubmitting(true);
     try {
       const selectedStatus = formData.status || 'Active';
-      const selectedPaymentStatus = formData.paymentStatus || 'Pending';
+      const isInactiveOrChurned = selectedStatus === 'Churned' || selectedStatus === 'Inactive';
+      const selectedPaymentStatus = isInactiveOrChurned ? 'Pending' : (formData.paymentStatus || 'Pending');
       await addBrand({
         ...formData,
         city: formData.city?.trim() || '',
@@ -278,6 +281,7 @@ export const ClientsManager: React.FC = () => {
     setEditFormErrors({});
     setIsEditSubmitting(true);
     setEditSubmitError('');
+    const isInactiveOrChurned = editFormData.status === 'Churned' || editFormData.status === 'Inactive';
     try {
       await updateBrand(editingBrand.id, {
         ...editFormData,
@@ -290,7 +294,7 @@ export const ClientsManager: React.FC = () => {
         monthlyFee: Number(editFormData.monthlyFee) || 0,
         billingCycleDay: Number(editFormData.billingCycleDay) || 1,
         status: editFormData.status as BrandStatus,
-        paymentStatus: editFormData.paymentStatus,
+        paymentStatus: isInactiveOrChurned ? 'Pending' : editFormData.paymentStatus,
         notes: editFormData.notes || '',
         gstNumber: editFormData.gstNumber || '',
         pan: editFormData.pan || '',
@@ -307,6 +311,10 @@ export const ClientsManager: React.FC = () => {
   };
 
   const handleTogglePaymentStatus = async (brand: Brand) => {
+    if (brand.status === 'Churned' || brand.status === 'Inactive') {
+      showToast(`Cannot change payment status of a ${brand.status.toLowerCase()} client. Please reactivate them first.`, 'error');
+      return;
+    }
     const nextStatus = brand.paymentStatus === 'Paid' ? 'Pending' : 'Paid';
     try {
       await updateBrand(brand.id, { paymentStatus: nextStatus });

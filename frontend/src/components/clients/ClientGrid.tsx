@@ -14,6 +14,19 @@ interface Props {
   onTogglePaymentStatus?: (brand: Brand) => void;
 }
 
+/** Format day of month with correct English ordinal suffix (1st, 2nd, 3rd, 4th, etc.) */
+export function formatOrdinalDay(day?: number | string | null): string {
+  const d = Math.max(1, Math.min(31, parseInt(String(day || 1), 10) || 1));
+  if (d === 31) return 'Last day of month';
+  if (d >= 11 && d <= 13) return `${d}th of month`;
+  switch (d % 10) {
+    case 1: return `${d}st of month`;
+    case 2: return `${d}nd of month`;
+    case 3: return `${d}rd of month`;
+    default: return `${d}th of month`;
+  }
+}
+
 /** Shows how long a client has had no check-in. Distinct from account status. */
 export const InactivityBadge: React.FC<{ lastActivityDate?: string | null }> = ({ lastActivityDate }) => {
   if (!lastActivityDate) return null;
@@ -82,6 +95,8 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
       {brands.map((brand) => {
         const memberIds = Array.isArray(brand.assignedMemberIds) ? brand.assignedMemberIds : [];
         const assignedUsers = allUsers.filter((u) => memberIds.includes(u.id));
+        const isChurnedOrInactive = brand.status === 'Churned' || brand.status === 'Inactive';
+        const isContractExpired = Boolean(brand.contractEndDate && new Date(brand.contractEndDate).getTime() < Date.now());
 
         return (
           <div
@@ -108,39 +123,61 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                   <ClientStatusBadge status={brand.status} />
                   <InactivityBadge lastActivityDate={brand.lastActivityDate} />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (canManage && onTogglePaymentStatus) {
-                        onTogglePaymentStatus(brand);
-                      }
-                    }}
-                    title={canManage ? `Click to mark as ${brand.paymentStatus === 'Pending' ? 'Paid' : 'Pending'}` : undefined}
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: 12,
-                      background: brand.paymentStatus === 'Pending' ? 'var(--warn-bg)' : 'var(--success-bg)',
-                      color: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--success-text)',
-                      border: `1px solid ${brand.paymentStatus === 'Pending' ? 'var(--warn-border)' : 'var(--success-border)'}`,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      cursor: canManage ? 'pointer' : 'default',
-                      transition: 'all 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (canManage) e.currentTarget.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (canManage) e.currentTarget.style.transform = 'scale(1)';
-                    }}
-                  >
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--success-text)' }} />
-                    {brand.paymentStatus === 'Pending' ? 'Pending' : 'Paid'}
-                  </button>
+                  {isChurnedOrInactive ? (
+                    <span
+                      title="Contract terminated. Client is not an active paying retainer."
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        background: brand.paymentStatus === 'Pending' ? 'var(--warn-bg)' : 'var(--bg-subtle)',
+                        color: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--text-muted)',
+                        border: `1px solid ${brand.paymentStatus === 'Pending' ? 'var(--warn-border)' : 'var(--border)'}`,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        userSelect: 'none',
+                      }}
+                    >
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--text-muted)' }} />
+                      {brand.paymentStatus === 'Pending' ? 'Unpaid Balance' : 'Terminated'}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (canManage && onTogglePaymentStatus) {
+                          onTogglePaymentStatus(brand);
+                        }
+                      }}
+                      title={canManage ? `Click to mark as ${brand.paymentStatus === 'Pending' ? 'Paid' : 'Pending'}` : undefined}
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        background: brand.paymentStatus === 'Pending' ? 'var(--warn-bg)' : 'var(--success-bg)',
+                        color: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--success-text)',
+                        border: `1px solid ${brand.paymentStatus === 'Pending' ? 'var(--warn-border)' : 'var(--success-border)'}`,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        cursor: canManage ? 'pointer' : 'default',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (canManage) e.currentTarget.style.transform = 'scale(1.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (canManage) e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: brand.paymentStatus === 'Pending' ? 'var(--warn-text)' : 'var(--success-text)' }} />
+                      {brand.paymentStatus === 'Pending' ? 'Pending' : 'Paid'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -155,22 +192,37 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                     {[brand.city, brand.state].filter(Boolean).join(', ') || brand.state || '—'}
                   </span>
                   {role !== 'team' && (
-                    <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <span>{(brand.currencySymbol || '₹')}{Number(brand.monthlyFee || 0).toLocaleString()}</span>
-                      <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>/mo</span>
-                      {brand.currency && brand.currency !== 'INR' && (
-                        <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                          {brand.currency}
+                    isChurnedOrInactive ? (
+                      <span className="font-amount" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: 12, fontWeight: 700 }}>
+                          {(brand.currencySymbol || '₹')}{Number(brand.monthlyFee || 0).toLocaleString()}/mo
                         </span>
-                      )}
-                    </span>
+                        <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }}>
+                          {brand.status || 'Cancelled'}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <span>{(brand.currencySymbol || '₹')}{Number(brand.monthlyFee || 0).toLocaleString()}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>/mo</span>
+                        {brand.currency && brand.currency !== 'INR' && (
+                          <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                            {brand.currency}
+                          </span>
+                        )}
+                      </span>
+                    )
                   )}
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>Billing Cycle:</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {role === 'team' ? 'Managed by Admin' : `${brand.billingCycleDay || 1}st of month`}
+                  <span style={{ fontWeight: 600, color: isChurnedOrInactive ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                    {role === 'team'
+                      ? 'Managed by Admin'
+                      : isChurnedOrInactive
+                        ? 'Terminated / Cancelled'
+                        : formatOrdinalDay(brand.billingCycleDay)}
                   </span>
                 </div>
 
@@ -180,13 +232,16 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                       {brand.contractStartDate ? brand.contractStartDate.split('T')[0] : '—'}
                       {brand.contractEndDate ? ` → ${brand.contractEndDate.split('T')[0]}` : ''}
+                      {isContractExpired && (
+                        <span style={{ color: 'var(--danger-text)', fontWeight: 700, marginLeft: 4 }}> (Expired)</span>
+                      )}
                     </span>
                   </div>
                 )}
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 2 }}>
-                  <span>Assigned Team:</span>
-                  <div style={{ display: 'flex', gap: 4 }}>
+                  <span>{isChurnedOrInactive ? 'Former Team:' : 'Assigned Team:'}</span>
+                  <div style={{ display: 'flex', gap: 4, opacity: isChurnedOrInactive ? 0.6 : 1 }}>
                     {assignedUsers.length === 0 ? (
                       <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>Unassigned</span>
                     ) : (

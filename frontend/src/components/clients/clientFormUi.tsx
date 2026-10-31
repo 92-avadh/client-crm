@@ -108,15 +108,25 @@ export const FormSelect: React.FC<{
   options: { value: string; label: string }[];
   placeholder?: string;
   error?: string;
+  helper?: string;
   required?: boolean;
-}> = ({ label, value, onChange, options, placeholder, error, required }) => (
-  <AnimatedSelect
-    label={label}
-    value={value}
-    onChange={onChange}
-    options={options}
-    placeholder={placeholder}
-    error={error}
-    required={required}
-  />
+  disabled?: boolean;
+}> = ({ label, value, onChange, options, placeholder, error, helper, required, disabled }) => (
+  <div>
+    <AnimatedSelect
+      label={label}
+      value={value}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+      error={error}
+      required={required}
+      disabled={disabled}
+    />
+    {helper && (
+      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+        {helper}
+      </span>
+    )}
+  </div>
 );

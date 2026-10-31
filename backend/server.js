@@ -342,6 +342,7 @@ connectWithRetry()
         UPDATE conversations SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE recurring_invoices SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE audit_logs SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
+        UPDATE brands SET payment_status = 'Pending' WHERE status IN ('Churned', 'Inactive') AND payment_status = 'Paid';
       `).catch(e => console.warn('Migration warning:', e.message));
 
       await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (

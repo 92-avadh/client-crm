@@ -352,10 +352,10 @@ export const FinanceManager: React.FC = () => {
     // Only actual received payments for this brand count as collected revenue
     const revenue = scopedPayments
       .filter((p) => p && p.brandId === b.id && p.status === 'Success')
-      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
     const pendingRevenue = scopedPayments
       .filter((p) => p && p.brandId === b.id && p.status === 'Pending')
-      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
     const directExpenses = scopedExpenses
       .filter((e) => e && e.brandId === b.id && (e.paymentStatus || 'Paid') === 'Paid')
       .reduce((acc, e) => acc + (Number(e?.amount) || 0), 0);
@@ -1105,10 +1105,25 @@ export const FinanceManager: React.FC = () => {
               {brandProfitability.map((bp) => (
                 <tr key={bp.brand?.id || Math.random()}>
                   <td>
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12 }}>{bp.brand?.name || 'Unnamed Client'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12 }}>{bp.brand?.name || 'Unnamed Client'}</span>
+                      {bp.brand?.status && bp.brand.status !== 'Active' && (
+                        <span style={{
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                          fontSize: 10,
+                          fontWeight: 750,
+                          background: bp.brand.status === 'Churned' ? 'var(--danger-bg)' : 'var(--bg-subtle)',
+                          color: bp.brand.status === 'Churned' ? 'var(--danger-text)' : 'var(--text-muted)',
+                          border: `1px solid ${bp.brand.status === 'Churned' ? 'var(--danger-border)' : 'var(--border)'}`,
+                        }}>
+                          {bp.brand.status}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{bp.brand?.ownerName || '—'}</div>
                   </td>
-                  <td className="font-amount" style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 650 }}>
+                  <td className="font-amount" style={{ color: bp.brand?.status === 'Active' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 13, fontWeight: 650, textDecoration: bp.brand?.status === 'Active' ? 'none' : 'line-through' }}>
                     ₹{Number(bp.brand?.monthlyFee || 0).toLocaleString('en-IN')}
                   </td>
                   <td className="font-amount" style={{ fontWeight: 800, color: bp.revenue > 0 ? 'var(--success-text)' : 'var(--text-secondary)', fontSize: 13 }}>

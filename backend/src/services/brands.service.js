@@ -187,8 +187,9 @@ async function createBrand(user, data) {
     const contractStartDate = formatDateOnly(data.contractStartDate) || today;
     const contractEndDate = formatDateOnly(data.contractEndDate);
     const status = data.status || 'Active';
-    // Default to 'Pending' — payment must be explicitly confirmed by user before marking Paid
-    const paymentStatus = data.paymentStatus === 'Paid' ? 'Paid' : 'Pending';
+    const isInactiveOrChurned = status === 'Churned' || status === 'Inactive';
+    // If status is Churned or Inactive, payment cannot be active Paid
+    const paymentStatus = isInactiveOrChurned ? 'Pending' : (data.paymentStatus === 'Paid' ? 'Paid' : 'Pending');
     const lastPaymentDate = paymentStatus === 'Paid' ? today : null;
     const magicToken = 'tok_' + crypto.randomBytes(12).toString('hex');
     const currency = data.currency || 'INR';
@@ -285,6 +286,10 @@ async function updateBrand(id, data) {
     currency: 'currency',
     currencySymbol: 'currency_symbol',
   };
+
+  if (data.status === 'Churned' || data.status === 'Inactive') {
+    data.paymentStatus = 'Pending';
+  }
 
   for (const [key, col] of Object.entries(directMap)) {
     if (data[key] !== undefined) {
@@ -406,7 +411,7 @@ async function logActivity(id) {
 
 async function markChurned(id) {
   const { rows } = await pool.query(
-    "UPDATE brands SET status='Churned' WHERE id=$1 RETURNING *", [id]
+    "UPDATE brands SET status='Churned', payment_status='Pending' WHERE id=$1 RETURNING *", [id]
   );
   if (!rows.length) return null;
   return getBrandWithDetails(id);

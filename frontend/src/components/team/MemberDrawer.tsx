@@ -166,10 +166,25 @@ export const MemberDrawer: React.FC<Props> = ({
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: brandColor(brand.name), display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--solid-btn-text)', fontSize: 15, fontWeight: 800, flexShrink: 0 }}>
                     {(brand.name || '?').charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{brand.name}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{brand.name}</span>
+                      {brand.status && brand.status !== 'Active' && (
+                        <span style={{
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                          fontSize: 10,
+                          fontWeight: 750,
+                          background: brand.status === 'Churned' ? 'var(--danger-bg)' : 'var(--bg-subtle)',
+                          color: brand.status === 'Churned' ? 'var(--danger-text)' : 'var(--text-muted)',
+                          border: `1px solid ${brand.status === 'Churned' ? 'var(--danger-border)' : 'var(--border)'}`,
+                        }}>
+                          {brand.status}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      {brand.assignedMemberIds?.length ?? 0} member{(brand.assignedMemberIds?.length ?? 0) !== 1 ? 's' : ''}
+                      {brand.status === 'Churned' ? 'Client Cancelled / Churned' : `${brand.assignedMemberIds?.length ?? 0} member${(brand.assignedMemberIds?.length ?? 0) !== 1 ? 's' : ''}`}
                     </div>
                   </div>
                 </div>

@@ -198,7 +198,7 @@ const { getAgencyId } = require('../utils/agency');
 
 async function getAgencyHealthOverview(user) {
   const agencyId = getAgencyId(user);
-  let query = "SELECT id FROM brands WHERE status != 'Churned'";
+  let query = "SELECT id FROM brands WHERE status = 'Active'";
   const params = [];
   if (user && user.role === 'brand') {
     query += ' AND id = $1';

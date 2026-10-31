@@ -76,7 +76,7 @@ export const TeamManager: React.FC = () => {
   const teamMemberCount = teamUsers.filter((u: User) => u && u.role !== 'admin' && u.role !== 'hr').length;
 
   const getBrandCount = (userId: string) =>
-    (brands || []).filter(Boolean).filter((b: any) => b.assignedMemberIds?.includes(userId)).length;
+    (brands || []).filter(Boolean).filter((b: any) => b.status === 'Active' && b.assignedMemberIds?.includes(userId)).length;
   const getAssignedBrands = (userId: string) =>
     (brands || []).filter(Boolean).filter((b: any) => b.assignedMemberIds?.includes(userId));
 
