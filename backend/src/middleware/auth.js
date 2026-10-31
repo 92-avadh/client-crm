@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getAgencyId } = require('../utils/agency');
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   console.error('❌ FATAL: JWT_SECRET environment variable is missing or shorter than 32 characters. All environments require a secure 32+ character key.');
@@ -6,6 +7,14 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const isProd = process.env.NODE_ENV === 'production';
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+};
 
 function getCookie(req, name) {
   const cookieHeader = req.headers.cookie;
@@ -43,15 +52,8 @@ module.exports = (req, res, next) => {
 
   try {
     req.user = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
-    const { getAgencyId } = require('../utils/agency');
     req.user.agencyId = getAgencyId(req.user);
 
-    const COOKIE_OPTIONS = {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    };
     const newToken = jwt.sign(
       {
         id: req.user.id,
@@ -68,8 +70,12 @@ module.exports = (req, res, next) => {
     res.cookie('token', newToken, COOKIE_OPTIONS);
 
     next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
+  } catch (err) {
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError' || err.name === 'NotBeforeError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    console.error('[Auth middleware error]', err);
+    return res.status(500).json({ error: 'Authentication processing failed' });
   }
 };
 module.exports.JWT_SECRET = JWT_SECRET;
