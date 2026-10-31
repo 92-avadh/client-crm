@@ -203,9 +203,21 @@ export const Dashboard: React.FC = () => {
   const safeTasks = (tasks || []).filter(Boolean);
   const safeMeetings = (meetings || []).filter(Boolean);
 
+  const churnedOrInactiveBrandIds = useMemo(() => new Set(
+    safeBrands.filter(b => b.status === 'Churned' || b.status === 'Inactive').map(b => b.id)
+  ), [safeBrands]);
+  const activeBrandIds = useMemo(() => new Set(
+    safeBrands.filter(b => b.status === 'Active').map(b => b.id)
+  ), [safeBrands]);
+  const activeBrands = safeBrands.filter(b => b?.status === 'Active');
+
   // ── Financial Calculations ─────────────────────────────────
   const paymentsTotal = safePayments
-    .filter(p => p?.status === 'Success')
+    .filter(p => {
+      if (!p || p.status !== 'Success') return false;
+      if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
+      return true;
+    })
     .reduce((a, p) => a + (Number(p?.amount) || 0), 0);
 
   const unrecordedBrandFees = safeBrands
@@ -214,7 +226,7 @@ export const Dashboard: React.FC = () => {
         b?.status === 'Active' &&
         (Number(b?.monthlyFee) || 0) > 0 &&
         b?.paymentStatus === 'Paid' &&
-        !safePayments.some(p => p && p.brandId === b.id)
+        !safePayments.some(p => p && p.brandId === b.id && p.status === 'Success')
     )
     .reduce((a, b) => a + (Number(b?.monthlyFee) || 0), 0);
 
@@ -228,7 +240,11 @@ export const Dashboard: React.FC = () => {
   const netMargin = totalReceived > 0 ? Math.round((netProfit / totalReceived) * 100) : 0;
 
   const pendingPayments = safePayments
-    .filter(p => p?.status === 'Pending')
+    .filter(p => {
+      if (!p || p.status !== 'Pending') return false;
+      if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
+      return true;
+    })
     .reduce((a, p) => a + (Number(p?.amount) || 0), 0);
 
   const pendingBrandFees = safeBrands
@@ -244,21 +260,23 @@ export const Dashboard: React.FC = () => {
 
   const overdueInvoices = safeInvoices.filter(i => i?.status === 'Overdue');
   const unpaidInvoicesBalance = safeInvoices
-    .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue'))
+    .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedOrInactiveBrandIds.has(i.brandId)))
     .reduce((a, i) => a + Math.max(0, (Number(i?.totalAmount) || 0) - (Number(i?.paidAmount) || 0)), 0);
 
-  const totalPending = unpaidInvoicesBalance + pendingBrandFees;
+  const totalPending = pendingPayments + unpaidInvoicesBalance + pendingBrandFees;
 
-  const activeBrands = safeBrands.filter(b => b?.status === 'Active');
   const hasAllTasksPerm = role === 'admin' || role === 'hr' || userPerms.includes('tasks') || userPerms.includes('projects');
   const relevantTasks = hasAllTasksPerm ? safeTasks : safeTasks.filter(t => t && (t.assigneeId === currentUser?.id || t.ownerId === currentUser?.id));
-  const pendingTasks = relevantTasks.filter(t => t?.status !== 'Completed');
+  // Operational dashboard metrics only track tasks of active clients or general agency tasks
+  const activeTasks = relevantTasks.filter(t => !t.brandId || activeBrandIds.has(t.brandId));
+  const pendingTasks = activeTasks.filter(t => t?.status !== 'Completed');
   const myMeetings = safeMeetings.filter(m => (role === 'team' || !userPerms.includes('meetings') ? (m?.attendeeIds || []).includes(currentUser?.id) : true));
 
   // ── Monthly Revenue / Expense Maps ─────────────────────────
   const monthlyIncomeMap: Record<string, number> = {};
   safePayments.forEach(p => {
     if (p && p.paymentDate && p.status === 'Success') {
+      if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return;
       const key = String(p.paymentDate).slice(0, 7);
       monthlyIncomeMap[key] = (monthlyIncomeMap[key] || 0) + (Number(p.amount) || 0);
     }
@@ -370,7 +388,7 @@ export const Dashboard: React.FC = () => {
   const animatedTotalExpenses = useCountUp(totalExpenses);
   const animatedNetProfit = useCountUp(netProfit);
   const animatedActiveBrands = useCountUp(activeBrands.length);
-  const animatedTasks = useCountUp(tasks.length);
+  const animatedTasks = useCountUp(activeTasks.length);
   const animatedPendingTasks = useCountUp(pendingTasks.length);
   const animatedMeetings = useCountUp(myMeetings.length);
 
@@ -386,7 +404,11 @@ export const Dashboard: React.FC = () => {
     const items: { id: string; icon: React.ReactNode; text: string; time: string; color: string }[] = [];
 
     safePayments
-      .filter(p => p?.status === 'Success')
+      .filter(p => {
+        if (!p || p?.status !== 'Success') return false;
+        if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
+        return true;
+      })
       .slice(0, 3)
       .forEach(p => {
         if (!p) return;
@@ -836,7 +858,7 @@ export const Dashboard: React.FC = () => {
             {
               label: 'Total Tasks',
               value: animatedTasks,
-              sub: `${safeTasks.filter(t => t?.status === 'Completed').length} completed`,
+              sub: `${activeTasks.filter(t => t?.status === 'Completed').length} completed`,
               icon: <CheckSquare className="w-4 h-4" />,
               color: BRAND.navy,
               bg: BRAND.navySubtle,
@@ -846,7 +868,7 @@ export const Dashboard: React.FC = () => {
             {
               label: 'Pending Tasks',
               value: animatedPendingTasks,
-              sub: `${relevantTasks.filter(t => t && (t.priority === 'Urgent' || t.priority === 'High')).length} urgent / high`,
+              sub: `${pendingTasks.filter(t => t && (t.priority === 'Urgent' || t.priority === 'High')).length} urgent / high`,
               icon: <Clock className="w-4 h-4" />,
               color: pendingTasks.length > 0 ? BRAND.amber : BRAND.navyMuted,
               bg: pendingTasks.length > 0 ? BRAND.amberSubtle : BRAND.navySubtle,

@@ -396,8 +396,9 @@ export const SettingsManager: React.FC = () => {
                   if (patch.phone !== undefined) setProfilePhone(patch.phone);
                 }}
                 onAvatarChange={async (dataUrl: string) => {
+                  const targetId = currentUser?.id || 'usr_admin';
                   try {
-                    await updateTeamMember(currentUser.id, { avatar: dataUrl });
+                    await updateTeamMember(targetId, { avatar: dataUrl });
                     showToast(
                       dataUrl ? 'Profile photo updated successfully!' : 'Profile photo removed',
                       'success'

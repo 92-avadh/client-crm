@@ -66,12 +66,15 @@ export const ProfileTab: React.FC<ProfileProps> = ({
     try {
       const res = await processImageFile(file);
       if (res.ok && res.dataUrl) {
-        await onAvatarChange(res.dataUrl);
+        const timeoutPromise = new Promise<void>((_, reject) =>
+          setTimeout(() => reject(new Error('Photo upload timed out. Please try again.')), 12000)
+        );
+        await Promise.race([onAvatarChange(res.dataUrl), timeoutPromise]);
       } else if (res.error) {
         setPhotoError(res.error);
       }
-    } catch {
-      setPhotoError('Could not process that image');
+    } catch (err: any) {
+      setPhotoError(err?.message || 'Could not process that image');
     } finally {
       setPhotoAction(null);
     }
@@ -83,9 +86,12 @@ export const ProfileTab: React.FC<ProfileProps> = ({
     setPhotoError('');
     setShowPhotoMenu(false);
     try {
-      await onAvatarChange('');
-    } catch {
-      setPhotoError('Could not remove photo');
+      const timeoutPromise = new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Please try again.')), 12000)
+      );
+      await Promise.race([onAvatarChange(''), timeoutPromise]);
+    } catch (err: any) {
+      setPhotoError(err?.message || 'Could not remove photo');
     } finally {
       setPhotoAction(null);
     }
@@ -96,9 +102,12 @@ export const ProfileTab: React.FC<ProfileProps> = ({
     setPhotoAction('uploading');
     setPhotoError('');
     try {
-      await onAvatarChange(url);
-    } catch {
-      setPhotoError('Could not update photo');
+      const timeoutPromise = new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error('Photo update timed out. Please try again.')), 12000)
+      );
+      await Promise.race([onAvatarChange(url), timeoutPromise]);
+    } catch (err: any) {
+      setPhotoError(err?.message || 'Could not update photo');
     } finally {
       setPhotoAction(null);
     }

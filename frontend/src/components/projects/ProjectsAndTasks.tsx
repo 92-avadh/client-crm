@@ -9,10 +9,106 @@ import {
   Clock,
   X,
   Loader2,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/animate-ui/components/radix/dropdown-menu';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
 import Pagination from '../ui/Pagination';
 import DatePicker from '@/components/ui/DatePicker';
+
+const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; bg: string; border: string }> = {
+  'To Do': { label: 'To Do', color: 'var(--text-secondary)', bg: 'var(--bg-subtle)', border: 'var(--border)' },
+  'In Progress': { label: 'In Progress', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)' },
+  'In Review': { label: 'In Review', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)', border: 'rgba(139, 92, 246, 0.3)' },
+  'Completed': { label: 'Completed', color: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
+};
+
+const TaskStatusDropdown: React.FC<{
+  status: TaskStatus;
+  onChange: (s: TaskStatus) => void;
+  compact?: boolean;
+}> = ({ status, onChange, compact }) => {
+  const current = STATUS_CONFIG[status] || STATUS_CONFIG['To Do'];
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            fontSize: compact ? 10.5 : 11.5,
+            fontWeight: 700,
+            padding: compact ? '2px 8px' : '4px 10px',
+            borderRadius: 6,
+            background: current.bg,
+            color: current.color,
+            border: `1px solid ${current.border}`,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            outline: 'none',
+          }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: current.color, flexShrink: 0 }} />
+          <span>{current.label}</span>
+          <ChevronDown style={{ width: 11, height: 11, opacity: 0.7 }} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+          padding: 4,
+          minWidth: 130,
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+          zIndex: 100,
+        }}
+      >
+        {(['To Do', 'In Progress', 'In Review', 'Completed'] as TaskStatus[]).map((st) => {
+          const cfg = STATUS_CONFIG[st];
+          const isSelected = st === status;
+          return (
+            <DropdownMenuItem
+              key={st}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(st);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '6px 10px',
+                fontSize: 12,
+                fontWeight: isSelected ? 700 : 500,
+                color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderRadius: 6,
+                cursor: 'pointer',
+                background: isSelected ? 'var(--bg-subtle)' : 'transparent',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color }} />
+                <span>{cfg.label}</span>
+              </div>
+              {isSelected && <Check style={{ width: 13, height: 13, color: 'var(--success-text)' }} />}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 const getDefaultDueDate = () => new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -62,7 +158,7 @@ export const ProjectsAndTasks: React.FC = () => {
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
 
   const [taskForm, setTaskForm] = useState({
-    brandId: brands[0]?.id || '',
+    brandId: brands.find(b => b.status === 'Active')?.id || brands[0]?.id || '',
     title: '',
     description: '',
     assigneeId: allUsers.find((u) => u.role === 'team')?.id || currentUser.id,
@@ -72,7 +168,7 @@ export const ProjectsAndTasks: React.FC = () => {
   });
 
   const [projectForm, setProjectForm] = useState({
-    brandId: brands[0]?.id || '',
+    brandId: brands.find(b => b.status === 'Active')?.id || brands[0]?.id || '',
     name: '',
     scope: '',
     startDate: getTodayDate(),
@@ -94,7 +190,7 @@ export const ProjectsAndTasks: React.FC = () => {
       setTaskPage(0);
       setShowAddTaskModal(false);
       setTaskForm({
-        brandId: brands[0]?.id || '',
+        brandId: brands.find(b => b.status === 'Active')?.id || brands[0]?.id || '',
         title: '',
         description: '',
         assigneeId: allUsers.find((u) => u.role === 'team')?.id || currentUser.id,
@@ -116,7 +212,7 @@ export const ProjectsAndTasks: React.FC = () => {
       setProjectPage(0);
       setShowAddProjectModal(false);
       setProjectForm({
-        brandId: brands[0]?.id || '',
+        brandId: brands.find(b => b.status === 'Active')?.id || brands[0]?.id || '',
         name: '',
         scope: '',
         startDate: getTodayDate(),
@@ -276,8 +372,8 @@ export const ProjectsAndTasks: React.FC = () => {
                           <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: task.priority === 'Urgent' ? 'var(--solid-btn-bg)' : 'var(--bg-raised)', color: task.priority === 'Urgent' ? 'var(--solid-btn-text)' : 'var(--text-primary)' }}>
                             {task.priority}
                           </span>
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
-                            {brand?.name}
+                          <span style={{ fontSize: 11, color: brand?.status === 'Churned' ? 'var(--danger-text)' : 'var(--text-muted)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
+                            {brand?.name} {brand?.status === 'Churned' ? '(Churned)' : ''}
                           </span>
                         </div>
 
@@ -307,15 +403,11 @@ export const ProjectsAndTasks: React.FC = () => {
                               />
                             )}
 
-                            <select
-                              value={task?.status || 'To Do'}
-                              onChange={(e) => updateTaskStatus(task.id, e.target.value as TaskStatus)}
-                              style={{ fontSize: 10, background: 'var(--bg-subtle)', color: 'var(--text-primary)', borderRadius: 4, border: '1px solid var(--border)', padding: '2px 4px', outline: 'none', cursor: 'pointer' }}
-                            >
-                              {kanbanColumns.map((st) => (
-                                <option key={st} value={st}>{st}</option>
-                              ))}
-                            </select>
+                            <TaskStatusDropdown
+                              compact
+                              status={task?.status || 'To Do'}
+                              onChange={(st) => updateTaskStatus(task.id, st)}
+                            />
                           </div>
                         </div>
                       </div>
@@ -372,15 +464,10 @@ export const ProjectsAndTasks: React.FC = () => {
                       </div>
                     </td>
                     <td>
-                      <select
-                        value={t?.status || 'To Do'}
-                        onChange={(e) => updateTaskStatus(t.id, e.target.value as TaskStatus)}
-                        style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
-                      >
-                        {kanbanColumns.map((st) => (
-                          <option key={st} value={st}>{st}</option>
-                        ))}
-                      </select>
+                      <TaskStatusDropdown
+                        status={t?.status || 'To Do'}
+                        onChange={(st) => updateTaskStatus(t.id, st)}
+                      />
                     </td>
                   </tr>
                 );

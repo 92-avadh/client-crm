@@ -2,6 +2,15 @@ const asyncHandler = require('../utils/asyncHandler');
 const { makeValidator } = require('../utils/validate');
 const invoices = require('../services/invoices.service');
 
+function canWriteInvoices(user) {
+  if (!user) return false;
+  if (['admin', 'hr', 'manager'].includes(user.role)) return true;
+  const perms = Array.isArray(user.permissions)
+    ? user.permissions
+    : (typeof user.permissions === 'string' ? (() => { try { return JSON.parse(user.permissions || '[]'); } catch { return []; } })() : []);
+  return perms.includes('invoices') || perms.includes('invoices_write');
+}
+
 const list = asyncHandler(async (req, res) => {
   res.json(await invoices.listInvoices(req.user, {
     brandId: req.query.brandId,
@@ -22,7 +31,7 @@ const get = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr', 'manager'].includes(req.user.role) && !req.user.permissions?.includes('invoices_write')) {
+  if (!canWriteInvoices(req.user)) {
     return res.status(403).json({ error: "You don't have permission to create invoices." });
   }
   const body = makeValidator(req.body)
@@ -46,7 +55,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const updateStatus = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr', 'manager'].includes(req.user.role) && !req.user.permissions?.includes('invoices_write')) {
+  if (!canWriteInvoices(req.user)) {
     return res.status(403).json({ error: "You don't have permission to update invoice status." });
   }
   const body = makeValidator(req.body)
@@ -77,7 +86,7 @@ const remove = asyncHandler(async (req, res) => {
 
 /** POST /api/invoices/bulk-delete — batch delete invoices. */
 const bulkRemove = asyncHandler(async (req, res) => {
-  if (!['admin', 'hr', 'manager'].includes(req.user.role)) {
+  if (!canWriteInvoices(req.user)) {
     return res.status(403).json({ error: "You don't have permission to delete invoices." });
   }
   const { ids } = req.body || {};

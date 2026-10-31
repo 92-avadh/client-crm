@@ -208,6 +208,7 @@ async function req<T>(method: string, path: string, body?: any): Promise<T> {
         credentials: 'include',
         headers,
         body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(20000),
       });
     } catch (networkErr) {
       // If it is a public route (e.g. Render cold start spin-up), retry once after a brief pause
@@ -219,6 +220,7 @@ async function req<T>(method: string, path: string, body?: any): Promise<T> {
             credentials: 'include',
             headers,
             body: body ? JSON.stringify(body) : undefined,
+            signal: AbortSignal.timeout(20000),
           });
         } catch (retryErr) {
           throw new Error(getNaturalErrorMessage(retryErr));

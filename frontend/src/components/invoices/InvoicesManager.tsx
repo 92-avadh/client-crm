@@ -46,7 +46,7 @@ export const InvoicesManager: React.FC = () => {
     showToast,
   } = useApp();
 
-  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'hr';
+  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'hr' || (Array.isArray(currentUser?.permissions) && currentUser.permissions.includes('invoices'));
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -166,7 +166,7 @@ export const InvoicesManager: React.FC = () => {
       builder.reset();
       setShowCreateModal(false);
     } catch (err: any) {
-      showToast(err?.message || 'Failed to generate invoice. Please try again.', 'error');
+      // Error notification handled in createInvoice
     } finally {
       setIsCreatingInvoice(false);
     }

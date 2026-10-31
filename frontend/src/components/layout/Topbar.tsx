@@ -74,7 +74,11 @@ export const Topbar: React.FC = () => {
         showToast(result.error || 'Could not process that image', 'error');
         return;
       }
-      await updateTeamMember(currentUser.id, { avatar: result.dataUrl });
+      const targetId = currentUser?.id || 'usr_admin';
+      const timeoutPromise = new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error('Photo upload timed out. Please try again.')), 12000)
+      );
+      await Promise.race([updateTeamMember(targetId, { avatar: result.dataUrl }), timeoutPromise]);
       showToast('Profile photo updated successfully!', 'success');
     } catch (err: any) {
       showToast(err?.message || 'Failed to update profile photo', 'error');
@@ -88,7 +92,11 @@ export const Topbar: React.FC = () => {
     if (photoAction) return;
     try {
       setPhotoAction('removing');
-      await updateTeamMember(currentUser.id, { avatar: '' });
+      const targetId = currentUser?.id || 'usr_admin';
+      const timeoutPromise = new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Please try again.')), 12000)
+      );
+      await Promise.race([updateTeamMember(targetId, { avatar: '' }), timeoutPromise]);
       showToast('Profile photo removed', 'success');
     } catch (err: any) {
       showToast(err?.message || 'Failed to remove profile photo', 'error');

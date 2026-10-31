@@ -70,7 +70,7 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
                 onChange={onSelectBrand}
                 options={brands.map((b) => ({
                   value: b.id,
-                  label: `${b.name} (₹${b.monthlyFee.toLocaleString('en-IN')}/mo)`,
+                  label: `${b.name}${b.status !== 'Active' ? ` (${b.status})` : ''} (₹${(b.monthlyFee || 0).toLocaleString('en-IN')}/mo)`,
                 }))}
               />
             </div>

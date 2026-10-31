@@ -180,6 +180,39 @@ export const normalizeDateStr = (val: any): string => {
   return str;
 };
 
+export const normalizePaymentsList = (payload: any, brandsList?: Brand[] | null): Payment[] | null => {
+  if (!payload) return null;
+  const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : null);
+  if (!list) return null;
+
+  const churnedBrandIds = new Set(
+    (brandsList || [])
+      .filter(b => b && (b.status === 'Churned' || b.status === 'Inactive'))
+      .map(b => b.id)
+  );
+
+  return list.filter(Boolean).map((p: any) => {
+    const ref = p.referenceNo || p.reference_no || '';
+    const isRetainerPlaceholder = ref.startsWith('RET-');
+    const isChurned = p.brandId ? churnedBrandIds.has(p.brandId) : false;
+    const effectiveStatus = (isRetainerPlaceholder && isChurned) ? 'Pending' : (p.status || 'Pending');
+
+    return {
+      id: p.id,
+      invoiceId: p.invoiceId || p.invoice_id || undefined,
+      brandId: p.brandId || p.brand_id || undefined,
+      brandName: p.brandName || p.brand_name || 'Client',
+      amount: typeof p.amount === 'number' ? p.amount : (parseFloat(p.amount || 0) || 0),
+      paymentDate: normalizeDateStr(p.paymentDate || p.payment_date),
+      mode: p.mode || 'Bank Transfer',
+      referenceNo: ref,
+      status: effectiveStatus,
+      proofUrl: p.proofUrl || p.proof_url || undefined,
+      createdAt: p.createdAt || p.created_at || undefined,
+    };
+  });
+};
+
 export const normalizeBrandsList = (payload: any): Brand[] | null => {
   if (!payload) return null;
   const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : null);
@@ -638,14 +671,19 @@ export const AppProvider: React.FC<{
     try {
       if (activeUserId) {
         const userSaved = safeParseArray<Payment>(localStorage.getItem(`retentio_local_payments_${activeUserId}`));
-        if (userSaved && userSaved.length > 0) return userSaved;
+        if (userSaved && userSaved.length > 0) {
+          const normalized = normalizePaymentsList(userSaved, brands);
+          return normalized && normalized.length > 0 ? normalized : userSaved;
+        }
       }
       const saved = safeParseArray<Payment>(localStorage.getItem('retentio_local_payments'));
       if (saved && saved.length > 0) {
+        const normalized = normalizePaymentsList(saved, brands);
+        const res = normalized && normalized.length > 0 ? normalized : saved;
         if (activeUserId) {
-          try { localStorage.setItem(`retentio_local_payments_${activeUserId}`, JSON.stringify(saved)); } catch {}
+          try { localStorage.setItem(`retentio_local_payments_${activeUserId}`, JSON.stringify(res)); } catch {}
         }
-        return saved;
+        return res;
       }
     } catch {}
     return [];
@@ -942,7 +980,10 @@ export const AppProvider: React.FC<{
                 return [];
               });
             }
-            const paymentsList = extractDataArray<Payment>(paymentsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
+            const rawPayments = extractDataArray<Payment>(paymentsData);
+            const paymentsList = normalizePaymentsList(rawPayments, normalizedBrands || brands);
             if (paymentsList) {
               setPayments(prev => {
                 if (paymentsList.length > 0) {
@@ -957,8 +998,6 @@ export const AppProvider: React.FC<{
                 return [];
               });
             }
-            const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             break;
           }
           case 'finance': {
@@ -968,14 +1007,14 @@ export const AppProvider: React.FC<{
               req('invoices', api.invoices.listAll()),
               req('clients', api.brands.listAll()),
             ]);
-            const paymentsList = extractDataArray<Payment>(paymentsData);
+            const normalizedBrands = normalizeBrandsList(brandsData);
+            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
+            const paymentsList = normalizePaymentsList(extractDataArray<Payment>(paymentsData), normalizedBrands || brands);
             if (paymentsList && paymentsList.length > 0) setPayments(paymentsList);
             const expensesList = extractDataArray<Expense>(expensesData);
             if (expensesList && expensesList.length > 0) setExpenses(expensesList);
             const invoicesList = extractDataArray<Invoice>(invoicesData);
             if (invoicesList && invoicesList.length > 0) setInvoices(invoicesList);
-            const normalizedBrands = normalizeBrandsList(brandsData);
-            if (normalizedBrands && normalizedBrands.length > 0) setBrands(normalizedBrands);
             break;
           }
           case 'expenses': {
@@ -1194,7 +1233,7 @@ export const AppProvider: React.FC<{
             if (tasksList) setTasks(tasksList);
             const meetingsList = extractDataArray<Meeting>(meetingsData);
             if (meetingsList) setMeetings(meetingsList);
-            const paymentsList = extractDataArray<Payment>(paymentsData);
+            const paymentsList = normalizePaymentsList(extractDataArray<Payment>(paymentsData), normalizedBrands || brands);
             if (paymentsList) setPayments(paymentsList);
             const expensesList = extractDataArray<Expense>(expensesData);
             if (expensesList) setExpenses(expensesList);
@@ -1465,9 +1504,16 @@ export const AppProvider: React.FC<{
     });
 
     if (isInactiveOrChurned) {
-      // For churned or inactive clients, ensure any uncollected or pending payments are not marked as active success
+      // For churned or inactive clients, ensure any uncollected or placeholder retainer payments are marked as Pending
       setPayments(prev => {
-        const next = prev.map(p => p.brandId === id && p.status === 'Pending' ? { ...p, status: 'Pending' as const } : p);
+        const next = prev.map(p => {
+          if (p.brandId === id) {
+            if ((p.referenceNo || '').startsWith('RET-') || p.status === 'Success') {
+              return { ...p, status: 'Pending' as const };
+            }
+          }
+          return p;
+        });
         try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
         return next;
       });

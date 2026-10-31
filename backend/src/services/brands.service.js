@@ -359,6 +359,17 @@ async function updateBrand(id, data) {
   }
 
   // Keep the payments ledger consistent with the client's billing state.
+  if (data.status === 'Churned' || data.status === 'Inactive') {
+    await pool.query(
+      "UPDATE payments SET status = 'Pending' WHERE brand_id = $1 AND reference_no LIKE 'RET-%'",
+      [id]
+    );
+    await pool.query(
+      "UPDATE recurring_invoices SET status = 'Paused' WHERE brand_id = $1 AND status = 'Active'",
+      [id]
+    );
+  }
+
   if (data.paymentStatus || data.monthlyFee !== undefined) {
     const brandRow = rows[0];
     const targetPayStatus = (data.paymentStatus || brandRow.payment_status) === 'Paid' ? 'Success' : 'Pending';
@@ -414,6 +425,14 @@ async function markChurned(id) {
     "UPDATE brands SET status='Churned', payment_status='Pending' WHERE id=$1 RETURNING *", [id]
   );
   if (!rows.length) return null;
+  await pool.query(
+    "UPDATE payments SET status = 'Pending' WHERE brand_id = $1 AND reference_no LIKE 'RET-%'",
+    [id]
+  );
+  await pool.query(
+    "UPDATE recurring_invoices SET status = 'Paused' WHERE brand_id = $1 AND status = 'Active'",
+    [id]
+  );
   return getBrandWithDetails(id);
 }
 

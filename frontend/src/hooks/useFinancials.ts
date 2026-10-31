@@ -15,8 +15,16 @@ export function useFinancials(payments: Payment[], expenses: Expense[], brands: 
     const safeExpenses = (expenses || []).filter(Boolean);
     const safeBrands = (brands || []).filter(Boolean);
 
+    const churnedOrInactiveBrandIds = new Set(
+      safeBrands.filter(b => b.status === 'Churned' || b.status === 'Inactive').map(b => b.id)
+    );
+
     const totalReceived = safePayments
-      .filter(p => p?.status === 'Success')
+      .filter(p => {
+        if (!p || p?.status !== 'Success') return false;
+        if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
+        return true;
+      })
       .reduce((sum, p) => sum + (Number(p?.amount) || 0), 0);
 
     const totalExpenses = safeExpenses

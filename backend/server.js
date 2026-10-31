@@ -73,8 +73,8 @@ app.use(cors({
 /* ------------------------------------------------------------------ */
 /*  Body parsing                                                       */
 /* ------------------------------------------------------------------ */
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 /* ------------------------------------------------------------------ */
 /*  Rate limiting                                                      */
@@ -343,6 +343,8 @@ connectWithRetry()
         UPDATE recurring_invoices SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE audit_logs SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE brands SET payment_status = 'Pending' WHERE status IN ('Churned', 'Inactive') AND payment_status = 'Paid';
+        UPDATE payments SET status = 'Pending' WHERE brand_id IN (SELECT id FROM brands WHERE status IN ('Churned', 'Inactive')) AND reference_no LIKE 'RET-%' AND status = 'Success';
+        UPDATE recurring_invoices SET status = 'Paused' WHERE brand_id IN (SELECT id FROM brands WHERE status IN ('Churned', 'Inactive')) AND status = 'Active';
       `).catch(e => console.warn('Migration warning:', e.message));
 
       await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (

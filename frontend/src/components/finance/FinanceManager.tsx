@@ -316,15 +316,27 @@ export const FinanceManager: React.FC = () => {
     }
   };
 
+  const churnedBrandIds = React.useMemo(() => new Set(
+    (brands || []).filter(b => b && (b.status === 'Churned' || b.status === 'Inactive')).map(b => b.id)
+  ), [brands]);
+
   // ── STRICT CALCULATION LOGIC: Only payments actually received count as collected revenue ──
-  const receivedPayments = scopedPayments.filter(p => p && p.status === 'Success');
-  const pendingPaymentsList = scopedPayments.filter(p => p && p.status === 'Pending');
+  const receivedPayments = scopedPayments.filter(p => {
+    if (!p || p.status !== 'Success') return false;
+    if (p.brandId && churnedBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
+    return true;
+  });
+  const pendingPaymentsList = scopedPayments.filter(p => {
+    if (!p || p.status !== 'Pending') return false;
+    if (p.brandId && churnedBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
+    return true;
+  });
 
   const paymentsTotal = receivedPayments.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
 
   // Unrecorded brand fees ONLY for active brands explicitly marked 'Paid' that don't have a payment row yet
   const unrecordedBrandFees = (brands || [])
-    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id))
+    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id && p.status === 'Success'))
     .reduce((acc, b) => acc + (Number(b.monthlyFee) || 0), 0);
 
   const totalCollections = paymentsTotal + unrecordedBrandFees;
@@ -344,17 +356,18 @@ export const FinanceManager: React.FC = () => {
     .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id))
     .reduce((acc, b) => acc + (Number(b.monthlyFee) || 0), 0);
   const invoicePendingTotal = scopedInvoices
-    .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue'))
+    .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedBrandIds.has(i.brandId)))
     .reduce((acc, i) => acc + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0);
   const totalPending = invoicePendingTotal + pendingPaymentsTotal + pendingBrandFees;
 
   const brandProfitability = (brands || []).map((b) => {
+    const isChurned = b.status === 'Churned' || b.status === 'Inactive';
     // Only actual received payments for this brand count as collected revenue
     const revenue = scopedPayments
-      .filter((p) => p && p.brandId === b.id && p.status === 'Success')
-      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
+      .filter((p) => p && p.brandId === b.id && p.status === 'Success' && (!isChurned || !(p.referenceNo || '').startsWith('RET-')))
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id && p.status === 'Success') ? (Number(b.monthlyFee) || 0) : 0);
     const pendingRevenue = scopedPayments
-      .filter((p) => p && p.brandId === b.id && p.status === 'Pending')
+      .filter((p) => p && p.brandId === b.id && p.status === 'Pending' && (!isChurned || !(p.referenceNo || '').startsWith('RET-')))
       .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
     const directExpenses = scopedExpenses
       .filter((e) => e && e.brandId === b.id && (e.paymentStatus || 'Paid') === 'Paid')
