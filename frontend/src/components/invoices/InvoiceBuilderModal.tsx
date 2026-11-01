@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Sparkles, Loader2 } from 'lucide-react';
+import { X, Sparkles, Loader2, Send, FileText } from 'lucide-react';
 import type { Brand, InvoiceItem } from '../../types';
 import { inputFieldStyle, btnPrimary, btnSecondary, modalOverlay, modalCard, modalHeader } from './invoiceStyles';
 import type { InvoiceTotals } from './useInvoiceBuilder';
@@ -10,7 +10,7 @@ import { useApp } from '../../context/AppContext';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: React.FormEvent, options?: { send?: boolean }) => void;
   submitting?: boolean;
   brands: Brand[];
   brandId: string;
@@ -209,7 +209,7 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
             </label>
           </div>
 
-          <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+          <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 10 }}>
             <button
               type="button"
               onClick={onClose}
@@ -219,26 +219,59 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               Cancel
             </button>
             <button
-              type="submit"
+              type="button"
+              disabled={submitting}
+              id="btn-generate-only-invoice"
+              onClick={(e) => onSubmit(e, { send: false })}
+              style={{
+                ...btnSecondary,
+                fontSize: 13,
+                padding: '9px 18px',
+                fontWeight: 700,
+                opacity: submitting ? 0.7 : 1,
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'var(--bg-raised)',
+                border: '1px solid var(--border-strong, var(--border))',
+                color: 'var(--text-primary)',
+              }}
+              title="Save &amp; Generate invoice without sending to client"
+            >
+              <FileText style={{ width: 14, height: 14 }} />
+              <span>Generate Invoice</span>
+            </button>
+            <button
+              type="button"
               disabled={submitting}
               id="btn-generate-send-invoice"
+              onClick={(e) => onSubmit(e, { send: true })}
               style={{
                 ...btnPrimary,
                 fontSize: 13,
-                padding: '10px 22px',
+                padding: '9px 20px',
+                fontWeight: 700,
                 opacity: submitting ? 0.7 : 1,
                 cursor: submitting ? 'not-allowed' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
                 position: 'relative',
                 zIndex: 5,
               }}
+              title="Generate and send invoice directly to client"
             >
               {submitting ? (
                 <>
-                  <Loader2 style={{ width: 15, height: 15, animation: 'spin 1s linear infinite' }} />
-                  <span>Generating &amp; Sending...</span>
+                  <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                  <span>Processing...</span>
                 </>
               ) : (
-                <span>Generate &amp; Send Invoice</span>
+                <>
+                  <Send style={{ width: 14, height: 14 }} />
+                  <span>Generate &amp; Send</span>
+                </>
               )}
             </button>
           </div>

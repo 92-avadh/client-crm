@@ -76,7 +76,7 @@ interface AppContextType {
   payments: Payment[];
   selectedInvoiceId: string | null;
   setSelectedInvoiceId: (id: string | null) => void;
-  createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'status'>) => Promise<Invoice>;
+  createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'status'> & { status?: Invoice['status'] }) => Promise<Invoice>;
   updateInvoiceStatus: (id: string, status: Invoice['status']) => Promise<void>;
   deleteInvoice: (id: string) => Promise<void>;
   deleteInvoices: (ids: string[]) => Promise<void>;
@@ -1788,11 +1788,13 @@ export const AppProvider: React.FC<{
         try { localStorage.setItem(userKey('retentio_local_invoices'), JSON.stringify(next)); } catch {}
         return next;
       });
-      showToast(`Invoice ${created.invoiceNumber || 'Record'} generated for ${created.brandName || 'Client'}`, 'success');
+      const isDraft = created.status === 'Draft';
+      const actionText = isDraft ? 'draft created' : 'generated';
+      showToast(`Invoice ${created.invoiceNumber || 'Record'} ${actionText} for ${created.brandName || 'Client'}`, 'success');
       pushNotification({
         type: 'invoice',
-        title: 'Invoice Generated',
-        message: `Invoice ${created.invoiceNumber || ''} created for ${created.brandName || 'Client'}.`,
+        title: isDraft ? 'Invoice Draft Created' : 'Invoice Generated',
+        message: `Invoice ${created.invoiceNumber || ''} ${actionText} for ${created.brandName || 'Client'}.`,
         linkModule: 'invoices',
         brandId: created.brandId,
       });

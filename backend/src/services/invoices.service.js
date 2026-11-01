@@ -218,17 +218,18 @@ async function createInvoice(user, data) {
       resolvedBrandName = 'Client';
     }
 
+    const invoiceStatus = data.status || 'Sent';
     await client.query(
       `INSERT INTO invoices (id,invoice_number,brand_id,brand_name,issue_date,due_date,subtotal,has_gst,gst_type,
        cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring,owner_id,
        currency,currency_symbol,agency_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'Sent',$14,$15,$16,$17,$18,$19,$20)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,$14,$15,$16,$17,$18,$19,$20,$21)`,
       [
         id, invoiceNumber, data.brandId, resolvedBrandName,
         formatDateOnly(data.issueDate), formatDateOnly(data.dueDate),
         data.subtotal || 0, data.hasGst || false, data.gstType || 'NONE',
         data.cgstAmount || 0, data.sgstAmount || 0, data.igstAmount || 0,
-        data.totalAmount || 0, data.notes || null, data.paymentMode || null,
+        data.totalAmount || 0, invoiceStatus, data.notes || null, data.paymentMode || null,
         data.isRecurring || false, user.id,
         currency, currencySymbol, agencyId
       ]

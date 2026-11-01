@@ -134,7 +134,7 @@ export const InvoicesManager: React.FC = () => {
 
     /* ── Handlers ────────────────────────────────────────────────── */
 
-  const handleGenerateInvoice = async (e?: React.FormEvent) => {
+  const handleGenerateInvoice = async (e?: React.FormEvent, options?: { send?: boolean }) => {
     if (e) e.preventDefault();
     if (!builder.selectedBrand) {
       showToast('Please select a client to generate the invoice', 'error');
@@ -155,6 +155,7 @@ export const InvoicesManager: React.FC = () => {
       return;
     }
 
+    const shouldSend = options?.send ?? true;
     setIsCreatingInvoice(true);
     try {
       const todayIso = new Date().toISOString().split('T')[0];
@@ -172,6 +173,7 @@ export const InvoicesManager: React.FC = () => {
         igstAmount: builder.totals.igst,
         totalAmount: builder.totals.totalAmount,
         notes: builder.notes,
+        status: shouldSend ? 'Sent' : 'Draft',
       });
 
       setPage(0);
@@ -332,6 +334,7 @@ export const InvoicesManager: React.FC = () => {
           igstAmount: igst,
           totalAmount,
           notes: 'Recurring monthly billing',
+          status: 'Draft',
         });
         successCount++;
       } catch {

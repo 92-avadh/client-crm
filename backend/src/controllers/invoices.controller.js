@@ -47,6 +47,7 @@ const create = asyncHandler(async (req, res) => {
     .optionalString('issueDate', { max: 30, label: 'Issue date' })
     .optionalString('dueDate', { max: 30, label: 'Due date' })
     .optionalString('notes', { max: 2000, label: 'Notes' })
+    .oneOf('status', invoices.INVOICE_STATUSES, { label: 'Status' })
     .array('items', { max: 200, label: 'Line items' })
     .validate();
 
