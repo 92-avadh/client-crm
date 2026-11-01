@@ -57,6 +57,14 @@ interface AppContextType {
   addBrand: (brandData: Omit<Brand, 'id' | 'onboardingDate' | 'status' | 'assignedMemberIds' | 'lastActivityDate' | 'lastPaymentDate' | 'documents'>) => Promise<Brand>;
   updateBrand: (id: string, updates: Partial<Brand>) => Promise<void>;
   assignMembersToBrand: (brandId: string, memberIds: string[]) => Promise<void>;
+  deleteBrand: (id: string) => Promise<void>;
+  deleteTeamMember: (id: string) => Promise<void>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
+  deleteLead: (id: string) => Promise<void>;
 
   projects: Project[];
   tasks: Task[];
@@ -1607,6 +1615,32 @@ export const AppProvider: React.FC<{
     showToast('Client marked as Lost / Cancelled (Billing Terminated)', 'info');
   };
 
+  const deleteBrand = async (id: string) => {
+    try {
+      await api.brands.delete(id);
+      setBrands(prev => {
+        const next = prev.filter(b => b.id !== id);
+        try { localStorage.setItem(userKey('retentio_local_brands'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      setProjects(prev => {
+        const next = prev.filter(p => p.brandId !== id);
+        try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      setTasks(prev => {
+        const next = prev.filter(t => t.brandId !== id);
+        try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      if (selectedBrandId === id) setSelectedBrandId(null);
+      showToast('Client permanently deleted', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to delete client', 'error');
+      throw err;
+    }
+  };
+
   // ---- Projects & Tasks ----
   const addProject = async (projData: any) => {
     try {
@@ -1678,6 +1712,66 @@ export const AppProvider: React.FC<{
         linkModule: 'projects',
         brandId: tObj?.brandId,
       });
+    }
+  };
+
+  const updateProject = async (id: string, updates: Partial<Project>) => {
+    try {
+      const updated = await api.projects.update(id, updates);
+      setProjects(prev => {
+        const next = prev.map(p => (p.id === id ? { ...p, ...updated } : p));
+        try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast('Project updated successfully', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update project', 'error');
+      throw err;
+    }
+  };
+
+  const deleteProject = async (id: string) => {
+    try {
+      await api.projects.delete(id);
+      setProjects(prev => {
+        const next = prev.filter(p => p.id !== id);
+        try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast('Project deleted', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to delete project', 'error');
+      throw err;
+    }
+  };
+
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      const updated = await api.tasks.update(id, updates);
+      setTasks(prev => {
+        const next = prev.map(t => (t.id === id ? { ...t, ...updated } : t));
+        try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast('Task updated', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update task', 'error');
+      throw err;
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    try {
+      await api.tasks.delete(id);
+      setTasks(prev => {
+        const next = prev.filter(t => t.id !== id);
+        try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast('Task deleted', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to delete task', 'error');
+      throw err;
     }
   };
 
@@ -2121,6 +2215,36 @@ export const AppProvider: React.FC<{
     if (result?.brand?.id) setSelectedBrandId(result.brand.id);
     setActiveTab('clients');
     showToast('🎉 Lead converted into an active Client profile!', 'success');
+  };
+
+  const updateLead = async (id: string, updates: Partial<Lead>) => {
+    try {
+      const updated = await api.leads.update(id, updates);
+      setLeads(prev => {
+        const next = prev.map(l => (l.id === id ? { ...l, ...updated } : l));
+        try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast('Lead updated', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update lead', 'error');
+      throw err;
+    }
+  };
+
+  const deleteLead = async (id: string) => {
+    try {
+      await api.leads.delete(id);
+      setLeads(prev => {
+        const next = prev.filter(l => l.id !== id);
+        try { localStorage.setItem(userKey('retentio_local_leads'), JSON.stringify(next)); } catch {}
+        return next;
+      });
+      showToast('Lead deleted', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to delete lead', 'error');
+      throw err;
+    }
   };
 
   // ---- Notifications ----
@@ -2698,6 +2822,23 @@ export const AppProvider: React.FC<{
     });
   };
 
+  const deleteTeamMember = async (id: string) => {
+    try {
+      await api.users.delete(id);
+      setAllUsers(prev => {
+        const next = prev.filter(u => u.id !== id);
+        try {
+          localStorage.setItem('retentio_local_users', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+      showToast('Team member permanently deleted', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to delete team member', 'error');
+      throw err;
+    }
+  };
+
   const resetWorkspaceData = useCallback(async (mode: 'empty' = 'empty') => {
     setIsLoading(true);
     try {
@@ -2876,6 +3017,14 @@ export const AppProvider: React.FC<{
         addBrand,
         updateBrand,
         assignMembersToBrand,
+        deleteBrand,
+        deleteTeamMember,
+        updateProject,
+        deleteProject,
+        updateTask,
+        deleteTask,
+        updateLead,
+        deleteLead,
         projects: visibleProjects,
         tasks: visibleTasks,
         addTask,

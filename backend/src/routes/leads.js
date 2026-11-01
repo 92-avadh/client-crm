@@ -6,5 +6,7 @@ router.get('/', controller.list);
 router.post('/', controller.create);
 router.patch('/:id/stage', controller.updateStage);
 router.post('/:id/convert', controller.convert);
+router.patch('/:id', controller.update);
+router.delete('/:id', controller.remove);
 
 module.exports = router;

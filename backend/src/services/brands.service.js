@@ -520,8 +520,73 @@ async function logHours(id, hours) {
   return mapBrand(rows[0]);
 }
 
+
+async function deleteBrand(user, id) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const agencyId = getAgencyId(user);
+    const checkQuery = agencyId
+      ? 'SELECT id, name FROM brands WHERE id = $1 AND (agency_id = $2 OR agency_id IS NULL)'
+      : 'SELECT id, name FROM brands WHERE id = $1';
+    const checkParams = agencyId ? [id, agencyId] : [id];
+    const { rows } = await client.query(checkQuery, checkParams);
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+    const brandName = rows[0].name;
+
+    await client.query('UPDATE invoices SET brand_id = NULL WHERE brand_id = $1', [id]);
+    await client.query('UPDATE payments SET brand_id = NULL WHERE brand_id = $1', [id]);
+    await client.query('UPDATE expenses SET brand_id = NULL WHERE brand_id = $1', [id]);
+    await client.query('UPDATE meetings SET brand_id = NULL WHERE brand_id = $1', [id]);
+
+    await client.query('DELETE FROM recurring_invoices WHERE brand_id = $1', [id]);
+    await client.query('DELETE FROM user_brand_assignments WHERE brand_id = $1', [id]);
+    await client.query('DELETE FROM brand_assignments WHERE brand_id = $1', [id]);
+    await client.query('DELETE FROM tasks WHERE brand_id = $1', [id]);
+    await client.query('DELETE FROM project_assignments WHERE project_id IN (SELECT id FROM projects WHERE brand_id = $1)', [id]);
+    await client.query('DELETE FROM projects WHERE brand_id = $1', [id]);
+    await client.query('DELETE FROM brand_documents WHERE brand_id = $1', [id]);
+    await client.query('DELETE FROM notifications WHERE brand_id = $1', [id]);
+
+    const { rows: convs } = await client.query('SELECT id FROM conversations WHERE brand_id = $1', [id]);
+    if (convs.length > 0) {
+      const convIds = convs.map(c => c.id);
+      await client.query('DELETE FROM conversation_participants WHERE conversation_id = ANY($1)', [convIds]);
+      await client.query('DELETE FROM chat_messages WHERE conversation_id = ANY($1)', [convIds]);
+      await client.query('DELETE FROM conversations WHERE brand_id = $1', [id]);
+    }
+
+    await client.query('DELETE FROM brands WHERE id = $1', [id]);
+
+    const auditId = 'aud_' + crypto.randomBytes(6).toString('hex');
+    await client.query(
+      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, agency_id)
+       VALUES ($1, NOW(), $2, $3, $4, $5, $6)`,
+      [
+        auditId,
+        user ? (user.name || 'Admin') : 'Admin',
+        user ? (user.role || 'admin') : 'admin',
+        'Permanently deleted client',
+        `Client "${brandName}" (ID: ${id}) was permanently deleted along with projects and tasks.`,
+        agencyId || null
+      ]
+    );
+
+    await client.query('COMMIT');
+    return { success: true, id, name: brandName };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   CLIENT_STATUSES, PAYMENT_STATUSES, DOCUMENT_TYPES,
   mapBrand, mapDoc, verifyBrandAccess, getBrandWithDetails, listBrands, createBrand,
-  updateBrand, assignMembers, logActivity, markChurned, snoozeRetention, addDocument, logHours,
+  updateBrand, assignMembers, logActivity, markChurned, snoozeRetention, addDocument, logHours, deleteBrand,
 };

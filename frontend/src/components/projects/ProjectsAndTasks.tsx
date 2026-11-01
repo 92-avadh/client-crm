@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { ROUTES } from '../../routes';
-import type { TaskPriority, TaskStatus } from '../../types';
+import type { TaskPriority, TaskStatus, ProjectStatus } from '../../types';
 import {
   CheckSquare,
   Plus,
@@ -11,7 +11,10 @@ import {
   Loader2,
   ChevronDown,
   Check,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -142,7 +145,11 @@ export const ProjectsAndTasks: React.FC = () => {
     allUsers,
     addTask,
     updateTaskStatus,
+    updateTask,
+    deleteTask,
     addProject,
+    updateProject,
+    deleteProject,
     setActiveTab: setNavTab
   } = useApp();
 
@@ -180,6 +187,122 @@ export const ProjectsAndTasks: React.FC = () => {
 
   const [isSubmittingTask, setIsSubmittingTask] = useState(false);
   const [isSubmittingProject, setIsSubmittingProject] = useState(false);
+
+  const { confirm, element: confirmDialog } = useConfirm();
+
+  // Edit task state
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [isSubmittingEditTask, setIsSubmittingEditTask] = useState(false);
+  const [editTaskForm, setEditTaskForm] = useState({
+    brandId: '',
+    projectId: '',
+    title: '',
+    description: '',
+    assigneeId: '',
+    dueDate: '',
+    priority: 'Medium' as TaskPriority,
+    status: 'To Do' as TaskStatus,
+  });
+
+  const openEditTask = (task: any) => {
+    setEditingTaskId(task.id);
+    setEditTaskForm({
+      brandId: task.brandId || '',
+      projectId: task.projectId || '',
+      title: task.title || '',
+      description: task.description || '',
+      assigneeId: task.assigneeId || '',
+      dueDate: task.dueDate || getDefaultDueDate(),
+      priority: (task.priority || 'Medium') as TaskPriority,
+      status: (task.status || 'To Do') as TaskStatus,
+    });
+    setShowEditTaskModal(true);
+  };
+
+  const handleEditTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTaskId || !editTaskForm.title) return;
+    try {
+      setIsSubmittingEditTask(true);
+      await updateTask(editingTaskId, editTaskForm);
+      setShowEditTaskModal(false);
+      setEditingTaskId(null);
+    } finally {
+      setIsSubmittingEditTask(false);
+    }
+  };
+
+  const handleDeleteTask = async (task: any) => {
+    const ok = await confirm({
+      title: `Delete task "${task.title}"?`,
+      description: 'This will permanently remove this task from the project and team member queue.',
+      confirmText: 'Delete Task',
+      icon: 'trash',
+    });
+    if (ok) {
+      await deleteTask(task.id);
+    }
+  };
+
+  // Edit project state
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [isSubmittingEditProject, setIsSubmittingEditProject] = useState(false);
+  const [editProjectForm, setEditProjectForm] = useState({
+    brandId: '',
+    name: '',
+    scope: '',
+    startDate: '',
+    endDate: '',
+    status: 'In progress' as ProjectStatus,
+    progress: 0,
+    billingAmount: 0,
+  });
+
+  const openEditProject = (proj: any) => {
+    setEditingProjectId(proj.id);
+    setEditProjectForm({
+      brandId: proj.brandId || '',
+      name: proj.name || '',
+      scope: proj.scope || '',
+      startDate: proj.startDate || '',
+      endDate: proj.endDate || '',
+      status: proj.status || 'In progress',
+      progress: proj.progress || 0,
+      billingAmount: proj.billingAmount || 0,
+    });
+    setShowEditProjectModal(true);
+  };
+
+  const handleEditProjectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProjectId || !editProjectForm.name) return;
+    try {
+      setIsSubmittingEditProject(true);
+      await updateProject(editingProjectId, {
+        ...editProjectForm,
+        billingAmount: Number(editProjectForm.billingAmount) || 0,
+        progress: Number(editProjectForm.progress) || 0,
+      });
+      setShowEditProjectModal(false);
+      setEditingProjectId(null);
+    } finally {
+      setIsSubmittingEditProject(false);
+    }
+  };
+
+  const handleDeleteProject = async (proj: any) => {
+    const ok = await confirm({
+      title: `Delete project "${proj.name}"?`,
+      description: 'This will permanently delete this project. Any tasks linked to this project will be preserved.',
+      confirmText: 'Delete Project',
+      icon: 'trash',
+    });
+    if (ok) {
+      await deleteProject(proj.id);
+    }
+  };
 
   const handleAddTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -432,6 +555,7 @@ export const ProjectsAndTasks: React.FC = () => {
                 <th>Due Date</th>
                 <th>Assignee</th>
                 <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -468,6 +592,28 @@ export const ProjectsAndTasks: React.FC = () => {
                         status={t?.status || 'To Do'}
                         onChange={(st) => updateTaskStatus(t.id, st)}
                       />
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          onClick={() => openEditTask(t)}
+                          title="Edit Task"
+                          style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-raised)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}
+                        >
+                          <Edit3 style={{ width: 12, height: 12 }} />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTask(t)}
+                          title="Delete Task"
+                          style={{ padding: '5px 8px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--danger-text, #ef4444)' }}
+                        >
+                          <Trash2 style={{ width: 12, height: 12 }} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -534,11 +680,35 @@ export const ProjectsAndTasks: React.FC = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                   <span>Timeline: {proj.startDate} → {proj.endDate}</span>
-                  {role !== 'team' && proj.billingAmount && (
-                    <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>
-                      ₹{proj.billingAmount.toLocaleString('en-IN')}
-                    </span>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {(role === 'admin' || role === 'hr') && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openEditProject(proj)}
+                          title="Edit Project"
+                          style={{ padding: '4px 8px', borderRadius: 6, background: 'var(--bg-raised)', border: '1px solid var(--border)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}
+                        >
+                          <Edit3 style={{ width: 11, height: 11 }} />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProject(proj)}
+                          title="Delete Project"
+                          style={{ padding: '4px 8px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--danger-text, #ef4444)' }}
+                        >
+                          <Trash2 style={{ width: 11, height: 11 }} />
+                          <span>Delete</span>
+                        </button>
+                      </>
+                    )}
+                    {role !== 'team' && proj.billingAmount && (
+                      <span className="font-amount" style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13, marginLeft: 4 }}>
+                        ₹{proj.billingAmount.toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -754,6 +924,247 @@ export const ProjectsAndTasks: React.FC = () => {
                 >
                   {isSubmittingProject && <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} />}
                   {isSubmittingProject ? 'Creating...' : 'Create Project'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {confirmDialog}
+
+      {/* Edit Task Modal */}
+      {showEditTaskModal && (
+        <div style={modalOverlay} onClick={() => setShowEditTaskModal(false)}>
+          <div
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, width: '100%', maxWidth: 460, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Edit Task</h3>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, marginBottom: 0 }}>Update deliverable details and assignment</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditTaskModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
+              >
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditTaskSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTaskForm.title}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, title: e.target.value })}
+                  style={inputFieldStyle}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Description</label>
+                <textarea
+                  rows={2}
+                  value={editTaskForm.description}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, description: e.target.value })}
+                  style={inputFieldStyle}
+                ></textarea>
+              </div>
+
+              <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Priority</label>
+                  <select
+                    value={editTaskForm.priority}
+                    onChange={(e) => setEditTaskForm({ ...editTaskForm, priority: e.target.value as TaskPriority })}
+                    style={inputFieldStyle}
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Status</label>
+                  <select
+                    value={editTaskForm.status}
+                    onChange={(e) => setEditTaskForm({ ...editTaskForm, status: e.target.value as TaskStatus })}
+                    style={inputFieldStyle}
+                  >
+                    <option value="To Do">To Do</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="In Review">In Review</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Assignee</label>
+                  <select
+                    value={editTaskForm.assigneeId}
+                    onChange={(e) => setEditTaskForm({ ...editTaskForm, assigneeId: e.target.value })}
+                    style={inputFieldStyle}
+                  >
+                    <option value="">Unassigned</option>
+                    {allUsers.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <DatePicker
+                    label="Due Date"
+                    value={editTaskForm.dueDate}
+                    onChange={(date) => setEditTaskForm({ ...editTaskForm, dueDate: date })}
+                    placeholder="Select due date"
+                  />
+                </div>
+              </div>
+
+              <div style={{ paddingTop: 14, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowEditTaskModal(false)}
+                  style={{ ...btnSecondary, height: 32, fontSize: 12 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingEditTask}
+                  style={{ ...btnPrimary, height: 32, fontSize: 12, opacity: isSubmittingEditTask ? 0.7 : 1, cursor: isSubmittingEditTask ? 'not-allowed' : 'pointer' }}
+                >
+                  {isSubmittingEditTask && <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} />}
+                  {isSubmittingEditTask ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {showEditProjectModal && (
+        <div style={modalOverlay} onClick={() => setShowEditProjectModal(false)}>
+          <div
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, width: '100%', maxWidth: 480, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Edit Project</h3>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, marginBottom: 0 }}>Update project parameters and deliverable progress</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditProjectModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
+              >
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditProjectSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Project Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editProjectForm.name}
+                  onChange={(e) => setEditProjectForm({ ...editProjectForm, name: e.target.value })}
+                  style={inputFieldStyle}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Scope &amp; Objectives</label>
+                <textarea
+                  rows={2}
+                  value={editProjectForm.scope}
+                  onChange={(e) => setEditProjectForm({ ...editProjectForm, scope: e.target.value })}
+                  style={inputFieldStyle}
+                ></textarea>
+              </div>
+
+              <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Status</label>
+                  <select
+                    value={editProjectForm.status}
+                    onChange={(e) => setEditProjectForm({ ...editProjectForm, status: e.target.value as ProjectStatus })}
+                    style={inputFieldStyle}
+                  >
+                    <option value="Not started">Not started</option>
+                    <option value="In progress">In progress</option>
+                    <option value="On hold">On hold</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Progress % (0-100)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editProjectForm.progress}
+                    onChange={(e) => setEditProjectForm({ ...editProjectForm, progress: Number(e.target.value) })}
+                    style={inputFieldStyle}
+                  />
+                </div>
+              </div>
+
+              <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                <div>
+                  <DatePicker
+                    label="Start Date"
+                    value={editProjectForm.startDate}
+                    onChange={(date) => setEditProjectForm({ ...editProjectForm, startDate: date })}
+                    placeholder="Select start date"
+                  />
+                </div>
+                <div>
+                  <DatePicker
+                    label="Target End Date"
+                    value={editProjectForm.endDate}
+                    onChange={(date) => setEditProjectForm({ ...editProjectForm, endDate: date })}
+                    placeholder="Select end date"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Billing Amount (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editProjectForm.billingAmount}
+                  onChange={(e) => setEditProjectForm({ ...editProjectForm, billingAmount: Number(e.target.value) })}
+                  style={inputFieldStyle}
+                />
+              </div>
+
+              <div style={{ paddingTop: 14, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowEditProjectModal(false)}
+                  style={{ ...btnSecondary, height: 32, fontSize: 12 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingEditProject}
+                  style={{ ...btnPrimary, height: 32, fontSize: 12, opacity: isSubmittingEditProject ? 0.7 : 1, cursor: isSubmittingEditProject ? 'not-allowed' : 'pointer' }}
+                >
+                  {isSubmittingEditProject && <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} />}
+                  {isSubmittingEditProject ? 'Saving...' : 'Save Project'}
                 </button>
               </div>
             </form>

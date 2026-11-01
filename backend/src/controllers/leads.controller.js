@@ -39,4 +39,30 @@ const convert = asyncHandler(async (req, res) => {
   res.status(201).json(result);
 });
 
-module.exports = { list, create, updateStage, convert };
+
+const update = asyncHandler(async (req, res) => {
+  const body = makeValidator(req.body)
+    .optionalString('name', { max: 150, label: 'Lead name' })
+    .optionalString('company', { max: 200, label: 'Company' })
+    .optionalString('contact', { max: 150, label: 'Contact person' })
+    .email('email', { label: 'Email' })
+    .optionalString('phone', { max: 40, label: 'Phone' })
+    .oneOf('source', leads.LEAD_SOURCES, { label: 'Source' })
+    .oneOf('stage', leads.LEAD_STAGES, { label: 'Stage' })
+    .number('value', { min: 0, label: 'Deal value' })
+    .optionalString('followUpDate', { max: 30, label: 'Follow up date' })
+    .optionalString('notes', { max: 2000, label: 'Notes' })
+    .validate();
+
+  const updated = await leads.updateLead(req.user, req.params.id, body);
+  if (!updated) return res.status(404).json({ error: 'Lead not found.' });
+  res.json(updated);
+});
+
+const remove = asyncHandler(async (req, res) => {
+  const ok = await leads.deleteLead(req.user, req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Lead not found or access denied.' });
+  res.json({ message: 'Lead deleted successfully', id: req.params.id });
+});
+
+module.exports = { list, create, updateStage, convert, update, remove };

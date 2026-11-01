@@ -92,4 +92,16 @@ const deactivate = asyncHandler(async (req, res) => {
   res.json({ success: true, user });
 });
 
-module.exports = { list, get, create, update, deactivate };
+
+const remove = asyncHandler(async (req, res) => {
+  const perms = req.user.permissions || [];
+  const canManage = req.user.role === 'admin' || req.user.role === 'hr' || perms.includes('team');
+  if (!canManage) {
+    return res.status(403).json({ error: "You don't have permission to delete team members." });
+  }
+  const result = await users.deleteUser(req.user, req.params.id);
+  if (!result) return res.status(404).json({ error: 'We could not find that team member.' });
+  res.json({ message: 'Team member permanently deleted successfully', ...result });
+});
+
+module.exports = { list, get, create, update, deactivate, remove };

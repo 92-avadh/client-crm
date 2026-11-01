@@ -152,4 +152,15 @@ const logHours = asyncHandler(async (req, res) => {
   res.json(updated);
 });
 
-module.exports = { list, get, create, update, assignMembers, logActivity, churn, snoozeRetention, addDocument, logHours };
+
+const remove = asyncHandler(async (req, res) => {
+  const perms = req.user.permissions || [];
+  if (!['admin', 'hr'].includes(req.user.role) && !perms.includes('clients')) {
+    return res.status(403).json({ error: "You don't have permission to delete clients." });
+  }
+  const result = await brands.deleteBrand(req.user, req.params.id);
+  if (!result) return res.status(404).json({ error: 'We could not find that client.' });
+  res.json({ message: 'Client permanently deleted successfully', ...result });
+});
+
+module.exports = { list, get, create, update, assignMembers, logActivity, churn, snoozeRetention, addDocument, logHours, remove };

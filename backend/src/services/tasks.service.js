@@ -190,6 +190,13 @@ async function verifyTaskAccess(user, id) {
   return assignCheck.rows.length > 0;
 }
 
+
+async function deleteTask(user, id) {
+  if (!await verifyTaskAccess(user, id)) return false;
+  const { rowCount } = await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
+  return rowCount > 0;
+}
+
 module.exports = {
   PRIORITIES,
   STATUSES,
@@ -199,5 +206,5 @@ module.exports = {
   createTask,
   updateTaskStatus,
   updateTask,
-  verifyTaskAccess,
+  verifyTaskAccess, deleteTask,
 };

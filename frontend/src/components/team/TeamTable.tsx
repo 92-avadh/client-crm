@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Building2, ChevronRight, Edit3, UserX, Loader2 } from 'lucide-react';
+import { Mail, Building2, ChevronRight, Edit3, UserX, Loader2, Trash2 } from 'lucide-react';
 import type { User } from '../../types';
 import { Avatar, RoleBadge } from './teamUi';
 
@@ -13,6 +13,7 @@ interface Props {
   onView: (user: User) => void;
   onEdit: (user: User) => void;
   onDeactivate: (user: User) => void;
+  onDelete?: (user: User) => void;
   onDirectChat?: (userId: string) => void;
 }
 
@@ -20,7 +21,7 @@ const GRID = '2.3fr 1.1fr 0.9fr 0.8fr 1.5fr 0.9fr';
 
 /** Team members table (horizontally scrollable on mobile). */
 export const TeamTable: React.FC<Props> = ({
-  users, currentUserId, isAdmin, canManage, deactivatingId, getBrandCount, onView, onEdit, onDeactivate, onDirectChat,
+  users, currentUserId, isAdmin, canManage, deactivatingId, getBrandCount, onView, onEdit, onDeactivate, onDelete, onDirectChat,
 }) => {
   const hasManageRights = canManage ?? isAdmin;
   return (
@@ -81,13 +82,19 @@ export const TeamTable: React.FC<Props> = ({
             </div>
           </div>
 
-          <div>
-            {hasManageRights && user.id !== currentUserId && isActive && (isAdmin || user.role !== 'admin') ? (
-              <button onClick={() => onDeactivate(user)} disabled={deactivatingId === user.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 14px', background: 'var(--bg-card)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: deactivatingId === user.id ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' as const }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+            {hasManageRights && user.id !== currentUserId && isActive && (isAdmin || user.role !== 'admin') && (
+              <button onClick={() => onDeactivate(user)} disabled={deactivatingId === user.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'var(--bg-card)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: deactivatingId === user.id ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' as const }}>
                 {deactivatingId === user.id ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <UserX style={{ width: 12, height: 12 }} />}
                 Deactivate
               </button>
-            ) : <span />}
+            )}
+            {hasManageRights && user.id !== currentUserId && (isAdmin || user.role !== 'admin') && onDelete && (
+              <button onClick={() => onDelete(user)} title="Delete Member Permanently" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 10px', background: 'rgba(239, 68, 68, 0.08)', color: 'var(--danger-text, #ef4444)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
+                <Trash2 style={{ width: 12, height: 12 }} />
+                Delete
+              </button>
+            )}
           </div>
         </div>
       );

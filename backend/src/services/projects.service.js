@@ -154,7 +154,40 @@ async function updateProject(user, id, data) {
   return getProject(id);
 }
 
+
+async function deleteProject(user, id) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const agencyId = user ? getAgencyId(user) : null;
+    let checkQuery = 'SELECT id, name FROM projects WHERE id = $1';
+    const checkParams = [id];
+    if (agencyId) {
+      checkQuery += " AND (agency_id = $2 OR (agency_id IS NULL AND (owner_id = $2 OR $2 = 'usr_admin')))";
+      checkParams.push(agencyId);
+    }
+    const { rows } = await client.query(checkQuery, checkParams);
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+    const projectName = rows[0].name;
+
+    await client.query('UPDATE tasks SET project_id = NULL WHERE project_id = $1', [id]);
+    await client.query('DELETE FROM project_assignments WHERE project_id = $1', [id]);
+    await client.query('DELETE FROM projects WHERE id = $1', [id]);
+
+    await client.query('COMMIT');
+    return { success: true, id, name: projectName };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   PROJECT_STATUSES,
-  mapProject, getProject, listProjects, createProject, updateProject,
+  mapProject, getProject, listProjects, createProject, updateProject, deleteProject,
 };

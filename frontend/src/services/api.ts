@@ -307,6 +307,7 @@ export const api = {
     create: (data: any) => req<any>('POST', '/users', data),
     update: (id: string, data: any) => req<any>('PATCH', `/users/${id}`, data),
     deactivate: (id: string) => req<any>('PATCH', `/users/${id}/deactivate`),
+    delete: (id: string) => req<any>('DELETE', `/users/${id}`),
   },
   brands: {
     list: (params?: any) => req<any[]>('GET', '/brands' + (params ? '?' + new URLSearchParams(params) : '')),
@@ -321,12 +322,14 @@ export const api = {
     snoozeRetention: (id: string) => req<any>('PATCH', `/brands/${id}/snooze-retention`),
     logHours: (id: string, hours: number) => req<any>('POST', `/brands/${id}/log-hours`, { hours }),
     addDocument: (id: string, data: any) => req<any>('POST', `/brands/${id}/documents`, data),
+    delete: (id: string) => req<any>('DELETE', `/brands/${id}`),
   },
   projects: {
     list: (params?: any) => req<any[]>('GET', '/projects' + (params ? '?' + new URLSearchParams(params) : '')),
     listAll: () => fetchAll<any>('/projects'),
     create: (data: any) => req<any>('POST', '/projects', data),
     update: (id: string, data: any) => req<any>('PATCH', `/projects/${id}`, data),
+    delete: (id: string) => req<any>('DELETE', `/projects/${id}`),
   },
   tasks: {
     list: (params?: any) => req<any[]>('GET', '/tasks' + (params ? '?' + new URLSearchParams(params) : '')),
@@ -334,6 +337,7 @@ export const api = {
     create: (data: any) => req<any>('POST', '/tasks', data),
     updateStatus: (id: string, status: string) => req<any>('PATCH', `/tasks/${id}/status`, { status }),
     update: (id: string, data: any) => req<any>('PATCH', `/tasks/${id}`, data),
+    delete: (id: string) => req<any>('DELETE', `/tasks/${id}`),
   },
   invoices: {
     list: (params?: any) => req<any[]>('GET', '/invoices' + (params ? '?' + new URLSearchParams(params) : '')),
@@ -383,6 +387,8 @@ export const api = {
     create: (data: any) => req<any>('POST', '/leads', data),
     updateStage: (id: string, stage: string) => req<any>('PATCH', `/leads/${id}/stage`, { stage }),
     convert: (id: string) => req<any>('POST', `/leads/${id}/convert`),
+    update: (id: string, data: any) => req<any>('PATCH', `/leads/${id}`, data),
+    delete: (id: string) => req<any>('DELETE', `/leads/${id}`),
   },
   notifications: {
     list: (params?: any) => req<any[]>('GET', '/notifications' + (params ? '?' + new URLSearchParams(params) : '')),

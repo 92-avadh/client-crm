@@ -7,5 +7,6 @@ router.get('/:id', controller.get);
 router.post('/', controller.create);
 router.patch('/:id', controller.update);
 router.patch('/:id/deactivate', controller.deactivate);
+router.delete('/:id', controller.remove);
 
 module.exports = router;

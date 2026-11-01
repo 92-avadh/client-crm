@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   X,
+  Edit3,
   FileText,
   Users,
   CheckCircle,
@@ -38,6 +39,8 @@ interface Props {
   onTabChange: (tab: ProfileTab) => void;
   onClose: () => void;
   onChat?: (brandId: string) => void;
+  onEdit?: (brand: Brand) => void;
+  onDelete?: (brand: Brand) => void;
 }
 
 const cardStyle: React.CSSProperties = {
@@ -61,8 +64,9 @@ function formatOrdinalDay(day?: number | string | null): string {
 
 /** Client profile drawer with Retainer Scope, Contract Vault, Gross Margin, and Magic Link Portal. */
 export const ClientProfileDrawer: React.FC<Props> = ({
-  brand, role, allUsers, invoices, tasks, activeTab, onTabChange, onClose, onChat,
+  brand, role, allUsers, invoices, tasks, activeTab, onTabChange, onClose, onChat, onEdit, onDelete,
 }) => {
+  const canManage = role === 'admin' || role === 'hr';
   const { currencySymbol: globalCurrencySymbol = '₹', expenses = [], showToast, updateBrand } = useApp();
 
   // Log Hours State
@@ -351,6 +355,50 @@ export const ClientProfileDrawer: React.FC<Props> = ({
               >
                 <Copy style={{ width: 13, height: 13 }} />
                 <span>Copy Portal Link</span>
+              </button>
+            )}
+            {canManage && onEdit && (
+              <button
+                onClick={() => onEdit(brand)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: 8,
+                  background: 'var(--bg-raised)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+                title="Edit Client Details"
+              >
+                <Edit3 style={{ width: 13, height: 13 }} />
+                <span>Edit</span>
+              </button>
+            )}
+            {canManage && onDelete && (
+              <button
+                onClick={() => onDelete(brand)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  color: 'var(--danger-text, #ef4444)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+                title="Delete Client Permanently"
+              >
+                <Trash2 style={{ width: 13, height: 13 }} />
+                <span>Delete</span>
               </button>
             )}
             <button onClick={onClose} style={{ background: 'var(--bg-raised)', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

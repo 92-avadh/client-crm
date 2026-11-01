@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useConfirm } from '../../hooks/useConfirm';
 import type { Lead, LeadStage } from '../../types';
 import {
   Target,
@@ -13,6 +14,8 @@ import {
   CheckCircle2,
   XCircle,
   X,
+  Edit3,
+  Trash2,
   Lock
 } from 'lucide-react';
 import DatePicker from '@/components/ui/DatePicker';
@@ -45,6 +48,8 @@ export const LeadsPipeline: React.FC = () => {
     leads,
     addLead,
     updateLeadStage,
+    updateLead,
+    deleteLead,
     convertLeadToBrand,
     currencySymbol,
     settings,
@@ -66,6 +71,65 @@ export const LeadsPipeline: React.FC = () => {
     followUpDate: new Date().toISOString().split('T')[0],
     notes: ''
   });
+
+  const { confirm, element: confirmDialog } = useConfirm();
+
+  const [showEditLeadModal, setShowEditLeadModal] = useState(false);
+  const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+  const [editLeadForm, setEditLeadForm] = useState({
+    name: '',
+    company: '',
+    contact: '',
+    email: '',
+    phone: '',
+    source: 'Website Inbound',
+    stage: 'New' as LeadStage,
+    value: 0,
+    followUpDate: '',
+    notes: '',
+  });
+
+  const openEditLead = (lead: any) => {
+    setEditingLeadId(lead.id);
+    setEditLeadForm({
+      name: lead.name || '',
+      company: lead.company || '',
+      contact: lead.contact || '',
+      email: lead.email || '',
+      phone: lead.phone || '',
+      source: lead.source || 'Website Inbound',
+      stage: lead.stage || 'New',
+      value: lead.value || 0,
+      followUpDate: lead.followUpDate || '',
+      notes: lead.notes || '',
+    });
+    setShowEditLeadModal(true);
+  };
+
+  const handleEditLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLeadId || !editLeadForm.name) return;
+    try {
+      await updateLead(editingLeadId, {
+        ...editLeadForm,
+        value: Number(editLeadForm.value) || 0,
+      });
+      setShowEditLeadModal(false);
+      setEditingLeadId(null);
+    } catch {}
+  };
+
+  const handleDeleteLead = async (lead: any) => {
+    const ok = await confirm({
+      title: `Delete lead "${lead.name}"?`,
+      description: `This will permanently remove ${lead.name} (${lead.company || 'Direct'}) from your sales pipeline.`,
+      confirmText: 'Delete Lead',
+      icon: 'trash',
+    });
+    if (ok) {
+      await deleteLead(lead.id);
+    }
+  };
 
   const handleAddLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,7 +292,7 @@ export const LeadsPipeline: React.FC = () => {
                       <Calendar style={{ width: 10, height: 10 }} /> Follow-up: {lead.followUpDate}
                     </div>
 
-                    {/* Stage Transition Control */}
+                    {/* Stage Transition & Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 4 }}>
                       <select
                         value={lead.stage}
@@ -240,28 +304,64 @@ export const LeadsPipeline: React.FC = () => {
                         ))}
                       </select>
 
-                      {lead.stage === 'Won' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {lead.stage === 'Won' && (
+                          <button
+                            type="button"
+                            onClick={() => convertLeadToBrand(lead.id)}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 800,
+                              background: 'var(--success-bg)',
+                              color: 'var(--success-text)',
+                              border: '1px solid var(--success-border)',
+                              borderRadius: 6,
+                              padding: '3px 6px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3
+                            }}
+                            title="Convert to Active Client"
+                          >
+                            <CheckCircle2 style={{ width: 10, height: 10 }} /> Convert
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => convertLeadToBrand(lead.id)}
+                          onClick={() => openEditLead(lead)}
+                          title="Edit Lead Details"
                           style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            background: 'var(--success-bg)',
-                            color: 'var(--success-text)',
-                            border: '1px solid var(--success-border)',
+                            padding: '3px 5px',
                             borderRadius: 6,
-                            padding: '3px 6px',
+                            background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border)',
+                            color: 'var(--text-primary)',
                             cursor: 'pointer',
-                            display: 'inline-flex',
+                            display: 'flex',
                             alignItems: 'center',
-                            gap: 3
                           }}
-                          title="Convert to Active Client"
                         >
-                          <CheckCircle2 style={{ width: 10, height: 10 }} /> Convert
+                          <Edit3 style={{ width: 11, height: 11 }} />
                         </button>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLead(lead)}
+                          title="Delete Lead"
+                          style={{
+                            padding: '3px 5px',
+                            borderRadius: 6,
+                            background: 'rgba(239, 68, 68, 0.08)',
+                            border: '1px solid rgba(239, 68, 68, 0.25)',
+                            color: 'var(--danger-text, #ef4444)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Trash2 style={{ width: 11, height: 11 }} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -384,6 +484,129 @@ export const LeadsPipeline: React.FC = () => {
         title="Unlock Leads CRM Pipeline"
         description="Upgrade to the Growth Plan to track prospective clients, manage pipeline stages, and grow recurring retainers."
       />
+      {confirmDialog}
+
+      {/* Edit Lead Modal */}
+      {showEditLeadModal && (
+        <div style={modalOverlay}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', width: '100%', maxWidth: 440, padding: 24, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Target style={{ width: 18, height: 18, color: 'var(--solid-btn-bg)' }} />
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Edit Prospective Lead</h3>
+              </div>
+              <button type="button" onClick={() => setShowEditLeadModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                <X style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditLeadSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Lead Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editLeadForm.name}
+                  onChange={(e) => setEditLeadForm({ ...editLeadForm, name: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Company</label>
+                  <input
+                    type="text"
+                    value={editLeadForm.company}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, company: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Contact Person</label>
+                  <input
+                    type="text"
+                    value={editLeadForm.contact}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, contact: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Email</label>
+                  <input
+                    type="email"
+                    value={editLeadForm.email}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, email: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Phone</label>
+                  <input
+                    type="text"
+                    value={editLeadForm.phone}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, phone: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Stage</label>
+                  <select
+                    value={editLeadForm.stage}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, stage: e.target.value as LeadStage })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                  >
+                    {stages.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Est. Retainer ({currencySymbol})</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editLeadForm.value}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, value: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Follow-up Date</label>
+                <input
+                  type="date"
+                  value={editLeadForm.followUpDate}
+                  onChange={(e) => setEditLeadForm({ ...editLeadForm, followUpDate: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Notes</label>
+                <textarea
+                  rows={2}
+                  value={editLeadForm.notes}
+                  onChange={(e) => setEditLeadForm({ ...editLeadForm, notes: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                <button type="button" onClick={() => setShowEditLeadModal(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

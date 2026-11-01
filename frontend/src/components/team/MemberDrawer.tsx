@@ -13,6 +13,7 @@ interface Props {
   updatingAvatar: boolean;
   onClose: () => void;
   onEdit: (user: User) => void;
+  onDelete?: (user: User) => void;
   onAvatarChange: (file: File) => void;
   onAvatarRemove: () => void;
 }
@@ -28,7 +29,7 @@ function brandColor(name: string): string {
 /** Slide-over drawer showing one member's profile and assignments. */
 export const MemberDrawer: React.FC<Props> = ({
   member, isAdmin, canManage = false, assignedBrands, updatingAvatar,
-  onClose, onEdit, onAvatarChange, onAvatarRemove,
+  onClose, onEdit, onDelete, onAvatarChange, onAvatarRemove,
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const { currentUser } = useApp();
@@ -130,6 +131,12 @@ export const MemberDrawer: React.FC<Props> = ({
         {/* Actions Bar */}
         {canModify && (
           <div style={{ padding: '12px 28px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            {!isSelf && (isAdmin || member.role !== 'admin') && onDelete && (
+              <button onClick={() => onDelete(member)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'rgba(239, 68, 68, 0.08)', color: 'var(--danger-text, #ef4444)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                <Trash2 style={{ width: 13, height: 13 }} /> Delete Member
+              </button>
+            )}
             <button onClick={() => onEdit(member)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               <Edit3 style={{ width: 13, height: 13 }} /> {isSelf ? 'Edit My Profile' : 'Edit Team Member'}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Users, MapPin, ArrowRight, Edit3, UserPlus } from 'lucide-react';
+import { Building2, Users, MapPin, ArrowRight, Edit3, UserPlus, Trash2 } from 'lucide-react';
 import type { Brand, User } from '../../types';
 
 export type ClientRole = 'admin' | 'hr' | 'team' | 'brand';
@@ -11,6 +11,7 @@ interface Props {
   onView: (brand: Brand) => void;
   onEdit: (brand: Brand) => void;
   onAssign: (brand: Brand) => void;
+  onDelete?: (brand: Brand) => void;
   onTogglePaymentStatus?: (brand: Brand) => void;
 }
 
@@ -73,7 +74,7 @@ export const ClientStatusBadge: React.FC<{ status?: string }> = ({ status }) => 
 };
 
 /** Responsive grid of client cards. */
-export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, onEdit, onAssign, onTogglePaymentStatus }) => {
+export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, onEdit, onAssign, onDelete, onTogglePaymentStatus }) => {
   const canManage = role === 'admin' || role === 'hr';
 
   if (brands.length === 0) {
@@ -282,6 +283,16 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                     style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <UserPlus style={{ width: 12, height: 12 }} />
                     <span>Assign</span>
+                  </button>
+                )}
+                {canManage && onDelete && (
+                  <button onClick={() => onDelete(brand)} title="Delete Client Permanently"
+                    style={{ padding: '5px 10px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', fontSize: 11, fontWeight: 600, color: 'var(--danger-text, #ef4444)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'; }}
+                  >
+                    <Trash2 style={{ width: 12, height: 12 }} />
+                    <span>Delete</span>
                   </button>
                 )}
               </div>

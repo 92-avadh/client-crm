@@ -3,7 +3,8 @@ import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import { getNaturalErrorMessage } from '../../services/errors';
 import type { User } from '../../types';
-import { Users, UserPlus, UserCheck, Shield, Briefcase, UserX, Loader2 } from 'lucide-react';
+import { Users, UserPlus, UserCheck, Shield, Briefcase, UserX,
+  Trash2, Loader2 } from 'lucide-react';
 import { StatCard } from './teamUi';
 import { TeamTable } from './TeamTable';
 import { MemberDrawer } from './MemberDrawer';
@@ -53,6 +54,7 @@ export const TeamManager: React.FC = () => {
     addTeamMember,
     updateTeamMember,
     deactivateTeamMember,
+    deleteTeamMember,
     settings,
   } = useApp() as any;
   const isAdmin = currentUser.role === 'admin';
@@ -73,6 +75,8 @@ export const TeamManager: React.FC = () => {
   const [showEditPwd, setShowEditPwd] = useState(false);
   const [createdCreds, setCreatedCreds] = useState<{ name: string; email: string; password: string } | null>(null);
   const [memberToDeactivate, setMemberToDeactivate] = useState<User | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const [form, setForm] = useState<AddMemberForm>(emptyForm);
   const [editForm, setEditForm] = useState<EditMemberForm>(emptyEditForm);
@@ -267,6 +271,25 @@ export const TeamManager: React.FC = () => {
 
   /* ── Deactivate ──────────────────────────────────────────────── */
 
+  const handleDelete = (user: User) => {
+    setMemberToDelete(user);
+  };
+
+  const confirmDelete = async () => {
+    const user = memberToDelete;
+    if (!user) return;
+    try {
+      setDeleting(user.id);
+      await deleteTeamMember(user.id);
+      if (selectedMember?.id === user.id) setSelectedMember(null);
+      setMemberToDelete(null);
+    } catch (err: any) {
+      showToast(getNaturalErrorMessage(err), 'error');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const handleDeactivate = (user: User) => {
     setMemberToDeactivate(user);
   };
@@ -411,6 +434,48 @@ export const TeamManager: React.FC = () => {
         onTogglePassword={() => setShowEditPwd((v) => !v)}
         onPickFile={(file) => pickPhoto(file, (url) => setEditForm((prev) => ({ ...prev, avatar: url })))}
       />
+
+
+      {/* Delete confirmation dialog */}
+      {memberToDelete && (
+        <AlertDialog open onOpenChange={(o) => { if (!o && !deleting) setMemberToDelete(null); }}>
+          <AlertDialogPopup from="bottom">
+            <AlertDialogHeader>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, width: '100%' }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--danger-bg)', color: 'var(--danger-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <Trash2 style={{ width: 19, height: 19 }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                  <AlertDialogTitle>Permanently delete {memberToDelete.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete this member's account, their login access, and assignments.
+                    Tasks and expenses associated with them will be unassigned. This action cannot be undone.
+                  </AlertDialogDescription>
+                </div>
+              </div>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={Boolean(deleting)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                disabled={Boolean(deleting)}
+                style={{
+                  background: 'var(--danger-text)',
+                  color: 'var(--solid-btn-text)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  opacity: deleting ? 0.7 : 1,
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {deleting && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
+                Yes, Delete Permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogPopup>
+        </AlertDialog>
+      )}
 
       {/* Deactivate confirmation — animated alert dialog */}
       {memberToDeactivate && (

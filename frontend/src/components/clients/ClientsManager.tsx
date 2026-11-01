@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
+import { useConfirm } from '../../hooks/useConfirm';
 import type { Brand, BrandStatus } from '../../types';
 import { Plus, Search, Filter, Copy } from 'lucide-react';
 import { getNaturalErrorMessage } from '../../services/errors';
@@ -105,12 +106,13 @@ export function validateClientForm(f: ClientFormData, isEdit = false): Record<st
  */
 export const ClientsManager: React.FC = () => {
   const {
-    currentUser, brands, allUsers, addBrand, updateBrand, assignMembersToBrand,
+    currentUser, brands, allUsers, addBrand, updateBrand, deleteBrand, assignMembersToBrand,
     selectedBrandId, setSelectedBrandId, invoices, tasks, setActiveTab, showToast,
     currencySymbol, conversations, setActiveConversationId, startDirectChat, settings
   } = useApp();
 
   const role = currentUser.role;
+  const { confirm, element: confirmDialog } = useConfirm();
   const planLimits = useMemo(() => getPlanLimits(settings), [settings]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalTitle, setUpgradeModalTitle] = useState('');
@@ -140,6 +142,21 @@ export const ClientsManager: React.FC = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedBrandForAssign, setSelectedBrandForAssign] = useState<Brand | null>(null);
   const [draftMemberIds, setDraftMemberIds] = useState<string[]>([]);
+
+  const handleDeleteClient = async (brand: Brand) => {
+    const ok = await confirm({
+      title: `Permanently delete ${brand.name}?`,
+      description: `This will permanently delete ${brand.name} along with their projects, tasks, documents, and recurring schedules. Invoices and payments will remain in your records for accounting. This action cannot be undone.`,
+      confirmText: 'Delete Client',
+      icon: 'trash',
+    });
+    if (ok) {
+      try {
+        await deleteBrand(brand.id);
+        if (selectedBrandId === brand.id) setSelectedBrandId(null);
+      } catch {}
+    }
+  };
 
   const visibleBrands = (Array.isArray(brands) ? brands : []).filter(Boolean).filter((brand) => {
     const memberIds = Array.isArray(brand.assignedMemberIds) ? brand.assignedMemberIds : [];
@@ -496,6 +513,7 @@ export const ClientsManager: React.FC = () => {
         onView={(b) => { setSelectedBrandId(b.id); setActiveProfileTab('overview'); }}
         onEdit={openEditModal}
         onAssign={openAssignModal}
+        onDelete={handleDeleteClient}
         onTogglePaymentStatus={handleTogglePaymentStatus}
       />
 

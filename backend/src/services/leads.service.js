@@ -158,7 +158,57 @@ async function convertLeadToBrand(id, user) {
   }
 }
 
+
+async function updateLead(user, id, data) {
+  const agencyId = user ? getAgencyId(user) : null;
+  let query = `UPDATE leads SET
+    name = COALESCE($1, name),
+    company = COALESCE($2, company),
+    contact = COALESCE($3, contact),
+    email = COALESCE($4, email),
+    phone = COALESCE($5, phone),
+    source = COALESCE($6, source),
+    stage = COALESCE($7, stage),
+    value = COALESCE($8, value),
+    follow_up_date = COALESCE($9, follow_up_date),
+    notes = COALESCE($10, notes)
+    WHERE id = $11`;
+  const params = [
+    data.name ?? null,
+    data.company ?? null,
+    data.contact ?? null,
+    data.email ?? null,
+    data.phone ?? null,
+    data.source ?? null,
+    data.stage ?? null,
+    data.value ?? null,
+    data.followUpDate !== undefined ? formatDateOnly(data.followUpDate) : null,
+    data.notes ?? null,
+    id
+  ];
+  if (agencyId) {
+    query += " AND (agency_id = $12 OR (agency_id IS NULL AND (owner_id = $12 OR $12 = 'usr_admin')))";
+    params.push(agencyId);
+  }
+  query += ' RETURNING *';
+  const { rows } = await pool.query(query, params);
+  return rows[0] ? mapLead(rows[0]) : null;
+}
+
+async function deleteLead(user, id) {
+  const agencyId = user ? getAgencyId(user) : null;
+  await pool.query('UPDATE meetings SET lead_id = NULL WHERE lead_id = $1', [id]);
+  let query = 'DELETE FROM leads WHERE id = $1';
+  const params = [id];
+  if (agencyId) {
+    query += " AND (agency_id = $2 OR (agency_id IS NULL AND (owner_id = $2 OR $2 = 'usr_admin')))";
+    params.push(agencyId);
+  }
+  const { rowCount } = await pool.query(query, params);
+  return rowCount > 0;
+}
+
 module.exports = {
   LEAD_STAGES, LEAD_SOURCES,
-  mapLead, listLeads, createLead, updateLeadStage, convertLeadToBrand,
+  mapLead, listLeads, createLead, updateLeadStage, convertLeadToBrand, updateLead, deleteLead,
 };

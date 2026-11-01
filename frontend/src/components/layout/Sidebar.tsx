@@ -21,11 +21,13 @@ import {
   X
 } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
+import { getPlanLimits } from '../../utils/subscriptionPlan';
 
 export const Sidebar: React.FC = () => {
   const { confirm, element: confirmDialog } = useConfirm();
   const {
     currentUser,
+    settings,
     logout,
     activeTab,
     setActiveTab,
@@ -38,6 +40,8 @@ export const Sidebar: React.FC = () => {
     mobileSidebarOpen,
     setMobileSidebarOpen
   } = useApp();
+
+  const planLimits = useMemo(() => getPlanLimits(settings), [settings]);
 
   const handleLogout = async () => {
     const ok = await confirm({
@@ -488,13 +492,17 @@ export const Sidebar: React.FC = () => {
                 <div
                   style={{
                     fontSize: 10,
-                    fontWeight: 700,
-                    color: 'var(--text-muted)',
+                    fontWeight: 750,
+                    color: planLimits.tier === 'Scale' ? '#b45309' : planLimits.tier === 'Growth' ? '#059639' : 'var(--text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                   }}
+                  title={planLimits.isTrial ? (planLimits.planName + ' · 7-Day Trial (' + planLimits.daysLeftInTrial + 'd left)') : planLimits.planName}
                 >
-                  {currentUser?.role || 'Admin'}
+                  {planLimits.planName || 'Starter Plan'}
                 </div>
               </div>
             </div>

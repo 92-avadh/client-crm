@@ -43,4 +43,15 @@ const update = asyncHandler(async (req, res) => {
   res.json(updated);
 });
 
-module.exports = { list, create, update };
+
+const remove = asyncHandler(async (req, res) => {
+  const perms = req.user.permissions || [];
+  if (!['admin', 'hr'].includes(req.user.role) && !perms.includes('projects')) {
+    return res.status(403).json({ error: "You don't have permission to delete projects." });
+  }
+  const result = await projects.deleteProject(req.user, req.params.id);
+  if (!result) return res.status(404).json({ error: 'We could not find that project.' });
+  res.json({ message: 'Project deleted successfully', ...result });
+});
+
+module.exports = { list, create, update, remove };

@@ -227,7 +227,88 @@ async function deactivateUser(actor, id) {
   return rows[0] ? mapUser(rows[0], []) : null;
 }
 
+
+async function deleteUser(actor, id) {
+  const targetId = id || actor;
+  const user = id ? actor : null;
+
+  if (user && user.id === targetId) {
+    const err = new Error('You cannot delete your own account.');
+    err.status = 400;
+    throw err;
+  }
+
+  const actorAgencyId = user ? getAgencyId(user) : null;
+  const { rows: targetRows } = await pool.query('SELECT * FROM users WHERE id = $1', [targetId]);
+  if (!targetRows.length) return null;
+  const target = targetRows[0];
+  const targetAgencyId = target.agency_id || target.created_by || target.id;
+
+  if (actorAgencyId && String(actorAgencyId) !== String(targetAgencyId)) {
+    const err = new Error('Access denied. User belongs to another workspace.');
+    err.status = 403;
+    throw err;
+  }
+
+  if (target.role === 'admin') {
+    if (user && user.role !== 'admin') {
+      const err = new Error('Only administrators can delete administrator accounts.');
+      err.status = 403;
+      throw err;
+    }
+    const { rows: adminCountRows } = await pool.query(
+      "SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin' AND is_active = true AND (agency_id = $1 OR created_by = $1 OR id = $1)",
+      [actorAgencyId]
+    );
+    if (adminCountRows[0].n <= 1) {
+      const err = new Error('You cannot delete the last active admin account.');
+      err.status = 400;
+      throw err;
+    }
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query('DELETE FROM user_brand_assignments WHERE user_id = $1', [targetId]);
+    await client.query('DELETE FROM brand_assignments WHERE member_id = $1', [targetId]);
+    await client.query('DELETE FROM project_assignments WHERE member_id = $1', [targetId]);
+    await client.query('DELETE FROM meeting_attendees WHERE user_id = $1', [targetId]);
+    await client.query('DELETE FROM conversation_participants WHERE user_id = $1', [targetId]);
+    await client.query('DELETE FROM message_read_by WHERE user_id = $1', [targetId]);
+
+    await client.query('UPDATE tasks SET assignee_id = NULL WHERE assignee_id = $1', [targetId]);
+    await client.query('UPDATE expenses SET employee_id = NULL WHERE employee_id = $1', [targetId]);
+    await client.query('UPDATE meetings SET owner_id = NULL WHERE owner_id = $1', [targetId]);
+
+    await client.query('DELETE FROM users WHERE id = $1', [targetId]);
+
+    const auditId = 'aud_' + crypto.randomBytes(6).toString('hex');
+    await client.query(
+      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, action, details, agency_id)
+       VALUES ($1, NOW(), $2, $3, $4, $5, $6)`,
+      [
+        auditId,
+        user ? (user.name || 'Admin') : 'Admin',
+        user ? (user.role || 'admin') : 'admin',
+        'Permanently deleted team member',
+        `Team member "${target.name}" (${target.email}, ID: ${targetId}) was permanently removed.`,
+        actorAgencyId || null
+      ]
+    );
+
+    await client.query('COMMIT');
+    return { success: true, id: targetId, name: target.name };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   USER_ROLES,
-  mapUser, getAssignedBrandIds, listUsers, getUser, createUser, updateUser, deactivateUser,
+  mapUser, getAssignedBrandIds, listUsers, getUser, createUser, updateUser, deactivateUser, deleteUser,
 };

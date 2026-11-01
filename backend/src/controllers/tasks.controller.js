@@ -63,4 +63,11 @@ const update = asyncHandler(async (req, res) => {
   res.json(updated);
 });
 
+
+const remove = asyncHandler(async (req, res) => {
+  const ok = await tasks.deleteTask(req.user, req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Task not found or access denied.' });
+  res.json({ message: 'Task deleted successfully', id: req.params.id });
+});
+
 module.exports = { list, create, updateStatus, update };
