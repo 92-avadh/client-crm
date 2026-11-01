@@ -70,4 +70,4 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ message: 'Task deleted successfully', id: req.params.id });
 });
 
-module.exports = { list, create, updateStatus, update };
+module.exports = { list, create, updateStatus, update, remove };
