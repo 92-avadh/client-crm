@@ -609,14 +609,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                           padding: '2px 7px',
                           borderRadius: '999px',
                         }}>
-                          {selectedPlanParam === 'starter' ? 'Free Forever' : '14-Day Free Trial'}
+                          {selectedPlanParam === 'starter' ? 'Free Forever' : '7-Day Free Trial'}
                         </span>
                       </div>
                       <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', lineHeight: 1.4 }}>
                         {selectedPlanParam === 'growth'
-                          ? `₹${selectedBillingParam === 'annual' ? '3,199' : '3,999'}/mo after 14-day trial • Razorpay authorization after email verification`
+                          ? `₹${selectedBillingParam === 'annual' ? '3,199' : '3,999'}/mo after 7-day trial • Razorpay authorization after email verification`
                           : selectedPlanParam === 'scale'
-                          ? `₹${selectedBillingParam === 'annual' ? '6,399' : '7,999'}/mo after 14-day trial • Razorpay authorization after email verification`
+                          ? `₹${selectedBillingParam === 'annual' ? '6,399' : '7,999'}/mo after 7-day trial • Razorpay authorization after email verification`
                           : 'Up to 5 clients, 2 invoices, solo workspace • No credit card required'}
                       </div>
                     </div>
@@ -741,7 +741,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     <div className="summary-row">
                       <span className="summary-lbl">Selected Plan</span>
                       <span className="summary-val font-semibold text-emerald-600">
-                        {selectedPlanParam.toUpperCase()} {selectedPlanParam !== 'starter' ? '(14-Day Free Trial)' : '(Free Forever)'}
+                        {selectedPlanParam.toUpperCase()} {selectedPlanParam !== 'starter' ? '(7-Day Free Trial)' : '(Free Forever)'}
                       </span>
                     </div>
                   )}

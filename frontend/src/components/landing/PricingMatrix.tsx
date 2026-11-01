@@ -66,8 +66,8 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({ onSelectPlan }) =>
       isHero: true,
       popular: true,
       popularTag: 'Most Popular for Agencies',
-      ctaText: 'Start 14-Day Free Trial',
-      microCopy: 'Card required for 14-day trial • Cancel anytime',
+      ctaText: 'Start 7-Day Free Trial',
+      microCopy: 'Card required for 7-day trial • Cancel anytime',
       features: [
         { text: 'Unlimited Active Clients', bold: true },
         { text: 'Up to 10 Team Members included', bold: true },
@@ -471,7 +471,7 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({ onSelectPlan }) =>
       <div className="ret-trust-bar">
         <div className="ret-trust-item">
           <Clock size={18} color="#059639" />
-          <span>14-Day Free Trial</span>
+          <span>7-Day Free Trial</span>
         </div>
         <div className="ret-trust-item">
           <CreditCard size={18} color="#059639" />

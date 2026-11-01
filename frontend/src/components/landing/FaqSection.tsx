@@ -103,7 +103,7 @@ export const FaqSection: React.FC = () => {
 
           <details className="faq__item">
             <summary className="m-text-5">
-              What happens after the 14-day free trial?
+              What happens after the 7-day free trial?
               <span className="faq__icon" aria-hidden="true"></span>
             </summary>
             <p className="m-text">

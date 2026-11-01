@@ -80,18 +80,13 @@ export const LandingNav: React.FC<LandingNavProps> = ({
         <div className="nav__center">
           <ul className="nav__links m-text-6">
             <li>
-              <a className="m-link-2" href="#listen">
-                How it works
-              </a>
-            </li>
-            <li>
               <a className="m-link-2" href="#calls">
-                Live Feed
+                Features
               </a>
             </li>
             <li>
-              <a className="m-link-2" href="#rooms">
-                In Practice
+              <a className="m-link-2" href="#pricing">
+                Pricing
               </a>
             </li>
             <li>
@@ -102,11 +97,6 @@ export const LandingNav: React.FC<LandingNavProps> = ({
             <li>
               <a className="m-link-2" href="#setup">
                 Setup
-              </a>
-            </li>
-            <li>
-              <a className="m-link-2" href="#pricing">
-                Pricing
               </a>
             </li>
             <li>
@@ -269,18 +259,13 @@ export const LandingNav: React.FC<LandingNavProps> = ({
 
         <ul className="menu__links m-text-5">
           <li>
-            <a className="m-link-2" href="#listen" onClick={closeMenu}>
-              How it works
-            </a>
-          </li>
-          <li>
             <a className="m-link-2" href="#calls" onClick={closeMenu}>
-              Live Feed
+              Features
             </a>
           </li>
           <li>
-            <a className="m-link-2" href="#rooms" onClick={closeMenu}>
-              In Practice
+            <a className="m-link-2" href="#pricing" onClick={closeMenu}>
+              Pricing
             </a>
           </li>
           <li>
@@ -291,11 +276,6 @@ export const LandingNav: React.FC<LandingNavProps> = ({
           <li>
             <a className="m-link-2" href="#setup" onClick={closeMenu}>
               Setup
-            </a>
-          </li>
-          <li>
-            <a className="m-link-2" href="#pricing" onClick={closeMenu}>
-              Pricing
             </a>
           </li>
           <li>

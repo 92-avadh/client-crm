@@ -51,7 +51,7 @@ export const SubscriptionBanner: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertTriangle size={16} />
             <span>
-              <strong>14-Day Free Trial Expired:</strong> Your account is currently restricted to Starter limits (5 clients max). Complete payment to restore full agency features.
+              <strong>7-Day Free Trial Expired:</strong> Your account is currently restricted to Starter limits (5 clients max). Complete payment to restore full agency features.
             </span>
           </div>
 
@@ -94,7 +94,7 @@ export const SubscriptionBanner: React.FC = () => {
           onClose={() => setUpgradeModalOpen(false)}
           defaultTier={targetTier}
           title="Restore Full Agency Access"
-          description="Your 14-day trial has concluded. Select a plan below to instantly reactivate unlimited client retention and agency features."
+          description="Your 7-day trial has concluded. Select a plan below to instantly reactivate unlimited client retention and agency features."
         />
       </>
     );
@@ -122,7 +122,7 @@ export const SubscriptionBanner: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Sparkles size={14} className="text-emerald-300" />
             <span>
-              <strong>14-Day Free Trial Active:</strong> You have {limits.daysLeftInTrial} day{limits.daysLeftInTrial !== 1 ? 's' : ''} remaining on the {limits.planName}.
+              <strong>7-Day Free Trial Active:</strong> You have {limits.daysLeftInTrial} day{limits.daysLeftInTrial !== 1 ? 's' : ''} remaining on the {limits.planName}.
             </span>
           </div>
 
@@ -225,7 +225,7 @@ export const SubscriptionBanner: React.FC = () => {
               }}
             >
               <Zap size={12} />
-              <span>Start 14-Day Free Trial</span>
+              <span>Start 7-Day Free Trial</span>
               <ArrowRight size={12} />
             </button>
             <button

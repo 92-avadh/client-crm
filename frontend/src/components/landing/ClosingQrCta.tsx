@@ -47,7 +47,7 @@ export const ClosingQrCta: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
                 }}
               >
                 <span className="land-btn-label">
-                  <span>Start Free 14-Day Trial</span>
+                  <span>Start Free 7-Day Trial</span>
                   <ArrowUpRight size={17} />
                 </span>
                 <span className="land-btn-wave" aria-hidden="true">
@@ -61,7 +61,7 @@ export const ClosingQrCta: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-300 font-medium">
               <span className="flex items-center gap-1.5">
                 <CheckCircle size={14} className="text-emerald-400" />
-                14-day full feature trial
+                7-day full feature trial
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle size={14} className="text-emerald-400" />

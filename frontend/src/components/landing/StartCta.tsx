@@ -47,7 +47,7 @@ export const StartCta: React.FC<StartCtaProps> = ({ onStartTrial }) => {
             as="p"
             className="m-text-4"
           >
-            Free 14-day trial. Zero setup fees. Live in five minutes with your current agency stack.
+            Free 7-day trial. Zero setup fees. Live in five minutes with your current agency stack.
           </ScrollReveal>
           <div className="start__actions">
             <a

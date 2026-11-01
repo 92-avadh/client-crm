@@ -6,9 +6,7 @@ import Lenis from 'lenis';
 
 import { LandingNav } from './LandingNav';
 import { HeroIntersect } from './HeroIntersect';
-import { ListenPanel } from './ListenPanel';
 import { CallsSection } from './CallsSection';
-import { RoomsGallery } from './RoomsGallery';
 import { TestimonialWall } from './TestimonialWall';
 import { StickyDeck } from './StickyDeck';
 import { PricingMatrix } from './PricingMatrix';
@@ -121,10 +119,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
 
       // 1. Coordinated Section Headings
       const sectionHeads = [
-        { trigger: '#listen .listen__head', targets: '#listen .listen__title' },
         { trigger: '#calls .calls__head', targets: '#calls .calls__head h2, #calls .calls__head .m-btn' },
-        { trigger: '#tune .tune__head', targets: '#tune .tune__head h2' },
-        { trigger: '#rooms .rooms__head', targets: '#rooms .rooms__head h2' },
+        { trigger: '#pricing .ret-pricing-header', targets: '#pricing .ret-pricing-title, #pricing .ret-pricing-subhead' },
         { trigger: '#voices .voices__inner', targets: '#voices .voices__title' },
         { trigger: '#setup .setup__head', targets: '#setup .setup__head h2' },
         { trigger: '#faq .faq__head', targets: '#faq .faq__head h2, #faq .faq__head p' },
@@ -155,68 +151,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
           );
         }
       });
-
-      // 2. Listen Section Staging, Wave Swell & Alert Rows
-      const listenRoot = document.getElementById('listen');
-      const listenHold = document.querySelector('#listen .listen__hold');
-      const listenBars = document.querySelectorAll('#listen .listen__wave > i');
-      const listenRows = document.querySelectorAll('#listen .listen__row');
-
-      if (listenRoot && listenHold) {
-        listenRoot.classList.add('is-staged');
-
-        gsap.fromTo(
-          '#listen .listen__panel--voice',
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            ease: 'power2.out',
-            scrollTrigger: {
-              id: 'listen:panel-voice',
-              trigger: '#listen .listen__hold',
-              start: 'top 82%',
-              once: true,
-            },
-          }
-        );
-
-        gsap.fromTo(
-          '#listen .listen__panel--read',
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            ease: 'power2.out',
-            scrollTrigger: {
-              id: 'listen:panel-read',
-              trigger: '#listen .listen__hold',
-              start: 'top 82%',
-              once: true,
-            },
-          }
-        );
-
-        if (listenBars.length > 0) {
-          ScrollTrigger.create({
-            id: 'listen:waves',
-            trigger: '#listen .listen__hold',
-            start: 'top top',
-            end: 'bottom bottom',
-            scrub: true,
-            onUpdate: (self) => {
-              const progress = self.progress;
-              const swell = Math.sin(Math.PI * progress);
-              listenBars.forEach((bar, idx) => {
-                const s = 1 - swell * 0.6 * (1 - Math.abs(Math.sin(idx * 0.45 + progress * 15)));
-                gsap.set(bar, { scaleY: s });
-              });
-            },
-          });
-        }
-      }
 
       // 3. Calls Section - Feature List Stagger & Device Steps
       const callsRoot = document.getElementById('calls');
@@ -277,61 +211,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
             scrub: true,
           },
         }).to('#calls .calls__device', { scale: 0.95, y: -20, opacity: 0.75 }, 0);
-      }
-
-      // 4. Tune Section Typography & Calibration Settings
-      const tuneRoot = document.getElementById('tune');
-      const tuneRows = document.querySelectorAll('#tune .tune__settings .tune__row');
-
-      // 5. Rooms Horizontal Scroll Track & Gallery Stagger
-      const roomsRoot = document.getElementById('rooms');
-      const roomsTrack = document.querySelector('#rooms .rooms__track') as HTMLElement | null;
-      const roomCards = document.querySelectorAll('#rooms .rooms__place');
-
-      if (roomsRoot && roomsTrack) {
-        roomsRoot.classList.add('is-track');
-        const travel = () => Math.max(0, roomsTrack.scrollWidth - window.innerWidth + 80);
-        roomsRoot.style.setProperty('--rooms-travel', `${travel()}px`);
-
-        if (roomCards.length > 0) {
-          gsap.fromTo(
-            roomCards,
-            { opacity: 0, y: 18 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.65,
-              stagger: 0.1,
-              ease: 'power2.out',
-              scrollTrigger: {
-                id: 'rooms:cards',
-                trigger: '#rooms .rooms__stage',
-                start: 'top 80%',
-                once: true,
-              },
-            }
-          );
-        }
-
-        const roomsTl = gsap.timeline({
-          defaults: { ease: 'none' },
-          scrollTrigger: {
-            id: 'rooms:horizontal',
-            trigger: '#rooms .rooms__hold',
-            start: 'top top',
-            end: 'bottom bottom',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        });
-
-        roomsTl.fromTo(roomsTrack, { x: 0 }, { x: () => -travel(), duration: 1 }, 0);
-        roomsTl.fromTo(
-          '#rooms .rooms__line',
-          { strokeDasharray: 1, strokeDashoffset: 0.8 },
-          { strokeDashoffset: 0, duration: 1 },
-          0
-        );
       }
 
       // 6. Testimonial Wall - Expert Quote & Staggered Review Cards
@@ -480,9 +359,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
     // Reduced Motion Fallback: Ensure all elements rest in full visibility without transforms
     mm.add('(prefers-reduced-motion: reduce)', () => {
       const allTargets = [
-        '#listen .listen__title', '#listen .listen__lead', '#listen .listen__panel--voice', '#listen .listen__panel--read', '#listen .listen__row',
         '#calls .calls__head h2', '#calls .calls__lead', '#calls .calls__item', '#calls .calls__device', '#calls .phone [data-step]',
-        '#rooms .rooms__head > *', '#rooms .rooms__place', '#rooms .rooms__line',
+        '#pricing .ret-pricing-header > *', '#pricing .ret-pricing-card',
         '#voices .voices__title', '#voices .voices__expert', '#voices .voices__col .m-card',
         '#setup .setup__head > *', '#setup .setup__card',
         '#faq .faq__head > *', '#faq .faq__item',
@@ -540,22 +418,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
         {/* 1. Hero with dual elliptical flow lines & floating chips */}
         <HeroIntersect onStartTrial={handleStartTrial} />
 
-        {/* 2. Voice-to-Text / Churn Signals Split 2-Panel Stage */}
-        <ListenPanel />
-
-        {/* 3. Calls Section: 5 Features + Sticky Phone Mockup */}
+        {/* 2. Calls Section: 5 Features + Sticky Phone Mockup */}
         <CallsSection onStartTrial={handleStartTrial} />
 
-        {/* 4. In Practice: 5 Photo Cards with Horizontal Wave Track */}
-        <RoomsGallery />
-
-        {/* 6. Voices / Social Proof & Testimonials */}
-        <TestimonialWall />
-
-        {/* 7. Setup: 3 Numbered Stacking Cards */}
-        <StickyDeck />
-
-        {/* 8. Pricing & Plans Matrix */}
+        {/* 3. Pricing & Plans Matrix (Moved to middle!) */}
         <PricingMatrix
           onSelectPlan={(tier) => {
             if (isLoggedIn) {
@@ -566,13 +432,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
           }}
         />
 
-        {/* 9. FAQ Accordion Section */}
+        {/* 4. Voices / Social Proof & Testimonials */}
+        <TestimonialWall />
+
+        {/* 5. Setup: 3 Numbered Stacking Cards */}
+        <StickyDeck />
+
+        {/* 6. FAQ Accordion Section */}
         <FaqSection />
 
-        {/* 9. Start Call To Action with Window Reveal */}
+        {/* 7. Start Call To Action with Window Reveal */}
         <StartCta onStartTrial={handleStartTrial} />
 
-        {/* 10. Contact Agency Support & Strategy Form */}
+        {/* 8. Contact Agency Support & Strategy Form */}
         <ContactSection />
       </main>
 
