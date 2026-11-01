@@ -23,6 +23,8 @@ import {
 
 import { getDefaultPermissionsForRole, CORPORATE_ROLES } from './permissionsConfig';
 import Pagination from '../ui/Pagination';
+import { getPlanLimits } from '../../utils/subscriptionPlan';
+import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
 
 const emptyForm = (): AddMemberForm => ({
   name: '', email: '', phone: '', designation: 'Team Member', role: 'team', password: '', avatar: '',
@@ -51,9 +53,14 @@ export const TeamManager: React.FC = () => {
     addTeamMember,
     updateTeamMember,
     deactivateTeamMember,
+    settings,
   } = useApp() as any;
   const isAdmin = currentUser.role === 'admin';
   const canManageTeam = isAdmin || currentUser.role === 'hr' || (currentUser.permissions && currentUser.permissions.includes('team'));
+  const planLimits = useMemo(() => getPlanLimits(settings), [settings]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalTitle, setUpgradeModalTitle] = useState('');
+  const [upgradeModalDesc, setUpgradeModalDesc] = useState('');
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -140,6 +147,18 @@ export const TeamManager: React.FC = () => {
   /* ── Add member ──────────────────────────────────────────────── */
 
   const openAddModal = () => {
+    if (planLimits.maxTeamMembers === 1) {
+      setUpgradeModalTitle('Unlock Team Collaboration');
+      setUpgradeModalDesc('Your Starter plan includes 1 solo seat. Upgrade to the Growth plan (₹3,999/mo) to invite and collaborate with up to 10 team members.');
+      setShowUpgradeModal(true);
+      return;
+    }
+    if (allUsers.length >= planLimits.maxTeamMembers) {
+      setUpgradeModalTitle('Team Seats Limit Reached (10/10 Members)');
+      setUpgradeModalDesc('Your Growth plan includes 10 team members. Upgrade to the Scale plan (₹7,999/mo) for unlimited team seats with granular RBAC permissions.');
+      setShowUpgradeModal(true);
+      return;
+    }
     setForm({ ...emptyForm(), password: generatePassword() });
     setCreatedCreds(null);
     setShowAddModal(true);
@@ -147,6 +166,16 @@ export const TeamManager: React.FC = () => {
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (planLimits.maxTeamMembers === 1) {
+      setShowUpgradeModal(true);
+      showToast('Team collaboration requires Growth plan', 'info');
+      return;
+    }
+    if (allUsers.length >= planLimits.maxTeamMembers) {
+      setShowUpgradeModal(true);
+      showToast('Team limit reached (10 max). Upgrade to Scale for unlimited seats.', 'info');
+      return;
+    }
     if (!form.name || !form.email || !form.password) {
       showToast('Please fill all required fields', 'error');
       return;
@@ -268,11 +297,44 @@ export const TeamManager: React.FC = () => {
             Manage your team members, roles and brand assignments
           </p>
         </div>
-        {canManageTeam && (
-          <button onClick={openAddModal} className="w-fit self-start sm:self-auto" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-            <UserPlus style={{ width: 16, height: 16 }} /> Add Member
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {planLimits.maxTeamMembers !== Infinity && (
+            <span
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 700,
+                background: (planLimits.maxTeamMembers === 1 || allUsers.length >= planLimits.maxTeamMembers) ? 'var(--warn-bg, #fffbeb)' : 'var(--bg-subtle, #f1f5f9)',
+                color: (planLimits.maxTeamMembers === 1 || allUsers.length >= planLimits.maxTeamMembers) ? 'var(--warn-text, #92400e)' : 'var(--text-secondary, #64748b)',
+                border: `1px solid ${(planLimits.maxTeamMembers === 1 || allUsers.length >= planLimits.maxTeamMembers) ? 'var(--warn-border, #fde68a)' : 'var(--border, #e2e8f0)'}`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <span>{allUsers.length} / {planLimits.maxTeamMembers === 1 ? '1 Solo Seat (Starter)' : `${planLimits.maxTeamMembers} Seats (Growth)`}</span>
+              {(planLimits.maxTeamMembers === 1 || allUsers.length >= planLimits.maxTeamMembers) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUpgradeModalTitle(planLimits.maxTeamMembers === 1 ? 'Unlock Team Collaboration' : 'Upgrade to Scale');
+                    setUpgradeModalDesc(planLimits.maxTeamMembers === 1 ? 'Upgrade to Growth (₹3,999/mo) to collaborate with up to 10 team members.' : 'Upgrade to Scale (₹7,999/mo) for unlimited team seats.');
+                    setShowUpgradeModal(true);
+                  }}
+                  style={{ background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 12, padding: '2px 8px', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}
+                >
+                  Upgrade
+                </button>
+              )}
+            </span>
+          )}
+          {canManageTeam && (
+            <button onClick={openAddModal} className="w-fit self-start sm:self-auto" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+              <UserPlus style={{ width: 16, height: 16 }} /> Add Member
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -390,6 +452,13 @@ export const TeamManager: React.FC = () => {
           </AlertDialogPopup>
         </AlertDialog>
       )}
+
+      <PlanUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title={upgradeModalTitle}
+        description={upgradeModalDesc}
+      />
     </div>
   );
 };

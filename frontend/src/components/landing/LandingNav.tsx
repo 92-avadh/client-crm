@@ -105,6 +105,11 @@ export const LandingNav: React.FC<LandingNavProps> = ({
               </a>
             </li>
             <li>
+              <a className="m-link-2" href="#pricing">
+                Pricing
+              </a>
+            </li>
+            <li>
               <a className="m-link-2" href="#faq">
                 Questions
               </a>
@@ -286,6 +291,11 @@ export const LandingNav: React.FC<LandingNavProps> = ({
           <li>
             <a className="m-link-2" href="#setup" onClick={closeMenu}>
               Setup
+            </a>
+          </li>
+          <li>
+            <a className="m-link-2" href="#pricing" onClick={closeMenu}>
+              Pricing
             </a>
           </li>
           <li>

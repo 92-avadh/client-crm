@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import type { Lead, LeadStage } from '../../types';
 import {
@@ -12,10 +12,13 @@ import {
   Building2,
   CheckCircle2,
   XCircle,
-  X
+  X,
+  Lock
 } from 'lucide-react';
 import DatePicker from '@/components/ui/DatePicker';
 import { AnimatedNumber } from '../../hooks/useCountUp';
+import { getPlanLimits } from '../../utils/subscriptionPlan';
+import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -44,7 +47,11 @@ export const LeadsPipeline: React.FC = () => {
     updateLeadStage,
     convertLeadToBrand,
     currencySymbol,
+    settings,
   } = useApp();
+
+  const planLimits = useMemo(() => getPlanLimits(settings), [settings]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
   const [leadForm, setLeadForm] = useState({
@@ -73,6 +80,68 @@ export const LeadsPipeline: React.FC = () => {
   };
 
   const stages: LeadStage[] = ['New', 'Contacted', 'Proposal', 'Won', 'Lost'];
+
+  // Plan Lock Check for Free Starter Plan
+  if (!planLimits.canAccessLeads) {
+    return (
+      <div className="animate-fade-in" style={{ padding: '60px 20px', maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+        <div
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 24,
+            background: 'rgba(5, 150, 57, 0.1)',
+            color: '#059639',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 24px',
+            border: '1px solid rgba(5, 150, 57, 0.25)',
+          }}
+        >
+          <Target size={36} />
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 9999, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>
+          <Lock size={12} />
+          <span>Growth Plan Feature</span>
+        </div>
+        <h2 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 12, letterSpacing: '-0.02em' }}>
+          Leads CRM Pipeline is Locked
+        </h2>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 auto 28px' }}>
+          Track prospective client leads, manage deal progression across Kanban stages, and convert "Won" leads to active retainer clients in 1 click. Upgrade to Growth (₹3,999/mo) to unlock the full pipeline.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowUpgradeModal(true)}
+          style={{
+            padding: '12px 28px',
+            background: 'var(--solid-btn-bg, #059639)',
+            color: 'var(--solid-btn-text, #ffffff)',
+            border: 'none',
+            borderRadius: 12,
+            fontSize: 14,
+            fontWeight: 800,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: '0 4px 14px rgba(5, 150, 57, 0.3)',
+          }}
+        >
+          <span>Upgrade to Growth (₹3,999/mo)</span>
+          <ArrowRight size={16} />
+        </button>
+
+        <PlanUpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          title="Unlock Leads CRM Pipeline"
+          description="Upgrade to the Growth Plan to track prospective clients, manage pipeline stages, and grow recurring retainers."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -118,58 +187,79 @@ export const LeadsPipeline: React.FC = () => {
                   </span>
                 </div>
                 <div className="font-amount" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', marginTop: 4 }}>
-                  Value: <AnimatedNumber value={stageTotal} prefix={currencySymbol} />
+                  Total: {currencySymbol}<AnimatedNumber value={stageTotal} />
                 </div>
               </div>
 
-              {/* Lead Cards */}
-              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* Cards Container */}
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
                 {stageLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    style={{ padding: 14, borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 10,
+                      padding: 12,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                    }}
                   >
-                    <div>
-                      <div style={{ fontSize: 10, color: 'var(--accent-text)', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-                        {lead.source}
-                      </div>
-                      <h4 style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-primary)', marginTop: 2, marginBottom: 0 }}>
-                        {lead.company}
-                      </h4>
-                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{lead.contact}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)' }}>{lead.company}</span>
+                      <span className="font-amount" style={{ fontWeight: 800, fontSize: 12, color: 'var(--success-text)' }}>
+                        {currencySymbol}{lead.value.toLocaleString('en-IN')}
+                      </span>
                     </div>
 
-                    <div className="font-amount" style={{ fontWeight: 800, fontSize: 13, color: 'var(--success-text)' }}>
-                      {currencySymbol}{Number(lead.value || 0).toLocaleString()}/mo
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Building2 style={{ width: 12, height: 12 }} /> {lead.name}
                     </div>
 
                     {lead.notes && (
-                      <p style={{ fontSize: 10, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: 8, borderRadius: 8, border: '1px solid var(--border)', lineHeight: 1.5, margin: 0 }}>
-                        {lead.notes}
-                      </p>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', background: 'var(--bg-subtle)', padding: '4px 6px', borderRadius: 4 }}>
+                        "{lead.notes}"
+                      </div>
                     )}
 
-                    <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)' }}>
-                        <span>Follow-up: {lead.followUpDate}</span>
-                        <select
-                          value={lead.stage}
-                          onChange={(e) => updateLeadStage(lead.id, e.target.value as LeadStage)}
-                          style={{ fontSize: 10, color: 'var(--text-primary)', background: 'var(--bg-subtle)', borderRadius: 6, padding: '2px 6px', border: '1px solid var(--border)', outline: 'none', cursor: 'pointer' }}
-                        >
-                          {stages.map((s) => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                      </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Calendar style={{ width: 10, height: 10 }} /> Follow-up: {lead.followUpDate}
+                    </div>
+
+                    {/* Stage Transition Control */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 4 }}>
+                      <select
+                        value={lead.stage}
+                        onChange={(e) => updateLeadStage(lead.id, e.target.value as LeadStage)}
+                        style={{ fontSize: 11, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '2px 4px', color: 'var(--text-primary)', outline: 'none' }}
+                      >
+                        {stages.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
 
                       {lead.stage === 'Won' && (
                         <button
+                          type="button"
                           onClick={() => convertLeadToBrand(lead.id)}
-                          style={{ width: '100%', padding: '6px 0', borderRadius: 8, background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            background: 'var(--success-bg)',
+                            color: 'var(--success-text)',
+                            border: '1px solid var(--success-border)',
+                            borderRadius: 6,
+                            padding: '3px 6px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3
+                          }}
+                          title="Convert to Active Client"
                         >
-                          <Sparkles style={{ width: 14, height: 14 }} />
-                          <span>1-Click Convert to Client</span>
+                          <CheckCircle2 style={{ width: 10, height: 10 }} /> Convert
                         </button>
                       )}
                     </div>
@@ -183,31 +273,25 @@ export const LeadsPipeline: React.FC = () => {
 
       {/* Add Lead Modal */}
       {showAddLeadModal && (
-        <div style={modalOverlay} onClick={() => setShowAddLeadModal(false)}>
-          <div
-            style={{ background: 'var(--bg-card)', borderRadius: 18, width: '100%', maxWidth: 448, boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ padding: 20, borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h3 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14, margin: 0 }}>Add Prospective Client Lead</h3>
-                <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '4px 0 0' }}>Track pipeline before client onboarding</p>
+        <div style={modalOverlay}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', width: '100%', maxWidth: 440, padding: 24, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Target style={{ width: 18, height: 18, color: 'var(--solid-btn-bg)' }} />
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Add Prospective Lead</h3>
               </div>
-              <button
-                onClick={() => setShowAddLeadModal(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
-              >
-                <X style={{ width: 16, height: 16 }} />
+              <button type="button" onClick={() => setShowAddLeadModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                <X style={{ width: 18, height: 18 }} />
               </button>
             </div>
 
-            <form onSubmit={handleAddLeadSubmit} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, fontSize: 12 }}>
+            <form onSubmit={handleAddLeadSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Company Name *</label>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Company / Brand *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. ZenTech Logistics"
+                  placeholder="e.g. Acme Corp"
                   value={leadForm.company}
                   onChange={(e) => setLeadForm({ ...leadForm, company: e.target.value })}
                   style={inputFieldStyle}
@@ -215,35 +299,35 @@ export const LeadsPipeline: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Contact Person Name *</label>
+                <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Primary Contact Person *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Anand Mahindra"
+                  placeholder="e.g. John Doe"
                   value={leadForm.name}
-                  onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value, contact: e.target.value })}
+                  onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
                   style={inputFieldStyle}
                 />
               </div>
 
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Phone</label>
+                  <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Email</label>
                   <input
-                    type="tel"
-                    placeholder="+91 98110 00000"
-                    value={leadForm.phone}
-                    onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
+                    type="email"
+                    placeholder="john@example.com"
+                    value={leadForm.email}
+                    onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
                     style={inputFieldStyle}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Email</label>
+                  <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Phone</label>
                   <input
-                    type="email"
-                    placeholder="contact@company.com"
-                    value={leadForm.email}
-                    onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                    type="text"
+                    placeholder="+91 98765 43210"
+                    value={leadForm.phone}
+                    onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
                     style={inputFieldStyle}
                   />
                 </div>
@@ -293,6 +377,13 @@ export const LeadsPipeline: React.FC = () => {
           </div>
         </div>
       )}
+
+      <PlanUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title="Unlock Leads CRM Pipeline"
+        description="Upgrade to the Growth Plan to track prospective clients, manage pipeline stages, and grow recurring retainers."
+      />
     </div>
   );
 };

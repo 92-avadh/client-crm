@@ -27,8 +27,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   bankIfsc: '',
   bankBranch: '',
   upiId: '',
-  razorpayKeyId: '',
-  razorpayConnected: false,
+  razorpayKeyId: 'rzp_test_Tunrs0OKfC3PO9',
+  razorpayConnected: true,
   subscriptionPlan: {
     name: 'Retentio Agency Plan',
     price: 0,

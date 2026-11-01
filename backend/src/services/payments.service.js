@@ -254,7 +254,8 @@ async function initiateRazorpay(user, invoiceId) {
   if (!rows.length) return null;
 
   const settings = await pool.query("SELECT razorpay_key_id FROM settings WHERE id='main'");
-  const keyId = settings.rows[0]?.razorpay_key_id;
+  const keyId = settings.rows[0]?.razorpay_key_id || process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId) {
     const err = new Error('Online payments are not set up yet. Please contact support.');
     err.status = 503;
@@ -262,7 +263,38 @@ async function initiateRazorpay(user, invoiceId) {
   }
 
   const remainingBalance = Math.max(0, parseFloat(rows[0].total_amount) - parseFloat(rows[0].paid_amount || 0));
-  const orderId = 'order_' + crypto.randomBytes(10).toString('hex');
+  let orderId = 'order_' + crypto.randomBytes(10).toString('hex');
+  const amountInPaise = Math.round(remainingBalance * 100);
+
+  // If Razorpay API credentials are configured, create authentic order on Razorpay
+  if (keyId && keySecret) {
+    try {
+      const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+      const rzpRes = await fetch('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: `inv_${String(invoiceId).slice(0, 30)}`
+        })
+      });
+      if (rzpRes.ok) {
+        const rzpData = await rzpRes.json();
+        if (rzpData?.id) {
+          orderId = rzpData.id;
+        }
+      } else {
+        const errText = await rzpRes.text();
+        console.warn('Razorpay API order creation warning:', errText);
+      }
+    } catch (apiErr) {
+      console.warn('Razorpay API order network warning:', apiErr.message);
+    }
+  }
 
   // Persist order reference on invoice for reconciliation
   await pool.query(

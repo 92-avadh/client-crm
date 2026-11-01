@@ -22,6 +22,7 @@ export interface User {
   role: Role;
   avatar: string;
   designation: string;
+  agencyId?: string;
   assignedBrandIds?: string[];
   brandId?: string;
   permissions?: string[];

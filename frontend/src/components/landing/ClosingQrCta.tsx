@@ -61,7 +61,7 @@ export const ClosingQrCta: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-300 font-medium">
               <span className="flex items-center gap-1.5">
                 <CheckCircle size={14} className="text-emerald-400" />
-                No credit card required
+                14-day full feature trial
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle size={14} className="text-emerald-400" />
@@ -69,7 +69,7 @@ export const ClosingQrCta: React.FC<{ onStartTrial?: () => void }> = ({ onStartT
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle size={14} className="text-emerald-400" />
-                Instant Stripe integration
+                Direct Razorpay settlement
               </span>
             </div>
           </div>

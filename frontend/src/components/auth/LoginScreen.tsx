@@ -6,7 +6,7 @@ import {
   Loader2, AlertCircle, Building2, User,
   CheckCircle2, RefreshCw, ShieldCheck,
   ArrowRight, ArrowLeft, Sparkles, Users, Receipt, BarChart3, LogIn,
-  KeyRound
+  KeyRound, Zap, Crown
 } from 'lucide-react';
 import { api, setToken } from '../../services/api';
 import { getNaturalErrorMessage } from '../../services/errors';
@@ -45,6 +45,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const queryParams = new URLSearchParams(location.search);
+  const selectedPlanParam = (queryParams.get('plan') || '').toLowerCase();
+  const selectedBillingParam = (queryParams.get('billing') || 'monthly').toLowerCase();
+  const hasPlanSelection = ['starter', 'growth', 'scale'].includes(selectedPlanParam);
 
   const [mode, setMode] = useState<'signin' | 'register'>(() => {
     if (typeof window !== 'undefined') {
@@ -295,6 +300,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       const res = await api.auth.verifyOtp({ name: regName, email: regEmail, password: regPassword, company: regCompany, otp: otpValue });
       if (res?.token) {
         setToken(res.token);
+      }
+      if (hasPlanSelection) {
+        localStorage.setItem('retentio_pending_trial', JSON.stringify({
+          plan: selectedPlanParam,
+          billing: selectedBillingParam,
+          adminName: regName,
+          adminEmail: regEmail,
+        }));
       }
       setRegStep('success');
     } catch (err: any) {
@@ -557,6 +570,59 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <p className="form-subtitle">Set up your workspace in less than 2 minutes</p>
                 </div>
 
+                {hasPlanSelection && (
+                  <div style={{
+                    background: selectedPlanParam === 'scale'
+                      ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.12) 100%)'
+                      : selectedPlanParam === 'growth'
+                      ? 'linear-gradient(135deg, rgba(5, 150, 57, 0.08) 0%, rgba(16, 185, 129, 0.12) 100%)'
+                      : '#f8fafc',
+                    border: `1.5px solid ${selectedPlanParam === 'scale' ? '#f59e0b' : selectedPlanParam === 'growth' ? '#10b981' : '#cbd5e1'}`,
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}>
+                    <div style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '10px',
+                      background: selectedPlanParam === 'scale' ? '#fef3c7' : selectedPlanParam === 'growth' ? '#dcfce7' : '#f1f5f9',
+                      color: selectedPlanParam === 'scale' ? '#b45309' : selectedPlanParam === 'growth' ? '#059639' : '#475569',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      {selectedPlanParam === 'scale' ? <Crown size={20} /> : selectedPlanParam === 'growth' ? <Zap size={20} /> : <CheckCircle2 size={20} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>Selected: {selectedPlanParam.toUpperCase()} Plan</span>
+                        <span style={{
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          background: selectedPlanParam === 'scale' ? '#fde68a' : selectedPlanParam === 'growth' ? '#bbf7d0' : '#e2e8f0',
+                          color: selectedPlanParam === 'scale' ? '#92400e' : selectedPlanParam === 'growth' ? '#065f46' : '#334155',
+                          padding: '2px 7px',
+                          borderRadius: '999px',
+                        }}>
+                          {selectedPlanParam === 'starter' ? 'Free Forever' : '14-Day Free Trial'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', lineHeight: 1.4 }}>
+                        {selectedPlanParam === 'growth'
+                          ? `₹${selectedBillingParam === 'annual' ? '3,199' : '3,999'}/mo after 14-day trial • Razorpay authorization after email verification`
+                          : selectedPlanParam === 'scale'
+                          ? `₹${selectedBillingParam === 'annual' ? '6,399' : '7,999'}/mo after 14-day trial • Razorpay authorization after email verification`
+                          : 'Up to 5 clients, 2 invoices, solo workspace • No credit card required'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <form onSubmit={handleSendOtp} className="form-fields">
                   <div>
                     <label className="field-label">Full name</label>
@@ -671,10 +737,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <div className="summary-row"><span className="summary-lbl">Admin</span><span className="summary-val">{regName}</span></div>
                   <div className="summary-row"><span className="summary-lbl">Company</span><span className="summary-val">{regCompany}</span></div>
                   <div className="summary-row"><span className="summary-lbl">Email</span><span className="summary-val font-mono">{regEmail}</span></div>
+                  {hasPlanSelection && (
+                    <div className="summary-row">
+                      <span className="summary-lbl">Selected Plan</span>
+                      <span className="summary-val font-semibold text-emerald-600">
+                        {selectedPlanParam.toUpperCase()} {selectedPlanParam !== 'starter' ? '(14-Day Free Trial)' : '(Free Forever)'}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <button type="button" onClick={() => onLogin(regEmail, regPassword)} className="btn-primary-action">
                   <LogIn size={16} />
-                  <span>Sign In to Your Workspace</span>
+                  <span>
+                    {selectedPlanParam === 'growth' || selectedPlanParam === 'scale'
+                      ? 'Launch Workspace & Activate Trial'
+                      : 'Sign In to Your Workspace'}
+                  </span>
                 </button>
               </div>
             )}

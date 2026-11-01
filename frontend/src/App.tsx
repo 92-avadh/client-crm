@@ -12,6 +12,7 @@ import { Check, AlertCircle, Info, X } from 'lucide-react';
 import { ROUTES, DEFAULT_ROUTE } from './routes';
 import { getDefaultPermissionsForRole } from './components/team/permissionsConfig';
 import { PremiumLogoLoader } from './components/common/PremiumLogoLoader';
+import { SubscriptionBanner } from './components/common/SubscriptionBanner';
 
 /* ------------------------------------------------------------------ */
 /*  Lazy-loaded route components — code splitting for smaller bundle    */
@@ -181,6 +182,7 @@ const MainLayout: React.FC = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         <Topbar />
+        <SubscriptionBanner />
         <main className="app-main flex-1 w-full max-w-full min-w-0">
           {apiError && (
             <div

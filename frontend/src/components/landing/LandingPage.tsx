@@ -11,6 +11,7 @@ import { CallsSection } from './CallsSection';
 import { RoomsGallery } from './RoomsGallery';
 import { TestimonialWall } from './TestimonialWall';
 import { StickyDeck } from './StickyDeck';
+import { PricingMatrix } from './PricingMatrix';
 import { FaqSection } from './FaqSection';
 import { StartCta } from './StartCta';
 import { ContactSection } from './ContactSection';
@@ -554,7 +555,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isLoggedIn: isLoggedIn
         {/* 7. Setup: 3 Numbered Stacking Cards */}
         <StickyDeck />
 
-        {/* 8. FAQ Accordion Section */}
+        {/* 8. Pricing & Plans Matrix */}
+        <PricingMatrix
+          onSelectPlan={(tier) => {
+            if (isLoggedIn) {
+              navigate('/dashboard');
+            } else {
+              navigate(tier === 'starter' ? '/signup' : `/signup?plan=${tier}`);
+            }
+          }}
+        />
+
+        {/* 9. FAQ Accordion Section */}
         <FaqSection />
 
         {/* 9. Start Call To Action with Window Reveal */}

@@ -17,9 +17,14 @@ import {
 } from '@/components/animate-ui/components/base/alert-dialog';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { getPlanLimits } from '../../utils/subscriptionPlan';
+import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
+import { Lock, ArrowRight } from 'lucide-react';
 
 export const MeetingsCalendar: React.FC = () => {
-  const { currentUser, meetings, brands, allUsers, addMeeting, deleteMeeting, holidays } = useApp() as any;
+  const { currentUser, meetings, brands, allUsers, addMeeting, deleteMeeting, holidays, settings } = useApp() as any;
+  const planLimits = React.useMemo(() => getPlanLimits(settings), [settings]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const role = currentUser.role;
 
   const today = new Date().toISOString().split('T')[0];
@@ -180,6 +185,41 @@ export const MeetingsCalendar: React.FC = () => {
     );
   });
   const MeetingCard = MeetingCardInner;
+
+  if (!planLimits.canAccessMeetings) {
+    return (
+      <div className="animate-fade-in" style={{ padding: '60px 20px', maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ width: 72, height: 72, borderRadius: 24, background: 'rgba(5, 150, 57, 0.1)', color: '#059639', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(5, 150, 57, 0.25)' }}>
+          <CalendarDays size={36} />
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 9999, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>
+          <Lock size={12} />
+          <span>Growth Plan Feature</span>
+        </div>
+        <h2 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 12, letterSpacing: '-0.02em' }}>
+          Meetings &amp; Calendar is Locked
+        </h2>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 auto 28px' }}>
+          Schedule retainer reviews, sync client video calls, assign team attendees, and track meeting minutes. Upgrade to Growth (₹3,999/mo) to unlock the full meetings calendar.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowUpgradeModal(true)}
+          style={{ padding: '12px 28px', background: 'var(--solid-btn-bg, #059639)', color: 'var(--solid-btn-text, #ffffff)', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(5, 150, 57, 0.3)' }}
+        >
+          <span>Upgrade to Growth (₹3,999/mo)</span>
+          <ArrowRight size={16} />
+        </button>
+
+        <PlanUpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          title="Unlock Meetings & Calendar Sync"
+          description="Upgrade to the Growth Plan to sync client meetings, coordinate calls, and eliminate scheduling delays."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>

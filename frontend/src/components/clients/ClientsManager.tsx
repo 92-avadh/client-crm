@@ -10,6 +10,8 @@ import { OnboardClientModal, EditClientModal, type ClientFormData } from './Clie
 import { AssignMembersModal } from './AssignMembersModal';
 import { COUNTRIES, parsePhoneAndCountry } from '../ui/CountryCodePicker';
 import Pagination from '../ui/Pagination';
+import { getPlanLimits } from '../../utils/subscriptionPlan';
+import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
 
 const todayIso = () => new Date().toISOString().split('T')[0];
 
@@ -105,10 +107,14 @@ export const ClientsManager: React.FC = () => {
   const {
     currentUser, brands, allUsers, addBrand, updateBrand, assignMembersToBrand,
     selectedBrandId, setSelectedBrandId, invoices, tasks, setActiveTab, showToast,
-    currencySymbol, conversations, setActiveConversationId, startDirectChat,
+    currencySymbol, conversations, setActiveConversationId, startDirectChat, settings
   } = useApp();
 
   const role = currentUser.role;
+  const planLimits = useMemo(() => getPlanLimits(settings), [settings]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalTitle, setUpgradeModalTitle] = useState('');
+  const [upgradeModalDesc, setUpgradeModalDesc] = useState('');
 
   /* ── List state ──────────────────────────────────────────────── */
   const [search, setSearch] = useState('');
@@ -179,6 +185,12 @@ export const ClientsManager: React.FC = () => {
   /* ── Handlers ────────────────────────────────────────────────── */
 
   const openOnboard = () => {
+    if (brands.length >= planLimits.maxClients) {
+      setUpgradeModalTitle('Client Limit Reached (5/5 Clients)');
+      setUpgradeModalDesc('Your Starter plan includes up to 5 active clients. Upgrade to the Growth plan (₹3,999/mo) to manage unlimited retainer clients and access team collaboration.');
+      setShowUpgradeModal(true);
+      return;
+    }
     setFormData(emptyOnboard());
     setFormErrors({});
     setSubmitError('');
@@ -188,6 +200,14 @@ export const ClientsManager: React.FC = () => {
   const handleOnboardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
+
+    if (brands.length >= planLimits.maxClients) {
+      setUpgradeModalTitle('Client Limit Reached (5/5 Clients)');
+      setUpgradeModalDesc('Your Starter plan includes up to 5 active clients. Upgrade to the Growth plan (₹3,999/mo) to manage unlimited retainer clients.');
+      setShowUpgradeModal(true);
+      showToast('Client limit reached on Free Starter plan', 'info');
+      return;
+    }
 
     const errs = validateClientForm(formData);
     if (Object.keys(errs).length > 0) {
@@ -390,6 +410,37 @@ export const ClientsManager: React.FC = () => {
               <Copy className="w-3.5 h-3.5" />
               <span>Copy Intake Link</span>
             </button>
+            {planLimits.maxClients !== Infinity && (
+              <span
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  background: brands.length >= planLimits.maxClients ? 'var(--warn-bg, #fffbeb)' : 'var(--bg-subtle, #f1f5f9)',
+                  color: brands.length >= planLimits.maxClients ? 'var(--warn-text, #92400e)' : 'var(--text-secondary, #64748b)',
+                  border: `1px solid ${brands.length >= planLimits.maxClients ? 'var(--warn-border, #fde68a)' : 'var(--border, #e2e8f0)'}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>{brands.length} / {planLimits.maxClients} Clients (Starter Plan)</span>
+                {brands.length >= planLimits.maxClients && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUpgradeModalTitle('Upgrade to Growth Plan');
+                      setUpgradeModalDesc('Unlock unlimited retainer clients, team seats, and automated invoicing.');
+                      setShowUpgradeModal(true);
+                    }}
+                    style={{ background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 12, padding: '2px 8px', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    Upgrade
+                  </button>
+                )}
+              </span>
+            )}
             <button
               onClick={openOnboard}
               className="w-fit self-start sm:self-auto"
@@ -511,6 +562,13 @@ export const ClientsManager: React.FC = () => {
         onToggle={toggleDraftMember}
         onClose={() => { setShowAssignModal(false); setSelectedBrandForAssign(null); }}
         onSave={saveAssignments}
+      />
+
+      <PlanUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title={upgradeModalTitle}
+        description={upgradeModalDesc}
       />
     </div>
   );

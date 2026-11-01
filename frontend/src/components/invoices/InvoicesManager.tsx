@@ -23,6 +23,8 @@ import {
   AlertDialogAction,
 } from '@/components/animate-ui/components/base/alert-dialog';
 import { AlertTriangle } from 'lucide-react';
+import { getPlanLimits } from '../../utils/subscriptionPlan';
+import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
 
 /**
  * Invoice module orchestrator.
@@ -52,6 +54,9 @@ export const InvoicesManager: React.FC = () => {
     ? currentUser.permissions
     : (currentUser?.role ? getDefaultPermissionsForRole(currentUser.role) : []);
   const canManage = currentUser?.role === 'admin' || currentUser?.role === 'hr' || userPerms.includes('invoices') || userPerms.includes('finance');
+
+  const planLimits = useMemo(() => getPlanLimits(settings), [settings]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -141,6 +146,12 @@ export const InvoicesManager: React.FC = () => {
     }
     if (!builder.items || builder.items.length === 0 || !builder.items[0]?.description) {
       showToast('Please specify at least one invoice service line item', 'error');
+      return;
+    }
+
+    if (invoices.length >= planLimits.maxInvoices) {
+      setShowUpgradeModal(true);
+      showToast('Starter plan limit reached (2 invoices max). Upgrade to Growth for unlimited invoices.', 'info');
       return;
     }
 
@@ -380,12 +391,44 @@ export const InvoicesManager: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
+          {planLimits.maxInvoices !== Infinity && (
+            <span
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 700,
+                background: invoices.length >= planLimits.maxInvoices ? 'var(--warn-bg, #fffbeb)' : 'var(--bg-subtle, #f1f5f9)',
+                color: invoices.length >= planLimits.maxInvoices ? 'var(--warn-text, #92400e)' : 'var(--text-secondary, #64748b)',
+                border: `1px solid ${invoices.length >= planLimits.maxInvoices ? 'var(--warn-border, #fde68a)' : 'var(--border, #e2e8f0)'}`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <span>{invoices.length} / {planLimits.maxInvoices} Invoices (Starter Limit)</span>
+              {invoices.length >= planLimits.maxInvoices && (
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradeModal(true)}
+                  style={{ background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 12, padding: '2px 8px', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}
+                >
+                  Upgrade
+                </button>
+              )}
+            </span>
+          )}
           <button onClick={() => setShowRecurringPanel(true)} style={btnSecondary}>
             <span>🔄 Recurring Schedules</span>
           </button>
           {canManage && (
             <button
               onClick={() => {
+                if (invoices.length >= planLimits.maxInvoices) {
+                  setShowUpgradeModal(true);
+                  showToast('Starter plan limit reached (2 invoices max). Upgrade to Growth for unlimited invoices.', 'info');
+                  return;
+                }
                 builder.reset();
                 setShowCreateModal(true);
               }}
@@ -687,6 +730,13 @@ export const InvoicesManager: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogPopup>
       </AlertDialog>
+
+      <PlanUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title="Invoice Limit Reached"
+        description="Your Starter plan allows up to 2 test invoices. Upgrade to the Growth plan (₹3,999/mo) to unlock unlimited automated invoices, recurring retainer schedules, and direct Razorpay collections."
+      />
     </div>
   );
 };
