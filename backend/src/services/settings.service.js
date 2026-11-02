@@ -19,6 +19,8 @@ function mapSettings(r) {
   return {
     id: r.id,
     companyName: r.company_name,
+    companyLogo: r.company_logo || (invoiceDesign && invoiceDesign.logoUrl) || null,
+    onboardingCompleted: Boolean(r.onboarding_completed),
     companyEmail: r.company_email,
     companyPhone: r.company_phone,
     companyAddress: r.company_address,
@@ -94,9 +96,9 @@ async function updateSettings(user, data) {
       razorpay_key_id, razorpay_connected, subscription_plan_name, subscription_price, subscription_billing_cycle,
       subscription_renewal_date, subscription_status, retention_threshold_days, whatsapp_enabled, invoice_design,
       currency, currency_symbol, industry, team_size, goals, dashboard_layout, dashboard_focus,
-      slack_webhook_url, discord_webhook_url, agency_id, bank_name, updated_at
+      slack_webhook_url, discord_webhook_url, agency_id, bank_name, company_logo, updated_at
     )
-    VALUES ($35, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $36, $37, NOW())
+    VALUES ($35, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $36, $37, $38, NOW())
     ON CONFLICT (id) DO UPDATE SET
       company_name = COALESCE($1, settings.company_name),
       company_email = COALESCE($2, settings.company_email),
@@ -134,6 +136,7 @@ async function updateSettings(user, data) {
       discord_webhook_url = COALESCE($34, settings.discord_webhook_url),
       agency_id = COALESCE(settings.agency_id, $36),
       bank_name = COALESCE($37, settings.bank_name),
+      company_logo = CASE WHEN $38 = '__CLEAR__' THEN NULL WHEN $38 IS NOT NULL THEN $38 ELSE settings.company_logo END,
       updated_at = NOW()
     RETURNING *`,
     [
@@ -174,8 +177,16 @@ async function updateSettings(user, data) {
       settingsId,
       agencyId,
       data.bankName ?? null,
+      data.companyLogo === '' ? '__CLEAR__' : (data.companyLogo ?? (data.invoiceDesign?.logoUrl !== undefined ? (data.invoiceDesign.logoUrl || '__CLEAR__') : null)),
     ]
   );
+  if (data.onboardingCompleted !== undefined && rows[0]) {
+    await pool.query(
+      `UPDATE settings SET onboarding_completed = $1 WHERE id = $2 OR agency_id = $3`,
+      [Boolean(data.onboardingCompleted), settingsId, agencyId]
+    );
+    rows[0].onboarding_completed = Boolean(data.onboardingCompleted);
+  }
   return mapSettings(rows[0]);
 }
 

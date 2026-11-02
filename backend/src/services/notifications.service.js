@@ -71,6 +71,25 @@ async function createNotification({
   } catch (err) {
     console.warn('Socket broadcast warning for notification:', err.message);
   }
+
+  // Dispatch Web Push to mobile & desktop devices
+  try {
+    const push = require('./push.service');
+    const pushPayload = {
+      title: notif.title,
+      body: notif.message,
+      url: notif.linkModule ? `/${notif.linkModule}` : '/inbox',
+      tag: notif.id,
+    };
+    if (targetUserId) {
+      push.sendPushToUser(targetUserId, pushPayload);
+    } else if (resolvedAgencyId) {
+      push.sendPushToAgencyOrRoles(resolvedAgencyId, recipientRoles, pushPayload);
+    }
+  } catch (pushErr) {
+    console.warn('Push notification delivery warning:', pushErr.message);
+  }
+
   return notif;
 }
 

@@ -163,6 +163,8 @@ async function listPayments(user, { brandId, invoiceId } = {}) {
     params.push(invoiceId);
     idx += 1;
   }
+  // Exclude legacy synthetic placeholder pending payments
+  query += " AND NOT (reference_no LIKE 'RET-%' AND status = 'Pending')";
   query += ' ORDER BY created_at DESC';
 
   const { rows } = await pool.query(query, params);

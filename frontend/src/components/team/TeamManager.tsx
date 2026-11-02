@@ -26,6 +26,7 @@ import { getDefaultPermissionsForRole, CORPORATE_ROLES } from './permissionsConf
 import Pagination from '../ui/Pagination';
 import { getPlanLimits } from '../../utils/subscriptionPlan';
 import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
+import { ImageCropperModal } from '../ui/ImageCropperModal';
 
 const emptyForm = (): AddMemberForm => ({
   name: '', email: '', phone: '', designation: 'Team Member', role: 'team', password: '', avatar: '',
@@ -109,28 +110,59 @@ export const TeamManager: React.FC = () => {
 
   /* ── Photo handling ──────────────────────────────────────────── */
 
-  const pickPhoto = async (file: File, apply: (dataUrl: string) => Promise<void> | void) => {
-    const result = await processImageFile(file);
-    if (!result.ok) {
-      showToast(result.error || 'Could not process that image', 'error');
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const cropCallbackRef = React.useRef<((dataUrl: string) => Promise<void> | void) | null>(null);
+
+  const pickPhoto = (file: File, apply: (dataUrl: string) => Promise<void> | void) => {
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const acceptedExts = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!acceptedTypes.includes(file.type) && !acceptedExts.includes(ext)) {
+      showToast('Please select a valid image file (JPG, PNG or WebP)', 'error');
       return;
     }
-    await apply(result.dataUrl!);
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('Photo size must be less than 8MB', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => showToast('Could not read image file. Please try another.', 'error');
+    reader.onload = (e) => {
+      const src = e.target?.result as string;
+      if (src) {
+        cropCallbackRef.current = apply;
+        setCropImageSrc(src);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedDataUrl: string) => {
+    setCropImageSrc(null);
+    if (cropCallbackRef.current) {
+      const cb = cropCallbackRef.current;
+      cropCallbackRef.current = null;
+      await cb(croppedDataUrl);
+    }
   };
 
   const handleUpdateAvatar = async (file: File) => {
     if (!selectedMember || updatingAvatar) return;
     try {
-      setUpdatingAvatar(true);
-      await pickPhoto(file, async (dataUrl) => {
-        await updateTeamMember(selectedMember.id, { avatar: dataUrl });
-        setSelectedMember((prev) => (prev ? { ...prev, avatar: dataUrl } : null));
-        showToast('Profile photo updated successfully', 'success');
+      pickPhoto(file, async (dataUrl) => {
+        try {
+          setUpdatingAvatar(true);
+          await updateTeamMember(selectedMember.id, { avatar: dataUrl });
+          setSelectedMember((prev) => (prev ? { ...prev, avatar: dataUrl } : null));
+          showToast('Profile photo updated successfully', 'success');
+        } catch (err: any) {
+          showToast(getNaturalErrorMessage(err), 'error');
+        } finally {
+          setUpdatingAvatar(false);
+        }
       });
     } catch (err: any) {
       showToast(getNaturalErrorMessage(err), 'error');
-    } finally {
-      setUpdatingAvatar(false);
     }
   };
 
@@ -211,6 +243,16 @@ export const TeamManager: React.FC = () => {
   /* ── Edit member ─────────────────────────────────────────────── */
 
   const openEditModal = (user: User) => {
+    // Security check: non-admins cannot edit admin/founder accounts or other members
+    if (user.role === 'admin' && !isAdmin) {
+      showToast('Access denied: You do not have permission to edit an administrator or founder account.', 'error');
+      return;
+    }
+    if (user.id !== currentUser.id && !isAdmin) {
+      showToast('Access denied: Only administrators can edit team members.', 'error');
+      return;
+    }
+
     setEditingMember(user);
     setEditForm({
       name: user.name || '',
@@ -231,6 +273,14 @@ export const TeamManager: React.FC = () => {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMember) return;
+    if (editingMember.role === 'admin' && !isAdmin) {
+      showToast('Access denied: Only administrators can edit an administrator account.', 'error');
+      return;
+    }
+    if (editingMember.id !== currentUser.id && !isAdmin) {
+      showToast('Access denied: Only administrators can edit other team members.', 'error');
+      return;
+    }
     if (!editForm.name.trim() || !editForm.email.trim() || !editForm.designation.trim()) {
       showToast('Name, Email and Designation are required', 'error');
       return;
@@ -242,11 +292,18 @@ export const TeamManager: React.FC = () => {
         email: editForm.email.trim(),
         phone: editForm.phone.trim(),
         designation: editForm.designation.trim(),
-        role: editForm.role,
         avatar: editForm.avatar || '',
-        permissions: editForm.permissions ?? getDefaultPermissionsForRole(editForm.role),
       };
-      if (editForm.password.trim().length > 0) payload.password = editForm.password.trim();
+      // Privilege escalation defense: non-admins cannot change roles or permissions
+      if (isAdmin) {
+        payload.role = editForm.role;
+        payload.permissions = editForm.permissions ?? getDefaultPermissionsForRole(editForm.role);
+      }
+      if (editForm.password.trim().length > 0) {
+        if (isAdmin || editingMember.id === currentUser.id) {
+          payload.password = editForm.password.trim();
+        }
+      }
 
       await updateTeamMember(editingMember.id, payload);
 
@@ -361,11 +418,11 @@ export const TeamManager: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <StatCard label="Total Members"  value={totalMembers}    icon={<Users style={{ width: 20, height: 20 }} />} />
-        <StatCard label="Active Members" value={activeMembers}   icon={<UserCheck style={{ width: 20, height: 20 }} />} accent="var(--success-text)" />
-        <StatCard label="Admins & HR"    value={adminHrCount}    icon={<Shield style={{ width: 20, height: 20 }} />} accent="var(--info-text)" />
-        <StatCard label="Team Members"   value={teamMemberCount} icon={<Briefcase style={{ width: 20, height: 20 }} />} accent="var(--warn-text)" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard label="Total Members"  value={totalMembers}    icon={<Users style={{ width: 18, height: 18 }} />} />
+        <StatCard label="Active Members" value={activeMembers}   icon={<UserCheck style={{ width: 18, height: 18 }} />} accent="var(--success-text)" />
+        <StatCard label="Admins & HR"    value={adminHrCount}    icon={<Shield style={{ width: 18, height: 18 }} />} accent="var(--info-text)" />
+        <StatCard label="Team Members"   value={teamMemberCount} icon={<Briefcase style={{ width: 18, height: 18 }} />} accent="var(--warn-text)" />
       </div>
 
       {/* Table */}
@@ -426,6 +483,7 @@ export const TeamManager: React.FC = () => {
         open={showEditModal}
         member={editingMember}
         form={editForm}
+        isAdmin={isAdmin}
         onFormChange={(patch) => setEditForm((prev) => ({ ...prev, ...patch }))}
         onClose={() => { setShowEditModal(false); setEditingMember(null); }}
         onSubmit={handleEditSubmit}
@@ -523,6 +581,17 @@ export const TeamManager: React.FC = () => {
         onClose={() => setShowUpgradeModal(false)}
         title={upgradeModalTitle}
         description={upgradeModalDesc}
+      />
+
+      <ImageCropperModal
+        open={Boolean(cropImageSrc)}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCropComplete}
+        onCancel={() => {
+          setCropImageSrc(null);
+          cropCallbackRef.current = null;
+        }}
+        title="Crop Member Photo"
       />
     </div>
   );

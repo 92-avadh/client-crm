@@ -1,11 +1,20 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Save, Camera, Loader2, Trash2, UploadCloud, Send, MessageSquare, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Save, Camera, Loader2, Trash2, UploadCloud, Send, MessageSquare, CheckCircle2, AlertCircle, Bell, Smartphone, Laptop, Check, Volume2 } from 'lucide-react';
 import type { AppSettings, User } from '../../types';
 import { fieldStyle, saveBtnStyle, tabBodyStyle, TabHeader, ToggleRow } from './settingsUi';
 import { processImageFile } from '../team/imageUtils';
 import { AVATAR_PRESETS } from '../team/teamUi';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
+import { ImageCropperModal } from '../ui/ImageCropperModal';
+import {
+  getNotificationPermission,
+  enableDeviceNotifications,
+  disableDeviceNotifications,
+  sendTestNotification,
+  isNotificationSupported,
+  type NotificationPermissionState,
+} from '../../services/nativeNotification';
 
 /* ------------------------------------------------------------------ */
 /*  User Profile tab                                                   */
@@ -28,6 +37,7 @@ export const ProfileTab: React.FC<ProfileProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const dragCounterRef = useRef(0);
   const [photoAction, setPhotoAction] = useState<'uploading' | 'removing' | null>(null);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   const [photoError, setPhotoError] = useState('');
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
@@ -59,20 +69,41 @@ export const ProfileTab: React.FC<ProfileProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleFile = async (file: File) => {
+  const handleFile = (file: File) => {
     if (photoAction) return; // Prevent multiple clicks and race conditions
+    setPhotoError('');
+    setShowPhotoMenu(false);
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const acceptedExts = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!acceptedTypes.includes(file.type) && !acceptedExts.includes(ext)) {
+      setPhotoError('Please select a valid image file (JPG, PNG or WebP)');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setPhotoError('Photo size must be less than 8MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => setPhotoError('Could not read image file. Please try another.');
+    reader.onload = (e) => {
+      const src = e.target?.result as string;
+      if (src) {
+        setCropImageSrc(src);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedDataUrl: string) => {
+    setCropImageSrc(null);
     setPhotoAction('uploading');
     setPhotoError('');
     try {
-      const res = await processImageFile(file);
-      if (res.ok && res.dataUrl) {
-        const timeoutPromise = new Promise<void>((_, reject) =>
-          setTimeout(() => reject(new Error('Photo upload timed out. Please try again.')), 12000)
-        );
-        await Promise.race([onAvatarChange(res.dataUrl), timeoutPromise]);
-      } else if (res.error) {
-        setPhotoError(res.error);
-      }
+      const timeoutPromise = new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error('Photo upload timed out. Please try again.')), 12000)
+      );
+      await Promise.race([onAvatarChange(croppedDataUrl), timeoutPromise]);
     } catch (err: any) {
       setPhotoError(err?.message || 'Could not process that image');
     } finally {
@@ -592,6 +623,14 @@ export const ProfileTab: React.FC<ProfileProps> = ({
         </button>
       </div>
     </form>
+
+    <ImageCropperModal
+      open={Boolean(cropImageSrc)}
+      imageSrc={cropImageSrc}
+      onCropComplete={handleCropComplete}
+      onCancel={() => setCropImageSrc(null)}
+      title="Crop Profile Photo"
+    />
   </div>
 );
 };
@@ -642,6 +681,60 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
     }
   };
 
+  const [nativePerm, setNativePerm] = useState<NotificationPermissionState>(getNotificationPermission());
+  const [testingNative, setTestingNative] = useState(false);
+  const [devicePushEnabled, setDevicePushEnabled] = useState(() => {
+    return isNotificationSupported() && getNotificationPermission() === 'granted' && localStorage.getItem('retentio_device_notifications') !== 'false';
+  });
+
+  const handleToggleDeviceNotifications = async () => {
+    if (!isNotificationSupported()) {
+      showToast('Notifications are not supported in this browser.', 'error');
+      return;
+    }
+
+    if (devicePushEnabled) {
+      await disableDeviceNotifications();
+      setDevicePushEnabled(false);
+      showToast('Device notifications paused on this browser.', 'info');
+    } else {
+      const res = await enableDeviceNotifications();
+      setNativePerm(res.status);
+      if (res.ok) {
+        setDevicePushEnabled(true);
+        showToast('Device & mobile push notifications enabled successfully!', 'success');
+      } else if (res.status === 'denied') {
+        showToast('Notifications are blocked by your browser. Please allow notifications in site permissions.', 'error');
+      } else {
+        showToast(res.error || 'Could not enable notifications. Please check browser settings.', 'error');
+      }
+    }
+  };
+
+  const handleTestNativeNotification = async () => {
+    setTestingNative(true);
+    try {
+      const ok = await sendTestNotification();
+      if (ok) {
+        showToast('Test notification dispatched! Check your mobile status bar or desktop notification tray.', 'success');
+        setNativePerm('granted');
+        setDevicePushEnabled(true);
+      } else {
+        const curPerm = getNotificationPermission();
+        setNativePerm(curPerm);
+        if (curPerm === 'denied') {
+          showToast('Notifications are blocked by your browser. Click the lock/info icon in the address bar to allow.', 'error');
+        } else {
+          showToast('Please allow notification permission when prompted by your browser.', 'info');
+        }
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to dispatch test notification', 'error');
+    } finally {
+      setTestingNative(false);
+    }
+  };
+
   const handleSaveWebhooks = async () => {
     setSavingWebhooks(true);
     try {
@@ -678,12 +771,119 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
           onChange={onWhatsAppToggle}
         />
 
-        <ToggleRow
-          title="In-App Push & Toast Notifications"
-          description="Notify on client assignments, task due dates, and received Razorpay payments."
-          checked
-          onChange={() => {}}
-        />
+        {/* Device & Browser Push Notifications (Desktop & Mobile) */}
+        <div style={{
+          padding: '18px 20px',
+          borderRadius: 12,
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 260 }}>
+              <div style={{
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                background: devicePushEnabled ? 'rgba(34, 197, 94, 0.14)' : 'var(--bg-raised)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: devicePushEnabled ? 'var(--brand-green, #059639)' : 'var(--text-muted)',
+                flexShrink: 0,
+              }}>
+                <Bell size={18} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
+                    Mobile &amp; Desktop Device Notifications
+                  </span>
+                  {nativePerm === 'granted' && devicePushEnabled ? (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                      ● Active on this device
+                    </span>
+                  ) : nativePerm === 'denied' ? (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                      ⚠ Blocked by browser
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: 'var(--bg-subtle)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                      Not enabled yet
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '4px 0 0', lineHeight: 1.5 }}>
+                  Receive system-level alerts on your phone screen, Android notification tray, or desktop notification center for payments, client messages, and task deadlines even when this tab is in the background or minimized.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                onClick={handleTestNativeNotification}
+                disabled={testingNative}
+                style={{
+                  padding: '7px 13px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: 'var(--bg-raised)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {testingNative ? <Loader2 size={13} className="animate-spin" /> : <Volume2 size={13} />}
+                <span>Send Test Alert</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleToggleDeviceNotifications}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: devicePushEnabled ? 'var(--brand-green, #059639)' : 'var(--solid-btn-bg)',
+                  border: 'none',
+                  color: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                }}
+              >
+                {devicePushEnabled ? <Check size={14} /> : <Smartphone size={14} />}
+                <span>{devicePushEnabled ? 'Enabled' : 'Enable on this Device'}</span>
+              </button>
+            </div>
+          </div>
+
+          {nativePerm === 'denied' && (
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              fontSize: 12,
+              color: 'var(--text-primary)',
+              lineHeight: 1.4,
+            }}>
+              <strong>Notifications are blocked in your browser:</strong> Click the <strong>lock / site settings icon (🔒)</strong> in your browser address bar on desktop or mobile, select <strong>Site Settings → Notifications → Allow</strong>, then refresh this page to receive alerts.
+            </div>
+          )}
+        </div>
 
         {/* External Webhooks: Slack & Discord */}
         {isAdmin && (

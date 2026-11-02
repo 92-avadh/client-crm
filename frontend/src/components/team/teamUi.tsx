@@ -107,20 +107,21 @@ export const StatCard: React.FC<{
   label: string; value: number; icon: React.ReactNode; accent?: string;
 }> = ({ label, value, icon, accent }) => (
   <div style={{
-    flex: '1 1 200px', padding: '18px 20px', borderRadius: 14,
+    width: '100%', minWidth: 0, padding: '14px 16px', borderRadius: 14,
     background: 'var(--bg-card)', border: '1px solid var(--border)',
-    display: 'flex', alignItems: 'center', gap: 14,
+    display: 'flex', alignItems: 'center', gap: 12,
+    boxSizing: 'border-box',
   }}>
     <div style={{
-      width: 40, height: 40, borderRadius: 10, background: 'var(--bg-raised)',
+      width: 38, height: 38, borderRadius: 10, background: 'var(--bg-raised)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color: accent || 'var(--text-primary)', flexShrink: 0,
     }}>
       {icon}
     </div>
-    <div>
-      <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{label}</div>
+    <div style={{ minWidth: 0, overflow: 'hidden' }}>
+      <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{label}</div>
     </div>
   </div>
 );

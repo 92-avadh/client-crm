@@ -423,33 +423,33 @@ async function updateBrand(id, data) {
     );
   }
 
-  if (data.paymentStatus || data.monthlyFee !== undefined) {
+  if (data.paymentStatus === 'Paid') {
     const brandRow = rows[0];
-    const targetPayStatus = (data.paymentStatus || brandRow.payment_status) === 'Paid' ? 'Success' : 'Pending';
     const newFee = data.monthlyFee !== undefined
       ? parseFloat(data.monthlyFee)
       : parseFloat(brandRow.monthly_fee);
 
-    const existingPay = await pool.query(
-      'SELECT * FROM payments WHERE brand_id = $1 ORDER BY payment_date DESC, id DESC LIMIT 1',
+    const existingSuccess = await pool.query(
+      "SELECT id FROM payments WHERE brand_id = $1 AND status = 'Success' LIMIT 1",
       [id]
     );
 
-    if (existingPay.rows.length > 0) {
-      await pool.query(
-        `UPDATE payments SET status = $1, amount = COALESCE($2, amount), brand_name = $3 WHERE id = $4`,
-        [targetPayStatus, newFee > 0 ? newFee : null, brandRow.name, existingPay.rows[0].id]
-      );
-    } else if (newFee > 0) {
+    if (!existingSuccess.rows.length && newFee > 0) {
       const today = new Date().toISOString().split('T')[0];
       await pool.query(
-        `INSERT INTO payments (id, invoice_id, brand_id, brand_name, amount, payment_date, mode, reference_no, status)
-         VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, $7)`,
+        `INSERT INTO payments (id, invoice_id, brand_id, brand_name, amount, payment_date, mode, reference_no, status, owner_id, agency_id)
+         VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, 'Success', $7, $8)`,
         [payId(), id, brandRow.name, newFee, today,
-         'RET-' + id.replace('brand_', '').toUpperCase(), targetPayStatus]
+         'RET-' + id.replace('brand_', '').toUpperCase(), user.id, brandRow.agency_id || user.agency_id || null]
       );
     }
   }
+
+  // Purge any synthetic RET- pending payment placeholders so they never double-count with invoices
+  await pool.query(
+    "DELETE FROM payments WHERE brand_id = $1 AND reference_no LIKE 'RET-%' AND status = 'Pending'",
+    [id]
+  );
 
   return getBrandWithDetails(id);
 }

@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { Brand, BrandStatus } from '../../types';
-import { Plus, Search, Filter, Copy } from 'lucide-react';
+import { Plus, Search, Filter, Copy, ChevronDown } from 'lucide-react';
 import { getNaturalErrorMessage } from '../../services/errors';
 import { ClientGrid } from './ClientGrid';
 import { ClientProfileDrawer, type ProfileTab } from './ClientProfileDrawer';
@@ -405,7 +405,8 @@ export const ClientsManager: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                const intakeUrl = `${window.location.origin}/onboard`;
+                const agencyIdentifier = currentUser.agencyId || currentUser.id;
+                const intakeUrl = `${window.location.origin}/onboard/${encodeURIComponent(agencyIdentifier)}`;
                 navigator.clipboard.writeText(intakeUrl);
                 showToast('Self-serve onboarding link copied! Clients can fill it in 3 minutes.', 'success');
               }}
@@ -483,7 +484,8 @@ export const ClientsManager: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0" style={{ maxWidth: '100%' }}>
+        {/* Desktop Filter Pills */}
+        <div className="hidden sm:flex items-center gap-2 min-w-0" style={{ maxWidth: '100%' }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0, whiteSpace: 'nowrap' }}>
             <Filter style={{ width: 13, height: 13 }} /> Filter:
           </span>
@@ -501,6 +503,43 @@ export const ClientsManager: React.FC = () => {
                 {status === 'Churned' ? 'Lost / Cancelled' : status}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Mobile Filter Dropdown */}
+        <div className="flex sm:hidden items-center gap-2 w-full">
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <Filter style={{ width: 13, height: 13 }} /> Status:
+          </span>
+          <div className="relative flex-1">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                width: '100%',
+                height: 38,
+                paddingLeft: 12,
+                paddingRight: 32,
+                fontSize: 13,
+                fontWeight: 600,
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                color: 'var(--text-primary)',
+                outline: 'none',
+                appearance: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="All">All Statuses ({brands.length})</option>
+              <option value="Active">Active Clients</option>
+              <option value="Paid">Paid Clients</option>
+              <option value="Pending">Pending Payment</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Paused">Paused Retainers</option>
+              <option value="Churned">Lost / Cancelled</option>
+            </select>
+            <ChevronDown style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
           </div>
         </div>
       </div>

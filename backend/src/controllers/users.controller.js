@@ -45,12 +45,11 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  // Admins, HR and team managers may edit others; users may always edit themselves.
-  const perms = req.user.permissions || [];
+  // Admins and HR may edit other members; users may only edit their own personal profile.
   const isSelf = req.user.id === req.params.id;
-  const canManage = req.user.role === 'admin' || req.user.role === 'hr' || perms.includes('team');
-  if (!canManage && !isSelf) {
-    return res.status(403).json({ error: "You don't have permission to edit this team member." });
+  const canManageOthers = req.user.role === 'admin' || req.user.role === 'hr';
+  if (!canManageOthers && !isSelf) {
+    return res.status(403).json({ error: "Access denied. Only administrators can edit other team members." });
   }
   const body = makeValidator(req.body)
     .optionalString('name', { max: 150, label: 'Name' })

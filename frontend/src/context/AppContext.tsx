@@ -32,6 +32,7 @@ import type {
 } from '../types';
 import { DEFAULT_SETTINGS } from '../data/defaults';
 import { formatCurrency as formatCurrencyUtil, getCurrencyConfig } from '../utils/currency';
+import { sendNativeNotification } from '../services/nativeNotification';
 // No demo data is imported. Every record must come from the database.
 import { ROUTES, PATH_TO_TAB, DEFAULT_ROUTE } from '../routes';
 import { getDefaultPermissionsForRole } from '../components/team/permissionsConfig';
@@ -199,7 +200,12 @@ export const normalizePaymentsList = (payload: any, brandsList?: Brand[] | null)
       .map(b => b.id)
   );
 
-  return list.filter(Boolean).map((p: any) => {
+  return list.filter(Boolean).filter((p: any) => {
+    const ref = p.referenceNo || p.reference_no || '';
+    // Permanently prune any synthetic placeholder pending rows to prevent double counting
+    if (ref.startsWith('RET-') && p.status === 'Pending') return false;
+    return true;
+  }).map((p: any) => {
     const ref = p.referenceNo || p.reference_no || '';
     const isRetainerPlaceholder = ref.startsWith('RET-');
     const isChurned = p.brandId ? churnedBrandIds.has(p.brandId) : false;
@@ -548,8 +554,6 @@ export const AppProvider: React.FC<{
       localStorage.setItem('retentio_local_expenses', emptyArr);
       localStorage.setItem('retentio_local_meetings', emptyArr);
       localStorage.setItem('retentio_local_leads', emptyArr);
-      localStorage.removeItem('retentio_onboarding_completed');
-      localStorage.removeItem('retentio_onboarding_data');
       // Clear stale mock roster entries left by earlier builds. Never write
       // DEMO_USERS here — that re-injected phantom members on every load.
       localStorage.removeItem('retentio_local_users');
@@ -808,11 +812,48 @@ export const AppProvider: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    const id = Date.now().toString();
-    setToasts(prev => [...prev, { id, type, message }]);
+  const recentToastsRef = useRef<Map<string, number>>(new Map());
+  const recentLocalActionsRef = useRef<Map<string, number>>(new Map());
+
+  const recordLocalAction = useCallback((key: string) => {
+    if (!key) return;
+    const now = Date.now();
+    recentLocalActionsRef.current.set(String(key).toLowerCase(), now);
+    for (const [k, time] of recentLocalActionsRef.current.entries()) {
+      if (now - time > 15000) recentLocalActionsRef.current.delete(k);
+    }
+  }, []);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    if (!message || typeof message !== 'string') return;
+    const trimmed = message.trim();
+    if (!trimmed) return;
+
+    const now = Date.now();
+    // Prune recentToastsRef older than 6 seconds
+    for (const [k, time] of recentToastsRef.current.entries()) {
+      if (now - time > 6000) recentToastsRef.current.delete(k);
+    }
+
+    // Normalize for deduplication comparison (ignore punctuation, whitespace, and case)
+    const normalizedKey = trimmed.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const lastSeen = recentToastsRef.current.get(normalizedKey);
+    if (lastSeen && now - lastSeen < 3500) {
+      // Duplicate toast suppressed within 3.5 seconds
+      return;
+    }
+
+    recentToastsRef.current.set(normalizedKey, now);
+
+    const id = `${now}-${Math.random().toString(36).slice(2, 6)}`;
+    setToasts(prev => {
+      if (prev.some(t => t.message.trim().toLowerCase() === trimmed.toLowerCase())) {
+        return prev;
+      }
+      return [...prev, { id, type, message: trimmed }];
+    });
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  };
+  }, []);
 
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
@@ -1479,6 +1520,8 @@ export const AppProvider: React.FC<{
       });
     }
 
+    recordLocalAction(created.name);
+    recordLocalAction('onboarded');
     showToast(`Client "${created.name}" onboarded successfully!`, 'success');
     pushNotification({
       type: 'assignment',
@@ -1525,35 +1568,33 @@ export const AppProvider: React.FC<{
         try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
         return next;
       });
-    } else if (updates.paymentStatus || updates.monthlyFee !== undefined) {
-      const targetPayStatus = updates.paymentStatus === 'Paid' ? 'Success' : 'Pending';
-      const fee = updates.monthlyFee !== undefined ? Number(updates.monthlyFee) : 0;
-
+    } else if (updates.paymentStatus === 'Paid') {
+      const fee = updates.monthlyFee !== undefined ? Number(updates.monthlyFee) : Number(brands.find(b => b.id === id)?.monthlyFee || 0);
+      if (fee > 0) {
+        setPayments(prev => {
+          const hasSuccess = prev.some(p => p.brandId === id && p.status === 'Success');
+          if (!hasSuccess) {
+            const newPayment: Payment = {
+              id: 'pay_' + Date.now(),
+              brandId: id,
+              brandName: updates.name || brands.find(b => b.id === id)?.name || 'Client Retainer',
+              amount: fee,
+              paymentDate: today,
+              mode: 'Bank Transfer',
+              referenceNo: 'RET-' + id.replace('brand_', '').toUpperCase(),
+              status: 'Success',
+            };
+            const next = [newPayment, ...prev.filter(p => !(p.brandId === id && (p.referenceNo || '').startsWith('RET-')))];
+            try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
+            return next;
+          }
+          return prev;
+        });
+      }
+    } else if (updates.paymentStatus === 'Pending') {
+      // Remove any synthetic RET- pending payment placeholders so they never double-count with invoices
       setPayments(prev => {
-        const hasExisting = prev.some(p => p.brandId === id);
-        let next: Payment[];
-        if (hasExisting) {
-          next = prev.map(p => p.brandId === id ? {
-            ...p,
-            ...(updates.paymentStatus ? { status: targetPayStatus } : {}),
-            ...(fee > 0 ? { amount: fee } : {}),
-            brandName: updates.name || p.brandName,
-          } : p);
-        } else if (fee > 0) {
-          const newPayment: Payment = {
-            id: 'pay_' + Date.now(),
-            brandId: id,
-            brandName: updates.name || 'Client Retainer',
-            amount: fee,
-            paymentDate: today,
-            mode: 'Bank Transfer',
-            referenceNo: 'RET-' + id.replace('brand_', '').toUpperCase(),
-            status: targetPayStatus,
-          };
-          next = [newPayment, ...prev];
-        } else {
-          next = prev;
-        }
+        const next = prev.filter(p => !(p.brandId === id && (p.referenceNo || '').startsWith('RET-') && p.status === 'Pending'));
         try { localStorage.setItem(userKey('retentio_local_payments'), JSON.stringify(next)); } catch {}
         return next;
       });
@@ -1650,6 +1691,8 @@ export const AppProvider: React.FC<{
         try { localStorage.setItem(userKey('retentio_local_projects'), JSON.stringify(next)); } catch {}
         return next;
       });
+      recordLocalAction(created.name);
+      recordLocalAction('project');
       showToast(`Project "${created.name}" created`, 'success');
       pushNotification({
         type: 'task',
@@ -1672,6 +1715,8 @@ export const AppProvider: React.FC<{
         try { localStorage.setItem(userKey('retentio_local_tasks'), JSON.stringify(next)); } catch {}
         return next;
       });
+      recordLocalAction(created.title);
+      recordLocalAction('task');
       showToast('Task added', 'success');
       pushNotification({
         type: 'task',
@@ -1705,6 +1750,8 @@ export const AppProvider: React.FC<{
 
     if (status === 'Completed') {
       const tObj = tasks.find(t => t.id === taskId);
+      if (tObj?.title) recordLocalAction(tObj.title);
+      recordLocalAction('completed');
       pushNotification({
         type: 'task',
         title: 'Task Completed',
@@ -1790,14 +1837,13 @@ export const AppProvider: React.FC<{
       });
       const isDraft = created.status === 'Draft';
       const actionText = isDraft ? 'draft created' : 'generated';
+
+      // Register local action to prevent duplicate toast on incoming socket event
+      if (created.invoiceNumber) recordLocalAction(created.invoiceNumber);
+      if (created.brandName) recordLocalAction(created.brandName);
+      recordLocalAction('invoice');
+
       showToast(`Invoice ${created.invoiceNumber || 'Record'} ${actionText} for ${created.brandName || 'Client'}`, 'success');
-      pushNotification({
-        type: 'invoice',
-        title: isDraft ? 'Invoice Draft Created' : 'Invoice Generated',
-        message: `Invoice ${created.invoiceNumber || ''} ${actionText} for ${created.brandName || 'Client'}.`,
-        linkModule: 'invoices',
-        brandId: created.brandId,
-      });
       return created;
     } catch (err: any) {
       showToast(err?.message || 'Failed to generate invoice', 'error');
@@ -1814,13 +1860,10 @@ export const AppProvider: React.FC<{
     });
     if (status === 'Paid') {
       const inv = invoices.find(i => i.id === id);
-      pushNotification({
-        type: 'payment',
-        title: 'Invoice Marked Paid',
-        message: `Invoice ${inv?.invoiceNumber || ''} for ${inv?.brandName || 'Client'} has been settled.`,
-        linkModule: 'invoices',
-        brandId: inv?.brandId,
-      });
+      if (inv?.invoiceNumber) recordLocalAction(inv.invoiceNumber);
+      if (inv?.brandName) recordLocalAction(inv.brandName);
+      recordLocalAction('paid');
+      showToast(`Invoice ${inv?.invoiceNumber || ''} marked as paid`, 'success');
     }
   };
 
@@ -2286,6 +2329,14 @@ export const AppProvider: React.FC<{
     } catch {
       // Local fallback
     }
+
+    // Trigger native mobile / desktop notification
+    sendNativeNotification({
+      title: newNotif.title,
+      body: newNotif.message,
+      url: newNotif.linkModule ? `/${newNotif.linkModule}` : '/inbox',
+      tag: newNotif.id,
+    }).catch(() => {});
   }, [activeUserId]);
 
   const markNotificationAsRead = async (id: string) => {
@@ -2329,7 +2380,7 @@ export const AppProvider: React.FC<{
       return;
     }
 
-    connectSocket(currentUser.id);
+    connectSocket(currentUser.id, currentUser.agencyId);
     const s = getSocket();
 
     const handleNewMessage = ({ conversationId, message }: { conversationId: string; message: ChatMessage }) => {
@@ -2380,6 +2431,14 @@ export const AppProvider: React.FC<{
       // If active in this conversation, automatically acknowledge receipt
       if (activeConversationIdRef.current === conversationId && message.senderId !== currentUser.id) {
         emitMarkRead(conversationId, currentUser.id);
+      } else if (message.senderId !== currentUser.id) {
+        // Trigger native mobile/desktop alert for incoming chat
+        sendNativeNotification({
+          title: message.senderName ? `💬 ${message.senderName}` : '💬 New Chat Message',
+          body: message.text || (message.attachments?.length ? 'Sent an attachment' : 'New message received'),
+          url: '/chat',
+          tag: `chat_${conversationId}`,
+        }).catch(() => {});
       }
     };
 
@@ -2469,7 +2528,43 @@ export const AppProvider: React.FC<{
         } catch {}
         return updated;
       });
-      showToast(`${notif.title}: ${notif.message}`, 'info');
+
+      // Suppress popup toast if this notification was triggered by a recent user action
+      const now = Date.now();
+      const notifText = `${notif.title || ''} ${notif.message || ''}`.toLowerCase();
+
+      let isRecentLocalAction = false;
+      for (const [actionKey, time] of recentLocalActionsRef.current.entries()) {
+        if (now - time < 8000 && (notifText.includes(actionKey) || actionKey.includes(notifText))) {
+          isRecentLocalAction = true;
+          break;
+        }
+      }
+
+      let hasOverlappingToast = false;
+      for (const [toastKey, time] of recentToastsRef.current.entries()) {
+        if (now - time < 5000) {
+          const normNotif = notifText.replace(/[^a-z0-9]/g, '');
+          if (normNotif.includes(toastKey) || toastKey.includes(normNotif)) {
+            hasOverlappingToast = true;
+            break;
+          }
+        }
+      }
+
+      if (!isRecentLocalAction && !hasOverlappingToast) {
+        showToast(`${notif.title}: ${notif.message}`, 'info');
+      }
+
+      // Always deliver native mobile / desktop notification if not triggered by caller's own direct click
+      if (!isRecentLocalAction) {
+        sendNativeNotification({
+          title: notif.title || 'Retentio Notification',
+          body: notif.message || '',
+          url: notif.linkModule ? `/${notif.linkModule}` : '/inbox',
+          tag: notif.id,
+        }).catch(() => {});
+      }
     };
 
     s.on('new_message', handleNewMessage);

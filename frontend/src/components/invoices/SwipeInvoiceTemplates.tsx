@@ -13,6 +13,54 @@ interface TemplateProps {
 const inr = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const inrPlain = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
+export const InvoiceLogo: React.FC<{ settings: AppSettings; maxHeight?: number; maxWidth?: number }> = ({
+  settings,
+  maxHeight = 36,
+  maxWidth = 140,
+}) => {
+  const showLogo = settings.invoiceDesign?.showLogo !== false;
+  if (!showLogo) return null;
+
+  const agencyLogo = settings.companyLogo || settings.invoiceDesign?.logoUrl;
+  if (agencyLogo) {
+    return (
+      <img
+        src={agencyLogo}
+        alt={settings.companyName || 'Agency Logo'}
+        style={{ maxHeight, maxWidth, objectFit: 'contain' }}
+        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+      />
+    );
+  }
+
+  // Default platform logo, rendered small and clean
+  return (
+    <img
+      src="/retentio-logo-horizontal.png"
+      alt={settings.companyName || 'Retentio'}
+      style={{ maxHeight: Math.min(22, maxHeight), maxWidth: Math.min(95, maxWidth), objectFit: 'contain' }}
+      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+    />
+  );
+};
+
+export const InvoicePoweredBy: React.FC<{ settings: AppSettings }> = ({ settings }) => {
+  const agencyLogo = settings.companyLogo || settings.invoiceDesign?.logoUrl;
+  if (agencyLogo) {
+    return (
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 8.5, color: '#94a3b8' }}>
+        <span>Powered by</span>
+        <img
+          src="/retentio-logo-horizontal.png"
+          alt="Retentio"
+          style={{ height: 11, width: 'auto', objectFit: 'contain', opacity: 0.65 }}
+        />
+      </div>
+    );
+  }
+  return null;
+};
+
 export function getGstBreakdown(invoice: Invoice, settings: AppSettings) {
   const totalTax = (invoice.igstAmount || 0) + (invoice.cgstAmount || 0) + (invoice.sgstAmount || 0);
   let effectiveRate = typeof settings.defaultGstRate === 'number' && settings.defaultGstRate >= 0
@@ -194,12 +242,7 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
             ORIGINAL FOR RECIPIENT
           </div>
           <div style={{ marginTop: 8 }}>
-            <img
-              src="/retentio-logo-horizontal.png"
-              alt={settings.companyName}
-              style={{ maxHeight: 42, maxWidth: 170, objectFit: 'contain' }}
-              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-            />
+            <InvoiceLogo settings={settings} maxHeight={38} maxWidth={160} />
           </div>
         </div>
       </div>
@@ -408,8 +451,9 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
       </div>
 
       {/* Document Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', marginTop: 14, paddingTop: 6, fontSize: 9.5, color: '#94a3b8' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: 14, paddingTop: 6, fontSize: 9.5, color: '#94a3b8' }}>
         <span>Page 1/1</span>
+        <InvoicePoweredBy settings={settings} />
         <span>This is a digitally signed document.</span>
       </div>
     </div>
@@ -445,12 +489,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
           {/* Company Details */}
           <div style={{ padding: '12px 14px', borderRight: '1px solid #0f172a' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <img
-                src="/retentio-logo-horizontal.png"
-                alt={settings.companyName}
-                style={{ maxHeight: 36, maxWidth: 120, objectFit: 'contain' }}
-                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-              />
+              <InvoiceLogo settings={settings} maxHeight={34} maxWidth={120} />
               <div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase' }}>
                   {settings.companyName || 'TATA MOTORS LIMITED'}
@@ -669,8 +708,9 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 9, color: '#64748b' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 9, color: '#64748b' }}>
         <span>Page 1/1</span>
+        <InvoicePoweredBy settings={settings} />
         <span>This is a digitally signed document.</span>
       </div>
     </div>
@@ -692,10 +732,8 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 8, background: '#002c6c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontWeight: 900, fontSize: 16 }}>
-              {(settings.companyName || 'S').slice(0, 1)}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+            <InvoiceLogo settings={settings} maxHeight={36} maxWidth={130} />
             <div>
               <div style={{ fontSize: 18, fontWeight: 900, color: '#002c6c' }}>{settings.companyName || 'Samsung'}</div>
               <div style={{ fontSize: 10.5, fontWeight: 700, color: '#475569' }}>GSTIN {settings.companyGst || '27AAAACT2727Q1ZW'}</div>
@@ -859,8 +897,9 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
         </ol>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', marginTop: 14, paddingTop: 6, fontSize: 9.5, color: '#94a3b8' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: 14, paddingTop: 6, fontSize: 9.5, color: '#94a3b8' }}>
         <span>Page 1/1</span>
+        <InvoicePoweredBy settings={settings} />
         <span>This is a digitally signed document | ORIGINAL FOR RECIPIENT</span>
       </div>
     </div>
@@ -882,12 +921,9 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
-          <img
-            src="/retentio-logo-horizontal.png"
-            alt={settings.companyName}
-            style={{ maxHeight: 38, maxWidth: 140, objectFit: 'contain', marginBottom: 6 }}
-            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-          />
+          <div style={{ marginBottom: 6 }}>
+            <InvoiceLogo settings={settings} maxHeight={38} maxWidth={140} />
+          </div>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a' }}>{settings.companyName || 'Marico Limited'}</div>
           <div style={{ fontSize: 10.5, color: '#475569', maxWidth: 360, marginTop: 2, lineHeight: 1.4 }}>
             {settings.companyAddress || '7th Floor, Grande Palladium, 175, CST Road, Kalina, Santacruz East, Mumbai, 400098'}
@@ -1058,8 +1094,9 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', marginTop: 14, paddingTop: 6, fontSize: 9.5, color: '#94a3b8' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: 14, paddingTop: 6, fontSize: 9.5, color: '#94a3b8' }}>
         <span>Page 1/1</span>
+        <InvoicePoweredBy settings={settings} />
         <span>This is a digitally signed document</span>
       </div>
     </div>

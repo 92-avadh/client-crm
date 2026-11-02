@@ -336,7 +336,7 @@ export const FinanceManager: React.FC = () => {
 
   // Unrecorded brand fees ONLY for active brands explicitly marked 'Paid' that don't have ANY payment row yet
   const unrecordedBrandFees = (brands || [])
-    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id))
+    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id) && !scopedInvoices.some(i => i && i.brandId === b.id && (i.status === 'Paid' || (Number(i.paidAmount) || 0) > 0)))
     .reduce((acc, b) => acc + (Number(b.monthlyFee) || 0), 0);
 
   const totalCollections = paymentsTotal + unrecordedBrandFees;
@@ -350,25 +350,34 @@ export const FinanceManager: React.FC = () => {
   const netAgencyProfit = totalCollections - totalExpenses;
   const netMargin = totalCollections > 0 ? Math.round((netAgencyProfit / totalCollections) * 100) : 0;
 
-  // Pending Collections / Unpaid client fees (NEVER counted in totalCollections)
+  // Pending Collections / Unpaid client receivables (strictly real unpaid invoices and cleared payments)
   const pendingPaymentsTotal = pendingPaymentsList.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
-  const pendingBrandFees = (brands || [])
-    .filter(b => b && b.status === 'Active' && (Number(b.monthlyFee) || 0) > 0 && b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id))
-    .reduce((acc, b) => acc + (Number(b.monthlyFee) || 0), 0);
-  const invoicePendingTotal = scopedInvoices
-    .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedBrandIds.has(i.brandId)))
-    .reduce((acc, i) => acc + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0);
-  const totalPending = invoicePendingTotal + pendingPaymentsTotal + pendingBrandFees;
+  const unpaidInvoicesList = scopedInvoices.filter(
+    i => i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedBrandIds.has(i.brandId))
+  );
+  const invoicePendingTotal = unpaidInvoicesList.reduce(
+    (acc, i) => acc + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)),
+    0
+  );
+  // Total pending collection strictly comes from actual unpaid invoices and pending cleared payments
+  const totalPending = invoicePendingTotal + pendingPaymentsTotal;
 
   const brandProfitability = (brands || []).map((b) => {
     const isChurned = b.status === 'Churned' || b.status === 'Inactive';
+    const hasPaidInvoice = scopedInvoices.some(i => i && i.brandId === b.id && (i.status === 'Paid' || (Number(i.paidAmount) || 0) > 0));
+    const brandInvoicePending = scopedInvoices
+      .filter(i => i && i.brandId === b.id && (i.status === 'Sent' || i.status === 'Overdue'))
+      .reduce((acc, i) => acc + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0);
+
     // Only actual received payments for this brand count as collected revenue
     const revenue = scopedPayments
       .filter((p) => p && p.brandId === b.id && p.status === 'Success' && (!isChurned || !(p.referenceNo || '').startsWith('RET-')))
-      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Paid' && !scopedPayments.some(p => p && p.brandId === b.id) && !hasPaidInvoice ? (Number(b.monthlyFee) || 0) : 0);
+
     const pendingRevenue = scopedPayments
-      .filter((p) => p && p.brandId === b.id && p.status === 'Pending' && (!isChurned || !(p.referenceNo || '').startsWith('RET-')))
-      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + (b.status === 'Active' && b.paymentStatus === 'Pending' && !scopedPayments.some(p => p.brandId === b.id) ? (Number(b.monthlyFee) || 0) : 0);
+      .filter((p) => p && p.brandId === b.id && p.status === 'Pending' && !(p.referenceNo || '').startsWith('RET-'))
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0) + brandInvoicePending;
+
     const directExpenses = scopedExpenses
       .filter((e) => e && e.brandId === b.id && (e.paymentStatus || 'Paid') === 'Paid')
       .reduce((acc, e) => acc + (Number(e?.amount) || 0), 0);
@@ -413,9 +422,26 @@ export const FinanceManager: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards — EXACTLY Matching Dashboard Totals */}
-      <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: 16 }}>
-        <div className="stat-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
+      {/* KPI Cards — EXACTLY Matching Dashboard Totals (Smooth Horizontal Swipe on Mobile) */}
+      <div
+        className="no-scrollbar flex lg:grid lg:grid-cols-4 gap-3 sm:gap-4 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x',
+          scrollSnapType: 'x mandatory',
+          width: '100%',
+        }}
+      >
+        <div
+          className="stat-card shrink-0 w-[260px] sm:w-[280px] lg:w-auto"
+          style={{
+            scrollSnapAlign: 'start',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: 14,
+            padding: '1.4rem 1.5rem',
+          }}
+        >
           <div className="metric-label" style={{ marginBottom: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success-text)' }} />
             Total Collections Received
@@ -431,8 +457,9 @@ export const FinanceManager: React.FC = () => {
 
         {isAdmin && (
           <div
-            className="stat-card"
+            className="stat-card shrink-0 w-[260px] sm:w-[280px] lg:w-auto"
             style={{
+              scrollSnapAlign: 'start',
               background: totalPending > 0 ? 'linear-gradient(135deg, var(--warn-bg) 0%, var(--grad-amber-end) 100%)' : 'var(--bg-card)',
               border: totalPending > 0 ? '1px solid var(--warn-border)' : '1px solid var(--border)',
               borderRadius: 14,
@@ -447,13 +474,24 @@ export const FinanceManager: React.FC = () => {
               <AnimatedNumber value={totalPending} prefix={currencySymbol} />
             </div>
             <div style={{ fontSize: 11, color: 'var(--warn-text)', marginTop: 8 }}>
-              {pendingPaymentsList.length} client payments awaiting clearance
+              {unpaidInvoicesList.length > 0 || pendingPaymentsList.length > 0
+                ? `${unpaidInvoicesList.length > 0 ? `${unpaidInvoicesList.length} unpaid invoice${unpaidInvoicesList.length === 1 ? '' : 's'} awaiting payment` : ''}${unpaidInvoicesList.length > 0 && pendingPaymentsList.length > 0 ? ' · ' : ''}${pendingPaymentsList.length > 0 ? `${pendingPaymentsList.length} payment awaiting clearance` : ''}`
+                : 'All client invoices settled'}
             </div>
           </div>
         )}
 
         {isAdmin && (
-          <div className="stat-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
+          <div
+            className="stat-card shrink-0 w-[260px] sm:w-[280px] lg:w-auto"
+            style={{
+              scrollSnapAlign: 'start',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 14,
+              padding: '1.4rem 1.5rem',
+            }}
+          >
             <div className="metric-label" style={{ marginBottom: 12, color: 'var(--text-secondary)' }}>Total Expenses</div>
             <div className="metric-value font-amount count-up" style={{ color: 'var(--text-primary)' }}>
               <AnimatedNumber value={totalExpenses} prefix={currencySymbol} />
@@ -468,8 +506,9 @@ export const FinanceManager: React.FC = () => {
 
         {isAdmin && (
           <div
-            className="stat-card"
+            className="stat-card shrink-0 w-[260px] sm:w-[280px] lg:w-auto"
             style={{
+              scrollSnapAlign: 'start',
               background: totalCollections > 0 ? 'linear-gradient(135deg, var(--brand-green-subtle) 0%, var(--grad-green-end) 100%)' : 'var(--bg-card)',
               border: totalCollections > 0 ? '1.5px solid var(--success-border)' : '1px solid var(--border)',
               borderRadius: 14,
@@ -488,7 +527,23 @@ export const FinanceManager: React.FC = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="no-scrollbar" style={{ display: 'flex', gap: 4, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '4px 12px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+      <div
+        className="no-scrollbar"
+        style={{
+          display: 'flex',
+          gap: 6,
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          padding: '6px 8px',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x',
+          maxWidth: '100%',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
         <button
           onClick={() => setActiveTab('payments')}
           style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'payments' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'payments' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
@@ -531,10 +586,25 @@ export const FinanceManager: React.FC = () => {
               padding: '10px 16px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div
+              className="no-scrollbar"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-x',
+                maxWidth: '100%',
+                flexWrap: 'nowrap',
+                padding: '2px 0',
+              }}
+            >
               <button
                 onClick={() => setPaymentFilterStatus('all')}
                 style={{
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
                   padding: '6px 12px',
                   borderRadius: 8,
                   fontSize: 12,
@@ -550,6 +620,8 @@ export const FinanceManager: React.FC = () => {
               <button
                 onClick={() => setPaymentFilterStatus('Success')}
                 style={{
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
                   padding: '6px 12px',
                   borderRadius: 8,
                   fontSize: 12,
@@ -569,6 +641,8 @@ export const FinanceManager: React.FC = () => {
               <button
                 onClick={() => setPaymentFilterStatus('Pending')}
                 style={{
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
                   padding: '6px 12px',
                   borderRadius: 8,
                   fontSize: 12,
@@ -688,7 +762,7 @@ export const FinanceManager: React.FC = () => {
             </div>
           )}
 
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+          <div className="table-scroll" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -1095,7 +1169,7 @@ export const FinanceManager: React.FC = () => {
 
       {/* Tab: Client-Wise Profitability Matrix (Admin Only) */}
       {activeTab === 'profitability' && isAdmin && (
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+        <div className="table-scroll" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Client Margin &amp; Profitability Breakdown</h3>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '4px 0 0' }}>

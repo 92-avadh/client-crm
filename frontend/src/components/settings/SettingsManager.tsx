@@ -58,6 +58,12 @@ export const SettingsManager: React.FC = () => {
 
   React.useEffect(() => {
     setFormData({ ...settings });
+    if (settings.companyLogo || settings.invoiceDesign?.logoUrl) {
+      setInvoiceDesign((prev) => ({
+        ...prev,
+        logoUrl: prev.logoUrl || settings.companyLogo || settings.invoiceDesign?.logoUrl || '',
+      }));
+    }
   }, [settings]);
 
   const [profileName, setProfileName] = useState(currentUser.name);
@@ -516,7 +522,10 @@ export const SettingsManager: React.FC = () => {
                   try {
                     localStorage.setItem('retentio_invoice_template', invoiceDesign.template);
                     localStorage.setItem('retentio_invoice_design', JSON.stringify(invoiceDesign));
-                    await updateSettings({ invoiceDesign });
+                    await updateSettings({
+                      invoiceDesign,
+                      companyLogo: invoiceDesign.logoUrl !== undefined ? invoiceDesign.logoUrl : (settings.companyLogo || ''),
+                    });
                     showToast('Invoice design saved successfully', 'success');
                   } catch {
                     showToast('Failed to save invoice design', 'error');

@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/portal.controller');
 
+// Public agency info for self-serve client onboarding
+router.get('/agency/:identifier', controller.getPublicAgency);
+
 // Public intake endpoint for self-serve client onboarding link
 router.post('/intake', controller.intakeClient);
 

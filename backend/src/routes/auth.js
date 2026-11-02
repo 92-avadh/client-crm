@@ -11,6 +11,7 @@ router.post('/login', controller.login);
 router.get('/status', controller.status);
 router.post('/logout', controller.logout);
 router.get('/me', auth, controller.me);
+router.post('/complete-onboarding', auth, controller.completeOnboarding);
 router.post('/forgot-password', controller.forgotPassword);
 router.post('/reset-password', controller.resetPassword);
 

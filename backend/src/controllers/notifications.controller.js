@@ -1,5 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
 const notifications = require('../services/notifications.service');
+const push = require('../services/push.service');
 
 const list = asyncHandler(async (req, res) => {
   res.json(await notifications.listNotifications(req.user, {
@@ -23,4 +24,37 @@ const create = asyncHandler(async (req, res) => {
   res.status(201).json(created);
 });
 
-module.exports = { list, markAllRead, markRead, create };
+const getVapidKey = asyncHandler(async (req, res) => {
+  res.json({ publicKey: push.getVapidPublicKey() });
+});
+
+const pushSubscribe = asyncHandler(async (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const result = await push.saveSubscription(req.user, req.body.subscription, userAgent);
+  res.json(result);
+});
+
+const pushUnsubscribe = asyncHandler(async (req, res) => {
+  const result = await push.removeSubscription(req.body.endpoint);
+  res.json(result);
+});
+
+const testPush = asyncHandler(async (req, res) => {
+  await push.sendPushToUser(req.user.id, {
+    title: '🔔 Retentio Notification Test',
+    body: 'Device notifications are active! You will now receive alerts directly on your mobile & desktop.',
+    url: '/inbox',
+  });
+  res.json({ ok: true });
+});
+
+module.exports = {
+  list,
+  markAllRead,
+  markRead,
+  create,
+  getVapidKey,
+  pushSubscribe,
+  pushUnsubscribe,
+  testPush,
+};

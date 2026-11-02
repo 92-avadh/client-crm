@@ -103,6 +103,48 @@ export const MeetingsCalendar: React.FC = () => {
     return null;
   };
 
+  const AttendeeAvatar: React.FC<{ att: any }> = ({ att }) => {
+    const [imgError, setImgError] = React.useState(false);
+    if (att?.avatar && !imgError) {
+      return (
+        <img
+          src={att.avatar}
+          alt={att.name || 'Attendee'}
+          title={att.name}
+          onError={() => setImgError(true)}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            objectFit: 'cover',
+            border: '1.5px solid var(--border)',
+            flexShrink: 0,
+          }}
+        />
+      );
+    }
+    return (
+      <div
+        title={att.name}
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          background: 'var(--solid-btn-bg)',
+          color: 'var(--solid-btn-text)',
+          fontSize: 10,
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        {(att?.name || '?').charAt(0).toUpperCase()}
+      </div>
+    );
+  };
+
   const MeetingCardInner = React.memo<{ m: Meeting; isPast?: boolean }>(({ m, isPast }) => {
     const brand = brands.find((b: any) => b.id === m.brandId);
     const attendees = (allUsers as any[]).filter(u => m.attendeeIds?.includes(u.id));
@@ -168,15 +210,9 @@ export const MeetingsCalendar: React.FC = () => {
         {attendees.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Attendees:</span>
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 5 }}>
               {attendees.map((att: any) => (
-                <div key={att.id} title={att.name} style={{
-                  width: 24, height: 24, borderRadius: '50%', background: 'var(--solid-btn-bg)',
-                  color: 'var(--solid-btn-text)', fontSize: 10, fontWeight: 700, display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  {(att.name || '?').charAt(0).toUpperCase()}
-                </div>
+                <AttendeeAvatar key={att.id} att={att} />
               ))}
             </div>
           </div>
@@ -474,9 +510,23 @@ export const MeetingsCalendar: React.FC = () => {
                           transition: 'all 0.15s ease',
                         }}
                       >
-                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--bg-raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700 }}>
-                          {(u.name || '?').charAt(0)}
-                        </span>
+                        {u.avatar ? (
+                          <img
+                            src={u.avatar}
+                            alt={u.name}
+                            style={{
+                              width: 18,
+                              height: 18,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <span style={{ width: 18, height: 18, borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--bg-raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>
+                            {(u.name || '?').charAt(0)}
+                          </span>
+                        )}
                         <span>{u.name}</span>
                         {u.id === currentUser.id && <span style={{ opacity: 0.7, fontSize: 9 }}>(You)</span>}
                       </button>

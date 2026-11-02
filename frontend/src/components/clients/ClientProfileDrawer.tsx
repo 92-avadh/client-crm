@@ -379,28 +379,6 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                 <span>Edit</span>
               </button>
             )}
-            {canManage && onDelete && (
-              <button
-                onClick={() => onDelete(brand)}
-                style={{
-                  padding: '7px 12px',
-                  borderRadius: 8,
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                  color: 'var(--danger-text, #ef4444)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-                title="Delete Client Permanently"
-              >
-                <Trash2 style={{ width: 13, height: 13 }} />
-                <span>Delete</span>
-              </button>
-            )}
             <button onClick={onClose} style={{ background: 'var(--bg-raised)', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <X style={{ width: 16, height: 16 }} />
             </button>
@@ -1034,9 +1012,24 @@ export const ClientProfileDrawer: React.FC<Props> = ({
               ) : (
                 assignedUsers.map((u) => (
                   <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
-                      {(u.name || '?').charAt(0).toUpperCase()}
-                    </div>
+                    {u.avatar ? (
+                      <img
+                        src={u.avatar}
+                        alt={u.name}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '1.5px solid var(--border)',
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : (
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                        {(u.name || '?').charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{u.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.designation || u.role}</div>

@@ -264,6 +264,7 @@ connectWithRetry()
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS dashboard_focus VARCHAR(30) DEFAULT 'balanced';
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS slack_webhook_url TEXT;
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS discord_webhook_url TEXT;
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS company_logo TEXT;
 
         -- Brand Retention & SaaS Strategy fields
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'INR';
@@ -344,7 +345,36 @@ connectWithRetry()
         UPDATE audit_logs SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE brands SET payment_status = 'Pending' WHERE status IN ('Churned', 'Inactive') AND payment_status = 'Paid';
         UPDATE payments SET status = 'Pending' WHERE brand_id IN (SELECT id FROM brands WHERE status IN ('Churned', 'Inactive')) AND reference_no LIKE 'RET-%' AND status = 'Success';
+        DELETE FROM payments WHERE reference_no LIKE 'RET-%' AND status = 'Pending';
         UPDATE recurring_invoices SET status = 'Paused' WHERE brand_id IN (SELECT id FROM brands WHERE status IN ('Churned', 'Inactive')) AND status = 'Active';
+
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+          id VARCHAR(50) PRIMARY KEY,
+          user_id VARCHAR(50) NOT NULL,
+          agency_id VARCHAR(50),
+          endpoint TEXT NOT NULL UNIQUE,
+          p256dh TEXT NOT NULL,
+          auth TEXT NOT NULL,
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_push_subs_user_id ON push_subscriptions(user_id);
+        CREATE INDEX IF NOT EXISTS idx_push_subs_agency_id ON push_subscriptions(agency_id);
+
+        -- Database-backed persistent onboarding completion state
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT false;
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT false;
+
+        -- Backfill existing active workspaces that already configured company settings
+        UPDATE users SET onboarding_completed = true 
+        WHERE onboarding_completed = false 
+          AND id IN (
+            SELECT DISTINCT u.id FROM users u 
+            JOIN settings s ON (s.agency_id = u.id OR s.id = 'set_' || u.id OR (u.id = 'usr_admin' AND s.id = 'main')) 
+            WHERE s.company_name IS NOT NULL AND s.company_name != ''
+          );
+        UPDATE settings SET onboarding_completed = true 
+        WHERE onboarding_completed = false AND company_name IS NOT NULL AND company_name != '';
       `).catch(e => console.warn('Migration warning:', e.message));
 
       await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (

@@ -201,7 +201,7 @@ export const AddMemberModal: React.FC<Props> = ({
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={labelStyle}>Phone</label>
-                  <input type="tel" value={form.phone} onChange={(e) => onFormChange({ phone: e.target.value })} style={inputStyle} />
+                  <input type="tel" value={form.phone} onChange={(e) => onFormChange({ phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })} style={inputStyle} />
                 </div>
                 <RoleSelector
                   label="Role"

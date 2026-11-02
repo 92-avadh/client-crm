@@ -24,6 +24,7 @@ interface Props {
   open: boolean;
   member: User | null;
   form: EditMemberForm;
+  isAdmin?: boolean;
   onFormChange: (patch: Partial<EditMemberForm>) => void;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -42,7 +43,7 @@ const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: 
 
 /** Edit-member modal, including optional password reset. */
 export const EditMemberModal: React.FC<Props> = ({
-  open, member, form, onFormChange, onClose, onSubmit,
+  open, member, form, isAdmin = false, onFormChange, onClose, onSubmit,
   submitting, showPassword, onTogglePassword, onPickFile,
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -156,7 +157,7 @@ export const EditMemberModal: React.FC<Props> = ({
             <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={labelStyle}>Phone</label>
-                <input type="tel" value={form.phone} onChange={(e) => onFormChange({ phone: e.target.value })} style={inputStyle} />
+                <input type="tel" value={form.phone} onChange={(e) => onFormChange({ phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })} style={inputStyle} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={labelStyle}>Designation</label>
@@ -164,18 +165,20 @@ export const EditMemberModal: React.FC<Props> = ({
               </div>
             </div>
 
-            <RoleSelector
-              label="Role"
-              required
-              role={form.role}
-              allowAdmin={true}
-              onChange={(newRole) => {
-                onFormChange({
-                  role: newRole,
-                  permissions: form.permissions && form.permissions.length > 0 ? form.permissions : getDefaultPermissionsForRole(newRole),
-                });
-              }}
-            />
+            {isAdmin && (
+              <RoleSelector
+                label="Role"
+                required
+                role={form.role}
+                allowAdmin={isAdmin}
+                onChange={(newRole) => {
+                  onFormChange({
+                    role: newRole,
+                    permissions: form.permissions && form.permissions.length > 0 ? form.permissions : getDefaultPermissionsForRole(newRole),
+                  });
+                }}
+              />
+            )}
 
             {/* Password reset */}
             <div style={{ padding: 16, borderRadius: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -199,13 +202,15 @@ export const EditMemberModal: React.FC<Props> = ({
             </div>
 
             {/* Modular Dashboard Permissions */}
-            <div style={{ marginTop: 4, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-              <PermissionsSelector
-                selectedPermissions={form.permissions ?? (member.permissions && member.permissions.length > 0 ? member.permissions : getDefaultPermissionsForRole(form.role))}
-                onChange={(perms) => onFormChange({ permissions: perms })}
-                role={form.role}
-              />
-            </div>
+            {isAdmin && (
+              <div style={{ marginTop: 4, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                <PermissionsSelector
+                  selectedPermissions={form.permissions ?? (member.permissions && member.permissions.length > 0 ? member.permissions : getDefaultPermissionsForRole(form.role))}
+                  onChange={(perms) => onFormChange({ permissions: perms })}
+                  role={form.role}
+                />
+              </div>
+            )}
           </div>
 
           {/* Footer */}

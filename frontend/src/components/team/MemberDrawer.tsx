@@ -36,7 +36,9 @@ export const MemberDrawer: React.FC<Props> = ({
   if (!member) return null;
 
   const isSelf = Boolean(currentUser && currentUser.id === member.id);
-  const canModify = isAdmin || canManage || isSelf;
+  const isTargetAdmin = member.role === 'admin';
+  // Admin accounts can only be modified by admins. Non-admins cannot modify admins.
+  const canModify = isAdmin ? true : (isSelf && !isTargetAdmin);
 
   return (
     <>

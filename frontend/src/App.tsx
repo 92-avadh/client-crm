@@ -13,6 +13,12 @@ import { ROUTES, DEFAULT_ROUTE } from './routes';
 import { getDefaultPermissionsForRole } from './components/team/permissionsConfig';
 import { PremiumLogoLoader } from './components/common/PremiumLogoLoader';
 import { SubscriptionBanner } from './components/common/SubscriptionBanner';
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  enableDeviceNotifications,
+  getServiceWorkerRegistration,
+} from './services/nativeNotification';
 
 /* ------------------------------------------------------------------ */
 /*  Lazy-loaded route components — code splitting for smaller bundle    */
@@ -557,7 +563,12 @@ export const App: React.FC = () => {
                 localStorage.setItem('retentio_user', JSON.stringify(mergedUser));
               } catch {}
               const isOwnerAdmin = mergedUser.role === 'admin' || mergedUser.role === 'owner';
-              const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
+              const onboardingDone = Boolean(mergedUser.onboardingCompleted) || localStorage.getItem('retentio_onboarding_completed') === 'true';
+              if (onboardingDone) {
+                try {
+                  localStorage.setItem('retentio_onboarding_completed', 'true');
+                } catch {}
+              }
               setShowOnboarding(!onboardingDone && isOwnerAdmin);
             }
           })
@@ -568,7 +579,12 @@ export const App: React.FC = () => {
             }
           });
 
-        const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
+        const onboardingDone = Boolean(user.onboardingCompleted) || localStorage.getItem('retentio_onboarding_completed') === 'true';
+        if (onboardingDone) {
+          try {
+            localStorage.setItem('retentio_onboarding_completed', 'true');
+          } catch {}
+        }
         const isOwnerAdmin = user.role === 'admin' || user.role === 'owner';
         if (!onboardingDone && isOwnerAdmin) {
           setShowOnboarding(true);
@@ -585,9 +601,61 @@ export const App: React.FC = () => {
     setAuthChecked(true);
   }, [handleForceLogout]);
 
+  // Proactively request native device notification permission when app opens / user is authenticated
+  React.useEffect(() => {
+    if (!isLoggedIn || !loginUser) return;
+    if (!isNotificationSupported()) return;
+
+    let mounted = true;
+    const askPermission = async () => {
+      if (!mounted) return;
+      const perm = getNotificationPermission();
+      if (perm === 'default') {
+        try {
+          await enableDeviceNotifications();
+        } catch {}
+      } else if (perm === 'granted') {
+        getServiceWorkerRegistration().catch(() => {});
+      }
+    };
+
+    // 1. Initial attempt shortly after application mounts (desktop browsers allow this)
+    const timer = setTimeout(askPermission, 1200);
+
+    // 2. Mobile gesture-fallback: Chrome on Android requires a user gesture to show the native system notification prompt
+    const handleFirstGesture = () => {
+      if (getNotificationPermission() === 'default') {
+        askPermission();
+      }
+      window.removeEventListener('click', handleFirstGesture);
+      window.removeEventListener('touchend', handleFirstGesture);
+    };
+
+    window.addEventListener('click', handleFirstGesture, { once: true });
+    window.addEventListener('touchend', handleFirstGesture, { once: true });
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+      window.removeEventListener('click', handleFirstGesture);
+      window.removeEventListener('touchend', handleFirstGesture);
+    };
+  }, [isLoggedIn, loginUser]);
+
   const handleOnboardingComplete = useCallback((data: any) => {
     localStorage.setItem('retentio_onboarding_completed', 'true');
     localStorage.setItem('retentio_onboarding_data', JSON.stringify(data));
+
+    // Persist to database so incognito / new devices never show onboarding again
+    api.auth.completeOnboarding().catch(() => {});
+    setLoginUser((prev: any) => {
+      if (!prev) return prev;
+      const updated = { ...prev, onboardingCompleted: true };
+      try {
+        localStorage.setItem('retentio_user', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
     if (data.theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -644,6 +712,15 @@ export const App: React.FC = () => {
 
   const handleOnboardingSkip = useCallback(() => {
     localStorage.setItem('retentio_onboarding_completed', 'true');
+    api.auth.completeOnboarding().catch(() => {});
+    setLoginUser((prev: any) => {
+      if (!prev) return prev;
+      const updated = { ...prev, onboardingCompleted: true };
+      try {
+        localStorage.setItem('retentio_user', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     setShowOnboarding(false);
   }, []);
 
@@ -671,7 +748,12 @@ export const App: React.FC = () => {
         setLoginUser(res.user);
         setIsLoggedIn(true);
         const isOwnerAdmin = res.user.role === 'admin' || res.user.role === 'owner';
-        const onboardingDone = localStorage.getItem('retentio_onboarding_completed');
+        const onboardingDone = Boolean(res.user.onboardingCompleted) || localStorage.getItem('retentio_onboarding_completed') === 'true';
+        if (onboardingDone) {
+          try {
+            localStorage.setItem('retentio_onboarding_completed', 'true');
+          } catch {}
+        }
         setShowOnboarding(!onboardingDone && isOwnerAdmin);
         return;
       }

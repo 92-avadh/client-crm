@@ -34,6 +34,9 @@ export const TeamTable: React.FC<Props> = ({
     {(users || []).filter(Boolean).map((user: any, idx: number) => {
       const isActive = user?.isActive !== false && user?.status !== 'inactive';
       const brandCount = getBrandCount(user?.id);
+      const isTargetAdmin = user?.role === 'admin';
+      // Security: Non-admins can NEVER edit an admin/founder. Non-admins cannot edit other members either.
+      const canEditThisUser = isAdmin ? true : (user.id === currentUserId && !isTargetAdmin);
 
       return (
         <div
@@ -74,7 +77,7 @@ export const TeamTable: React.FC<Props> = ({
               <button onClick={() => onView(user)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'var(--bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
                 View <ChevronRight style={{ width: 13, height: 13 }} />
               </button>
-              {(hasManageRights || user.id === currentUserId) && (
+              {canEditThisUser && (
                 <button onClick={() => onEdit(user)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
                   <Edit3 style={{ width: 13, height: 13 }} /> Edit
                 </button>

@@ -294,6 +294,7 @@ export const api = {
       req<{ success: boolean; message: string }>('POST', '/auth/resend-otp', { email, company }),
     logout: () => req('POST', '/auth/logout'),
     me: () => req<{ user: any }>('GET', '/auth/me'),
+    completeOnboarding: () => req<{ success: boolean; onboardingCompleted: boolean }>('POST', '/auth/complete-onboarding'),
     forgotPassword: (email: string) =>
       req<{ message: string }>('POST', '/auth/forgot-password', { email }),
     resetPassword: (data: { email: string; code: string; newPassword: string }) =>
@@ -395,6 +396,10 @@ export const api = {
     create: (data: any) => req<any>('POST', '/notifications', data),
     markRead: (id: string) => req<any>('PATCH', `/notifications/${id}/read`),
     markAllRead: () => req<any>('PATCH', '/notifications/read-all'),
+    getVapidKey: () => req<{ publicKey: string }>('GET', '/notifications/vapid-key'),
+    pushSubscribe: (subscription: any) => req<any>('POST', '/notifications/push-subscribe', { subscription }),
+    pushUnsubscribe: (endpoint: string) => req<any>('POST', '/notifications/push-unsubscribe', { endpoint }),
+    testPush: () => req<any>('POST', '/notifications/test-push'),
   },
   chat: {
     conversations: () => req<any[]>('GET', '/chat/conversations'),
@@ -428,6 +433,7 @@ export const api = {
   },
   portal: {
     get: (token: string) => req<any>('GET', `/portal/${token}`),
+    getAgency: (identifier: string) => req<any>('GET', `/portal/agency/${encodeURIComponent(identifier)}`),
     submitFeedback: (token: string, data: { score: number; comment?: string }) =>
       req<any>('POST', `/portal/${token}/feedback`, data),
     scheduleSurveyReminder: (token: string) =>

@@ -285,16 +285,6 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                     <span>Assign</span>
                   </button>
                 )}
-                {canManage && onDelete && (
-                  <button onClick={() => onDelete(brand)} title="Delete Client Permanently"
-                    style={{ padding: '5px 10px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', fontSize: 11, fontWeight: 600, color: 'var(--danger-text, #ef4444)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'; }}
-                  >
-                    <Trash2 style={{ width: 12, height: 12 }} />
-                    <span>Delete</span>
-                  </button>
-                )}
               </div>
             </div>
           </div>

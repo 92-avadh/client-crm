@@ -37,6 +37,15 @@ const scheduleSurveyReminder = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+const getPublicAgency = asyncHandler(async (req, res) => {
+  const { identifier } = req.params;
+  const agency = await portalService.getPublicAgencyByIdentifier(identifier);
+  if (!agency) {
+    return res.status(404).json({ error: 'Agency onboarding link not found or invalid.' });
+  }
+  res.json(agency);
+});
+
 const intakeClient = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .requiredString('name', { max: 200, label: 'Company / Client name' })
@@ -56,6 +65,8 @@ const intakeClient = asyncHandler(async (req, res) => {
     .optionalString('currencySymbol', { max: 10, label: 'Currency symbol' })
     .optionalString('contractStartDate', { max: 50, label: 'Start date' })
     .array('deliverables', { max: 100, label: 'Deliverables' })
+    .optionalString('agencyId', { max: 100, label: 'Agency ID' })
+    .optionalString('agencySlug', { max: 100, label: 'Agency Slug' })
     .validate();
 
   const result = await portalService.intakeClient(body);
@@ -66,6 +77,7 @@ module.exports = {
   getPortal,
   submitFeedback,
   scheduleSurveyReminder,
+  getPublicAgency,
   intakeClient,
   getInvoice,
 };

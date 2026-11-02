@@ -21,6 +21,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { processImageFile } from '../team/imageUtils';
+import { ImageCropperModal } from '../ui/ImageCropperModal';
+import { isNotificationSupported, getNotificationPermission, enableDeviceNotifications, sendTestNotification } from '../../services/nativeNotification';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DropdownMenu,
@@ -31,6 +33,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/animate-ui/components/radix/dropdown-menu';
 import { useConfirm } from '../../hooks/useConfirm';
+import { formatTime } from '../../utils/date';
 
 export const Topbar: React.FC = () => {
   const {
@@ -61,30 +64,52 @@ export const Topbar: React.FC = () => {
   const [search, setSearch] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [photoAction, setPhotoAction] = useState<'uploading' | 'removing' | null>(null);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const isPhotoBusy = Boolean(photoAction);
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || photoAction) return;
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const acceptedExts = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!acceptedTypes.includes(file.type) && !acceptedExts.includes(ext)) {
+      showToast('Please select a valid image file (JPG, PNG or WebP)', 'error');
+      if (e.target) e.target.value = '';
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('Photo size must be less than 8MB', 'error');
+      if (e.target) e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => showToast('Could not read image file. Please try another.', 'error');
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string;
+      if (src) {
+        setCropImageSrc(src);
+      }
+    };
+    reader.readAsDataURL(file);
+    if (e.target) e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedDataUrl: string) => {
+    setCropImageSrc(null);
     try {
       setPhotoAction('uploading');
-      const result = await processImageFile(file);
-      if (!result.ok) {
-        showToast(result.error || 'Could not process that image', 'error');
-        return;
-      }
       const targetId = currentUser?.id || 'usr_admin';
       const timeoutPromise = new Promise<void>((_, reject) =>
         setTimeout(() => reject(new Error('Photo upload timed out. Please try again.')), 12000)
       );
-      await Promise.race([updateTeamMember(targetId, { avatar: result.dataUrl }), timeoutPromise]);
+      await Promise.race([updateTeamMember(targetId, { avatar: croppedDataUrl }), timeoutPromise]);
       showToast('Profile photo updated successfully!', 'success');
     } catch (err: any) {
       showToast(err?.message || 'Failed to update profile photo', 'error');
     } finally {
       setPhotoAction(null);
-      if (e.target) e.target.value = '';
     }
   };
 
@@ -710,7 +735,8 @@ export const Topbar: React.FC = () => {
           <DropdownMenuContent
             align="end"
             sideOffset={8}
-            className="w-[min(330px,calc(100vw-32px))] p-0"
+            collisionPadding={12}
+            className="w-[calc(100vw-24px)] sm:w-[360px] max-w-[380px] p-0"
           >
             <div
               style={{
@@ -740,61 +766,127 @@ export const Topbar: React.FC = () => {
                 </button>
               )}
             </div>
-            <div style={{ maxHeight: 290, overflowY: 'auto' }}>
+            {isNotificationSupported() && getNotificationPermission() !== 'granted' && (
+              <div
+                style={{
+                  margin: '10px 14px 6px',
+                  padding: '9px 12px',
+                  borderRadius: 8,
+                  background: 'linear-gradient(135deg, rgba(5, 150, 57, 0.12), rgba(34, 197, 94, 0.05))',
+                  border: '1px solid rgba(34, 197, 94, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                  <Bell size={14} style={{ color: 'var(--brand-green, #059639)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, fontWeight: 650, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                    Enable device alerts for phone &amp; desktop
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const res = await enableDeviceNotifications();
+                    if (res.ok) {
+                      showToast('Device notifications enabled!', 'success');
+                      sendTestNotification();
+                    } else if (res.status === 'denied') {
+                      showToast('Notifications are blocked by your browser. Please allow notifications in site permissions.', 'error');
+                    }
+                  }}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    background: 'var(--brand-green, #059639)',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: 10.5,
+                    fontWeight: 750,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  Enable
+                </button>
+              </div>
+            )}
+            <div style={{ maxHeight: 320, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
               {notifications.length === 0 ? (
                 <div style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--text-muted, #888888)' }}>
                   No notifications
                 </div>
               ) : (
-                notifications.map(n => (
-                  <DropdownMenuItem
-                    key={n.id}
-                    onSelect={() => {
-                      markNotificationAsRead(n.id);
-                      if (n.linkModule) setActiveTab(n.linkModule);
-                    }}
-                    style={{
-                      padding: '13px 18px',
-                      borderRadius: 0,
-                      display: 'block',
-                      borderBottom: '1px solid var(--border, #f0f0f0)',
-                      background: !n.isRead ? 'var(--bg-subtle, #f9f9f9)' : 'transparent',
-                    }}
-                  >
-                    <div
+                notifications.map(n => {
+                  let formattedTime = n.timestamp || 'Just now';
+                  if (formattedTime !== 'Just now' && !formattedTime.includes('ago')) {
+                    try {
+                      formattedTime = formatTime(n.timestamp);
+                    } catch {
+                      formattedTime = n.timestamp;
+                    }
+                  }
+
+                  return (
+                    <DropdownMenuItem
+                      key={n.id}
+                      onSelect={() => {
+                        markNotificationAsRead(n.id);
+                        if (n.linkModule) setActiveTab(n.linkModule);
+                      }}
                       style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        marginBottom: 4,
-                        gap: 8,
+                        padding: '13px 18px',
+                        borderRadius: 0,
+                        display: 'block',
+                        borderBottom: '1px solid var(--border, #f0f0f0)',
+                        background: !n.isRead ? 'var(--bg-subtle, #f9f9f9)' : 'transparent',
                       }}
                     >
-                      <span
+                      <div
                         style={{
-                          fontSize: 12.5,
-                          fontWeight: 700,
-                          color: 'var(--text-primary, #0a0a0a)',
-                          lineHeight: 1.4,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'baseline',
+                          marginBottom: 4,
+                          gap: 8,
                         }}
                       >
-                        {n.title}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: 'var(--text-muted, #888888)',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {n.timestamp}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: 12, color: 'var(--text-secondary, #666666)', lineHeight: 1.5, margin: 0 }}>
-                      {n.message}
-                    </p>
-                  </DropdownMenuItem>
-                ))
+                        <span
+                          style={{
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            color: 'var(--text-primary, #0a0a0a)',
+                            lineHeight: 1.4,
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {n.title}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--text-muted, #888888)',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {formattedTime}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 12, color: 'var(--text-secondary, #666666)', lineHeight: 1.5, margin: 0, wordBreak: 'break-word' }}>
+                        {n.message}
+                      </p>
+                    </DropdownMenuItem>
+                  );
+                })
               )}
             </div>
           </DropdownMenuContent>
@@ -1101,6 +1193,14 @@ export const Topbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ImageCropperModal
+        open={Boolean(cropImageSrc)}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCropComplete}
+        onCancel={() => setCropImageSrc(null)}
+        title="Crop Profile Photo"
+      />
 
       {confirmDialog}
     </header>

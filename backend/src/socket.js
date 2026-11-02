@@ -23,10 +23,13 @@ function initSocket(httpServer, isAllowedOrigin) {
   io.on('connection', (socket) => {
     let currentUserId = null;
 
-    const registerUser = (userId) => {
+    const registerUser = (userId, agencyId) => {
       if (!userId) return;
       currentUserId = userId;
       socket.join(`user_${userId}`);
+      if (agencyId) {
+        socket.join(`agency_${agencyId}`);
+      }
       if (!onlineUserSockets.has(userId)) {
         onlineUserSockets.set(userId, new Set());
       }
@@ -36,8 +39,8 @@ function initSocket(httpServer, isAllowedOrigin) {
     };
 
     // Handle user authentication / registration for personal notifications
-    socket.on('authenticate', ({ userId }) => {
-      registerUser(userId);
+    socket.on('authenticate', ({ userId, agencyId }) => {
+      registerUser(userId, agencyId);
     });
 
     // Join specific active conversation room
@@ -137,6 +140,23 @@ function broadcastNewMessage(conversationId, message, participantIds = []) {
       senderId: message.senderId,
     });
   }
+
+  // 3. Dispatch web push notification to recipients on mobile / desktop
+  try {
+    const push = require('./services/push.service');
+    for (const uid of participantIds) {
+      if (uid && uid !== message.senderId) {
+        push.sendPushToUser(uid, {
+          title: message.senderName ? `💬 ${message.senderName}` : '💬 New Message',
+          body: message.text || (message.attachments?.length ? 'Sent an attachment' : 'New message received'),
+          url: '/chat',
+          tag: `chat_${conversationId}`,
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Chat web push error:', err.message);
+  }
 }
 
 function broadcastMessagesRead(conversationId, userId, messageIds = []) {
@@ -166,9 +186,15 @@ function broadcastMessageDeleted(conversationId, messageId, deleteType, userId) 
 }
 
 function broadcastNotification(notification, targetUserId) {
-  if (!io) return;
+  if (!io || !notification) return;
   if (targetUserId) {
     io.to(`user_${targetUserId}`).emit('new_notification', notification);
+    return;
+  }
+  const agencyId = notification.agency_id || notification.agencyId;
+  if (agencyId) {
+    io.to(`agency_${agencyId}`).emit('new_notification', notification);
+    return;
   }
   io.emit('new_notification', notification);
 }

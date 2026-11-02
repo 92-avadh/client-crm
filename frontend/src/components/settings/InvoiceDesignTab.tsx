@@ -1,5 +1,5 @@
 import React from 'react';
-import { Save, CheckCircle2 } from 'lucide-react';
+import { Save, CheckCircle2, Upload, RotateCcw } from 'lucide-react';
 import type { AppSettings } from '../../types';
 import { fieldStyle, saveBtnStyle, fieldGridStyle, tabBodyStyle, TabHeader, ToggleRow } from './settingsUi';
 
@@ -12,6 +12,7 @@ export interface InvoiceDesign {
   termsAndConditions: string;
   showLogo: boolean;
   showSignature: boolean;
+  logoUrl?: string;
 }
 
 interface Props {
@@ -38,18 +39,99 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
 
     {/* Logo */}
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Company Logo</label>
-      <div style={{ border: '1.5px solid var(--border)', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-subtle)' }}>
+      <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Company &amp; Invoice Logo</label>
+      <div style={{ border: '1.5px solid var(--border)', borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, background: 'var(--bg-subtle)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ padding: '6px 12px', borderRadius: 8, background: '#ffffff', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/retentio-logo-horizontal.png" alt="Retentio Logo" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />
+          <div style={{ width: 90, height: 48, borderRadius: 8, background: '#ffffff', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, overflow: 'hidden' }}>
+            {(design.logoUrl || settings.companyLogo) ? (
+              <img
+                src={design.logoUrl || settings.companyLogo}
+                alt="Active Agency Logo"
+                style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              <img
+                src="/retentio-logo-horizontal.png"
+                alt="Default Retentio Logo"
+                style={{ maxHeight: 20, maxWidth: '100%', objectFit: 'contain' }}
+              />
+            )}
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Official Retentio Brand Logo</div>
-            <div style={{ fontSize: 11, color: 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-              <CheckCircle2 style={{ width: 12, height: 12 }} /> Active across navigation, invoices & client views
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {(design.logoUrl || settings.companyLogo) ? 'Custom Agency Logo' : 'Official Retentio Brand Logo (Default)'}
+            </div>
+            <div style={{ fontSize: 11, color: (design.logoUrl || settings.companyLogo) ? 'var(--accent-text, #2563eb)' : 'var(--success-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+              <CheckCircle2 style={{ width: 12, height: 12 }} />
+              {(design.logoUrl || settings.companyLogo)
+                ? 'Active as primary logo on all generated invoices'
+                : 'Default platform logo (small) active on invoices'}
             </div>
           </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '7px 14px',
+              borderRadius: 8,
+              background: 'var(--solid-btn-bg, #0f172a)',
+              color: '#ffffff',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            <Upload size={13} />
+            <span>{(design.logoUrl || settings.companyLogo) ? 'Change Logo' : 'Upload Logo'}</span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) {
+                  alert('Logo file size must be less than 2MB.');
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const result = event.target?.result as string;
+                  if (result) {
+                    onChange({ logoUrl: result });
+                  }
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+          </label>
+
+          {(design.logoUrl || settings.companyLogo) && (
+            <button
+              type="button"
+              onClick={() => onChange({ logoUrl: '' })}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '7px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-card)',
+                color: 'var(--danger-text, #ef4444)',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <RotateCcw size={13} />
+              <span>Reset to Default</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

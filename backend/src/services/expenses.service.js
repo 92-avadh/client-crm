@@ -11,6 +11,12 @@ const EXPENSE_CATEGORIES = [
   'Client Deliverable Production',
   'Software & Cloud Infra',
   'Brand Expenses',
+  'Other Deliverable Costs',
+  'Employee Salaries',
+  'Office Expenses',
+  'Software & Subscriptions',
+  'Marketing Expenses',
+  'Other Expenses',
   'Salary',
   'Rent',
   'Utilities',
@@ -21,6 +27,8 @@ const EXPENSE_CATEGORIES = [
 ];
 const PAYMENT_MODES = ['Corporate Card', 'Bank Transfer', 'Cash', 'UPI', 'Cheque', 'Company NetBanking'];
 const PAYMENT_STATUSES = ['Paid', 'Pending'];
+
+const formatAmount = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const { formatDateOnly } = require('../utils/dateUtils');
 

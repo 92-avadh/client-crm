@@ -247,49 +247,79 @@ async function scheduleSurveyReminder(token) {
   };
 }
 
+async function getPublicAgencyByIdentifier(rawIdentifier) {
+  if (!rawIdentifier || typeof rawIdentifier !== 'string') return null;
+  const identifier = rawIdentifier.trim();
+  const slugClean = identifier.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const { rows } = await pool.query(
+    `SELECT u.id AS admin_id,
+            COALESCE(u.agency_id, u.id) AS agency_id,
+            COALESCE(s.company_name, u.name) AS company_name,
+            s.company_logo,
+            COALESCE(s.company_email, u.email) AS company_email,
+            COALESCE(s.currency, 'INR') AS currency,
+            COALESCE(s.currency_symbol, '₹') AS currency_symbol
+     FROM users u
+     LEFT JOIN settings s ON (s.agency_id = u.id OR s.id = 'set_' || u.id OR (u.id = 'usr_admin' AND s.id = 'main'))
+     WHERE u.role = 'admin'
+       AND (
+         u.id = $1
+         OR u.agency_id = $1
+         OR s.id = $1
+         OR s.agency_id = $1
+         OR LOWER(s.company_name) = LOWER($1)
+         OR LOWER(REPLACE(s.company_name, ' ', '-')) = LOWER($1)
+         OR (LENGTH($2) > 2 AND LOWER(REGEXP_REPLACE(s.company_name, '[^a-zA-Z0-9]', '', 'g')) = $2)
+         OR (LENGTH($2) > 2 AND LOWER(REGEXP_REPLACE(u.name, '[^a-zA-Z0-9]', '', 'g')) = $2)
+       )
+     ORDER BY CASE WHEN u.id = $1 OR u.agency_id = $1 THEN 0 ELSE 1 END
+     LIMIT 1`,
+    [identifier, slugClean]
+  );
+
+  if (!rows.length) return null;
+  const r = rows[0];
+  return {
+    agencyId: r.agency_id,
+    adminId: r.admin_id,
+    companyName: r.company_name,
+    companyLogo: r.company_logo,
+    companyEmail: r.company_email,
+    currency: r.currency,
+    currencySymbol: r.currency_symbol,
+  };
+}
+
 async function intakeClient(data) {
   if (!data || !data.name || !data.name.trim()) {
     throw new Error('Company or Client name is required.');
   }
 
+  // Resolve agency and owner - STRICTLY require valid agency to prevent multi-tenant data leaks
+  const identifier = (data.agencyId || data.agencySlug || '').trim();
+  if (!identifier) {
+    const err = new Error('Agency onboarding identifier is required. Please use the personalized onboarding link provided by your agency.');
+    err.status = 400;
+    throw err;
+  }
+
+  const agency = await getPublicAgencyByIdentifier(identifier);
+  if (!agency) {
+    const err = new Error('Agency onboarding link is invalid or expired. Please contact your agency for a valid onboarding link.');
+    err.status = 400;
+    throw err;
+  }
+
+  const ownerId = agency.adminId;
+  const agencyId = agency.agencyId;
+
   const id = 'brand_' + crypto.randomBytes(6).toString('hex');
   const magicToken = 'tok_' + crypto.randomBytes(12).toString('hex');
   const today = new Date().toISOString().split('T')[0];
   const fee = parseFloat(data.monthlyFee) || 0;
-  const currency = data.currency || 'INR';
-  const currencySymbol = data.currencySymbol || '₹';
-
-  // Resolve agency and owner
-  let agencyId = data.agencyId || null;
-  let ownerId = null;
-
-  if (agencyId) {
-    const adminRes = await pool.query(
-      "SELECT id, agency_id FROM users WHERE (id = $1 OR agency_id = $1) AND role = 'admin' LIMIT 1",
-      [agencyId]
-    );
-    if (adminRes.rows.length) {
-      ownerId = adminRes.rows[0].id;
-      agencyId = adminRes.rows[0].agency_id || adminRes.rows[0].id;
-    }
-  } else if (data.agencySlug) {
-    const settingsRes = await pool.query(
-      "SELECT id, user_id FROM settings WHERE company_name ILIKE $1 OR id = $1 LIMIT 1",
-      [data.agencySlug]
-    );
-    if (settingsRes.rows.length) {
-      agencyId = settingsRes.rows[0].id;
-      ownerId = settingsRes.rows[0].user_id || agencyId;
-    }
-  }
-
-  if (!ownerId) {
-    const adminRes = await pool.query("SELECT id, agency_id FROM users WHERE role = 'admin' ORDER BY created_at ASC LIMIT 1");
-    if (adminRes.rows.length) {
-      ownerId = adminRes.rows[0].id;
-      agencyId = adminRes.rows[0].agency_id || ownerId;
-    }
-  }
+  const currency = data.currency || agency.currency || 'INR';
+  const currencySymbol = data.currencySymbol || agency.currencySymbol || '₹';
 
   const deliverables = Array.isArray(data.deliverables) ? JSON.stringify(data.deliverables) : '[]';
 
@@ -325,7 +355,7 @@ async function intakeClient(data) {
     );
   }
 
-  // Real-time notification & Socket.io broadcast
+  // Real-time notification & Socket.io broadcast (isolated to this agency)
   try {
     const { createNotification } = require('./notifications.service');
     const { broadcastNotification } = require('../socket');
@@ -336,6 +366,7 @@ async function intakeClient(data) {
       linkModule: 'clients',
       brandId: id,
       recipientRoles: ['admin', 'manager', 'team'],
+      agencyId,
     });
     if (notif) broadcastNotification(notif);
   } catch (err) {
@@ -413,6 +444,7 @@ module.exports = {
   submitPortalFeedback,
   scheduleSurveyReminder,
   processScheduledSurveyReminders,
+  getPublicAgencyByIdentifier,
   intakeClient,
   getPortalInvoiceDetails,
 };

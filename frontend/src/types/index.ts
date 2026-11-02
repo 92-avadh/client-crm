@@ -27,6 +27,7 @@ export interface User {
   brandId?: string;
   permissions?: string[];
   isActive?: boolean;
+  onboardingCompleted?: boolean;
   status?: string;
 }
 
@@ -317,6 +318,8 @@ export interface AuditLogItem {
 
 export interface AppSettings {
   companyName: string;
+  companyLogo?: string;
+  onboardingCompleted?: boolean;
   companyEmail: string;
   companyPhone: string;
   companyAddress: string;

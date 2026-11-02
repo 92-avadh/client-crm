@@ -1,0 +1,30 @@
+{
+  "name": "Retentio — Client CRM & Operations",
+  "short_name": "Retentio",
+  "description": "Subscription-Based Client Management Platform for agencies, CAs, and consultants",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090d16",
+  "theme_color": "#059639",
+  "icons": [
+    {
+      "src": "/retentio-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/retentio-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
+}
+

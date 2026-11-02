@@ -185,8 +185,8 @@ export const ExpensesManager: React.FC = () => {
 
       setModalOpen(false);
       setEditingExpense(null);
-    } catch (err: any) {
-      showToast(getNaturalErrorMessage(err), 'error');
+    } catch (_err: any) {
+      // Error toast is already displayed with clear messaging by AppContext
     } finally {
       setIsSubmitting(false);
     }
@@ -247,8 +247,8 @@ export const ExpensesManager: React.FC = () => {
       setDeleteModalOpen(false);
       setExpenseToDelete(null);
       setExpensesToDelete([]);
-    } catch (err: any) {
-      showToast(getNaturalErrorMessage(err), 'error');
+    } catch (_err: any) {
+      // Error toast is already displayed with clear messaging by AppContext
     } finally {
       setIsDeleting(false);
     }

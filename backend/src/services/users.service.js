@@ -25,6 +25,7 @@ function mapUser(u, brandIds) {
     assignedBrandIds: brandIds || [],
     createdBy: u.created_by || null,
     agencyId: u.agency_id || u.created_by || u.id,
+    onboardingCompleted: Boolean(u.onboarding_completed),
   };
 }
 
@@ -162,11 +163,12 @@ async function updateUser(actor, userId, data) {
   const permissionsJson = (canManageRoles && data.permissions !== undefined)
     ? JSON.stringify(Array.isArray(data.permissions) ? data.permissions : [])
     : JSON.stringify(prevPerms);
+  const nextOnboarding = data.onboardingCompleted !== undefined ? Boolean(data.onboardingCompleted) : Boolean(prev.onboarding_completed);
 
   const { rows } = await pool.query(
     `UPDATE users
-     SET name = $1, email = $2, phone = $3, designation = $4, avatar = $5, role = $6, password_hash = $7, permissions = $8::jsonb
-     WHERE id = $9 RETURNING *`,
+     SET name = $1, email = $2, phone = $3, designation = $4, avatar = $5, role = $6, password_hash = $7, permissions = $8::jsonb, onboarding_completed = $9
+     WHERE id = $10 RETURNING *`,
     [
       data.name !== undefined ? data.name : prev.name,
       data.email !== undefined ? data.email.trim() : prev.email,
@@ -176,6 +178,7 @@ async function updateUser(actor, userId, data) {
       nextRole,
       passwordHash,
       permissionsJson,
+      nextOnboarding,
       userId,
     ]
   );

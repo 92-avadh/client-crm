@@ -32,9 +32,8 @@ export function useFinancials(payments: Payment[], expenses: Expense[], brands: 
 
     const netProfit = totalReceived - totalExpenses;
 
-    const pendingBrandFees = safeBrands
-      .filter(b => b && b.status === 'Active' && b.paymentStatus !== 'Paid')
-      .reduce((sum, b) => sum + (Number(b?.monthlyFee) || 0), 0);
+    // Retainer rates are contract terms, not unbilled debts
+    const pendingBrandFees = 0;
 
     const unrecordedBrandFees = safeBrands
       .filter(b => b && b.status === 'Active' && !b.lastPaymentDate)

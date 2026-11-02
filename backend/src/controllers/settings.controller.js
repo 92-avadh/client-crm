@@ -41,7 +41,8 @@ const update = asyncHandler(async (req, res) => {
     .optionalString('razorpayKeyId', { max: 120, label: 'Razorpay key' })
     .number('retentionThresholdDays', { min: 1, max: 365, label: 'Retention threshold' })
     .optionalString('slackWebhookUrl', { max: 500, label: 'Slack Webhook URL' })
-    .optionalString('discordWebhookUrl', { max: 500, label: 'Discord Webhook URL' });
+    .optionalString('discordWebhookUrl', { max: 500, label: 'Discord Webhook URL' })
+    .optionalString('companyLogo', { max: 3_000_000, label: 'Company logo' });
 
   if (req.body.companyEmail) {
     v.email('companyEmail', { label: 'Company email' });

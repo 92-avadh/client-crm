@@ -115,6 +115,7 @@ const me = asyncHandler(async (req, res) => {
           agencyId,
           createdBy: u.created_by || null,
           permissions: perms,
+          onboardingCompleted: Boolean(u.onboarding_completed),
         }
       });
     }
@@ -147,4 +148,17 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
-module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword, status, searchAgencies };
+const completeOnboarding = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const agencyId = getAgencyId(req.user);
+
+  await pool.query('UPDATE users SET onboarding_completed = true WHERE id = $1', [userId]);
+  await pool.query(
+    'UPDATE settings SET onboarding_completed = true WHERE agency_id = $1 OR id = $2 OR id = $3',
+    [agencyId, 'set_' + agencyId, 'main']
+  );
+
+  res.json({ success: true, onboardingCompleted: true });
+});
+
+module.exports = { sendOtp, resendOtp, verifyOtp, login, logout, me, forgotPassword, resetPassword, status, searchAgencies, completeOnboarding };

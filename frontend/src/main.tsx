@@ -2,6 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { getServiceWorkerRegistration } from './services/nativeNotification'
+
+// Initialize Service Worker for background, mobile & desktop notifications
+if (typeof window !== 'undefined') {
+  getServiceWorkerRegistration().catch(() => {});
+}
 
 // Globally prevent mouse wheel scrolling from changing values on any number inputs
 if (typeof window !== 'undefined') {

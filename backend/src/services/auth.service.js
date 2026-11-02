@@ -160,6 +160,7 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
       id: user.id, name: user.name, email: user.email,
       role: user.role, designation: user.designation,
       permissions: JSON.parse(defaultAdminPerms),
+      onboardingCompleted: false,
     },
   };
 }
@@ -288,6 +289,7 @@ async function login({ email, password, agencyId, portalType }) {
       agencyId: getAgencyId(user),
       createdBy: user.created_by || null,
       permissions: perms,
+      onboardingCompleted: Boolean(user.onboarding_completed),
     },
   };
 }

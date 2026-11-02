@@ -1,5 +1,5 @@
 import React from 'react';
-import { Save, Coins, Briefcase, Layout, Target, Check } from 'lucide-react';
+import { Save, Coins, Briefcase, Layout, Target, Check, Upload, RotateCcw, Image as ImageIcon } from 'lucide-react';
 import type { AppSettings } from '../../types';
 import { fieldStyle, saveBtnStyle, fieldGridStyle, tabBodyStyle, TabHeader } from './settingsUi';
 import { SUPPORTED_CURRENCIES, getCurrencyConfig, formatCurrency } from '../../utils/currency';
@@ -22,7 +22,13 @@ const Field: React.FC<{
     <input
       type={type}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => {
+        let val = e.target.value;
+        if (type === 'tel') {
+          val = val.replace(/[^0-9+\s\-()]/g, '');
+        }
+        onChange(val);
+      }}
       style={mono ? { ...fieldStyle, fontFamily: 'monospace' } : fieldStyle}
     />
   </div>
@@ -82,6 +88,162 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
         title="Agency Profile & Business Details"
         subtitle="Business credentials, statutory operating currency, and workspace preferences configured during onboarding."
       />
+
+      {/* ── Section 0: Agency Branding & Logo ─────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ImageIcon size={16} className="text-blue-500" />
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+            Agency Branding &amp; Logo
+          </h3>
+        </div>
+
+        <div
+          style={{
+            border: '1.5px solid var(--border)',
+            borderRadius: 14,
+            padding: '18px 20px',
+            background: 'var(--bg-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 16,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div
+              style={{
+                width: 90,
+                height: 52,
+                borderRadius: 10,
+                background: '#ffffff',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 6,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                overflow: 'hidden',
+              }}
+            >
+              {formData.companyLogo ? (
+                <img
+                  src={formData.companyLogo}
+                  alt={formData.companyName || 'Agency Logo'}
+                  style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                />
+              ) : (
+                <img
+                  src="/retentio-logo-horizontal.png"
+                  alt="Default Platform Logo"
+                  style={{ maxHeight: 20, maxWidth: '100%', objectFit: 'contain' }}
+                />
+              )}
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {formData.companyLogo ? 'Custom Agency Logo Active' : 'Default Platform Logo'}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    background: formData.companyLogo ? 'var(--success-bg, rgba(22,163,74,0.1))' : 'var(--bg-card)',
+                    color: formData.companyLogo ? 'var(--success-text, #16a34a)' : 'var(--text-secondary)',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  {formData.companyLogo ? 'Custom' : 'Default (Retentio)'}
+                </span>
+              </div>
+              <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', margin: '4px 0 0', lineHeight: 1.4 }}>
+                This logo will appear on all your client invoices, receipts, and client views. Supported: PNG, JPG, WebP, SVG (up to 2MB).
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <label
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 14px',
+                borderRadius: 8,
+                background: 'var(--solid-btn-bg, #0f172a)',
+                color: '#ffffff',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Upload size={14} />
+              <span>{formData.companyLogo ? 'Change Logo' : 'Upload Agency Logo'}</span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 2 * 1024 * 1024) {
+                    alert('Logo file size must be less than 2MB.');
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    const result = event.target?.result as string;
+                    if (result) {
+                      onChange({
+                        companyLogo: result,
+                        invoiceDesign: { ...(formData.invoiceDesign || {}), logoUrl: result },
+                      });
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
+
+            {formData.companyLogo && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange({
+                    companyLogo: '',
+                    invoiceDesign: { ...(formData.invoiceDesign || {}), logoUrl: '' },
+                  });
+                }}
+                title="Reset to default platform logo"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-card)',
+                  color: 'var(--danger-text, #ef4444)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <RotateCcw size={13} />
+                <span>Reset to Default</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '10px 0' }} />
 
       {/* ── Section 1: Business Identity ─────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

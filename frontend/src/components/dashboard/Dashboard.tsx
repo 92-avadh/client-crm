@@ -22,6 +22,7 @@ import {
   ChevronRight,
   PieChart,
   BarChart3,
+  Table,
 } from 'lucide-react';
 import { useCountUp } from '../../hooks/useCountUp';
 import { getDefaultPermissionsForRole } from '../team/permissionsConfig';
@@ -243,28 +244,20 @@ export const Dashboard: React.FC = () => {
   const pendingPayments = safePayments
     .filter(p => {
       if (!p || p.status !== 'Pending') return false;
-      if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId) && (p.referenceNo || '').startsWith('RET-')) return false;
+      if ((p.referenceNo || '').startsWith('RET-')) return false; // Exclude synthetic placeholders
+      if (p.brandId && churnedOrInactiveBrandIds.has(p.brandId)) return false;
       return true;
     })
     .reduce((a, p) => a + (Number(p?.amount) || 0), 0);
-
-  const pendingBrandFees = safeBrands
-    .filter(
-      b =>
-        b?.status === 'Active' &&
-        (Number(b?.monthlyFee) || 0) > 0 &&
-        b?.paymentStatus === 'Pending' &&
-        !safePayments.some(p => p && p.brandId === b.id) &&
-        !safeInvoices.some(i => i && i.brandId === b.id && i.status !== 'Draft' && i.status !== 'Cancelled')
-    )
-    .reduce((a, b) => a + (Number(b?.monthlyFee) || 0), 0);
 
   const overdueInvoices = safeInvoices.filter(i => i?.status === 'Overdue');
   const unpaidInvoicesBalance = safeInvoices
     .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedOrInactiveBrandIds.has(i.brandId)))
     .reduce((a, i) => a + Math.max(0, (Number(i?.totalAmount) || 0) - (Number(i?.paidAmount) || 0)), 0);
 
-  const totalPending = pendingPayments + unpaidInvoicesBalance + pendingBrandFees;
+  // Pending Collections strictly comes from actual unpaid invoices and pending cleared payments.
+  // A newly onboarded client's monthly fee is an agreement rate, NOT an un-invoiced debt.
+  const totalPending = pendingPayments + unpaidInvoicesBalance;
 
   const hasAllTasksPerm = role === 'admin' || role === 'hr' || userPerms.includes('tasks') || userPerms.includes('projects');
   const relevantTasks = hasAllTasksPerm ? safeTasks : safeTasks.filter(t => t && (t.assigneeId === currentUser?.id || t.ownerId === currentUser?.id));
@@ -273,7 +266,9 @@ export const Dashboard: React.FC = () => {
   const pendingTasks = activeTasks.filter(t => t?.status !== 'Completed');
   const myMeetings = safeMeetings.filter(m => (role === 'team' || !userPerms.includes('meetings') ? (m?.attendeeIds || []).includes(currentUser?.id) : true));
 
-  // ── Monthly Revenue / Expense Maps ─────────────────────────
+  // ── Monthly Revenue / Expense / Pending Maps ─────────────────
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+
   const monthlyIncomeMap: Record<string, number> = {};
   safePayments.forEach(p => {
     if (p && p.paymentDate && p.status === 'Success') {
@@ -283,10 +278,25 @@ export const Dashboard: React.FC = () => {
     }
   });
 
-  const currentMonthKey = new Date().toISOString().slice(0, 7);
   if (unrecordedBrandFees > 0) {
     monthlyIncomeMap[currentMonthKey] = (monthlyIncomeMap[currentMonthKey] || 0) + unrecordedBrandFees;
   }
+
+  const monthlyPendingMap: Record<string, number> = {};
+  safeInvoices.forEach(i => {
+    if (i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedOrInactiveBrandIds.has(i.brandId))) {
+      const dateStr = i.issueDate || i.dueDate || currentMonthKey;
+      const key = String(dateStr).slice(0, 7);
+      const balance = Math.max(0, (Number(i?.totalAmount) || 0) - (Number(i?.paidAmount) || 0));
+      monthlyPendingMap[key] = (monthlyPendingMap[key] || 0) + balance;
+    }
+  });
+  safePayments.forEach(p => {
+    if (p && p.status === 'Pending' && !(p.referenceNo || '').startsWith('RET-') && (!p.brandId || !churnedOrInactiveBrandIds.has(p.brandId))) {
+      const key = String(p.paymentDate || currentMonthKey).slice(0, 7);
+      monthlyPendingMap[key] = (monthlyPendingMap[key] || 0) + (Number(p.amount) || 0);
+    }
+  });
 
   const monthlyExpenseMap: Record<string, number> = {};
   safeExpenses.forEach(e => {
@@ -296,32 +306,60 @@ export const Dashboard: React.FC = () => {
     }
   });
 
-  const monthLabelMap: Record<string, string> = {
-    '2026-04': 'Apr 26',
-    '2026-05': 'May 26',
-    '2026-06': 'Jun 26',
-    '2026-07': 'Jul 26',
-    '2026-08': 'Aug 26',
-    '2026-09': 'Sep 26',
-    '2026-10': 'Oct 26',
-    '2026-11': 'Nov 26',
-    '2026-12': 'Dec 26',
-    '2027-01': 'Jan 27',
-    '2027-02': 'Feb 27',
-    '2027-03': 'Mar 27',
+  // Dynamic month label (e.g. '2026-11' -> 'Nov 26')
+  const formatMonthKey = (key: string): string => {
+    try {
+      const [year, month] = key.split('-').map(Number);
+      if (!year || !month) return key;
+      const d = new Date(year, month - 1, 1);
+      return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    } catch {
+      return key;
+    }
   };
 
-  const configuredMonthKeys = Object.keys({ ...monthlyIncomeMap, ...monthlyExpenseMap }).sort();
-  const hasConfiguredRevenue = configuredMonthKeys.length > 0;
+  // Trailing 6 months window
+  const trailing6Months: string[] = [];
+  const nowDate = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - i, 1);
+    trailing6Months.push(d.toISOString().slice(0, 7));
+  }
 
-  const months = configuredMonthKeys.map(key => ({
-    label: monthLabelMap[key] || key,
-    income: monthlyIncomeMap[key] || 0,
-    exp: monthlyExpenseMap[key] || 0,
-    current: key === currentMonthKey,
-  }));
+  const allMonthKeysSet = new Set([
+    ...trailing6Months,
+    ...Object.keys(monthlyIncomeMap),
+    ...Object.keys(monthlyPendingMap),
+    ...Object.keys(monthlyExpenseMap),
+  ]);
+  const sortedMonthKeys = Array.from(allMonthKeysSet).sort();
 
-  const maxRevenue = Math.max(100000, ...months.map(m => Math.max(m.income, m.exp)));
+  const months = sortedMonthKeys.map(key => {
+    const income = monthlyIncomeMap[key] || 0;
+    const pending = monthlyPendingMap[key] || 0;
+    const exp = monthlyExpenseMap[key] || 0;
+    const invoiced = income + pending;
+    const profit = income - exp;
+    return {
+      key,
+      label: formatMonthKey(key),
+      income,
+      pending,
+      invoiced,
+      exp,
+      profit,
+      current: key === currentMonthKey,
+    };
+  });
+
+  const hasConfiguredRevenue =
+    totalReceived > 0 ||
+    totalPending > 0 ||
+    totalExpenses > 0 ||
+    safeInvoices.length > 0 ||
+    activeBrands.length > 0;
+
+  const maxRevenue = Math.max(50000, ...months.map(m => Math.max(m.income + m.pending, m.exp)));
 
   const avgRetainer =
     activeBrands.length > 0
@@ -337,8 +375,23 @@ export const Dashboard: React.FC = () => {
         )
       : null;
 
-  // ── Tab for Main Revenue Card (Breakdown vs Client Share) ──
-  const [revenueView, setRevenueView] = useState<'monthly' | 'clients'>('monthly');
+  // ── Time Period Filter (All-Time vs This Month) ────────────
+  const [timePeriod, setTimePeriod] = useState<'all' | 'month'>('all');
+
+  const monthReceived = monthlyIncomeMap[currentMonthKey] || 0;
+  const monthPending = monthlyPendingMap[currentMonthKey] || 0;
+  const monthExpenses = monthlyExpenseMap[currentMonthKey] || 0;
+  const monthNetProfit = monthReceived - monthExpenses;
+  const monthNetMargin = monthReceived > 0 ? Math.round((monthNetProfit / monthReceived) * 100) : 0;
+
+  const displayCollections = timePeriod === 'month' ? monthReceived : totalReceived;
+  const displayPending = timePeriod === 'month' ? monthPending : totalPending;
+  const displayExpenses = timePeriod === 'month' ? monthExpenses : totalExpenses;
+  const displayNetProfit = timePeriod === 'month' ? monthNetProfit : netProfit;
+  const displayNetMargin = timePeriod === 'month' ? monthNetMargin : netMargin;
+
+  // ── Tab for Main Revenue Card (Bars vs Table vs Client Share) ──
+  const [revenueView, setRevenueView] = useState<'monthly' | 'table' | 'clients'>('monthly');
 
   // ── Widget Visibility ──────────────────────────────────────
   const [widgetVisibility, setWidgetVisibility] = useState<Record<string, boolean>>(() => {
@@ -384,10 +437,10 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   // ── Animated Counters ──────────────────────────────────────
-  const animatedTotalReceived = useCountUp(totalReceived);
-  const animatedTotalPending = useCountUp(totalPending);
-  const animatedTotalExpenses = useCountUp(totalExpenses);
-  const animatedNetProfit = useCountUp(netProfit);
+  const animatedTotalReceived = useCountUp(displayCollections);
+  const animatedTotalPending = useCountUp(displayPending);
+  const animatedTotalExpenses = useCountUp(displayExpenses);
+  const animatedNetProfit = useCountUp(displayNetProfit);
   const animatedActiveBrands = useCountUp(activeBrands.length);
   const animatedTasks = useCountUp(activeTasks.length);
   const animatedPendingTasks = useCountUp(pendingTasks.length);
@@ -643,100 +696,160 @@ export const Dashboard: React.FC = () => {
       {/* ══ SECTION A: FINANCIAL OVERVIEW ═════════════════════ */}
       {hasFinanceAccess && widgetVisibility.financial !== false && (
         <div>
-          {dashboardFocus === 'financial' && (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 12px',
-                borderRadius: 20,
-                background: 'var(--brand-green-subtle, #ECFDF5)',
-                border: '1px solid var(--brand-green-border, #86EFAC)',
-                color: 'var(--brand-green-dark, #034726)',
-                fontSize: 11.5,
-                fontWeight: 750,
-                marginBottom: 12,
-              }}
-            >
-              <Sparkles size={13} className="text-emerald-500" />
-              <span>Workspace Focus: Financial Health & Collections Priority</span>
+          {/* Header Bar with Period Switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              {dashboardFocus === 'financial' && (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    background: 'var(--brand-green-subtle, #ECFDF5)',
+                    border: '1px solid var(--brand-green-border, #86EFAC)',
+                    color: 'var(--brand-green-dark, #034726)',
+                    fontSize: 11.5,
+                    fontWeight: 750,
+                  }}
+                >
+                  <Sparkles size={13} className="text-emerald-500" />
+                  <span>Workspace Focus: Financial Health & Collections Priority</span>
+                </div>
+              )}
+              {dashboardFocus === 'retention' && (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    background: 'var(--brand-navy-subtle, #F0F5FA)',
+                    border: '1px solid var(--border, #D0E0EF)',
+                    color: 'var(--brand-navy, #0A2540)',
+                    fontSize: 11.5,
+                    fontWeight: 750,
+                  }}
+                >
+                  <Target size={13} className="text-emerald-600" />
+                  <span>Workspace Focus: Client Retention & Account Health Priority</span>
+                </div>
+              )}
             </div>
-          )}
-          {dashboardFocus === 'retention' && (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 12px',
-                borderRadius: 20,
-                background: 'var(--brand-navy-subtle, #F0F5FA)',
-                border: '1px solid var(--border, #D0E0EF)',
-                color: 'var(--brand-navy, #0A2540)',
-                fontSize: 11.5,
-                fontWeight: 750,
-                marginBottom: 12,
-              }}
-            >
-              <Target size={13} className="text-emerald-600" />
-              <span>Workspace Focus: Client Retention & Account Health Priority</span>
+
+            {/* Monthly Data View vs All-Time Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Financial Period:</span>
+              <div
+                style={{
+                  display: 'flex',
+                  background: 'var(--bg-card)',
+                  padding: 2,
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow-xs)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setTimePeriod('all')}
+                  style={{
+                    padding: '4px 11px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: timePeriod === 'all' ? 'var(--solid-btn-bg)' : 'transparent',
+                    color: timePeriod === 'all' ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  All-Time
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimePeriod('month')}
+                  style={{
+                    padding: '4px 11px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: timePeriod === 'month' ? 'var(--solid-btn-bg)' : 'transparent',
+                    color: timePeriod === 'month' ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <Calendar size={13} /> This Month ({formatMonthKey(currentMonthKey)})
+                </button>
+              </div>
             </div>
-          )}
+          </div>
 
           <div className="dashboard-grid-kpis">
             {[
               {
-                title: 'Total Collections',
+                title: timePeriod === 'month' ? 'Month Collections' : 'Total Collections',
                 value: formatCurrency(animatedTotalReceived),
                 icon: <Wallet className="w-4 h-4" />,
                 iconColor: BRAND.greenDark,
                 iconBg: BRAND.greenSubtle,
                 iconBorder: BRAND.greenBorder,
-                context: 'All payments received',
-                trend: growthRate !== null ? `${growthRate >= 0 ? `+${growthRate}` : growthRate}% MoM` : null,
+                context: timePeriod === 'month' ? `Collected in ${formatMonthKey(currentMonthKey)}` : 'All payments received',
+                trend: timePeriod === 'month' ? 'Current Month' : (growthRate !== null ? `${growthRate >= 0 ? `+${growthRate}` : growthRate}% MoM` : null),
                 trendPositive: growthRate !== null ? growthRate >= 0 : true,
                 cardBorder: BRAND.border,
                 accentColor: BRAND.green,
               },
               {
-                title: 'Pending / Overdue',
+                title: timePeriod === 'month' ? 'Month Pending' : 'Pending / Overdue',
                 value: formatCurrency(animatedTotalPending),
                 icon: <Clock className="w-4 h-4" />,
-                iconColor: totalPending > 0 ? BRAND.amber : BRAND.navyMuted,
-                iconBg: totalPending > 0 ? BRAND.amberSubtle : BRAND.navySubtle,
-                iconBorder: totalPending > 0 ? BRAND.amberBorder : BRAND.border,
+                iconColor: displayPending > 0 ? BRAND.amber : BRAND.navyMuted,
+                iconBg: displayPending > 0 ? BRAND.amberSubtle : BRAND.navySubtle,
+                iconBorder: displayPending > 0 ? BRAND.amberBorder : BRAND.border,
                 context:
-                  overdueInvoices.length > 0
-                    ? `${overdueInvoices.length} overdue · awaiting clearance`
-                    : 'Awaiting clearance',
+                  timePeriod === 'month'
+                    ? `Awaiting clearance in ${formatMonthKey(currentMonthKey)}`
+                    : (overdueInvoices.length > 0
+                      ? `${overdueInvoices.length} overdue · awaiting clearance`
+                      : 'Awaiting clearance'),
                 trend: null,
-                cardBorder: overdueInvoices.length > 0 ? BRAND.amberBorder : BRAND.border,
-                accentColor: overdueInvoices.length > 0 ? BRAND.amber : BRAND.navy,
+                cardBorder: displayPending > 0 ? BRAND.amberBorder : BRAND.border,
+                accentColor: displayPending > 0 ? BRAND.amber : BRAND.navy,
               },
               {
-                title: 'Total Expenses',
+                title: timePeriod === 'month' ? 'Month Expenses' : 'Total Expenses',
                 value: formatCurrency(animatedTotalExpenses),
                 icon: <CreditCard className="w-4 h-4" />,
                 iconColor: BRAND.navyLight,
                 iconBg: BRAND.navySubtle,
                 iconBorder: BRAND.navyBorder,
                 context:
-                  pendingExpensesTotal > 0
-                    ? `${formatCurrency(pendingExpensesTotal)} pending`
-                    : 'Salaries & overhead',
+                  timePeriod === 'month'
+                    ? `Overhead in ${formatMonthKey(currentMonthKey)}`
+                    : (pendingExpensesTotal > 0
+                      ? `${formatCurrency(pendingExpensesTotal)} pending`
+                      : 'Salaries & overhead'),
                 trend: null,
                 cardBorder: BRAND.border,
                 accentColor: BRAND.navy,
               },
               {
-                title: 'Net Agency Profit',
+                title: timePeriod === 'month' ? 'Month Net Profit' : 'Net Agency Profit',
                 value: formatCurrency(animatedNetProfit),
                 icon: <Sparkles className="w-4 h-4" />,
                 iconColor: BRAND.greenDark,
                 iconBg: BRAND.greenSubtle,
                 iconBorder: BRAND.greenBorder,
-                context: `${netMargin}% net margin`,
+                context: `${displayNetMargin}% net margin`,
                 trend: `${activeBrands.length} active clients`,
                 trendPositive: true,
                 cardBorder: BRAND.greenBorder,
@@ -1006,7 +1119,7 @@ export const Dashboard: React.FC = () => {
                 </p>
               </div>
 
-              {/* View Switcher: Monthly Breakdown vs Client Share */}
+              {/* View Switcher: Monthly Bars vs Monthly Table vs Client Share */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div
                   style={{
@@ -1035,7 +1148,27 @@ export const Dashboard: React.FC = () => {
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    <BarChart3 size={12} /> Monthly
+                    <BarChart3 size={12} /> Monthly Bars
+                  </button>
+                  <button
+                    onClick={() => setRevenueView('table')}
+                    style={{
+                      padding: '4px 9px',
+                      borderRadius: 6,
+                      fontSize: 11.5,
+                      fontWeight: 650,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: revenueView === 'table' ? 'var(--bg-card)' : 'transparent',
+                      color: revenueView === 'table' ? BRAND.navy : BRAND.navyMuted,
+                      boxShadow: revenueView === 'table' ? 'var(--shadow-sm)' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <Table size={12} /> Monthly Table
                   </button>
                   <button
                     onClick={() => setRevenueView('clients')}
@@ -1165,23 +1298,30 @@ export const Dashboard: React.FC = () => {
                               </span>
                             )}
                           </span>
-                          <span className="font-amount" style={{ fontSize: 12.5, fontWeight: 700, color: BRAND.navy }}>
-                            {formatCurrency(m.income)}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span className="font-amount" style={{ fontSize: 12.5, fontWeight: 700, color: BRAND.navy }}>
+                              {formatCurrency(m.income)}
+                            </span>
+                            {m.pending > 0 && (
+                              <span style={{ fontSize: 10.5, fontWeight: 700, color: BRAND.amber, background: BRAND.amberSubtle, border: `1px solid ${BRAND.amberBorder}`, padding: '1px 6px', borderRadius: 4 }}>
+                                {formatCurrency(m.pending)} pending
+                              </span>
+                            )}
                             {role === 'admin' && m.exp > 0 && (
                               <span
                                 style={{
                                   color: BRAND.navyMuted,
                                   fontWeight: 500,
                                   fontSize: 11,
-                                  marginLeft: 6,
+                                  marginLeft: 2,
                                 }}
                               >
-                                (overhead: {formatCurrency(m.exp)})
+                                (exp: {formatCurrency(m.exp)})
                               </span>
                             )}
-                          </span>
+                          </div>
                         </div>
-                        {/* Single Progress Bar */}
+                        {/* Progress Bar (Dual: Collected + Pending) */}
                         <div
                           className="progress-track"
                           style={{
@@ -1190,17 +1330,30 @@ export const Dashboard: React.FC = () => {
                             background: 'var(--bg-raised)',
                             border: `1px solid var(--border)`,
                             borderRadius: 9999,
+                            overflow: 'hidden',
+                            display: 'flex',
                           }}
                         >
-                          <div
-                            className="progress-fill"
-                            style={{
-                              width: `${Math.min(100, Math.round((m.income / maxRevenue) * 100))}%`,
-                              background: `linear-gradient(90deg, ${BRAND.greenDark} 0%, ${BRAND.green} 50%, ${BRAND.greenBright} 100%)`,
-                              boxShadow: '0 1px 4px rgba(0, 208, 94, 0.25)',
-                              borderRadius: 9999,
-                            }}
-                          />
+                          {m.income > 0 && (
+                            <div
+                              style={{
+                                width: `${Math.min(100, Math.round((m.income / maxRevenue) * 100))}%`,
+                                height: '100%',
+                                background: `linear-gradient(90deg, ${BRAND.greenDark} 0%, ${BRAND.green} 50%, ${BRAND.greenBright} 100%)`,
+                                boxShadow: '0 1px 4px rgba(0, 208, 94, 0.25)',
+                              }}
+                            />
+                          )}
+                          {m.pending > 0 && (
+                            <div
+                              style={{
+                                width: `${Math.min(100 - (m.income > 0 ? Math.round((m.income / maxRevenue) * 100) : 0), Math.round((m.pending / maxRevenue) * 100))}%`,
+                                height: '100%',
+                                background: 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)',
+                                opacity: 0.85,
+                              }}
+                            />
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1261,7 +1414,53 @@ export const Dashboard: React.FC = () => {
               </>
             )}
 
-            {/* View 2: Client Revenue Share Distribution */}
+            {/* View 2: Detailed Month-by-Month Financial Ledger Table */}
+            {revenueView === 'table' && (
+              <div className="table-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid var(--border)', borderRadius: 10 }}>
+                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-raised)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
+                      <th style={{ padding: '9px 12px', fontWeight: 700 }}>Month</th>
+                      <th style={{ padding: '9px 12px', fontWeight: 700 }}>Invoiced Volume</th>
+                      <th style={{ padding: '9px 12px', fontWeight: 700 }}>Collections Received</th>
+                      <th style={{ padding: '9px 12px', fontWeight: 700 }}>Pending Collections</th>
+                      {role === 'admin' && <th style={{ padding: '9px 12px', fontWeight: 700 }}>Overhead Expenses</th>}
+                      {role === 'admin' && <th style={{ padding: '9px 12px', fontWeight: 700 }}>Net Margin</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {months.slice().reverse().map((m, idx) => {
+                      const net = m.income - m.exp;
+                      const margin = m.income > 0 ? Math.round((net / m.income) * 100) : 0;
+                      return (
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--border)', background: m.current ? 'var(--bg-subtle)' : 'transparent' }}>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            {m.label} {m.current && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, background: BRAND.greenSubtle, color: BRAND.greenDark, fontWeight: 750 }}>Current</span>}
+                          </td>
+                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>{formatCurrency(m.invoiced)}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--success-text)' }}>{formatCurrency(m.income)}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 600, color: m.pending > 0 ? 'var(--warn-text)' : 'var(--text-muted)' }}>
+                            {formatCurrency(m.pending)}
+                          </td>
+                          {role === 'admin' && (
+                            <td style={{ padding: '10px 12px', color: m.exp > 0 ? 'var(--danger-text)' : 'var(--text-muted)' }}>
+                              {formatCurrency(m.exp)}
+                            </td>
+                          )}
+                          {role === 'admin' && (
+                            <td style={{ padding: '10px 12px', fontWeight: 700, color: net >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
+                              {formatCurrency(net)} ({margin}%)
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* View 3: Client Revenue Share Distribution */}
             {revenueView === 'clients' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
                 {activeBrands.length === 0 ? (

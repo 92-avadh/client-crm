@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   is_active BOOLEAN DEFAULT true,
   permissions JSONB DEFAULT '[]',
   agency_id VARCHAR(50),
+  onboarding_completed BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -347,7 +348,9 @@ CREATE TABLE IF NOT EXISTS settings (
   dashboard_focus VARCHAR(30) DEFAULT 'balanced',
   slack_webhook_url TEXT,
   discord_webhook_url TEXT,
+  company_logo TEXT,
   agency_id VARCHAR(50),
+  onboarding_completed BOOLEAN DEFAULT false,
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -383,3 +386,17 @@ CREATE TABLE IF NOT EXISTS otp_verifications (
   verified BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Push Subscriptions (for mobile & desktop Web Push notifications)
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id VARCHAR(50) PRIMARY KEY,
+  user_id VARCHAR(50) NOT NULL,
+  agency_id VARCHAR(50),
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_push_subs_user_id ON push_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_push_subs_agency_id ON push_subscriptions(agency_id);

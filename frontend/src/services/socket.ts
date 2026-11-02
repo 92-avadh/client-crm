@@ -14,6 +14,7 @@ function getSocketHost(): string {
 
 let socket: Socket | null = null;
 let currentUserId: string | null = null;
+let currentAgencyId: string | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
@@ -29,20 +30,21 @@ export function getSocket(): Socket {
 
     socket.on('connect', () => {
       if (currentUserId) {
-        socket?.emit('authenticate', { userId: currentUserId });
+        socket?.emit('authenticate', { userId: currentUserId, agencyId: currentAgencyId });
       }
     });
   }
   return socket;
 }
 
-export function connectSocket(userId: string) {
+export function connectSocket(userId: string, agencyId?: string) {
   currentUserId = userId;
+  currentAgencyId = agencyId || null;
   const s = getSocket();
   if (!s.connected) {
     s.connect();
   } else {
-    s.emit('authenticate', { userId });
+    s.emit('authenticate', { userId, agencyId: currentAgencyId });
   }
 }
 
@@ -52,6 +54,7 @@ export function disconnectSocket() {
     socket = null;
   }
   currentUserId = null;
+  currentAgencyId = null;
 }
 
 export function joinConversationRoom(conversationId: string, userId?: string) {
