@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ZoomIn, ZoomOut, RotateCw, RefreshCw, Check, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCw, RefreshCw, Check, X, Upload } from 'lucide-react';
 
 interface ImageCropperModalProps {
   open: boolean;
@@ -10,14 +10,17 @@ interface ImageCropperModalProps {
   outputSize?: number;
 }
 
+const PREVIEW_SIZE = 300;
+
 export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   open,
   imageSrc,
   onCropComplete,
   onCancel,
-  title = 'Crop Profile Photo',
+  title = 'Drag the image to adjust',
   outputSize = 400,
 }) => {
+  const [activeSrc, setActiveSrc] = useState<string | null>(imageSrc);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0); // 0, 90, 180, 270
@@ -27,10 +30,16 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   const offsetStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load image when imageSrc changes
+  // Synchronize incoming imageSrc
   useEffect(() => {
-    if (!imageSrc) {
+    setActiveSrc(imageSrc);
+  }, [imageSrc]);
+
+  // Load image when activeSrc changes
+  useEffect(() => {
+    if (!activeSrc) {
       setImage(null);
       return;
     }
@@ -42,20 +51,24 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
       setRotation(0);
       setOffset({ x: 0, y: 0 });
     };
-    img.src = imageSrc;
-  }, [imageSrc]);
+    img.src = activeSrc;
+  }, [activeSrc]);
 
-  // Handle escape key
+  // Handle escape and enter keys
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
         onCancel();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSave();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onCancel]);
+  }, [open, onCancel, image, scale, rotation, offset]);
 
   // Redraw preview canvas
   const drawPreview = useCallback(() => {
@@ -69,7 +82,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     ctx.clearRect(0, 0, width, height);
 
     ctx.save();
-    // Center of canvas
+    // Center of canvas + pan offset
     ctx.translate(width / 2 + offset.x, height / 2 + offset.y);
     ctx.rotate((rotation * Math.PI) / 180);
 
@@ -79,11 +92,9 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     let baseH = height;
 
     if (imgAspect > 1) {
-      // Landscape: fit height to box so circle is covered
       baseH = height;
       baseW = height * imgAspect;
     } else {
-      // Portrait: fit width to box
       baseW = width;
       baseH = width / imgAspect;
     }
@@ -127,6 +138,31 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     setScale((prev) => Math.min(3, Math.max(1, +(prev + delta).toFixed(2))));
   };
 
+  // Handle re-uploading file directly in the cropper
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, WEBP, GIF).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image exceeds the 5 MB limit. Please select a smaller photo.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (typeof ev.target?.result === 'string') {
+        setActiveSrc(ev.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   // Crop & Export
   const handleSave = () => {
     if (!image) return;
@@ -139,9 +175,8 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // Map offset from preview canvas (280x280) to outputSize
-    const previewSize = 280;
-    const factor = outputSize / previewSize;
+    // Map offset from preview canvas (PREVIEW_SIZE x PREVIEW_SIZE) to outputSize
+    const factor = outputSize / PREVIEW_SIZE;
 
     ctx.translate(outputSize / 2 + offset.x * factor, outputSize / 2 + offset.y * factor);
     ctx.rotate((rotation * Math.PI) / 180);
@@ -167,7 +202,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     onCropComplete(croppedDataUrl);
   };
 
-  if (!open || !imageSrc) return null;
+  if (!open || !activeSrc) return null;
 
   return (
     <div
@@ -177,12 +212,12 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: 'rgba(0,0,0,0.75)',
-        backdropFilter: 'blur(4px)',
+        background: 'rgba(0, 0, 0, 0.78)',
+        backdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 16,
+        padding: 12,
       }}
     >
       <div
@@ -191,62 +226,121 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
         style={{
           width: '100%',
           maxWidth: 420,
-          background: 'var(--bg-card)',
+          background: 'var(--bg-card, #111b21)',
           borderRadius: 16,
-          border: '1px solid var(--border)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+          border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+          boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.65)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
+          maxHeight: 'min(94vh, 520px)',
+          boxSizing: 'border-box',
+          position: 'relative',
         }}
       >
-        {/* Header */}
+        {/* Hidden re-upload input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          style={{ display: 'none' }}
+        />
+
+        {/* WhatsApp-Style Header Bar */}
         <div
           style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid var(--border)',
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'var(--bg-subtle)',
+            background: 'var(--bg-subtle, rgba(0, 0, 0, 0.2))',
+            flexShrink: 0,
           }}
         >
-          <div>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              type="button"
+              onClick={onCancel}
+              title="Close (Esc)"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 6,
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-secondary, #94a3b8)',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--text-primary, #ffffff)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-secondary, #94a3b8)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <X size={18} />
+            </button>
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'var(--text-primary, #f1f5f9)',
+                letterSpacing: '-0.01em',
+              }}
+            >
               {title}
-            </h3>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 0' }}>
-              Drag to reposition, zoom or rotate to frame your photo
-            </p>
+            </span>
           </div>
+
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => fileInputRef.current?.click()}
+            title="Choose different photo"
             style={{
-              background: 'var(--bg-raised)',
+              background: 'transparent',
               border: 'none',
-              borderRadius: 8,
-              width: 30,
-              height: 30,
+              borderRadius: 6,
+              padding: '6px 10px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-secondary)',
+              gap: 6,
+              color: 'var(--text-secondary, #94a3b8)',
+              fontSize: 13,
+              fontWeight: 500,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--text-primary, #ffffff)';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-secondary, #94a3b8)';
+              e.currentTarget.style.background = 'transparent';
             }}
           >
-            <X size={15} />
+            <Upload size={14} />
+            <span>Upload</span>
           </button>
         </div>
 
-        {/* Viewport */}
+        {/* Viewport Canvas Stage */}
         <div
           style={{
-            padding: '20px 16px',
+            position: 'relative',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            gap: 16,
+            justifyContent: 'center',
+            padding: '16px 20px',
+            background: '#090d16',
+            userSelect: 'none',
           }}
         >
           <div
@@ -265,23 +359,22 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
             onTouchEnd={handlePointerUp}
             style={{
               position: 'relative',
-              width: 280,
-              height: 280,
-              borderRadius: 14,
+              width: PREVIEW_SIZE,
+              height: PREVIEW_SIZE,
+              borderRadius: 12,
               overflow: 'hidden',
-              background: '#090d16',
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.1)',
+              background: '#04070d',
+              boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.1)',
               cursor: isDragging ? 'grabbing' : 'grab',
-              userSelect: 'none',
               touchAction: 'none',
             }}
           >
             {/* Realtime Canvas */}
             <canvas
               ref={canvasRef}
-              width={280}
-              height={280}
-              style={{ display: 'block', width: 280, height: 280 }}
+              width={PREVIEW_SIZE}
+              height={PREVIEW_SIZE}
+              style={{ display: 'block', width: PREVIEW_SIZE, height: PREVIEW_SIZE }}
             />
 
             {/* Circular Vignette Mask */}
@@ -290,24 +383,24 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
                 position: 'absolute',
                 inset: 0,
                 pointerEvents: 'none',
-                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.58)',
+                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.65)',
                 borderRadius: '50%',
-                margin: 14,
+                margin: 12,
                 border: '2px solid rgba(255, 255, 255, 0.85)',
               }}
             />
 
-            {/* Subtle grid lines inside crop circle */}
+            {/* Subtle Rule-of-Thirds Grid */}
             <div
               style={{
                 position: 'absolute',
-                inset: 14,
+                inset: 12,
                 borderRadius: '50%',
                 pointerEvents: 'none',
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr 1fr',
                 gridTemplateRows: '1fr 1fr 1fr',
-                border: '1px dashed rgba(255,255,255,0.25)',
+                border: '1px dashed rgba(255, 255, 255, 0.22)',
               }}
             >
               <div style={{ borderRight: '1px dashed rgba(255,255,255,0.18)', borderBottom: '1px dashed rgba(255,255,255,0.18)' }} />
@@ -320,33 +413,139 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
               <div style={{ borderRight: '1px dashed rgba(255,255,255,0.18)' }} />
               <div />
             </div>
-          </div>
 
-          {/* Controls: Zoom & Rotate & Reset */}
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* WhatsApp-Style Floating Zoom Pill (Top-Right inside stage) */}
+            <div
+              style={{
+                position: 'absolute',
+                right: 12,
+                top: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                background: 'rgba(15, 23, 42, 0.85)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: 8,
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+                overflow: 'hidden',
+                zIndex: 10,
+              }}
+            >
               <button
                 type="button"
-                onClick={() => setScale((s) => Math.max(1, +(s - 0.1).toFixed(2)))}
-                disabled={scale <= 1}
-                title="Zoom out"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setScale((s) => Math.min(3, +(s + 0.15).toFixed(2)));
+                }}
+                disabled={scale >= 3}
+                title="Zoom in"
                 style={{
-                  background: 'var(--bg-raised)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 8,
                   width: 32,
                   height: 32,
-                  cursor: scale <= 1 ? 'not-allowed' : 'pointer',
-                  opacity: scale <= 1 ? 0.4 : 1,
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: scale >= 3 ? 'rgba(255, 255, 255, 0.3)' : '#ffffff',
+                  cursor: scale >= 3 ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--text-primary)',
                 }}
               >
-                <ZoomOut size={14} />
+                <ZoomIn size={15} />
               </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setScale((s) => Math.max(1, +(s - 0.15).toFixed(2)));
+                }}
+                disabled={scale <= 1}
+                title="Zoom out"
+                style={{
+                  width: 32,
+                  height: 32,
+                  background: 'transparent',
+                  border: 'none',
+                  color: scale <= 1 ? 'rgba(255, 255, 255, 0.3)' : '#ffffff',
+                  cursor: scale <= 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ZoomOut size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
 
+        {/* WhatsApp-Style Non-Scrolling Bottom Dock */}
+        <div
+          style={{
+            padding: '10px 18px 14px',
+            borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+            background: 'var(--bg-subtle, rgba(0, 0, 0, 0.2))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexShrink: 0,
+          }}
+        >
+          {/* Left Actions: Rotate & Reset & Zoom Slider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+            <button
+              type="button"
+              onClick={() => setRotation((r) => (r + 90) % 360)}
+              title="Rotate 90 degrees"
+              style={{
+                background: 'var(--bg-raised, rgba(255, 255, 255, 0.06))',
+                border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-primary, #ffffff)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                transition: 'background 0.15s',
+              }}
+            >
+              <RotateCw size={13} />
+              <span>Rotate</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setScale(1);
+                setRotation(0);
+                setOffset({ x: 0, y: 0 });
+              }}
+              title="Reset zoom & position"
+              style={{
+                background: 'var(--bg-raised, rgba(255, 255, 255, 0.06))',
+                border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-secondary, #94a3b8)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                transition: 'background 0.15s',
+              }}
+            >
+              <RefreshCw size={13} />
+              <span>Reset</span>
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 60, maxWidth: 120 }}>
               <input
                 type="range"
                 min="1"
@@ -354,138 +553,52 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
                 step="0.01"
                 value={scale}
                 onChange={(e) => setScale(parseFloat(e.target.value))}
-                style={{ flex: 1, accentColor: 'var(--brand-green, #059639)', cursor: 'pointer' }}
-              />
-
-              <button
-                type="button"
-                onClick={() => setScale((s) => Math.min(3, +(s + 0.1).toFixed(2)))}
-                disabled={scale >= 3}
-                title="Zoom in"
+                title={`Zoom: ${Math.round(scale * 100)}%`}
                 style={{
-                  background: 'var(--bg-raised)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 8,
-                  width: 32,
-                  height: 32,
-                  cursor: scale >= 3 ? 'not-allowed' : 'pointer',
-                  opacity: scale >= 3 ? 0.4 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-primary)',
+                  width: '100%',
+                  accentColor: '#10B981',
+                  cursor: 'pointer',
+                  height: 4,
                 }}
-              >
-                <ZoomIn size={14} />
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setRotation((r) => (r + 90) % 360)}
-                  style={{
-                    background: 'var(--bg-raised)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 8,
-                    padding: '6px 12px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: 'var(--text-primary)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <RotateCw size={13} /> Rotate 90°
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScale(1);
-                    setRotation(0);
-                    setOffset({ x: 0, y: 0 });
-                  }}
-                  style={{
-                    background: 'var(--bg-raised)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 8,
-                    padding: '6px 12px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <RefreshCw size={13} /> Reset
-                </button>
-              </div>
-
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
-                {Math.round(scale * 100)}%
-              </span>
+              />
             </div>
           </div>
-        </div>
 
-        {/* Footer Actions */}
-        <div
-          style={{
-            padding: '14px 20px',
-            borderTop: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 10,
-            background: 'var(--bg-subtle)',
-          }}
-        >
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 8,
-              border: '1px solid var(--border)',
-              background: 'var(--bg-raised)',
-              color: 'var(--text-primary)',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
-
+          {/* Right Action: Prominent Circular Green Checkmark Button */}
           <button
             type="button"
             onClick={handleSave}
+            title="Save Photo (Enter)"
             style={{
-              padding: '8px 18px',
-              borderRadius: 8,
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
               border: 'none',
-              background: 'var(--solid-btn-bg)',
-              color: 'var(--solid-btn-text)',
-              fontSize: 13,
-              fontWeight: 700,
+              background: '#10B981',
+              color: '#ffffff',
               cursor: 'pointer',
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+              justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.45)',
+              transition: 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, box-shadow 0.15s',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.08)';
+              e.currentTarget.style.background = '#059669';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.background = '#10B981';
+              e.currentTarget.style.boxShadow = '0 4px 14px rgba(16, 185, 129, 0.45)';
             }}
           >
-            <Check size={14} /> Apply &amp; Save Photo
+            <Check size={24} strokeWidth={2.6} />
           </button>
         </div>
       </div>
     </div>
   );
 };
-
