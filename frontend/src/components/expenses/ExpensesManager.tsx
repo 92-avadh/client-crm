@@ -27,6 +27,7 @@ const emptyForm = (): ExpenseFormData => ({
   employeeName: '',
   employeeId: null,
   isRecurring: false,
+  receiptUrl: '',
 });
 
 /**
@@ -136,6 +137,7 @@ export const ExpensesManager: React.FC = () => {
       employeeName: expense.employeeName || '',
       employeeId: expense.employeeId || null,
       isRecurring: Boolean(expense.isRecurring),
+      receiptUrl: expense.receiptUrl || '',
     });
     setModalOpen(true);
   };
@@ -174,6 +176,7 @@ export const ExpensesManager: React.FC = () => {
         employeeId: formData.employeeId || null,
         note: formData.description.trim() || formData.title.trim(),
         isRecurring: formData.isRecurring,
+        receiptUrl: formData.receiptUrl || null,
       };
 
       if (editingExpense) {

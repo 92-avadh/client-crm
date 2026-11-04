@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { X, Camera, Copy, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
+import { X, Camera, Copy, CheckCircle2, Sparkles, Loader2, Info, AlertCircle } from 'lucide-react';
 import { AVATAR_PRESETS } from './teamUi';
 import { useConfirm } from '../../hooks/useConfirm';
 import { isDirty } from '../../hooks/isDirty';
@@ -7,6 +7,8 @@ import { RoleSelector } from './RoleSelector';
 
 import { PermissionsSelector } from './PermissionsSelector';
 import { getDefaultPermissionsForRole, CORPORATE_ROLES } from './permissionsConfig';
+import { AVATAR_FORMAT_HINT } from '../../utils/fileValidation';
+import { sanitizePhone, isValidPhone, isValidEmail } from '../../utils/validation';
 
 export interface AddMemberForm {
   name: string;
@@ -45,6 +47,7 @@ export const AddMemberModal: React.FC<Props> = ({
   const fileRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState('');
   const { confirm, element: confirmDialog } = useConfirm();
   const baseline = useRef<AddMemberForm | null>(null);
 
@@ -67,6 +70,27 @@ export const AddMemberModal: React.FC<Props> = ({
       if (!ok) return;
     }
     onClose();
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError('');
+    if (!form.name.trim()) {
+      setValidationError('Full Name is required');
+      return;
+    }
+    if (!isValidEmail(form.email)) {
+      setValidationError('Please enter a valid email address (e.g. member@company.com)');
+      return;
+    }
+    if (form.phone && form.phone.trim()) {
+      const phoneRes = isValidPhone(form.phone);
+      if (!phoneRes.valid) {
+        setValidationError(phoneRes.error || 'Invalid phone number format');
+        return;
+      }
+    }
+    onSubmit(e);
   };
 
   if (!open) return null;
@@ -130,8 +154,14 @@ export const AddMemberModal: React.FC<Props> = ({
             </button>
           </div>
         ) : (
-          <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <div style={{ padding: '22px 26px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1 }}>
+              {validationError && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, background: 'var(--danger-bg, rgba(239,68,68,0.1))', border: '1px solid var(--danger-border, rgba(239,68,68,0.25))', color: 'var(--danger-text, #ef4444)', fontSize: 12, fontWeight: 600 }}>
+                  <AlertCircle size={15} />
+                  <span>{validationError}</span>
+                </div>
+              )}
               {/* Photo */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <label style={labelStyle}>
@@ -157,9 +187,12 @@ export const AddMemberModal: React.FC<Props> = ({
                       style={{ padding: '7px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}>
                       Choose file
                     </button>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Drag & drop or click · JPG/PNG/WebP · max 5MB</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Info size={11} style={{ color: 'var(--brand-green, #10b981)' }} />
+                      Accepted: {AVATAR_FORMAT_HINT}
+                    </span>
                   </div>
-                  <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
+                  <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: 'none' }}
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickFile(f); e.target.value = ''; }} />
                 </div>
 
@@ -192,16 +225,16 @@ export const AddMemberModal: React.FC<Props> = ({
               {/* Fields */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={labelStyle}>Full Name *</label>
-                <input type="text" value={form.name} required onChange={(e) => onFormChange({ name: e.target.value })} style={inputStyle} />
+                <input type="text" value={form.name} maxLength={100} placeholder="e.g. Sarah Jenkins" required onChange={(e) => onFormChange({ name: e.target.value })} style={inputStyle} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={labelStyle}>Email Address *</label>
-                <input type="email" value={form.email} required onChange={(e) => onFormChange({ email: e.target.value })} style={inputStyle} />
+                <input type="email" value={form.email} maxLength={120} placeholder="e.g. sarah@company.com" required onChange={(e) => onFormChange({ email: e.target.value })} style={inputStyle} />
               </div>
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={labelStyle}>Phone</label>
-                  <input type="tel" value={form.phone} onChange={(e) => onFormChange({ phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })} style={inputStyle} />
+                  <label style={labelStyle}>Phone (Optional)</label>
+                  <input type="tel" value={form.phone} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => onFormChange({ phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })} style={inputStyle} />
                 </div>
                 <RoleSelector
                   label="Role"

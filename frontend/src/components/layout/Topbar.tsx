@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { processImageFile } from '../team/imageUtils';
 import { ImageCropperModal } from '../ui/ImageCropperModal';
+import { validateImageFile, AVATAR_FORMAT_HINT } from '../../utils/fileValidation';
 import { isNotificationSupported, getNotificationPermission, enableDeviceNotifications, sendTestNotification } from '../../services/nativeNotification';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -71,16 +72,9 @@ export const Topbar: React.FC = () => {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || photoAction) return;
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    const acceptedExts = ['jpg', 'jpeg', 'png', 'webp'];
-    if (!acceptedTypes.includes(file.type) && !acceptedExts.includes(ext)) {
-      showToast('Please select a valid image file (JPG, PNG or WebP)', 'error');
-      if (e.target) e.target.value = '';
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      showToast('Photo size must be less than 8MB', 'error');
+    const validation = validateImageFile(file, { maxSizeMB: 5 });
+    if (!validation.valid) {
+      showToast(validation.error || 'Please select a valid image file', 'error');
       if (e.target) e.target.value = '';
       return;
     }
@@ -1086,7 +1080,12 @@ export const Topbar: React.FC = () => {
                 ) : (
                   <Camera style={{ width: 15, height: 15 }} />
                 )}
-                <span>{photoAction === 'uploading' ? 'Uploading photo…' : 'Change Profile Photo'}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+                  <span>{photoAction === 'uploading' ? 'Uploading photo…' : 'Change Profile Photo'}</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 500 }}>
+                    {AVATAR_FORMAT_HINT}
+                  </span>
+                </div>
               </DropdownMenuItem>
 
               {currentUser.avatar && (

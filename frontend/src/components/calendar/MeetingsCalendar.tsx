@@ -426,7 +426,7 @@ export const MeetingsCalendar: React.FC = () => {
             <form onSubmit={handleSubmit} style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Meeting Title *</label>
-                <input type="text" required placeholder="e.g. Monthly Strategy Review" value={meetingForm.title}
+                <input type="text" required maxLength={120} placeholder="e.g. Monthly Strategy Review" value={meetingForm.title}
                   onChange={e => setMeetingForm({ ...meetingForm, title: e.target.value })}
                   style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)' }} />
               </div>
@@ -478,7 +478,7 @@ export const MeetingsCalendar: React.FC = () => {
                       ⚡ Instant Google Meet
                     </button>
                   </div>
-                  <input type="text" placeholder="https://meet.google.com/..." value={meetingForm.linkOrLocation} onChange={e => setMeetingForm({ ...meetingForm, linkOrLocation: e.target.value })}
+                  <input type="text" maxLength={255} placeholder="https://meet.google.com/..." value={meetingForm.linkOrLocation} onChange={e => setMeetingForm({ ...meetingForm, linkOrLocation: e.target.value })}
                     style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)' }} />
                 </div>
               </div>
@@ -537,7 +537,7 @@ export const MeetingsCalendar: React.FC = () => {
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Notes / Agenda</label>
-                <textarea rows={2} value={meetingForm.notes} onChange={e => setMeetingForm({ ...meetingForm, notes: e.target.value })}
+                <textarea rows={2} maxLength={1000} value={meetingForm.notes} onChange={e => setMeetingForm({ ...meetingForm, notes: e.target.value })}
                   placeholder="What will be covered in this meeting?"
                   style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' as const, background: 'var(--bg-subtle)', resize: 'vertical' }} />
               </div>

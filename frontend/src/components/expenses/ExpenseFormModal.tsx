@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Users, Check, Clock, AlertTriangle, Loader2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Users, Check, Clock, AlertTriangle, Loader2, UploadCloud, FileText, Info, AlertCircle } from 'lucide-react';
 import type { Expense, Brand, ExpenseCategory, User } from '../../types';
 import { CATEGORY_CONFIG, STANDARD_CATEGORIES, PAYMENT_MODES } from './expenseConfig';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -16,6 +16,7 @@ import {
 } from '@/components/animate-ui/components/base/alert-dialog';
 import { AnimatedSelect } from '../ui/AnimatedSelect';
 import DatePicker from '@/components/ui/DatePicker';
+import { validateReceiptFile, RECEIPT_FORMAT_HINT } from '../../utils/fileValidation';
 
 export interface ExpenseFormData {
   title: string;
@@ -29,6 +30,7 @@ export interface ExpenseFormData {
   employeeName: string;
   employeeId: string | null;
   isRecurring: boolean;
+  receiptUrl?: string;
 }
 
 interface Props {
@@ -49,6 +51,24 @@ export const ExpenseFormModal: React.FC<Props> = ({
 }) => {
   const { confirm, element: confirmDialog } = useConfirm();
   const baseline = React.useRef<ExpenseFormData | null>(null);
+  const [receiptError, setReceiptError] = useState('');
+  const [isReceiptDragging, setIsReceiptDragging] = useState(false);
+  const receiptFileRef = useRef<HTMLInputElement>(null);
+
+  const handleReceiptFile = (file: File) => {
+    setReceiptError('');
+    const validation = validateReceiptFile(file, { maxSizeMB: 5 });
+    if (!validation.valid) {
+      setReceiptError(validation.error || 'Invalid receipt file');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => setReceiptError('Could not read receipt file');
+    reader.onload = (e) => {
+      onFormChange({ receiptUrl: (e.target?.result as string) || '' });
+    };
+    reader.readAsDataURL(file);
+  };
 
   React.useEffect(() => {
     if (open) baseline.current = formData;
@@ -128,7 +148,7 @@ export const ExpenseFormModal: React.FC<Props> = ({
             <div>
               <label className="form-label">Expense Title *</label>
               <input
-                type="text" required
+                type="text" required maxLength={150}
                 placeholder={isSalary ? 'e.g. October 2026 Developer Salary' : 'e.g. Meta Ads Q4 Campaign, Figma License'}
                 value={formData.title}
                 onChange={(e) => onFormChange({ title: e.target.value })}
@@ -164,7 +184,7 @@ export const ExpenseFormModal: React.FC<Props> = ({
                     Employee Name *
                   </label>
                   <input
-                    type="text" required placeholder="e.g. Drashti, Rahul, Priya"
+                    type="text" required maxLength={150} placeholder="e.g. Drashti, Rahul, Priya"
                     value={formData.employeeName}
                     onChange={(e) => onFormChange({ employeeName: e.target.value })}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--info-text)', fontSize: 13, background: 'var(--bg-card)', color: 'var(--text-primary)', outline: 'none' }}
@@ -254,12 +274,91 @@ export const ExpenseFormModal: React.FC<Props> = ({
             <label className="form-label">Description &amp; Notes</label>
             <textarea
               rows={2}
+              maxLength={500}
               placeholder="Additional details, invoice/bill number, vendor name, or payroll note..."
               value={formData.description}
               onChange={(e) => onFormChange({ description: e.target.value })}
               className="input-field"
               style={{ resize: 'vertical' }}
             />
+          </div>
+
+          {/* Receipt / Invoice Proof Attachment */}
+          <div>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Receipt / Invoice Proof</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 400 }}>Optional</span>
+            </label>
+
+            {receiptError && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--danger-text, #ef4444)', fontSize: 11, fontWeight: 600, padding: '6px 10px', background: 'var(--danger-bg, rgba(239,68,68,0.1))', borderRadius: 6, marginBottom: 8 }}>
+                <AlertCircle size={13} />
+                <span>{receiptError}</span>
+              </div>
+            )}
+
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsReceiptDragging(true); }}
+              onDragLeave={() => setIsReceiptDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsReceiptDragging(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f) handleReceiptFile(f);
+              }}
+              onClick={() => receiptFileRef.current?.click()}
+              style={{
+                border: isReceiptDragging ? '2px dashed var(--border-focus)' : '1.5px dashed var(--border)',
+                background: isReceiptDragging ? 'var(--bg-raised)' : 'var(--bg-subtle)',
+                borderRadius: 10,
+                padding: '14px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {formData.receiptUrl ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-card)', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileText size={16} style={{ color: 'var(--brand-green, #10b981)' }} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Receipt Attached</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFormChange({ receiptUrl: '' });
+                    }}
+                    style={{ background: 'none', border: 'none', color: 'var(--danger-text)', cursor: 'pointer', padding: 2 }}
+                    title="Remove receipt"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <UploadCloud size={20} style={{ color: 'var(--text-muted)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Click to attach receipt or drag &amp; drop
+                  </span>
+                  <span style={{ fontSize: 10.5, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Info size={11} style={{ color: 'var(--brand-green, #10b981)' }} />
+                    Accepted: {RECEIPT_FORMAT_HINT}
+                  </span>
+                </div>
+              )}
+              <input
+                ref={receiptFileRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleReceiptFile(f);
+                  e.target.value = '';
+                }}
+              />
+            </div>
           </div>
 
           {/* Actions */}

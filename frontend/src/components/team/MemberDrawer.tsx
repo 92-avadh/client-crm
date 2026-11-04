@@ -98,10 +98,10 @@ export const MemberDrawer: React.FC<Props> = ({
                 </div>
               )}
               {canModify && (
-                <label title="Upload or change member photo"
+                <label title="Upload or change member photo (JPG, PNG, WebP, GIF - max 5MB)"
                   style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: updatingAvatar ? 'not-allowed' : 'pointer', border: '2px solid var(--bg)', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', pointerEvents: updatingAvatar ? 'none' : 'auto' }}>
                   {updatingAvatar ? <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" /> : <Camera style={{ width: 11, height: 11 }} />}
-                  <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} disabled={updatingAvatar}
+                  <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: 'none' }} disabled={updatingAvatar}
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) onAvatarChange(f); e.target.value = ''; }} />
                 </label>
               )}

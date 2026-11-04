@@ -1,8 +1,10 @@
-import React from 'react';
-import { Save, Coins, Briefcase, Layout, Target, Check, Upload, RotateCcw, Image as ImageIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Save, Coins, Briefcase, Layout, Target, Check, Upload, RotateCcw, Image as ImageIcon, Info, AlertCircle } from 'lucide-react';
 import type { AppSettings } from '../../types';
 import { fieldStyle, saveBtnStyle, fieldGridStyle, tabBodyStyle, TabHeader } from './settingsUi';
 import { SUPPORTED_CURRENCIES, getCurrencyConfig, formatCurrency } from '../../utils/currency';
+import { validateImageFile, LOGO_FORMAT_HINT } from '../../utils/fileValidation';
+import { isValidEmail, isValidPhone, sanitizePhone, isValidGSTIN, isValidPAN } from '../../utils/validation';
 
 interface Props {
   formData: AppSettings;
@@ -15,13 +17,17 @@ const Field: React.FC<{
   value: string | number;
   type?: string;
   mono?: boolean;
+  maxLength?: number;
+  placeholder?: string;
   onChange: (v: string) => void;
-}> = ({ label, value, type = 'text', mono, onChange }) => (
+}> = ({ label, value, type = 'text', mono, maxLength, placeholder, onChange }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
     <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>{label}</label>
     <input
       type={type}
       value={value}
+      placeholder={placeholder}
+      maxLength={maxLength || (type === 'tel' ? 20 : 120)}
       onChange={(e) => {
         let val = e.target.value;
         if (type === 'tel') {
@@ -64,6 +70,25 @@ const GOALS_LIST = [
 
 /** Agency profile, currency configuration & onboarding preferences (admin). */
 export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
+  const [logoError, setLogoError] = useState('');
+  const [formError, setFormError] = useState('');
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (formData.companyEmail && !isValidEmail(formData.companyEmail.trim())) {
+      setFormError('Please enter a valid official support email address.');
+      return;
+    }
+    if (formData.companyPhone) {
+      const cleanPhone = sanitizePhone(formData.companyPhone);
+      if (!isValidPhone(cleanPhone)) {
+        setFormError('Please enter a valid support phone number (7 to 15 digits).');
+        return;
+      }
+    }
+    onSave(e);
+  };
   const activeCurrencyConfig = getCurrencyConfig(formData.currency || 'INR');
 
   const handleCurrencyChange = (code: string) => {
@@ -83,11 +108,18 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
   };
 
   return (
-    <form onSubmit={onSave} style={tabBodyStyle}>
+    <form onSubmit={handleFormSubmit} style={tabBodyStyle}>
       <TabHeader
         title="Agency Profile & Business Details"
         subtitle="Business credentials, statutory operating currency, and workspace preferences configured during onboarding."
       />
+
+      {formError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', borderRadius: 8, background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', fontSize: 12, fontWeight: 700 }}>
+          <AlertCircle size={14} />
+          <span>{formError}</span>
+        </div>
+      )}
 
       {/* ── Section 0: Agency Branding & Logo ─────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -162,12 +194,18 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
                 </span>
               </div>
               <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', margin: '4px 0 0', lineHeight: 1.4 }}>
-                This logo will appear on all your client invoices, receipts, and client views. Supported: PNG, JPG, WebP, SVG (up to 2MB).
+                This logo will appear on all your client invoices, receipts, and client views.
               </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--bg-raised)', padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)' }}>
+                  <Info style={{ width: 11, height: 11, color: 'var(--brand-green, #10b981)' }} />
+                  Accepted: {LOGO_FORMAT_HINT}
+                </span>
+              </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <label
               style={{
                 display: 'inline-flex',
@@ -192,11 +230,15 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  if (file.size > 2 * 1024 * 1024) {
-                    alert('Logo file size must be less than 2MB.');
+                  setLogoError('');
+                  const validation = validateImageFile(file, { maxSizeMB: 5, allowSvg: true });
+                  if (!validation.valid) {
+                    setLogoError(validation.error || 'Invalid logo file');
+                    e.target.value = '';
                     return;
                   }
                   const reader = new FileReader();
+                  reader.onerror = () => setLogoError('Could not read logo image file. Please try another.');
                   reader.onload = (event) => {
                     const result = event.target?.result as string;
                     if (result) {
@@ -207,6 +249,7 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
                     }
                   };
                   reader.readAsDataURL(file);
+                  e.target.value = '';
                 }}
               />
             </label>
@@ -215,6 +258,7 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
               <button
                 type="button"
                 onClick={() => {
+                  setLogoError('');
                   onChange({
                     companyLogo: '',
                     invoiceDesign: { ...(formData.invoiceDesign || {}), logoUrl: '' },
@@ -238,6 +282,13 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
                 <RotateCcw size={13} />
                 <span>Reset to Default</span>
               </button>
+            )}
+
+            {logoError && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--danger-text, #ef4444)', fontSize: 11, fontWeight: 600 }}>
+                <AlertCircle size={13} />
+                <span>{logoError}</span>
+              </div>
             )}
           </div>
         </div>
@@ -476,33 +527,61 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
 };
 
 /** GST / tax configuration (admin). */
-export const TaxTab: React.FC<Props> = ({ formData, onChange, onSave }) => (
-  <form onSubmit={onSave} style={tabBodyStyle}>
-    <TabHeader
-      title="GSTIN & Compliance Settings"
-      subtitle="These statutory tax and invoicing details appear on all generated client invoices."
-    />
-    <div style={fieldGridStyle}>
-      <Field label="Company GSTIN" value={formData.companyGst} mono
-        onChange={(v) => onChange({ companyGst: v.toUpperCase() })} />
-      <Field label="PAN Number" value={formData.companyPan} mono
-        onChange={(v) => onChange({ companyPan: v.toUpperCase() })} />
-      <Field label="Home State" value={formData.companyState}
-        onChange={(v) => onChange({ companyState: v })} />
-      <Field label="Default SAC Code" value={formData.defaultHsnSac} mono
-        onChange={(v) => onChange({ defaultHsnSac: v })} />
-      <Field label="Default GST Rate (%)" type="number" value={formData.defaultGstRate} mono
-        onChange={(v) => onChange({ defaultGstRate: Number(v) })} />
-      <Field label="Invoice Prefix Series" value={formData.invoicePrefix} mono
-        onChange={(v) => onChange({ invoicePrefix: v })} />
-    </div>
-    <div style={{ paddingTop: 4 }}>
-      <button type="submit" style={saveBtnStyle}>
-        <Save className="w-3.5 h-3.5" /><span>Save Tax Settings</span>
-      </button>
-    </div>
-  </form>
-);
+export const TaxTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
+  const [taxError, setTaxError] = useState('');
+
+  const handleTaxSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTaxError('');
+    if (formData.companyGst && formData.companyGst.trim()) {
+      if (!isValidGSTIN(formData.companyGst.trim().toUpperCase())) {
+        setTaxError('Please enter a valid 15-character GSTIN (e.g. 27AAAAA0000A1Z5) or clear the field.');
+        return;
+      }
+    }
+    if (formData.companyPan && formData.companyPan.trim()) {
+      if (!isValidPAN(formData.companyPan.trim().toUpperCase())) {
+        setTaxError('Please enter a valid 10-character PAN (e.g. ABCDE1234F) or clear the field.');
+        return;
+      }
+    }
+    onSave(e);
+  };
+
+  return (
+    <form onSubmit={handleTaxSubmit} style={tabBodyStyle}>
+      <TabHeader
+        title="GSTIN & Compliance Settings"
+        subtitle="These statutory tax and invoicing details appear on all generated client invoices."
+      />
+      {taxError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', borderRadius: 8, background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', fontSize: 12, fontWeight: 700 }}>
+          <AlertCircle size={14} />
+          <span>{taxError}</span>
+        </div>
+      )}
+      <div style={fieldGridStyle}>
+        <Field label="Company GSTIN" value={formData.companyGst} mono maxLength={15} placeholder="e.g. 27AAAAA0000A1Z5"
+          onChange={(v) => onChange({ companyGst: v.toUpperCase() })} />
+        <Field label="PAN Number" value={formData.companyPan} mono maxLength={10} placeholder="e.g. ABCDE1234F"
+          onChange={(v) => onChange({ companyPan: v.toUpperCase() })} />
+        <Field label="Home State" value={formData.companyState} maxLength={60} placeholder="e.g. Maharashtra"
+          onChange={(v) => onChange({ companyState: v })} />
+        <Field label="Default SAC Code" value={formData.defaultHsnSac} mono maxLength={15} placeholder="e.g. 998311"
+          onChange={(v) => onChange({ defaultHsnSac: v })} />
+        <Field label="Default GST Rate (%)" type="number" value={formData.defaultGstRate} mono maxLength={5} placeholder="18"
+          onChange={(v) => onChange({ defaultGstRate: Number(v) })} />
+        <Field label="Invoice Prefix Series" value={formData.invoicePrefix} mono maxLength={10} placeholder="INV-"
+          onChange={(v) => onChange({ invoicePrefix: v })} />
+      </div>
+      <div style={{ paddingTop: 4 }}>
+        <button type="submit" style={saveBtnStyle}>
+          <Save className="w-3.5 h-3.5" /><span>Save Tax Settings</span>
+        </button>
+      </div>
+    </form>
+  );
+};
 
 /** Banking & Razorpay credentials (admin). */
 export const BankingTab: React.FC<Props> = ({ formData, onChange, onSave }) => (
@@ -522,15 +601,15 @@ export const BankingTab: React.FC<Props> = ({ formData, onChange, onSave }) => (
         onChange={(v) => onChange({ bankName: v })} />
       <Field label="Account Beneficiary Name" value={formData.bankAccountName}
         onChange={(v) => onChange({ bankAccountName: v })} />
-      <Field label="Bank Account Number" value={formData.bankAccountNumber} mono
+      <Field label="Bank Account Number" value={formData.bankAccountNumber} mono maxLength={30} placeholder="e.g. 50100234567890"
         onChange={(v) => onChange({ bankAccountNumber: v })} />
-      <Field label="Bank IFSC Code" value={formData.bankIfsc} mono
+      <Field label="Bank IFSC Code" value={formData.bankIfsc} mono maxLength={11} placeholder="e.g. HDFC0001234"
         onChange={(v) => onChange({ bankIfsc: v.toUpperCase() })} />
       <Field label="Bank Branch Location" value={formData.bankBranch}
         onChange={(v) => onChange({ bankBranch: v })} />
-      <Field label="UPI ID for Direct QR Codes" value={formData.upiId} mono
+      <Field label="UPI ID for Direct QR Codes" value={formData.upiId} mono maxLength={50} placeholder="e.g. username@okhdfcbank"
         onChange={(v) => onChange({ upiId: v })} />
-      <Field label="Razorpay Key ID" value={formData.razorpayKeyId} mono
+      <Field label="Razorpay Key ID" value={formData.razorpayKeyId} mono maxLength={50} placeholder="e.g. rzp_live_xxxxxxxxx"
         onChange={(v) => onChange({ razorpayKeyId: v })} />
     </div>
 

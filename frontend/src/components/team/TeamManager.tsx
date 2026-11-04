@@ -27,6 +27,8 @@ import Pagination from '../ui/Pagination';
 import { getPlanLimits } from '../../utils/subscriptionPlan';
 import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
 import { ImageCropperModal } from '../ui/ImageCropperModal';
+import { validateImageFile } from '../../utils/fileValidation';
+import { isValidEmail, isValidPhone } from '../../utils/validation';
 
 const emptyForm = (): AddMemberForm => ({
   name: '', email: '', phone: '', designation: 'Team Member', role: 'team', password: '', avatar: '',
@@ -114,15 +116,9 @@ export const TeamManager: React.FC = () => {
   const cropCallbackRef = React.useRef<((dataUrl: string) => Promise<void> | void) | null>(null);
 
   const pickPhoto = (file: File, apply: (dataUrl: string) => Promise<void> | void) => {
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    const acceptedExts = ['jpg', 'jpeg', 'png', 'webp'];
-    if (!acceptedTypes.includes(file.type) && !acceptedExts.includes(ext)) {
-      showToast('Please select a valid image file (JPG, PNG or WebP)', 'error');
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      showToast('Photo size must be less than 8MB', 'error');
+    const validation = validateImageFile(file, { maxSizeMB: 5 });
+    if (!validation.valid) {
+      showToast(validation.error || 'Please select a valid image file (max 5MB)', 'error');
       return;
     }
     const reader = new FileReader();
@@ -216,6 +212,17 @@ export const TeamManager: React.FC = () => {
       showToast('Please fill all required fields', 'error');
       return;
     }
+    if (!isValidEmail(form.email)) {
+      showToast('Please enter a valid email address for the member', 'error');
+      return;
+    }
+    if (form.phone && form.phone.trim()) {
+      const phoneCheck = isValidPhone(form.phone);
+      if (!phoneCheck.valid) {
+        showToast(phoneCheck.error || 'Invalid phone number format', 'error');
+        return;
+      }
+    }
     try {
       setSubmitting(true);
       const roleLabel = CORPORATE_ROLES.find((r) => r.value === form.role)?.label || 'Team Member';
@@ -284,6 +291,17 @@ export const TeamManager: React.FC = () => {
     if (!editForm.name.trim() || !editForm.email.trim() || !editForm.designation.trim()) {
       showToast('Name, Email and Designation are required', 'error');
       return;
+    }
+    if (!isValidEmail(editForm.email)) {
+      showToast('Please enter a valid email address', 'error');
+      return;
+    }
+    if (editForm.phone && editForm.phone.trim()) {
+      const phoneCheck = isValidPhone(editForm.phone);
+      if (!phoneCheck.valid) {
+        showToast(phoneCheck.error || 'Invalid phone number format', 'error');
+        return;
+      }
     }
     try {
       setEditSubmitting(true);

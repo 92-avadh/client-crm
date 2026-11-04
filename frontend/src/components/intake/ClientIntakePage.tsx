@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
+import { isValidEmail, isValidPhone, sanitizePhone, isValidGSTIN, isValidPAN } from '../../utils/validation';
 import {
   Building2,
   FileText,
@@ -121,16 +122,35 @@ export const ClientIntakePage: React.FC = () => {
       setError('An agency onboarding link is required to submit. Please request a valid onboarding link from your agency.');
       return;
     }
-    if (!form.name.trim()) {
+    const cleanName = form.name.trim();
+    const cleanOwner = form.ownerName.trim();
+    const cleanEmail = form.email.trim();
+    const cleanPhone = sanitizePhone(form.mobile);
+    const cleanGst = form.gstNumber.trim().toUpperCase();
+    const cleanPan = form.pan.trim().toUpperCase();
+
+    if (!cleanName) {
       setError('Please provide your company or brand name.');
       return;
     }
-    if (!form.ownerName.trim()) {
-      setError('Please enter your name as the point of contact.');
+    if (!cleanOwner) {
+      setError('Please enter your contact person name.');
       return;
     }
-    if (!form.email.trim() || !form.email.includes('@')) {
-      setError('Please provide a valid work email address.');
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      setError('Please provide a valid work email address (e.g. name@company.com).');
+      return;
+    }
+    if (!cleanPhone || !isValidPhone(cleanPhone)) {
+      setError('Please provide a valid phone or WhatsApp number (7 to 15 digits).');
+      return;
+    }
+    if (cleanGst && !isValidGSTIN(cleanGst)) {
+      setError('Please enter a valid 15-character GSTIN (e.g. 27AAAAA0000A1Z5) or leave it empty.');
+      return;
+    }
+    if (cleanPan && !isValidPAN(cleanPan)) {
+      setError('Please enter a valid 10-character PAN (e.g. ABCDE1234F) or leave it empty.');
       return;
     }
 
@@ -145,6 +165,12 @@ export const ClientIntakePage: React.FC = () => {
 
       const res = await api.portal.intake({
         ...form,
+        name: cleanName,
+        ownerName: cleanOwner,
+        email: cleanEmail,
+        mobile: cleanPhone,
+        gstNumber: cleanGst,
+        pan: cleanPan,
         agencyId: agencyInfo?.agencyId || rawIdentifier,
         agencySlug: rawIdentifier,
         currency: agencyInfo?.currency || 'INR',
@@ -511,6 +537,7 @@ export const ClientIntakePage: React.FC = () => {
                   type="text"
                   required
                   placeholder="e.g. Acme Media Corp"
+                  maxLength={100}
                   value={form.name}
                   onChange={e => setForm({ ...form, name: e.target.value })}
                   onFocus={handleFocus}
@@ -527,6 +554,7 @@ export const ClientIntakePage: React.FC = () => {
                   type="text"
                   required
                   placeholder="e.g. Marcus Vance"
+                  maxLength={100}
                   value={form.ownerName}
                   onChange={e => setForm({ ...form, ownerName: e.target.value })}
                   onFocus={handleFocus}
@@ -543,6 +571,7 @@ export const ClientIntakePage: React.FC = () => {
                   type="email"
                   required
                   placeholder="name@company.com"
+                  maxLength={120}
                   value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   onFocus={handleFocus}
@@ -559,6 +588,7 @@ export const ClientIntakePage: React.FC = () => {
                   type="tel"
                   required
                   placeholder="+91 98765 43210"
+                  maxLength={20}
                   value={form.mobile}
                   onChange={e => setForm({ ...form, mobile: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
                   onFocus={handleFocus}
@@ -602,6 +632,7 @@ export const ClientIntakePage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Suite 400, Tech Park Road"
+                  maxLength={255}
                   value={form.billingAddress}
                   onChange={e => setForm({ ...form, billingAddress: e.target.value })}
                   onFocus={handleFocus}
@@ -616,6 +647,7 @@ export const ClientIntakePage: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Mumbai"
+                    maxLength={60}
                     value={form.city}
                     onChange={e => setForm({ ...form, city: e.target.value })}
                     onFocus={handleFocus}
@@ -628,6 +660,7 @@ export const ClientIntakePage: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Maharashtra"
+                    maxLength={60}
                     value={form.state}
                     onChange={e => setForm({ ...form, state: e.target.value })}
                     onFocus={handleFocus}
@@ -640,6 +673,7 @@ export const ClientIntakePage: React.FC = () => {
                   <input
                     type="text"
                     placeholder="400001"
+                    maxLength={10}
                     value={form.pincode}
                     onChange={e => setForm({ ...form, pincode: e.target.value })}
                     onFocus={handleFocus}
@@ -657,6 +691,7 @@ export const ClientIntakePage: React.FC = () => {
                   <input
                     type="text"
                     placeholder="27AAAAA0000A1Z5"
+                    maxLength={15}
                     value={form.gstNumber}
                     onChange={e => setForm({ ...form, gstNumber: e.target.value.toUpperCase() })}
                     onFocus={handleFocus}
@@ -671,6 +706,7 @@ export const ClientIntakePage: React.FC = () => {
                   <input
                     type="text"
                     placeholder="ABCDE1234F"
+                    maxLength={10}
                     value={form.pan}
                     onChange={e => setForm({ ...form, pan: e.target.value.toUpperCase() })}
                     onFocus={handleFocus}
@@ -759,6 +795,7 @@ export const ClientIntakePage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Google Drive link or project requirements"
+                  maxLength={500}
                   value={form.notes}
                   onChange={e => setForm({ ...form, notes: e.target.value })}
                   onFocus={handleFocus}

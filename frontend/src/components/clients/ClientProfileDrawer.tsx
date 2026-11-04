@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   X,
   Edit3,
@@ -20,12 +20,18 @@ import {
   UploadCloud,
   FileCheck2,
   FileWarning,
-  UserPlus
+  UserPlus,
+  Upload,
+  File as FileIcon,
+  Info,
+  AlertCircle,
+  Download,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Brand, User, Invoice, Task, BrandDocument, DeliverableItem } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
+import { validateDocumentFile, DOC_FORMAT_HINT, formatFileSize } from '../../utils/fileValidation';
 
 export type ProfileTab = 'overview' | 'team' | 'financials' | 'vault' | 'tasks' | 'timeline';
 
@@ -80,6 +86,11 @@ export const ClientProfileDrawer: React.FC<Props> = ({
   const [newDocCategory, setNewDocCategory] = useState<'MSA' | 'SOW' | 'NDA' | 'KYC & Tax' | 'Contract' | 'Other'>('MSA');
   const [newDocRenewal, setNewDocRenewal] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
+  const [docFileError, setDocFileError] = useState('');
+  const [docFileBase64, setDocFileBase64] = useState<string>('');
+  const [isDocDragging, setIsDocDragging] = useState(false);
+  const docFileRef = useRef<HTMLInputElement>(null);
 
   // Deliverables State
   const [showAddDeliverable, setShowAddDeliverable] = useState(false);
@@ -138,25 +149,55 @@ export const ClientProfileDrawer: React.FC<Props> = ({
     }
   };
 
+  const handleDocFileSelect = (file: File) => {
+    setDocFileError('');
+    const validation = validateDocumentFile(file, { maxSizeMB: 10 });
+    if (!validation.valid) {
+      setDocFileError(validation.error || 'Invalid document file');
+      return;
+    }
+    setSelectedDocFile(file);
+    if (!newDocName.trim()) {
+      const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      setNewDocName(baseName);
+    }
+    const reader = new FileReader();
+    reader.onerror = () => setDocFileError('Could not read document file.');
+    reader.onload = (e) => {
+      setDocFileBase64((e.target?.result as string) || '');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddDocumentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newDocName.trim()) return;
+    if (!newDocName.trim()) {
+      setDocFileError('Please provide a document title.');
+      return;
+    }
     setUploadingDoc(true);
+    setDocFileError('');
     try {
+      const ext = selectedDocFile ? (selectedDocFile.name.split('.').pop()?.toUpperCase() || 'PDF') : 'PDF';
+      const sizeStr = selectedDocFile ? formatFileSize(selectedDocFile.size) : '1.0 MB';
       const doc = await api.brands.addDocument(brand.id, {
         name: newDocName.trim(),
         category: newDocCategory,
         renewalDate: newDocRenewal || null,
-        type: 'PDF',
-        size: '1.2 MB',
+        type: ext,
+        size: sizeStr,
         status: 'Signed',
+        fileUrl: docFileBase64 || null,
       });
       const updatedDocs = [...(brand.documents || []), doc];
       await updateBrand(brand.id, { documents: updatedDocs });
-      showToast(`Contract added to client vault under ${newDocCategory}!`, 'success');
+      showToast(`Document "${newDocName.trim()}" added to client vault!`, 'success');
       setShowAddDocModal(false);
       setNewDocName('');
       setNewDocRenewal('');
+      setSelectedDocFile(null);
+      setDocFileBase64('');
+      setDocFileError('');
     } catch (err: any) {
       showToast(err.message || 'Failed to upload document.', 'error');
     } finally {
@@ -892,7 +933,32 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {doc.fileUrl && (
+                          <a
+                            href={doc.fileUrl}
+                            download={doc.name}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '4px 8px',
+                              borderRadius: 6,
+                              background: 'var(--bg-raised)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text-primary)',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                              cursor: 'pointer',
+                            }}
+                            title="Download or View Document"
+                          >
+                            <Download size={12} /> View
+                          </a>
+                        )}
                         {getRenewalBadge(doc.renewalDate)}
                       </div>
                     </div>
@@ -1156,18 +1222,104 @@ export const ClientProfileDrawer: React.FC<Props> = ({
       {/* Upload Contract / Document Modal */}
       {showAddDocModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, maxWidth: 440, width: '100%' }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, maxWidth: 480, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>Add Contract or KYC</h3>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 16px' }}>
               Upload agreement or legal tax registration to vault with automated renewal tracking.
             </p>
+
+            {docFileError && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--danger-text, #ef4444)', fontSize: 11.5, fontWeight: 600, padding: '8px 12px', background: 'var(--danger-bg, rgba(239,68,68,0.1))', border: '1px solid var(--danger-border, rgba(239,68,68,0.25))', borderRadius: 8, marginBottom: 14 }}>
+                <AlertCircle size={14} />
+                <span>{docFileError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleAddDocumentSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
+                {/* File picker dropzone */}
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 6, color: 'var(--text-secondary)' }}>Document Title</label>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 6, color: 'var(--text-secondary)' }}>
+                    Contract or Document File
+                  </label>
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDocDragging(true); }}
+                    onDragLeave={() => setIsDocDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDocDragging(false);
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) handleDocFileSelect(f);
+                    }}
+                    onClick={() => docFileRef.current?.click()}
+                    style={{
+                      border: isDocDragging ? '2px dashed var(--border-focus)' : '1.5px dashed var(--border)',
+                      background: isDocDragging ? 'var(--bg-raised)' : 'var(--bg-subtle)',
+                      borderRadius: 10,
+                      padding: '16px 14px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {selectedDocFile ? (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                          <FileIcon size={20} style={{ color: 'var(--brand-green, #10b981)', flexShrink: 0 }} />
+                          <div style={{ textAlign: 'left', overflow: 'hidden' }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                              {selectedDocFile.name}
+                            </div>
+                            <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                              {formatFileSize(selectedDocFile.size)}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDocFile(null);
+                            setDocFileBase64('');
+                          }}
+                          style={{ background: 'none', border: 'none', color: 'var(--danger-text, #ef4444)', cursor: 'pointer', padding: 4 }}
+                          title="Remove file"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                        <UploadCloud size={24} style={{ color: 'var(--text-muted)' }} />
+                        <span style={{ fontSize: 12, fontWeight: 650, color: 'var(--text-primary)' }}>
+                          Click to upload or drag &amp; drop
+                        </span>
+                        <span style={{ fontSize: 10.5, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <Info size={11} style={{ color: 'var(--brand-green, #10b981)' }} />
+                          Accepted: {DOC_FORMAT_HINT}
+                        </span>
+                      </div>
+                    )}
+                    <input
+                      ref={docFileRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.webp"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleDocFileSelect(f);
+                        e.target.value = '';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 6, color: 'var(--text-secondary)' }}>Document Title *</label>
                   <input
                     type="text"
                     required
+                    maxLength={150}
                     placeholder="e.g. Master Services Agreement 2026"
                     value={newDocName}
                     onChange={(e) => setNewDocName(e.target.value)}
@@ -1200,7 +1352,18 @@ export const ClientProfileDrawer: React.FC<Props> = ({
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                <button type="button" onClick={() => setShowAddDocModal(false)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-raised)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddDocModal(false);
+                    setSelectedDocFile(null);
+                    setDocFileBase64('');
+                    setDocFileError('');
+                  }}
+                  style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-raised)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Cancel
+                </button>
                 <button type="submit" disabled={uploadingDoc} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', cursor: 'pointer', fontWeight: 700 }}>
                   {uploadingDoc ? 'Saving...' : 'Add to Vault'}
                 </button>

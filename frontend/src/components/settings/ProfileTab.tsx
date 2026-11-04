@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Save, Camera, Loader2, Trash2, UploadCloud, Send, MessageSquare, CheckCircle2, AlertCircle, Bell, Smartphone, Laptop, Check, Volume2 } from 'lucide-react';
+import { Save, Camera, Loader2, Trash2, UploadCloud, Send, MessageSquare, CheckCircle2, AlertCircle, Bell, Smartphone, Laptop, Check, Volume2, Info } from 'lucide-react';
 import type { AppSettings, User } from '../../types';
 import { fieldStyle, saveBtnStyle, tabBodyStyle, TabHeader, ToggleRow } from './settingsUi';
 import { processImageFile } from '../team/imageUtils';
@@ -7,6 +7,8 @@ import { AVATAR_PRESETS } from '../team/teamUi';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { ImageCropperModal } from '../ui/ImageCropperModal';
+import { validateImageFile, AVATAR_FORMAT_HINT } from '../../utils/fileValidation';
+import { sanitizePhone, isValidPhone, isValidEmail } from '../../utils/validation';
 import {
   getNotificationPermission,
   enableDeviceNotifications,
@@ -42,6 +44,7 @@ export const ProfileTab: React.FC<ProfileProps> = ({
   const [photoError, setPhotoError] = useState('');
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [formErrors, setFormErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
 
   const isBusy = Boolean(photoAction);
 
@@ -73,15 +76,9 @@ export const ProfileTab: React.FC<ProfileProps> = ({
     if (photoAction) return; // Prevent multiple clicks and race conditions
     setPhotoError('');
     setShowPhotoMenu(false);
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    const acceptedExts = ['jpg', 'jpeg', 'png', 'webp'];
-    if (!acceptedTypes.includes(file.type) && !acceptedExts.includes(ext)) {
-      setPhotoError('Please select a valid image file (JPG, PNG or WebP)');
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      setPhotoError('Photo size must be less than 8MB');
+    const result = validateImageFile(file, { maxSizeMB: 5 });
+    if (!result.valid) {
+      setPhotoError(result.error || 'Please select a valid image file');
       return;
     }
     const reader = new FileReader();
@@ -93,6 +90,34 @@ export const ProfileTab: React.FC<ProfileProps> = ({
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: { name?: string; email?: string; phone?: string } = {};
+    if (!profileName.trim()) {
+      errors.name = 'Full name is required';
+    } else if (profileName.trim().length > 100) {
+      errors.name = 'Name must be 100 characters or fewer';
+    }
+
+    if (!profileEmail.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!isValidEmail(profileEmail)) {
+      errors.email = 'Please enter a valid email address (e.g. name@domain.com)';
+    }
+
+    if (profilePhone.trim()) {
+      const phoneRes = isValidPhone(profilePhone);
+      if (!phoneRes.valid) {
+        errors.phone = phoneRes.error;
+      }
+    }
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    onSave(e);
   };
 
   const handleCropComplete = async (croppedDataUrl: string) => {
@@ -308,7 +333,7 @@ export const ProfileTab: React.FC<ProfileProps> = ({
             >
               {isBusy
                 ? 'Please wait until the update completes before uploading another photo'
-                : 'Drop your photo (JPG, PNG or WebP) anywhere to update profile picture'}
+                : `Drop your photo (${AVATAR_FORMAT_HINT}) anywhere to update profile picture`}
             </p>
           </div>
         </div>
@@ -562,6 +587,14 @@ export const ProfileTab: React.FC<ProfileProps> = ({
             )}
           </div>
 
+          {/* Accepted format & size limit badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--bg-raised)', padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)' }}>
+              <Info style={{ width: 11, height: 11, color: 'var(--brand-green, #10b981)' }} />
+              Accepted: {AVATAR_FORMAT_HINT}
+            </span>
+          </div>
+
           {/* Quick pick realistic avatars */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Quick picks:</span>
@@ -591,19 +624,86 @@ export const ProfileTab: React.FC<ProfileProps> = ({
         </div>
       </div>
 
-    <form onSubmit={onSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Full Name</label>
-          <input type="text" value={profileName} onChange={(e) => onProfileChange({ name: e.target.value })} style={fieldStyle} />
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+            Full Name <span style={{ color: 'var(--danger-text, #ef4444)' }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={profileName}
+            maxLength={100}
+            required
+            placeholder="Your full name"
+            onChange={(e) => {
+              onProfileChange({ name: e.target.value });
+              if (formErrors.name) setFormErrors(prev => ({ ...prev, name: undefined }));
+            }}
+            style={{
+              ...fieldStyle,
+              borderColor: formErrors.name ? 'var(--danger-text, #ef4444)' : undefined,
+            }}
+          />
+          {formErrors.name && (
+            <span style={{ fontSize: 11, color: 'var(--danger-text, #ef4444)', fontWeight: 600 }}>
+              {formErrors.name}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Email Address</label>
-          <input type="email" value={profileEmail} onChange={(e) => onProfileChange({ email: e.target.value })} style={fieldStyle} />
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+            Email Address <span style={{ color: 'var(--danger-text, #ef4444)' }}>*</span>
+          </label>
+          <input
+            type="email"
+            value={profileEmail}
+            maxLength={120}
+            required
+            placeholder="name@company.com"
+            onChange={(e) => {
+              onProfileChange({ email: e.target.value });
+              if (formErrors.email) setFormErrors(prev => ({ ...prev, email: undefined }));
+            }}
+            style={{
+              ...fieldStyle,
+              borderColor: formErrors.email ? 'var(--danger-text, #ef4444)' : undefined,
+            }}
+          />
+          {formErrors.email && (
+            <span style={{ fontSize: 11, color: 'var(--danger-text, #ef4444)', fontWeight: 600 }}>
+              {formErrors.email}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Phone Number</label>
-          <input type="tel" value={profilePhone} onChange={(e) => onProfileChange({ phone: e.target.value })} style={fieldStyle} />
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+            Phone Number <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>(Optional)</span>
+          </label>
+          <input
+            type="tel"
+            value={profilePhone}
+            maxLength={20}
+            placeholder="+91 98765 43210"
+            onChange={(e) => {
+              onProfileChange({ phone: sanitizePhone(e.target.value) });
+              if (formErrors.phone) setFormErrors(prev => ({ ...prev, phone: undefined }));
+            }}
+            style={{
+              ...fieldStyle,
+              borderColor: formErrors.phone ? 'var(--danger-text, #ef4444)' : undefined,
+            }}
+          />
+          {formErrors.phone && (
+            <span style={{ fontSize: 11, color: 'var(--danger-text, #ef4444)', fontWeight: 600 }}>
+              {formErrors.phone}
+            </span>
+          )}
+          {!formErrors.phone && (
+            <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+              Numbers, spaces and country code (e.g. +91)
+            </span>
+          )}
         </div>
       </div>
 

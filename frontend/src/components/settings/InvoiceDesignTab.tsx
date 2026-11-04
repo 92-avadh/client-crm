@@ -1,7 +1,8 @@
-import React from 'react';
-import { Save, CheckCircle2, Upload, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Save, CheckCircle2, Upload, RotateCcw, Info, AlertCircle } from 'lucide-react';
 import type { AppSettings } from '../../types';
 import { fieldStyle, saveBtnStyle, fieldGridStyle, tabBodyStyle, TabHeader, ToggleRow } from './settingsUi';
+import { validateImageFile, LOGO_FORMAT_HINT } from '../../utils/fileValidation';
 
 export interface InvoiceDesign {
   primaryColor: string;
@@ -23,7 +24,10 @@ interface Props {
 }
 
 /** Invoice design & branding (admin). */
-export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, onSave }) => (
+export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, onSave }) => {
+  const [logoError, setLogoError] = useState('');
+
+  return (
   <div style={tabBodyStyle}>
     <TabHeader
       title="Invoice Design & Branding"
@@ -67,10 +71,16 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
                 ? 'Active as primary logo on all generated invoices'
                 : 'Default platform logo (small) active on invoices'}
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--bg-raised)', padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)' }}>
+                <Info style={{ width: 11, height: 11, color: 'var(--brand-green, #10b981)' }} />
+                Accepted: {LOGO_FORMAT_HINT}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <label
             style={{
               display: 'inline-flex',
@@ -94,11 +104,15 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                if (file.size > 2 * 1024 * 1024) {
-                  alert('Logo file size must be less than 2MB.');
+                setLogoError('');
+                const validation = validateImageFile(file, { maxSizeMB: 5, allowSvg: true });
+                if (!validation.valid) {
+                  setLogoError(validation.error || 'Invalid logo file');
+                  e.target.value = '';
                   return;
                 }
                 const reader = new FileReader();
+                reader.onerror = () => setLogoError('Could not read image file. Please try another.');
                 reader.onload = (event) => {
                   const result = event.target?.result as string;
                   if (result) {
@@ -106,6 +120,7 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
                   }
                 };
                 reader.readAsDataURL(file);
+                e.target.value = '';
               }}
             />
           </label>
@@ -113,7 +128,10 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
           {(design.logoUrl || settings.companyLogo) && (
             <button
               type="button"
-              onClick={() => onChange({ logoUrl: '' })}
+              onClick={() => {
+                setLogoError('');
+                onChange({ logoUrl: '' });
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -131,6 +149,13 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
               <RotateCcw size={13} />
               <span>Reset to Default</span>
             </button>
+          )}
+
+          {logoError && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--danger-text, #ef4444)', fontSize: 11, fontWeight: 600 }}>
+              <AlertCircle size={13} />
+              <span>{logoError}</span>
+            </div>
           )}
         </div>
       </div>
@@ -264,4 +289,5 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
       </div>
     </div>
   </div>
-);
+  );
+};

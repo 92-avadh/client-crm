@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Building2, User, CheckCircle2, Edit3, Trash2 } from 'lucide-react';
+import { Calendar, Building2, User, CheckCircle2, Edit3, Trash2, Paperclip } from 'lucide-react';
 import type { Expense, Brand } from '../../types';
 import { CATEGORY_CONFIG } from './expenseConfig';
 
@@ -99,8 +99,35 @@ export const ExpenseTable: React.FC<Props> = ({
                 </td>
 
                 <td style={{ minWidth: 200 }}>
-                  <div style={{ fontSize: 13, fontWeight: 750, color: 'var(--text-primary)' }}>
-                    {exp.title || exp.note || exp.category}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 750, color: 'var(--text-primary)' }}>
+                      {exp.title || exp.note || exp.category}
+                    </span>
+                    {exp.receiptUrl && (
+                      <a
+                        href={exp.receiptUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={`receipt-${exp.id}`}
+                        title="View / Download Attached Receipt"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          padding: '2px 7px',
+                          borderRadius: 6,
+                          fontSize: 10,
+                          fontWeight: 750,
+                          background: 'var(--bg-subtle)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--accent)',
+                          textDecoration: 'none',
+                        }}
+                      >
+                        <Paperclip style={{ width: 10, height: 10 }} />
+                        Receipt
+                      </a>
+                    )}
                   </div>
                   {(exp.description || exp.note) && (
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, maxWidth: 320, lineHeight: 1.4 }}>
