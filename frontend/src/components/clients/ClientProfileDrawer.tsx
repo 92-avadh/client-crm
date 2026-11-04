@@ -32,6 +32,7 @@ import type { Brand, User, Invoice, Task, BrandDocument, DeliverableItem } from 
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { validateDocumentFile, DOC_FORMAT_HINT, formatFileSize } from '../../utils/fileValidation';
+import { Avatar } from '../team/teamUi';
 
 export type ProfileTab = 'overview' | 'team' | 'financials' | 'vault' | 'tasks' | 'timeline';
 
@@ -1078,24 +1079,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
               ) : (
                 assignedUsers.map((u) => (
                   <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)' }}>
-                    {u.avatar ? (
-                      <img
-                        src={u.avatar}
-                        alt={u.name}
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '1.5px solid var(--border)',
-                          flexShrink: 0,
-                        }}
-                      />
-                    ) : (
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
-                        {(u.name || '?').charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <Avatar user={u} size={36} />
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{u.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.designation || u.role}</div>

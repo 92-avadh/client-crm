@@ -25,32 +25,61 @@ export const AVATAR_PRESETS = [
 ];
 
 /** Avatar with graceful fallback to coloured initials. */
-export const Avatar: React.FC<{ user: User; size?: number }> = ({ user, size = 38 }) => {
+export const Avatar: React.FC<{ user: User; size?: number; className?: string; style?: React.CSSProperties }> = ({
+  user,
+  size = 38,
+  className,
+  style,
+}) => {
   const [imgError, setImgError] = useState(false);
-  useEffect(() => { setImgError(false); }, [user.avatar]);
+  useEffect(() => { setImgError(false); }, [user?.avatar]);
+
+  if (!user) return null;
 
   if (user.avatar && !imgError) {
     return (
       <img
         src={user.avatar}
-        alt={user.name}
+        alt={user.name || 'User'}
+        title={user.name || 'User'}
         onError={() => setImgError(true)}
+        className={className}
         style={{
-          width: size, height: size, borderRadius: '50%', objectFit: 'cover',
-          flexShrink: 0, border: '1.5px solid var(--border)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)', background: 'var(--bg-raised)',
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          flexShrink: 0,
+          border: '1.5px solid var(--border)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          background: 'var(--bg-raised)',
+          ...style,
         }}
       />
     );
   }
 
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: getAvatarColor(user.name), color: 'var(--solid-btn-text)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.42, fontWeight: 700, flexShrink: 0,
-    }}>
+    <div
+      title={user.name || 'User'}
+      className={className}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: getAvatarColor(user.name || ''),
+        color: 'var(--solid-btn-text)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: Math.max(9, Math.round(size * 0.42)),
+        fontWeight: 700,
+        flexShrink: 0,
+        border: '1.5px solid var(--border)',
+        lineHeight: 1,
+        ...style,
+      }}
+    >
       {(user.name || '?').charAt(0).toUpperCase()}
     </div>
   );

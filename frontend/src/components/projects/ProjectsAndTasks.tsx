@@ -24,6 +24,7 @@ import {
 import { AnimatedSelect } from '../ui/AnimatedSelect';
 import Pagination from '../ui/Pagination';
 import DatePicker from '@/components/ui/DatePicker';
+import { Avatar } from '../team/teamUi';
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; bg: string; border: string }> = {
   'To Do': { label: 'To Do', color: 'var(--text-secondary)', bg: 'var(--bg-subtle)', border: 'var(--border)' },
@@ -518,12 +519,7 @@ export const ProjectsAndTasks: React.FC = () => {
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             {assignee && (
-                              <img
-                                src={assignee.avatar}
-                                alt={assignee.name}
-                                title={assignee.name}
-                                style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }}
-                              />
+                              <Avatar user={assignee} size={20} />
                             )}
 
                             <TaskStatusDropdown
@@ -578,11 +574,7 @@ export const ProjectsAndTasks: React.FC = () => {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {assignee && (
-                          <img
-                            src={assignee.avatar}
-                            alt={assignee.name}
-                            style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
-                          />
+                          <Avatar user={assignee} size={22} />
                         )}
                         <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{assignee?.name}</span>
                       </div>

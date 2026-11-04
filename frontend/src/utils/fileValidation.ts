@@ -247,3 +247,4 @@ export function validateReceiptFile(
     formattedSize: formatFileSize(file.size),
   };
 }
+

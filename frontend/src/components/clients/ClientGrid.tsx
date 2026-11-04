@@ -1,6 +1,7 @@
 import React from 'react';
 import { Building2, Users, MapPin, ArrowRight, Edit3, UserPlus, Trash2 } from 'lucide-react';
 import type { Brand, User } from '../../types';
+import { Avatar } from '../team/teamUi';
 
 export type ClientRole = 'admin' | 'hr' | 'team' | 'brand';
 
@@ -247,15 +248,7 @@ export const ClientGrid: React.FC<Props> = ({ brands, allUsers, role, onView, on
                       <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>Unassigned</span>
                     ) : (
                       assignedUsers.map((u) => (
-                        u.avatar ? (
-                          <img key={u.id} src={u.avatar} alt={u.name} title={`${u.name} (${u.designation})`}
-                            style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }} />
-                        ) : (
-                          <div key={u.id} title={`${u.name} (${u.designation})`}
-                            style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
-                            {(u.name || '?').charAt(0).toUpperCase()}
-                          </div>
-                        )
+                        <Avatar key={u.id} user={u} size={22} />
                       ))
                     )}
                   </div>
