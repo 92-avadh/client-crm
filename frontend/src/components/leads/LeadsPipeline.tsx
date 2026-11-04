@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useConfirm } from '../../hooks/useConfirm';
+import { isDirty } from '../../hooks/isDirty';
 import type { Lead, LeadStage } from '../../types';
 import {
   Target,
@@ -88,21 +89,24 @@ export const LeadsPipeline: React.FC = () => {
     followUpDate: '',
     notes: '',
   });
+  const baselineLead = React.useRef<typeof editLeadForm | null>(null);
 
   const openEditLead = (lead: any) => {
     setEditingLeadId(lead.id);
-    setEditLeadForm({
+    const initial = {
       name: lead.name || '',
       company: lead.company || '',
       contact: lead.contact || '',
       email: lead.email || '',
       phone: lead.phone || '',
       source: lead.source || 'Website Inbound',
-      stage: lead.stage || 'New',
+      stage: (lead.stage || 'New') as LeadStage,
       value: lead.value || 0,
       followUpDate: lead.followUpDate || '',
       notes: lead.notes || '',
-    });
+    };
+    setEditLeadForm(initial);
+    baselineLead.current = initial;
     setShowEditLeadModal(true);
   };
 
@@ -601,7 +605,24 @@ export const LeadsPipeline: React.FC = () => {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
                 <button type="button" onClick={() => setShowEditLeadModal(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Save Changes</button>
+                <button
+                  type="submit"
+                  disabled={!Boolean(baselineLead.current && isDirty(editLeadForm as any, baselineLead.current as any))}
+                  title={!Boolean(baselineLead.current && isDirty(editLeadForm as any, baselineLead.current as any)) ? 'No changes made' : undefined}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'var(--solid-btn-bg)',
+                    color: 'var(--solid-btn-text)',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: !Boolean(baselineLead.current && isDirty(editLeadForm as any, baselineLead.current as any)) ? 'not-allowed' : 'pointer',
+                    opacity: !Boolean(baselineLead.current && isDirty(editLeadForm as any, baselineLead.current as any)) ? 0.45 : 1,
+                  }}
+                >
+                  Save Changes
+                </button>
               </div>
             </form>
           </div>

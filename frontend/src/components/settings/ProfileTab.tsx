@@ -708,19 +708,38 @@ export const ProfileTab: React.FC<ProfileProps> = ({
       </div>
 
       <div>
-        <button type="submit" style={saveBtnStyle} disabled={saving || isBusy}>
-          {saving ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Saving Changes...</span>
-            </>
-          ) : (
-            <>
-              <Save className="w-3.5 h-3.5" />
-              <span>Save Profile</span>
-            </>
-          )}
-        </button>
+        {(() => {
+          const isProfileChanged =
+            (profileName?.trim() || '') !== (currentUser?.name || '') ||
+            (profileEmail?.trim() || '') !== (currentUser?.email || '') ||
+            (profilePhone?.trim() || '') !== (currentUser?.phone || '');
+          const canSave = !saving && !isBusy && isProfileChanged;
+
+          return (
+            <button
+              type="submit"
+              style={{
+                ...saveBtnStyle,
+                opacity: canSave ? 1 : 0.45,
+                cursor: canSave ? 'pointer' : 'not-allowed',
+              }}
+              disabled={!canSave}
+              title={!isProfileChanged ? 'No changes made' : undefined}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving Changes...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Profile</span>
+                </>
+              )}
+            </button>
+          );
+        })()}
       </div>
     </form>
 
@@ -1053,19 +1072,31 @@ export const NotificationsTab: React.FC<NotificationsProps> = ({
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-              <button
-                type="button"
-                onClick={handleSaveWebhooks}
-                disabled={savingWebhooks}
-                style={{
-                  padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none',
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                }}
-              >
-                {savingWebhooks ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Save style={{ width: 14, height: 14 }} />}
-                <span>Save Webhooks</span>
-              </button>
+              {(() => {
+                const isWebhooksChanged =
+                  (slackUrl.trim() !== (formData.slackWebhookUrl || '').trim()) ||
+                  (discordUrl.trim() !== (formData.discordWebhookUrl || '').trim());
+                const canSaveWebhooks = !savingWebhooks && isWebhooksChanged;
+
+                return (
+                  <button
+                    type="button"
+                    onClick={handleSaveWebhooks}
+                    disabled={!canSaveWebhooks}
+                    title={!isWebhooksChanged ? 'No changes made' : undefined}
+                    style={{
+                      padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                      cursor: canSaveWebhooks ? 'pointer' : 'not-allowed',
+                      opacity: canSaveWebhooks ? 1 : 0.45,
+                      background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none',
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                    }}
+                  >
+                    {savingWebhooks ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Save style={{ width: 14, height: 14 }} />}
+                    <span>Save Webhooks</span>
+                  </button>
+                );
+              })()}
             </div>
           </div>
         )}

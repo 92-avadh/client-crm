@@ -25,6 +25,7 @@ import { AnimatedSelect } from '../ui/AnimatedSelect';
 import Pagination from '../ui/Pagination';
 import DatePicker from '@/components/ui/DatePicker';
 import { Avatar } from '../team/teamUi';
+import { isDirty } from '../../hooks/isDirty';
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; bg: string; border: string }> = {
   'To Do': { label: 'To Do', color: 'var(--text-secondary)', bg: 'var(--bg-subtle)', border: 'var(--border)' },
@@ -205,10 +206,11 @@ export const ProjectsAndTasks: React.FC = () => {
     priority: 'Medium' as TaskPriority,
     status: 'To Do' as TaskStatus,
   });
+  const baselineTask = React.useRef<typeof editTaskForm | null>(null);
 
   const openEditTask = (task: any) => {
     setEditingTaskId(task.id);
-    setEditTaskForm({
+    const initial = {
       brandId: task.brandId || '',
       projectId: task.projectId || '',
       title: task.title || '',
@@ -217,7 +219,9 @@ export const ProjectsAndTasks: React.FC = () => {
       dueDate: task.dueDate || getDefaultDueDate(),
       priority: (task.priority || 'Medium') as TaskPriority,
       status: (task.status || 'To Do') as TaskStatus,
-    });
+    };
+    setEditTaskForm(initial);
+    baselineTask.current = initial;
     setShowEditTaskModal(true);
   };
 
@@ -260,19 +264,22 @@ export const ProjectsAndTasks: React.FC = () => {
     progress: 0,
     billingAmount: 0,
   });
+  const baselineProject = React.useRef<typeof editProjectForm | null>(null);
 
   const openEditProject = (proj: any) => {
     setEditingProjectId(proj.id);
-    setEditProjectForm({
+    const initial = {
       brandId: proj.brandId || '',
       name: proj.name || '',
       scope: proj.scope || '',
       startDate: proj.startDate || '',
       endDate: proj.endDate || '',
-      status: proj.status || 'In progress',
+      status: (proj.status || 'In progress') as ProjectStatus,
       progress: proj.progress || 0,
       billingAmount: proj.billingAmount || 0,
-    });
+    };
+    setEditProjectForm(initial);
+    baselineProject.current = initial;
     setShowEditProjectModal(true);
   };
 
@@ -1030,8 +1037,15 @@ export const ProjectsAndTasks: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingEditTask}
-                  style={{ ...btnPrimary, height: 32, fontSize: 12, opacity: isSubmittingEditTask ? 0.7 : 1, cursor: isSubmittingEditTask ? 'not-allowed' : 'pointer' }}
+                  disabled={isSubmittingEditTask || !Boolean(baselineTask.current && isDirty(editTaskForm as any, baselineTask.current as any))}
+                  title={!Boolean(baselineTask.current && isDirty(editTaskForm as any, baselineTask.current as any)) ? 'No changes made' : undefined}
+                  style={{
+                    ...btnPrimary,
+                    height: 32,
+                    fontSize: 12,
+                    opacity: isSubmittingEditTask || !Boolean(baselineTask.current && isDirty(editTaskForm as any, baselineTask.current as any)) ? 0.45 : 1,
+                    cursor: isSubmittingEditTask || !Boolean(baselineTask.current && isDirty(editTaskForm as any, baselineTask.current as any)) ? 'not-allowed' : 'pointer',
+                  }}
                 >
                   {isSubmittingEditTask && <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} />}
                   {isSubmittingEditTask ? 'Saving...' : 'Save Changes'}
@@ -1152,8 +1166,15 @@ export const ProjectsAndTasks: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingEditProject}
-                  style={{ ...btnPrimary, height: 32, fontSize: 12, opacity: isSubmittingEditProject ? 0.7 : 1, cursor: isSubmittingEditProject ? 'not-allowed' : 'pointer' }}
+                  disabled={isSubmittingEditProject || !Boolean(baselineProject.current && isDirty(editProjectForm as any, baselineProject.current as any))}
+                  title={!Boolean(baselineProject.current && isDirty(editProjectForm as any, baselineProject.current as any)) ? 'No changes made' : undefined}
+                  style={{
+                    ...btnPrimary,
+                    height: 32,
+                    fontSize: 12,
+                    opacity: isSubmittingEditProject || !Boolean(baselineProject.current && isDirty(editProjectForm as any, baselineProject.current as any)) ? 0.45 : 1,
+                    cursor: isSubmittingEditProject || !Boolean(baselineProject.current && isDirty(editProjectForm as any, baselineProject.current as any)) ? 'not-allowed' : 'pointer',
+                  }}
                 >
                   {isSubmittingEditProject && <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} />}
                   {isSubmittingEditProject ? 'Saving...' : 'Save Project'}

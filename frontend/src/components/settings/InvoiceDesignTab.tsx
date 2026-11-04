@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Save, CheckCircle2, Upload, RotateCcw, Info, AlertCircle } from 'lucide-react';
 import type { AppSettings } from '../../types';
 import { fieldStyle, saveBtnStyle, fieldGridStyle, tabBodyStyle, TabHeader, ToggleRow } from './settingsUi';
 import { validateImageFile, LOGO_FORMAT_HINT } from '../../utils/fileValidation';
+import { isDirty } from '../../hooks/isDirty';
 
 export interface InvoiceDesign {
   primaryColor: string;
@@ -26,6 +27,15 @@ interface Props {
 /** Invoice design & branding (admin). */
 export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, onSave }) => {
   const [logoError, setLogoError] = useState('');
+  const baseline = useRef<InvoiceDesign | null>(null);
+
+  useEffect(() => {
+    if (!baseline.current) {
+      baseline.current = { ...design };
+    }
+  }, [design]);
+
+  const isChanged = Boolean(baseline.current && isDirty(design as any, baseline.current as any));
 
   return (
   <div style={tabBodyStyle}>
@@ -238,7 +248,17 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
     </div>
 
     <div style={{ paddingTop: 4 }}>
-      <button type="button" style={saveBtnStyle} onClick={onSave}>
+      <button
+        type="button"
+        style={{
+          ...saveBtnStyle,
+          opacity: isChanged ? 1 : 0.45,
+          cursor: isChanged ? 'pointer' : 'not-allowed',
+        }}
+        disabled={!isChanged}
+        title={!isChanged ? 'No changes made' : undefined}
+        onClick={onSave}
+      >
         <Save className="w-3.5 h-3.5" /><span>Save Invoice Design</span>
       </button>
     </div>

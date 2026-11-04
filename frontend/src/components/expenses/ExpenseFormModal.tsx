@@ -90,6 +90,8 @@ export const ExpenseFormModal: React.FC<Props> = ({
     onClose();
   };
 
+  const isChanged = !editing || Boolean(baseline.current && isDirty(formData as any, baseline.current as any));
+
   if (!open) return null;
   const isSalary = formData.category === 'Employee Salaries';
 
@@ -364,8 +366,22 @@ export const ExpenseFormModal: React.FC<Props> = ({
           {/* Actions */}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
             <button type="button" onClick={requestClose} disabled={submitting} className="btn-secondary">Cancel</button>
-            <button type="submit" disabled={submitting}
-              style={{ padding: '9px 22px', borderRadius: 8, fontSize: 13, fontWeight: 700, background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <button type="submit" disabled={submitting || !isChanged}
+              title={!isChanged ? 'No changes made' : undefined}
+              style={{
+                padding: '9px 22px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                background: 'var(--solid-btn-bg)',
+                color: 'var(--solid-btn-text)',
+                border: 'none',
+                cursor: submitting || !isChanged ? 'not-allowed' : 'pointer',
+                opacity: submitting || !isChanged ? 0.45 : 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6
+              }}>
               {submitting && <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />}
               {submitting ? 'Saving...' : editing ? 'Save Changes' : 'Record Expense'}
             </button>

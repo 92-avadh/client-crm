@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Save, Coins, Briefcase, Layout, Target, Check, Upload, RotateCcw, Image as ImageIcon, Info, AlertCircle } from 'lucide-react';
 import type { AppSettings } from '../../types';
 import { fieldStyle, saveBtnStyle, fieldGridStyle, tabBodyStyle, TabHeader } from './settingsUi';
 import { SUPPORTED_CURRENCIES, getCurrencyConfig, formatCurrency } from '../../utils/currency';
 import { validateImageFile, LOGO_FORMAT_HINT } from '../../utils/fileValidation';
 import { isValidEmail, isValidPhone, sanitizePhone, isValidGSTIN, isValidPAN } from '../../utils/validation';
+import { isDirty } from '../../hooks/isDirty';
 
 interface Props {
   formData: AppSettings;
@@ -72,6 +73,15 @@ const GOALS_LIST = [
 export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
   const [logoError, setLogoError] = useState('');
   const [formError, setFormError] = useState('');
+  const baseline = useRef<AppSettings | null>(null);
+
+  useEffect(() => {
+    if (!baseline.current) {
+      baseline.current = { ...formData };
+    }
+  }, [formData]);
+
+  const isChanged = Boolean(baseline.current && isDirty(formData as any, baseline.current as any));
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -517,7 +527,16 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
       </div>
 
       <div style={{ paddingTop: 10 }}>
-        <button type="submit" style={saveBtnStyle}>
+        <button
+          type="submit"
+          style={{
+            ...saveBtnStyle,
+            opacity: isChanged ? 1 : 0.45,
+            cursor: isChanged ? 'pointer' : 'not-allowed',
+          }}
+          disabled={!isChanged}
+          title={!isChanged ? 'No changes made' : undefined}
+        >
           <Save className="w-3.5 h-3.5" />
           <span>Save Agency Profile &amp; Preferences</span>
         </button>
@@ -529,6 +548,15 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
 /** GST / tax configuration (admin). */
 export const TaxTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
   const [taxError, setTaxError] = useState('');
+  const baseline = useRef<AppSettings | null>(null);
+
+  useEffect(() => {
+    if (!baseline.current) {
+      baseline.current = { ...formData };
+    }
+  }, [formData]);
+
+  const isChanged = Boolean(baseline.current && isDirty(formData as any, baseline.current as any));
 
   const handleTaxSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -575,7 +603,16 @@ export const TaxTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
           onChange={(v) => onChange({ invoicePrefix: v })} />
       </div>
       <div style={{ paddingTop: 4 }}>
-        <button type="submit" style={saveBtnStyle}>
+        <button
+          type="submit"
+          style={{
+            ...saveBtnStyle,
+            opacity: isChanged ? 1 : 0.45,
+            cursor: isChanged ? 'pointer' : 'not-allowed',
+          }}
+          disabled={!isChanged}
+          title={!isChanged ? 'No changes made' : undefined}
+        >
           <Save className="w-3.5 h-3.5" /><span>Save Tax Settings</span>
         </button>
       </div>
@@ -584,39 +621,60 @@ export const TaxTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
 };
 
 /** Banking & Razorpay credentials (admin). */
-export const BankingTab: React.FC<Props> = ({ formData, onChange, onSave }) => (
-  <form onSubmit={onSave} style={tabBodyStyle}>
-    <TabHeader
-      title="Direct Settlement Bank & Razorpay Credentials"
-      subtitle="Client payments settle straight into this account. These details appear automatically on all client invoices."
-    />
+export const BankingTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
+  const baseline = useRef<AppSettings | null>(null);
 
-    <div style={{ padding: '16px 20px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-      <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Direct Settlement Architecture:</span>{' '}
-      Direct bank account settlement via Razorpay Route. Funds flow directly to your business account without intermediary vendor pooling.
-    </div>
+  useEffect(() => {
+    if (!baseline.current) {
+      baseline.current = { ...formData };
+    }
+  }, [formData]);
 
-    <div style={fieldGridStyle}>
-      <Field label="Bank Name" value={formData.bankName || ''}
-        onChange={(v) => onChange({ bankName: v })} />
-      <Field label="Account Beneficiary Name" value={formData.bankAccountName}
-        onChange={(v) => onChange({ bankAccountName: v })} />
-      <Field label="Bank Account Number" value={formData.bankAccountNumber} mono maxLength={30} placeholder="e.g. 50100234567890"
-        onChange={(v) => onChange({ bankAccountNumber: v })} />
-      <Field label="Bank IFSC Code" value={formData.bankIfsc} mono maxLength={11} placeholder="e.g. HDFC0001234"
-        onChange={(v) => onChange({ bankIfsc: v.toUpperCase() })} />
-      <Field label="Bank Branch Location" value={formData.bankBranch}
-        onChange={(v) => onChange({ bankBranch: v })} />
-      <Field label="UPI ID for Direct QR Codes" value={formData.upiId} mono maxLength={50} placeholder="e.g. username@okhdfcbank"
-        onChange={(v) => onChange({ upiId: v })} />
-      <Field label="Razorpay Key ID" value={formData.razorpayKeyId} mono maxLength={50} placeholder="e.g. rzp_live_xxxxxxxxx"
-        onChange={(v) => onChange({ razorpayKeyId: v })} />
-    </div>
+  const isChanged = Boolean(baseline.current && isDirty(formData as any, baseline.current as any));
 
-    <div style={{ paddingTop: 4 }}>
-      <button type="submit" style={saveBtnStyle}>
-        <Save className="w-3.5 h-3.5" /><span>Save Banking Details</span>
-      </button>
-    </div>
-  </form>
-);
+  return (
+    <form onSubmit={onSave} style={tabBodyStyle}>
+      <TabHeader
+        title="Direct Settlement Bank & Razorpay Credentials"
+        subtitle="Client payments settle straight into this account. These details appear automatically on all client invoices."
+      />
+
+      <div style={{ padding: '16px 20px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+        <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Direct Settlement Architecture:</span>{' '}
+        Direct bank account settlement via Razorpay Route. Funds flow directly to your business account without intermediary vendor pooling.
+      </div>
+
+      <div style={fieldGridStyle}>
+        <Field label="Bank Name" value={formData.bankName || ''}
+          onChange={(v) => onChange({ bankName: v })} />
+        <Field label="Account Beneficiary Name" value={formData.bankAccountName}
+          onChange={(v) => onChange({ bankAccountName: v })} />
+        <Field label="Bank Account Number" value={formData.bankAccountNumber} mono maxLength={30} placeholder="e.g. 50100234567890"
+          onChange={(v) => onChange({ bankAccountNumber: v })} />
+        <Field label="Bank IFSC Code" value={formData.bankIfsc} mono maxLength={11} placeholder="e.g. HDFC0001234"
+          onChange={(v) => onChange({ bankIfsc: v.toUpperCase() })} />
+        <Field label="Bank Branch Location" value={formData.bankBranch}
+          onChange={(v) => onChange({ bankBranch: v })} />
+        <Field label="UPI ID for Direct QR Codes" value={formData.upiId} mono maxLength={50} placeholder="e.g. username@okhdfcbank"
+          onChange={(v) => onChange({ upiId: v })} />
+        <Field label="Razorpay Key ID" value={formData.razorpayKeyId} mono maxLength={50} placeholder="e.g. rzp_live_xxxxxxxxx"
+          onChange={(v) => onChange({ razorpayKeyId: v })} />
+      </div>
+
+      <div style={{ paddingTop: 4 }}>
+        <button
+          type="submit"
+          style={{
+            ...saveBtnStyle,
+            opacity: isChanged ? 1 : 0.45,
+            cursor: isChanged ? 'pointer' : 'not-allowed',
+          }}
+          disabled={!isChanged}
+          title={!isChanged ? 'No changes made' : undefined}
+        >
+          <Save className="w-3.5 h-3.5" /><span>Save Banking Details</span>
+        </button>
+      </div>
+    </form>
+  );
+};

@@ -77,6 +77,8 @@ export const EditMemberModal: React.FC<Props> = ({
     onClose();
   };
 
+  const isChanged = Boolean(baseline.current && isDirty(form as any, baseline.current as any));
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError('');
@@ -263,8 +265,19 @@ export const EditMemberModal: React.FC<Props> = ({
               style={{ padding: '10px 18px', background: 'var(--bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={submitting}
-              style={{ padding: '10px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}>
+            <button type="submit" disabled={submitting || !isChanged}
+              title={!isChanged ? 'No changes made' : undefined}
+              style={{
+                padding: '10px 18px',
+                background: 'var(--solid-btn-bg)',
+                color: 'var(--solid-btn-text)',
+                border: 'none',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: submitting || !isChanged ? 'not-allowed' : 'pointer',
+                opacity: submitting || !isChanged ? 0.45 : 1,
+              }}>
               {submitting ? 'Saving…' : 'Save Changes'}
             </button>
           </div>

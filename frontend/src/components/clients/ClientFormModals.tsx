@@ -536,6 +536,8 @@ export const EditClientModal: React.FC<EditProps> = ({
     onClose();
   };
 
+  const isChanged = Boolean(baseline.current && isDirty(formData as any, baseline.current as any));
+
   if (!open) return null;
 
   return (
@@ -701,8 +703,22 @@ export const EditClientModal: React.FC<EditProps> = ({
               style={{ padding: '9px 18px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={submitting}
-              style={{ padding: '9px 18px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.75 : 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <button type="submit" disabled={submitting || !isChanged}
+              title={!isChanged ? 'No changes made' : undefined}
+              style={{
+                padding: '9px 18px',
+                background: 'var(--solid-btn-bg)',
+                color: 'var(--solid-btn-text)',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: submitting || !isChanged ? 'not-allowed' : 'pointer',
+                opacity: submitting || !isChanged ? 0.45 : 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}>
               {submitting ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Save style={{ width: 14, height: 14 }} />}
               <span>{submitting ? 'Saving...' : 'Save Changes'}</span>
             </button>
