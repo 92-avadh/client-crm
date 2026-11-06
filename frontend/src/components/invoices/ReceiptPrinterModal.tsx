@@ -257,7 +257,7 @@ export const ReceiptPrinterModal: React.FC<ReceiptPrinterModalProps> = ({
         </div>
 
         {/* Printer Main Stage */}
-        <div className={`printer-stage ${isPrinted ? 'has-printed' : ''}`}>
+        <div className={`printer-stage ${isPrinting ? 'is-printing' : ''} ${isPrinted ? 'has-printed' : ''}`}>
           
           {/* Metallic 3D Dispenser Unit */}
           <div className="machine-unit">

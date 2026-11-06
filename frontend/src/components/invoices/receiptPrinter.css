@@ -26,6 +26,7 @@
 .receipt-modal-shell {
   width: 100%;
   max-width: 520px;
+  margin: auto;
   background: var(--bg-card, #111b21);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
   border-radius: 20px;
@@ -103,8 +104,7 @@
   width: 100%;
   max-width: 440px;
   position: relative;
-  min-height: 480px;
-  transition: min-height 0.4s ease;
+  min-height: 560px;
 }
 
 /* Unified Metallic Gold Machine Unit */
@@ -502,8 +502,18 @@
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  max-height: 140px;
+  max-height: 110px;
   overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.receipt-items-list::-webkit-scrollbar {
+  width: 3px;
+}
+
+.receipt-items-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
 }
 
 .receipt-item-row {
@@ -613,18 +623,17 @@
    Action Controls Below Machine
    ========================================================================== */
 .stage-info {
-  margin-top: 3.5rem;
+  margin-top: 26.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   z-index: 40;
-  transition: margin-top 0.55s cubic-bezier(0.16, 1, 0.3, 1);
   width: 100%;
 }
 
 .printer-stage.has-printed .stage-info {
-  margin-top: 26rem;
+  margin-top: 26.5rem;
 }
 
 .status-heading {
@@ -716,3 +725,4 @@
   color: var(--text-primary, #ffffff);
   background: rgba(255, 255, 255, 0.1);
 }
+
