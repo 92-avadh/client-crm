@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, CreditCard, MessageCircle, Trash2, Loader2 } from 'lucide-react';
+import { Eye, CreditCard, MessageCircle, Trash2, Loader2, Printer } from 'lucide-react';
 import type { Invoice } from '../../types';
 import { getStatusBadgeStyle } from './invoiceStyles';
 
@@ -9,6 +9,7 @@ interface Props {
   onView: (id: string) => void;
   onPay: (inv: Invoice) => void;
   onWhatsApp: (inv: Invoice) => void;
+  onPrintReceipt?: (inv: Invoice) => void;
   onDelete?: (inv: Invoice) => void;
   deletingId?: string | null;
   canDelete?: boolean;
@@ -20,7 +21,7 @@ interface Props {
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 export const InvoiceTable: React.FC<Props> = ({
-  invoices, recurringIds, onView, onPay, onWhatsApp, onDelete, deletingId, canDelete = true,
+  invoices, recurringIds, onView, onPay, onWhatsApp, onPrintReceipt, onDelete, deletingId, canDelete = true,
   selectedIds, onToggleSelect, onSelectAll,
 }) => {
   const headerCheckboxRef = React.useRef<HTMLInputElement>(null);
@@ -118,10 +119,17 @@ export const InvoiceTable: React.FC<Props> = ({
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
-                      <button onClick={() => onView(inv.id)} title="View / Print Invoice"
+                      <button onClick={() => onView(inv.id)} title="View / Print Full Invoice Document"
                         style={{ padding: '5px', borderRadius: 8, background: 'var(--bg-subtle)', color: 'var(--text-secondary)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                         <Eye style={{ width: 14, height: 14 }} />
                       </button>
+
+                      {onPrintReceipt && (
+                        <button onClick={() => onPrintReceipt(inv)} title="Print Thermal Receipt (Animation)"
+                          style={{ padding: '5px', borderRadius: 8, background: 'var(--bg-subtle)', color: 'var(--text-secondary)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                          <Printer style={{ width: 14, height: 14 }} />
+                        </button>
+                      )}
 
                       {inv?.status !== 'Paid' && (
                         <button onClick={() => onPay(inv)} title="Simulate Razorpay Payment"

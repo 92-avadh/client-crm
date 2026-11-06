@@ -1,0 +1,718 @@
+/* ==========================================================================
+   Thermal Receipt Printer Animation - Scoped for Retentio Invoices
+   Transposed from C:\Users\dhame\Desktop\COMPONENTS\RECEPIT PRINT
+   ========================================================================== */
+
+.receipt-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(4, 7, 13, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+  animation: receiptFadeIn 0.25s ease-out;
+}
+
+@keyframes receiptFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.receipt-modal-shell {
+  width: 100%;
+  max-width: 520px;
+  background: var(--bg-card, #111b21);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 20px;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1.25rem 2rem;
+  box-sizing: border-box;
+}
+
+/* Modal Top Bar */
+.receipt-modal-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+
+.receipt-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary, #f1f5f9);
+  letter-spacing: -0.01em;
+}
+
+.receipt-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.receipt-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #94a3b8);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.receipt-modal-close-btn:hover {
+  color: var(--text-primary, #ffffff);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ==========================================================================
+   Printer Stage & Metallic 3D Dispenser Machine
+   ========================================================================== */
+.printer-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  min-height: 480px;
+  transition: min-height 0.4s ease;
+}
+
+/* Unified Metallic Gold Machine Unit */
+.machine-unit {
+  width: 380px;
+  max-width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 30;
+}
+
+/* Top 3D Metallic Hood */
+.machine-hood-top {
+  width: 100%;
+  height: 44px;
+  border-radius: 14px 14px 4px 4px;
+  background: linear-gradient(180deg, 
+    #ffffff 0%, 
+    #fbf4e8 15%, 
+    #e9cf9f 45%, 
+    #d19e54 75%, 
+    #b37f35 100%
+  );
+  box-shadow: 
+    0 -2px 6px rgba(255, 255, 255, 0.9),
+    0 10px 20px rgba(179, 127, 53, 0.28),
+    inset 0 2px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 4px rgba(105, 68, 16, 0.45);
+  position: relative;
+  overflow: hidden;
+  z-index: 25;
+}
+
+.hood-highlight {
+  position: absolute;
+  top: 3px;
+  left: 5%;
+  width: 90%;
+  height: 6px;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0) 100%);
+  border-radius: 999px;
+  filter: blur(1px);
+}
+
+/* Dark Slit Opening in middle where paper emerges */
+.machine-slot-slit {
+  width: 92%;
+  height: 12px;
+  margin-top: -6px;
+  background: #0f0a03;
+  border-radius: 2px;
+  box-shadow: inset 0 6px 12px rgba(25, 12, 2, 0.95), inset 0 -1px 2px rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 5;
+}
+
+/* Flash line during cutter blade slice action */
+.cutter-blade-flash {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92%;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, #ffffff 50%, rgba(255,255,255,0) 100%);
+  box-shadow: 0 0 12px #ffffff;
+  z-index: 35;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cutter-blade-flash.active {
+  animation: cutterBladeFlash 0.35s ease-out forwards;
+}
+
+@keyframes cutterBladeFlash {
+  0% { opacity: 0; transform: translateX(-50%) scaleX(0.1); }
+  50% { opacity: 1; transform: translateX(-50%) scaleX(1); }
+  100% { opacity: 0; transform: translateX(-50%) scaleX(1); }
+}
+
+/* Bottom Machine Lip Base attached directly under slit */
+.machine-hood-bottom {
+  width: 100%;
+  height: 14px;
+  margin-top: -4px;
+  border-radius: 0 0 14px 14px;
+  background: linear-gradient(180deg, #9e6d2b 0%, #d8b478 40%, #fff7ea 100%);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 10;
+}
+
+.hood-shadow {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%);
+}
+
+/* Paper Viewport — Emerges directly from dark slit line */
+.paper-viewport {
+  position: absolute;
+  top: 39px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 350px;
+  max-width: 92%;
+  clip-path: inset(0px -60px -1200px -60px);
+  z-index: 8;
+  padding-bottom: 20px;
+  pointer-events: none;
+  perspective: 1200px;
+  perspective-origin: 50% 0%;
+  filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.45)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+}
+
+/* ==========================================================================
+   Receipt Paper Component — Authentic Thermal Paper Look
+   ========================================================================== */
+.receipt-paper-wrapper {
+  width: 310px;
+  max-width: 100%;
+  margin: 0 auto;
+  background-color: #fafaf8;
+  position: relative;
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  transition: transform 2.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  user-select: none;
+  pointer-events: auto;
+  clip-path: polygon(
+    0% 0%, 100% 0%,
+    100% calc(100% - 9px),
+    98.33% 100%, 96.67% calc(100% - 9px),
+    95.00% 100%, 93.33% calc(100% - 9px),
+    91.67% 100%, 90.00% calc(100% - 9px),
+    88.33% 100%, 86.67% calc(100% - 9px),
+    85.00% 100%, 83.33% calc(100% - 9px),
+    81.67% 100%, 80.00% calc(100% - 9px),
+    78.33% 100%, 76.67% calc(100% - 9px),
+    75.00% 100%, 73.33% calc(100% - 9px),
+    71.67% 100%, 70.00% calc(100% - 9px),
+    68.33% 100%, 66.67% calc(100% - 9px),
+    65.00% 100%, 63.33% calc(100% - 9px),
+    61.67% 100%, 60.00% calc(100% - 9px),
+    58.33% 100%, 56.67% calc(100% - 9px),
+    55.00% 100%, 53.33% calc(100% - 9px),
+    51.67% 100%, 50.00% calc(100% - 9px),
+    48.33% 100%, 46.67% calc(100% - 9px),
+    45.00% 100%, 43.33% calc(100% - 9px),
+    41.67% 100%, 40.00% calc(100% - 9px),
+    38.33% 100%, 36.67% calc(100% - 9px),
+    35.00% 100%, 33.33% calc(100% - 9px),
+    31.67% 100%, 30.00% calc(100% - 9px),
+    28.33% 100%, 26.67% calc(100% - 9px),
+    25.00% 100%, 23.33% calc(100% - 9px),
+    21.67% 100%, 20.00% calc(100% - 9px),
+    18.33% 100%, 16.67% calc(100% - 9px),
+    15.00% 100%, 13.33% calc(100% - 9px),
+    11.67% 100%, 10.00% calc(100% - 9px),
+    8.33% 100%, 6.67% calc(100% - 9px),
+    5.00% 100%, 3.33% calc(100% - 9px),
+    1.67% 100%, 0% calc(100% - 9px)
+  );
+}
+
+/* Subtle thermal paper grain texture overlay */
+.receipt-paper-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 3D Paper Light Reflection Sheen */
+.receipt-paper-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 35%,
+    rgba(0, 0, 0, 0.02) 75%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Retracted State */
+.receipt-paper-wrapper.retracted {
+  transform: translateY(-93%) rotateX(-16deg) translateZ(-25px);
+}
+
+/* Printed State */
+.receipt-paper-wrapper.printed {
+  transform: translateY(0%) rotateX(0deg) translateZ(0px);
+}
+
+/* Smooth Fluid Easing 3D Animation (2.5s) */
+.receipt-paper-wrapper.printing-smooth {
+  animation: printSmooth3D 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes printSmooth3D {
+  0% {
+    transform: translateY(-93%) rotateX(-18deg) translateZ(-30px) scale(0.97);
+    opacity: 0.4;
+  }
+  20% {
+    transform: translateY(-70%) rotateX(-12deg) translateZ(20px) scale(0.985);
+    opacity: 0.85;
+  }
+  45% {
+    transform: translateY(-40%) rotateX(-6deg) translateZ(26px) scale(0.995);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(-12%) rotateX(-2deg) translateZ(10px) scale(1);
+  }
+  90% {
+    transform: translateY(1%) rotateX(0.8deg) translateZ(2px) scale(1);
+  }
+  100% {
+    transform: translateY(0%) rotateX(0deg) translateZ(0px) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Classic Mechanical Step 3D Animation (2.5s) */
+.receipt-paper-wrapper.printing-classic {
+  animation: printMechanical3D 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes printMechanical3D {
+  0% {
+    transform: translateY(-93%) rotateX(-16deg) translateZ(-25px);
+    opacity: 0.6;
+  }
+  15% {
+    transform: translateY(-78%) rotateX(-12deg) translateZ(14px);
+    opacity: 0.85;
+  }
+  35% {
+    transform: translateY(-56%) rotateX(-8deg) translateZ(22px);
+    opacity: 0.95;
+  }
+  60% {
+    transform: translateY(-30%) rotateX(-5deg) translateZ(18px);
+    opacity: 1;
+  }
+  82% {
+    transform: translateY(-8%) rotateX(-2deg) translateZ(8px);
+  }
+  100% {
+    transform: translateY(0%) rotateX(0deg) translateZ(0px);
+    opacity: 1;
+  }
+}
+
+/* Micro-vibration */
+.receipt-paper-wrapper.vibrating {
+  animation: receiptVibrate 0.05s infinite alternate ease-in-out;
+}
+
+@keyframes receiptVibrate {
+  0% { transform: translateX(-0.4px); }
+  100% { transform: translateX(0.4px); }
+}
+
+/* Tear-Away Animation */
+.receipt-paper-wrapper.tearing {
+  animation: paperTearAway 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  pointer-events: none;
+  transform-origin: top right;
+}
+
+@keyframes paperTearAway {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  20% {
+    transform: translateY(6px) translateX(18px) rotate(-3deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(14px) translateX(55px) rotate(-8deg) scale(0.98);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(22px) translateX(110px) rotate(-14deg) scale(0.94);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Receipt Thermal Content Styling
+   ========================================================================== */
+.receipt-content {
+  padding: 1.25rem 1.15rem 1.6rem;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  color: #222222;
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.receipt-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0.9rem;
+}
+
+.header-brand-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.brand-company-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0b4f8a;
+  text-transform: uppercase;
+}
+
+.payment-title {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #555555;
+  line-height: 1.3;
+}
+
+.logo-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.receipt-amount-section {
+  margin-bottom: 0.85rem;
+}
+
+.receipt-amount {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #111111;
+  line-height: 1.1;
+  margin-bottom: 0.25rem;
+}
+
+.receipt-meta {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: #888888;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.receipt-divider {
+  width: 100%;
+  height: 0;
+  border-bottom: 1px dashed #cccccc;
+  margin: 0.75rem 0;
+}
+
+.receipt-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.receipt-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  gap: 8px;
+}
+
+.receipt-item-row .item-name {
+  color: #333333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.receipt-item-row .item-price {
+  font-weight: 700;
+  color: #111111;
+  flex-shrink: 0;
+}
+
+.receipt-totals-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  color: #666666;
+  font-weight: 500;
+}
+
+.receipt-grand-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid #cccccc;
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #111111;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 0.75rem;
+  padding-top: 0.45rem;
+}
+
+.footer-msg {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #555555;
+  margin-bottom: 0.55rem;
+  text-transform: uppercase;
+}
+
+.barcode-graphic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  opacity: 0.8;
+}
+
+.barcode-lines {
+  width: 70%;
+  height: 24px;
+  background: repeating-linear-gradient(
+    90deg,
+    #222 0px,
+    #222 1.5px,
+    transparent 1.5px,
+    transparent 3px,
+    #222 3px,
+    #222 4px,
+    transparent 4px,
+    transparent 5.5px,
+    #222 5.5px,
+    #222 8px,
+    transparent 8px,
+    transparent 9.5px
+  );
+}
+
+.barcode-num {
+  font-size: 0.52rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #888888;
+}
+
+.serrated-edge {
+  width: 100%;
+  height: 10px;
+}
+
+/* ==========================================================================
+   Action Controls Below Machine
+   ========================================================================== */
+.stage-info {
+  margin-top: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  z-index: 40;
+  transition: margin-top 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+}
+
+.printer-stage.has-printed .stage-info {
+  margin-top: 26rem;
+}
+
+.status-heading {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary, #ffffff);
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+}
+
+.status-subtext {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #94a3b8);
+  margin-bottom: 1.25rem;
+}
+
+.centered-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.print-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  background: var(--solid-btn-bg, #10b981);
+  color: var(--solid-btn-text, #ffffff);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.print-action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+}
+
+.print-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  background: var(--bg-raised, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary, #ffffff);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-action-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.sound-toggle-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  background: var(--bg-raised, rgba(255, 255, 255, 0.06));
+  color: var(--text-secondary, #94a3b8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sound-toggle-btn:hover {
+  color: var(--text-primary, #ffffff);
+  background: rgba(255, 255, 255, 0.1);
+}

@@ -9,6 +9,7 @@ import { InvoiceTable } from './InvoiceTable';
 import Pagination from '../ui/Pagination';
 import { InvoiceBuilderModal } from './InvoiceBuilderModal';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
+import { ReceiptPrinterModal } from './ReceiptPrinterModal';
 import { RazorpayModal, OfflinePaymentModal, type OfflineForm } from './PaymentModals';
 import { RecurringPanel } from './RecurringPanel';
 import { getDefaultPermissionsForRole } from '../team/permissionsConfig';
@@ -85,6 +86,8 @@ export const InvoicesManager: React.FC = () => {
     referenceNo: '',
     date: new Date().toISOString().split('T')[0],
   }));
+  const [receiptInvoice, setReceiptInvoice] = useState<Invoice | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   const builder = useInvoiceBuilder(brands, settings);
 
@@ -183,6 +186,12 @@ export const InvoicesManager: React.FC = () => {
       setIsRecurring(false);
       builder.reset();
       setShowCreateModal(false);
+
+      // Trigger Thermal Receipt Printer Animation for the generated invoice!
+      if (newInvoice) {
+        setReceiptInvoice(newInvoice);
+        setShowReceiptModal(true);
+      }
     } catch (err: any) {
       // Error notification handled in createInvoice
     } finally {
@@ -569,6 +578,7 @@ export const InvoicesManager: React.FC = () => {
         onView={setSelectedInvoiceId}
         onPay={(inv) => { setPayingInvoice(inv); setShowPayModal(true); }}
         onWhatsApp={openWhatsAppShare}
+        onPrintReceipt={(inv) => { setReceiptInvoice(inv); setShowReceiptModal(true); }}
         onDelete={handleDeleteInvoice}
         deletingId={deletingInvoiceId}
         canDelete={canManage}
@@ -614,6 +624,25 @@ export const InvoicesManager: React.FC = () => {
         settings={settings}
         brand={brands.find((b) => b.id === activeInvoice?.brandId) || (activeInvoice ? { id: activeInvoice.brandId, name: activeInvoice.brandName || 'Client' } as Brand : undefined)}
         onClose={() => setSelectedInvoiceId(null)}
+        onWhatsApp={openWhatsAppShare}
+        onPrintReceipt={(inv) => {
+          setReceiptInvoice(inv);
+          setShowReceiptModal(true);
+        }}
+      />
+
+      <ReceiptPrinterModal
+        open={showReceiptModal}
+        invoice={receiptInvoice}
+        brand={brands.find((b) => b.id === receiptInvoice?.brandId) || (receiptInvoice ? { id: receiptInvoice.brandId, name: receiptInvoice.brandName || 'Client' } as Brand : undefined)}
+        settings={settings}
+        onClose={() => {
+          setShowReceiptModal(false);
+          setReceiptInvoice(null);
+        }}
+        onViewInvoice={(inv) => {
+          setSelectedInvoiceId(inv.id);
+        }}
         onWhatsApp={openWhatsAppShare}
       />
 

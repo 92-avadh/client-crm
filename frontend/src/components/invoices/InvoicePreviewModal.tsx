@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, Share2, Sparkles, Check, FileSpreadsheet } from 'lucide-react';
+import { X, Printer, Share2, Sparkles, Check, FileSpreadsheet, Receipt } from 'lucide-react';
 import type { Invoice, AppSettings, Brand } from '../../types';
 import { btnSecondary, modalOverlay, modalCard } from './invoiceStyles';
 import type { SwipeTemplateId } from './SwipeInvoiceTemplates';
@@ -16,6 +16,7 @@ interface Props {
   brand?: Brand;
   onClose: () => void;
   onWhatsApp: (inv: Invoice) => void;
+  onPrintReceipt?: (inv: Invoice) => void;
 }
 
 const TEMPLATE_OPTIONS: Array<{
@@ -39,6 +40,7 @@ export const InvoicePreviewModal: React.FC<Props> = ({
   brand,
   onClose,
   onWhatsApp,
+  onPrintReceipt,
 }) => {
   const [activeTemplate, setActiveTemplate] = useState<SwipeTemplateId>(() => {
     const saved = localStorage.getItem('retentio_invoice_template');
@@ -173,6 +175,25 @@ export const InvoicePreviewModal: React.FC<Props> = ({
               <Printer style={{ width: 14, height: 14 }} />
               <span>Print / PDF</span>
             </button>
+            {onPrintReceipt && (
+              <button
+                type="button"
+                onClick={() => onPrintReceipt(invoice)}
+                style={{
+                  ...btnSecondary,
+                  fontSize: 12,
+                  background: 'var(--bg-raised)',
+                  fontWeight: 650,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+                title="View animated thermal receipt"
+              >
+                <Receipt style={{ width: 14, height: 14 }} />
+                <span>Thermal Receipt</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onWhatsApp(invoice)}
