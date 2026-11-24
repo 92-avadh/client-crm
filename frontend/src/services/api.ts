@@ -202,32 +202,28 @@ async function req<T>(method: string, path: string, body?: any): Promise<T> {
     }
 
     let res: Response;
+    const requestTimeoutMs = 45000; // 45s allowance for mobile networks and container wake-ups
     try {
       res = await fetch(`${BASE_URL}${path}`, {
         method,
         credentials: 'include',
         headers,
         body: body ? JSON.stringify(body) : undefined,
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(requestTimeoutMs),
       });
     } catch (networkErr) {
-      // If it is a public route (e.g. Render cold start spin-up), retry once after a brief pause
-      if (isPublic) {
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-          res = await fetch(`${BASE_URL}${path}`, {
-            method,
-            credentials: 'include',
-            headers,
-            body: body ? JSON.stringify(body) : undefined,
-            signal: AbortSignal.timeout(20000),
-          });
-        } catch (retryErr) {
-          throw new Error(getNaturalErrorMessage(retryErr));
-        }
-      } else {
-        // fetch() only rejects on network/CORS failure — never on HTTP status.
-        throw new Error(getNaturalErrorMessage(networkErr));
+      // Retry once after a brief pause for transient network hiccups or container wake-ups
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        res = await fetch(`${BASE_URL}${path}`, {
+          method,
+          credentials: 'include',
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+          signal: AbortSignal.timeout(requestTimeoutMs),
+        });
+      } catch (retryErr) {
+        throw new Error(getNaturalErrorMessage(retryErr));
       }
     }
 
