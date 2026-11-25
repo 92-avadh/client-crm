@@ -26,13 +26,15 @@
 .receipt-modal-shell {
   width: 100%;
   max-width: 520px;
+  max-height: 92vh;
   margin: auto;
   background: var(--bg-card, #111b21);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
   border-radius: 20px;
   box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;

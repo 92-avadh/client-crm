@@ -1255,17 +1255,50 @@ export const ClientPortal: React.FC = () => {
               </div>
             </div>
 
-            {/* Bank details */}
-            {(selectedInvoice.agency?.bank_account_number || selectedInvoice.agency?.bankAccountNumber) && (
-              <div style={{ padding: 14, borderRadius: 12, background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)', fontSize: 12, marginBottom: 24 }}>
-                <div style={{ fontWeight: 800, color: '#38bdf8', marginBottom: 4 }}>Direct Bank Transfer Details</div>
-                <div style={{ color: '#cbd5e1' }}>A/C Name: {selectedInvoice.agency.bank_account_name || selectedInvoice.agency.bankAccountName}</div>
-                <div style={{ color: '#cbd5e1' }}>A/C Number: {selectedInvoice.agency.bank_account_number || selectedInvoice.agency.bankAccountNumber} · IFSC: {selectedInvoice.agency.bank_ifsc || selectedInvoice.agency.bankIfsc}</div>
-                {(selectedInvoice.agency.upi_id || selectedInvoice.agency.upiId) && (
-                  <div style={{ color: '#cbd5e1' }}>UPI ID: {selectedInvoice.agency.upi_id || selectedInvoice.agency.upiId}</div>
-                )}
-              </div>
-            )}
+            {/* Bank details & UPI QR / Deep-Link */}
+            {(() => {
+              const snap = selectedInvoice.invoice?.bank_account_snapshot || selectedInvoice.invoice?.bankAccountSnapshot;
+              const bankList = Array.isArray(selectedInvoice.agency?.bank_accounts) ? selectedInvoice.agency.bank_accounts : [];
+              const fallbackBank = bankList.find((b: any) => b.isDefault) || bankList[0];
+              const bankName = snap?.bankName || fallbackBank?.bankName || selectedInvoice.agency?.bank_name || '';
+              const acName = snap?.bankAccountName || fallbackBank?.bankAccountName || selectedInvoice.agency?.bank_account_name || selectedInvoice.agency?.bankAccountName || '';
+              const acNum = snap?.bankAccountNumber || fallbackBank?.bankAccountNumber || selectedInvoice.agency?.bank_account_number || selectedInvoice.agency?.bankAccountNumber || '';
+              const ifsc = snap?.bankIfsc || fallbackBank?.bankIfsc || selectedInvoice.agency?.bank_ifsc || selectedInvoice.agency?.bankIfsc || '';
+              const upi = snap?.upiId || fallbackBank?.upiId || selectedInvoice.agency?.upi_id || selectedInvoice.agency?.upiId || '';
+              const qrUrl = snap?.qrCodeUrl || fallbackBank?.qrCodeUrl || '';
+              const totalDueAmt = Number(selectedInvoice.invoice?.totalAmount || selectedInvoice.invoice?.total_amount || 0) - Number(selectedInvoice.invoice?.paidAmount || selectedInvoice.invoice?.paid_amount || 0);
+              const invNo = selectedInvoice.invoice?.invoice_number || selectedInvoice.invoice?.invoiceNumber || '';
+              const compName = selectedInvoice.agency?.company_name || selectedInvoice.agency?.companyName || agency.companyName || 'Agency';
+              const upiLink = upi ? `upi://pay?pa=${encodeURIComponent(upi)}&pn=${encodeURIComponent(compName)}&am=${Math.max(0, totalDueAmt).toFixed(2)}&tn=${encodeURIComponent(`Invoice ${invNo}`)}&cu=INR` : '';
+              const displayQr = qrUrl || (upiLink ? `https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=${encodeURIComponent(upiLink)}` : '');
+
+              if (!acNum && !upi && !qrUrl) return null;
+              return (
+                <div style={{ padding: 14, borderRadius: 12, background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)', fontSize: 12, marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, color: '#38bdf8', marginBottom: 4 }}>Direct Bank Transfer &amp; UPI Details</div>
+                    {bankName && <div style={{ color: '#f8fafc', fontWeight: 700 }}>{bankName}</div>}
+                    {acName && <div style={{ color: '#cbd5e1' }}>A/C Name: {acName}</div>}
+                    {acNum && <div style={{ color: '#cbd5e1', fontFamily: 'monospace' }}>A/C Number: {acNum}{ifsc ? ` · IFSC: ${ifsc}` : ''}</div>}
+                    {upi && <div style={{ color: '#cbd5e1', fontFamily: 'monospace', marginTop: 2 }}>UPI ID: {upi}</div>}
+                    {upiLink && totalDueAmt > 0 && selectedInvoice.invoice?.status !== 'Paid' && (
+                      <a
+                        href={upiLink}
+                        className="portal-no-print"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '7px 14px', borderRadius: 8, background: '#10b981', color: '#ffffff', fontWeight: 700, fontSize: 12, textDecoration: 'none' }}
+                      >
+                        Pay with GPay / PhonePe / Paytm
+                      </a>
+                    )}
+                  </div>
+                  {displayQr && (
+                    <div style={{ padding: 6, background: '#ffffff', borderRadius: 8, flexShrink: 0 }}>
+                      <img src={displayQr} alt="UPI QR Code" style={{ width: 92, height: 92, objectFit: 'contain', display: 'block' }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Modal Actions */}
             <div className="portal-no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>

@@ -66,7 +66,7 @@ export const LeadsPipeline: React.FC = () => {
     contact: '',
     email: '',
     phone: '',
-    source: 'Website Inbound',
+    source: 'Website',
     stage: 'New' as LeadStage,
     value: 0,
     followUpDate: new Date().toISOString().split('T')[0],
@@ -83,7 +83,7 @@ export const LeadsPipeline: React.FC = () => {
     contact: '',
     email: '',
     phone: '',
-    source: 'Website Inbound',
+    source: 'Website',
     stage: 'New' as LeadStage,
     value: 0,
     followUpDate: '',
@@ -99,7 +99,7 @@ export const LeadsPipeline: React.FC = () => {
       contact: lead.contact || '',
       email: lead.email || '',
       phone: lead.phone || '',
-      source: lead.source || 'Website Inbound',
+      source: lead.source || 'Website',
       stage: (lead.stage || 'New') as LeadStage,
       value: lead.value || 0,
       followUpDate: lead.followUpDate || '',
@@ -135,16 +135,20 @@ export const LeadsPipeline: React.FC = () => {
     }
   };
 
-  const handleAddLeadSubmit = (e: React.FormEvent) => {
+  const handleAddLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadForm.company || !leadForm.name) return;
-    addLead({ ...leadForm, value: Number(leadForm.value) || 0 });
-    setShowAddLeadModal(false);
-    setLeadForm({
-      name: '', company: '', contact: '', email: '', phone: '',
-      source: 'Website Inbound', stage: 'New', value: 0,
-      followUpDate: new Date().toISOString().split('T')[0], notes: ''
-    });
+    try {
+      await addLead({ ...leadForm, value: Number(leadForm.value) || 0 });
+      setShowAddLeadModal(false);
+      setLeadForm({
+        name: '', company: '', contact: '', email: '', phone: '',
+        source: 'Website', stage: 'New', value: 0,
+        followUpDate: new Date().toISOString().split('T')[0], notes: ''
+      });
+    } catch {
+      // Error toast surfaced by addLead
+    }
   };
 
   const stages: LeadStage[] = ['New', 'Contacted', 'Proposal', 'Won', 'Lost'];

@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
-import type { InvoiceItem, Brand, AppSettings } from '../../types';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import type { InvoiceItem, Brand, AppSettings, BankAccount } from '../../types';
+import { normalizeBankAccounts } from '../../utils/bankAccounts';
 
 export interface InvoiceTotals {
   subtotal: number;
@@ -11,10 +12,10 @@ export interface InvoiceTotals {
   isInterstate: boolean;
 }
 
-const emptyItem = (): InvoiceItem => ({
-  id: 'item_' + Date.now(),
+const emptyItem = (defaultHsn = '998231'): InvoiceItem => ({
+  id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
   description: '',
-  hsnSac: '',
+  hsnSac: defaultHsn,
   quantity: 1,
   unitPrice: 0,
   amount: 0,
@@ -27,10 +28,7 @@ const getDefaultDueDate = () => {
 };
 
 /**
- * Owns all invoice-builder state and the GST calculation.
- *
- * Extracted from InvoicesManager so the calculation rules live in one place
- * and the modal component stays presentational.
+ * Owns all invoice-builder state, multi-line items, bank selection, and GST calculation.
  */
 export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
   const [brandId, setBrandId] = useState('');
@@ -39,7 +37,29 @@ export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
   const [notes, setNotes] = useState(
     'Thank you for your business. Payment due via online payment link.'
   );
-  const [items, setItems] = useState<InvoiceItem[]>([emptyItem()]);
+  const [items, setItems] = useState<InvoiceItem[]>(() => [emptyItem(settings.defaultHsnSac || '998231')]);
+
+  const bankAccounts = useMemo(() => normalizeBankAccounts(settings), [settings]);
+  const [selectedBankId, setSelectedBankId] = useState<string>(() => {
+    const def = bankAccounts.find((b) => b.isDefault) || bankAccounts[0];
+    return def?.id || '';
+  });
+
+  useEffect(() => {
+    if (bankAccounts.length === 0) {
+      if (selectedBankId) setSelectedBankId('');
+      return;
+    }
+    if (!bankAccounts.some((b) => b.id === selectedBankId)) {
+      const def = bankAccounts.find((b) => b.isDefault) || bankAccounts[0];
+      setSelectedBankId(def.id);
+    }
+  }, [bankAccounts, selectedBankId]);
+
+  const selectedBank: BankAccount | null = useMemo(
+    () => bankAccounts.find((b) => b.id === selectedBankId) || bankAccounts[0] || null,
+    [bankAccounts, selectedBankId]
+  );
 
   const selectedBrand = useMemo(
     () => brands.find((b) => b.id === brandId),
@@ -66,10 +86,21 @@ export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
     setItems((prev) => {
       const next = [...prev];
       next[idx] = { ...next[idx], ...patch };
-      // Keep amount in sync with quantity × unit price.
-      next[idx].amount = next[idx].quantity * next[idx].unitPrice;
+      const qty = Math.max(1, Number(next[idx].quantity || 1));
+      const price = Math.max(0, Number(next[idx].unitPrice || 0));
+      next[idx].quantity = qty;
+      next[idx].unitPrice = price;
+      next[idx].amount = qty * price;
       return next;
     });
+  }, []);
+
+  const addItem = useCallback(() => {
+    setItems((prev) => [...prev, emptyItem(settings.defaultHsnSac || '998231')]);
+  }, [settings.defaultHsnSac]);
+
+  const removeItem = useCallback((idx: number) => {
+    setItems((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
   }, []);
 
   /** GST: IGST for inter-state supply, CGST+SGST for intra-state. */
@@ -105,15 +136,18 @@ export function useInvoiceBuilder(brands: Brand[], settings: AppSettings) {
     setDueDate(getDefaultDueDate());
     setHasGst(true);
     setNotes('Thank you for your business. Payment due via online payment link.');
-    setItems([emptyItem()]);
-  }, []);
+    setItems([emptyItem(settings.defaultHsnSac || '998231')]);
+    const def = bankAccounts.find((b) => b.isDefault) || bankAccounts[0];
+    setSelectedBankId(def?.id || '');
+  }, [bankAccounts, settings.defaultHsnSac]);
 
   return {
     brandId, selectBrand,
     dueDate, setDueDate,
     hasGst, setHasGst,
     notes, setNotes,
-    items, updateItem,
+    items, updateItem, addItem, removeItem,
+    bankAccounts, selectedBankId, setSelectedBankId, selectedBank,
     selectedBrand, totals, reset,
   };
 }

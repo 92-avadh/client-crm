@@ -9,6 +9,7 @@ const LEAD_SOURCES = ['Referral', 'Website', 'Social Media', 'Cold Call', 'Event
 
 const { formatDateOnly } = require('../utils/dateUtils');
 const { getAgencyId } = require('../utils/agency');
+const { mapBrand } = require('./brands.service');
 
 function mapLead(l) {
   return {
@@ -128,7 +129,7 @@ async function convertLeadToBrand(id, user) {
     }
     const lead = leadRows[0];
     const agencyId = getAgencyId(user);
-    if (agencyId && lead.agency_id && String(lead.agency_id) !== String(agencyId)) {
+    if (agencyId && (!lead.agency_id || String(lead.agency_id) !== String(agencyId)) && String(lead.owner_id || '') !== String(agencyId)) {
       await client.query('ROLLBACK');
       const err = new Error('Access denied. Lead belongs to another workspace.');
       err.status = 403;
@@ -138,7 +139,7 @@ async function convertLeadToBrand(id, user) {
     const brandId = newBrandId();
 
     await client.query(
-      `INSERT INTO brands (id,name,owner_name,email,phone,status,monthly_fee,owner_id,agency_id)
+      `INSERT INTO brands (id,name,owner_name,email,mobile,status,monthly_fee,owner_id,agency_id)
        VALUES ($1,$2,$3,$4,$5,'Active',0,$6,$7)`,
       [brandId, lead.company || lead.name, lead.contact || lead.name,
        lead.email, lead.phone, user ? user.id : null, agencyId]
@@ -149,7 +150,7 @@ async function convertLeadToBrand(id, user) {
     const { rows: brandRows } = await client.query('SELECT * FROM brands WHERE id=$1', [brandId]);
 
     await client.query('COMMIT');
-    return { brand: brandRows[0], lead: mapLead(updatedLead[0]) };
+    return { brand: mapBrand(brandRows[0]), lead: mapLead(updatedLead[0]) };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

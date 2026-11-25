@@ -19,7 +19,10 @@ function mapInvoice(r, items) {
     totalAmount: parseFloat(r.total_amount || 0), paidAmount: parseFloat(r.paid_amount || 0),
     currency: r.currency || 'INR', currencySymbol: r.currency_symbol || '₹',
     status: r.status, notes: r.notes, paymentDate: formatDateOnly(r.payment_date), paymentMode: r.payment_mode,
-    razorpayPaymentId: r.razorpay_payment_id, isRecurring: r.is_recurring, createdAt: r.created_at,
+    razorpayPaymentId: r.razorpay_payment_id, isRecurring: Boolean(r.is_recurring),
+    bankAccountId: r.bank_account_id || null,
+    bankAccountSnapshot: r.bank_account_snapshot || null,
+    createdAt: r.created_at,
     items: (items || []).map(i => ({
       id: i.id, invoiceId: i.invoice_id, description: i.description, hsnSac: i.hsn_sac,
       quantity: parseFloat(i.quantity || 1), unitPrice: parseFloat(i.unit_price || 0), amount: parseFloat(i.amount || 0)
@@ -159,15 +162,22 @@ async function nextInvoiceNumber(user) {
     next_num INTEGER NOT NULL DEFAULT 42
   )`).catch(() => {});
 
+  // Seed starting counter past any globally existing invoice numbers for this prefix
+  const maxRes = await pool.query(
+    `SELECT COALESCE(MAX(NULLIF(regexp_replace(invoice_number, '.*-', ''), '')::INTEGER), 42) AS max_num
+     FROM invoices WHERE invoice_number ~ '-[0-9]+$'`
+  ).catch(() => ({ rows: [{ max_num: 42 }] }));
+  const seedBase = Math.max(42, parseInt(maxRes.rows[0]?.max_num || 42, 10));
+
   let invoiceNumber = '';
   let attempts = 0;
-  while (attempts < 10) {
+  while (attempts < 15) {
     attempts++;
     const counterRes = await pool.query(
-      `INSERT INTO invoice_sequence (id, next_num) VALUES ($1, 43)
-       ON CONFLICT (id) DO UPDATE SET next_num = invoice_sequence.next_num + 1
+      `INSERT INTO invoice_sequence (id, next_num) VALUES ($1, $2)
+       ON CONFLICT (id) DO UPDATE SET next_num = GREATEST(invoice_sequence.next_num + 1, $2)
        RETURNING next_num`,
-      [seqId]
+      [seqId, seedBase + 1]
     ).catch(async (e) => {
       if (e.code === '42P01' || e.code === '42703') {
         await pool.query(`CREATE TABLE IF NOT EXISTS invoice_sequence (
@@ -175,25 +185,26 @@ async function nextInvoiceNumber(user) {
           next_num INTEGER NOT NULL DEFAULT 42
         )`);
         return pool.query(
-          `INSERT INTO invoice_sequence (id, next_num) VALUES ($1, 43)
-           ON CONFLICT (id) DO UPDATE SET next_num = invoice_sequence.next_num + 1
+          `INSERT INTO invoice_sequence (id, next_num) VALUES ($1, $2)
+           ON CONFLICT (id) DO UPDATE SET next_num = GREATEST(invoice_sequence.next_num + 1, $2)
            RETURNING next_num`,
-          [seqId]
+          [seqId, seedBase + 1]
         );
       }
       throw e;
     });
     const candidate = prefix + String(counterRes.rows[0].next_num).padStart(4, '0');
+    // Check globally because invoices.invoice_number has a global UNIQUE constraint
     const existing = await pool.query(
-      'SELECT id FROM invoices WHERE invoice_number = $1 AND (agency_id = $2 OR owner_id = $2)',
-      [candidate, agencyId]
+      'SELECT id FROM invoices WHERE invoice_number = $1',
+      [candidate]
     ).catch(() => ({ rows: [] }));
     if (!existing.rows.length) {
       invoiceNumber = candidate;
       break;
     }
   }
-  return invoiceNumber || (prefix + String(Date.now()).slice(-4));
+  return invoiceNumber || (prefix + String(Date.now()).slice(-6));
 }
 
 async function createInvoice(user, data) {
@@ -202,16 +213,19 @@ async function createInvoice(user, data) {
     await client.query('BEGIN');
 
     const id = genId();
-    const invoiceNumber = await nextInvoiceNumber(user);
     const currency = data.currency || 'INR';
     const currencySymbol = data.currencySymbol || (currency === 'USD' ? '$' : (currency === 'EUR' ? '€' : (currency === 'GBP' ? '£' : (currency === 'AED' ? 'AED' : (currency === 'CAD' ? 'CA$' : '₹')))));
 
     const agencyId = getAgencyId(user);
     let resolvedBrandName = data.brandName;
-    if (!resolvedBrandName && data.brandId) {
-      const bRes = await client.query('SELECT name FROM brands WHERE id = $1', [data.brandId]);
+    let brandEmail = null;
+    let brandMagicToken = null;
+    if (data.brandId) {
+      const bRes = await client.query('SELECT name, email, magic_token FROM brands WHERE id = $1', [data.brandId]);
       if (bRes.rows.length) {
-        resolvedBrandName = bRes.rows[0].name;
+        if (!resolvedBrandName) resolvedBrandName = bRes.rows[0].name;
+        brandEmail = bRes.rows[0].email;
+        brandMagicToken = bRes.rows[0].magic_token;
       }
     }
     if (!resolvedBrandName) {
@@ -219,21 +233,38 @@ async function createInvoice(user, data) {
     }
 
     const invoiceStatus = data.status || 'Sent';
-    await client.query(
-      `INSERT INTO invoices (id,invoice_number,brand_id,brand_name,issue_date,due_date,subtotal,has_gst,gst_type,
-       cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring,owner_id,
-       currency,currency_symbol,agency_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,$14,$15,$16,$17,$18,$19,$20,$21)`,
-      [
-        id, invoiceNumber, data.brandId, resolvedBrandName,
-        formatDateOnly(data.issueDate), formatDateOnly(data.dueDate),
-        data.subtotal || 0, data.hasGst || false, data.gstType || 'NONE',
-        data.cgstAmount || 0, data.sgstAmount || 0, data.igstAmount || 0,
-        data.totalAmount || 0, invoiceStatus, data.notes || null, data.paymentMode || null,
-        data.isRecurring || false, user.id,
-        currency, currencySymbol, agencyId
-      ]
-    );
+    const bankSnapshotJson = data.bankAccountSnapshot ? JSON.stringify(data.bankAccountSnapshot) : null;
+    let invoiceNumber = '';
+    for (let attempt = 0; attempt < 3; attempt++) {
+      invoiceNumber = await nextInvoiceNumber(user);
+      try {
+        await client.query('SAVEPOINT sp_inv_insert');
+        await client.query(
+          `INSERT INTO invoices (id,invoice_number,brand_id,brand_name,issue_date,due_date,subtotal,has_gst,gst_type,
+           cgst_amount,sgst_amount,igst_amount,total_amount,paid_amount,status,notes,payment_mode,is_recurring,owner_id,
+           currency,currency_symbol,agency_id,bank_account_id,bank_account_snapshot)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
+          [
+            id, invoiceNumber, data.brandId, resolvedBrandName,
+            formatDateOnly(data.issueDate), formatDateOnly(data.dueDate),
+            data.subtotal || 0, Boolean(data.hasGst), data.gstType || 'NONE',
+            data.cgstAmount || 0, data.sgstAmount || 0, data.igstAmount || 0,
+            data.totalAmount || 0, invoiceStatus, data.notes || null, data.paymentMode || null,
+            Boolean(data.isRecurring), user.id,
+            currency, currencySymbol, agencyId,
+            data.bankAccountId || null, bankSnapshotJson
+          ]
+        );
+        await client.query('RELEASE SAVEPOINT sp_inv_insert');
+        break;
+      } catch (insertErr) {
+        await client.query('ROLLBACK TO SAVEPOINT sp_inv_insert');
+        if (insertErr.code === '23505' && attempt < 2) {
+          continue;
+        }
+        throw insertErr;
+      }
+    }
 
     for (const item of data.items || []) {
       await client.query(
@@ -242,15 +273,39 @@ async function createInvoice(user, data) {
       );
     }
 
-    if (data.isRecurring) {
+    if (data.isRecurring === true) {
       await client.query(
-        'INSERT INTO recurring_invoices (id,invoice_id,brand_id,frequency,next_due_date,status) VALUES ($1,$2,$3,$4,$5,$6)',
-        [recId(), id, data.brandId, 'Monthly', data.dueDate || null, 'Active']
+        'INSERT INTO recurring_invoices (id,invoice_id,brand_id,frequency,next_due_date,status,agency_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [recId(), id, data.brandId, 'Monthly', data.dueDate || null, 'Active', agencyId]
       );
     }
 
     await client.query('COMMIT');
     const invoice = await getInvoice(user, id);
+    let emailSent = false;
+
+    // Dispatch real email to client when status is 'Sent' (or sendEmail explicitly requested)
+    if ((data.sendEmail === true || invoiceStatus === 'Sent') && data.sendEmail !== false && brandEmail) {
+      try {
+        const { sendInvoiceEmail } = require('../utils/mailer');
+        const settingsSvc = require('./settings.service');
+        const agencySettings = await settingsSvc.getSettings(user).catch(() => null);
+        const appUrl = process.env.FRONTEND_URL || 'https://client-crm.dhameliyaavadh592.workers.dev';
+        const portalUrl = brandMagicToken ? `${appUrl}/portal/${brandMagicToken}` : '';
+        await sendInvoiceEmail({
+          toEmail: brandEmail,
+          brandName: resolvedBrandName,
+          invoice,
+          agencyName: agencySettings?.companyName || 'Retentio',
+          portalUrl,
+          isReminder: false,
+        });
+        emailSent = true;
+      } catch (mailErr) {
+        console.warn('Invoice email dispatch failed:', mailErr.message);
+      }
+    }
+
     try {
       const { createNotification } = require('./notifications.service');
       await createNotification({
@@ -264,13 +319,50 @@ async function createInvoice(user, data) {
     } catch (err) {
       console.warn('Failed to dispatch invoice notification:', err.message);
     }
-    return invoice;
+    return { ...invoice, emailSent };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
   }
+}
+
+async function sendInvoiceReminder(user, id) {
+  const invoice = await getInvoice(user, id);
+  if (!invoice) return null;
+  if (invoice.error === 'forbidden') return { error: 'forbidden' };
+
+  const bRes = await pool.query('SELECT name, email, magic_token FROM brands WHERE id = $1', [invoice.brandId]);
+  const brand = bRes.rows[0];
+  if (!brand || !brand.email) {
+    const err = new Error('This client does not have an email address configured.');
+    err.status = 400;
+    throw err;
+  }
+
+  const { sendInvoiceEmail } = require('../utils/mailer');
+  const settingsSvc = require('./settings.service');
+  const agencySettings = await settingsSvc.getSettings(user).catch(() => null);
+  const appUrl = process.env.FRONTEND_URL || 'https://client-crm.dhameliyaavadh592.workers.dev';
+  const portalUrl = brand.magic_token ? `${appUrl}/portal/${brand.magic_token}` : '';
+
+  const emailRes = await sendInvoiceEmail({
+    toEmail: brand.email,
+    brandName: brand.name || invoice.brandName,
+    invoice,
+    agencyName: agencySettings?.companyName || 'Retentio',
+    portalUrl,
+    isReminder: true,
+  });
+
+  if (emailRes?.error) {
+    const err = new Error(`Could not send reminder email: ${emailRes.error}`);
+    err.status = 502;
+    throw err;
+  }
+
+  return { success: true, sentTo: brand.email, invoiceNumber: invoice.invoiceNumber };
 }
 
 async function updateInvoiceStatus(user, id, status) {
@@ -375,5 +467,5 @@ async function deleteInvoices(user, ids) {
 
 module.exports = {
   INVOICE_STATUSES, GST_TYPES,
-  mapInvoice, listInvoices, getInvoice, createInvoice, updateInvoiceStatus, deleteInvoice, deleteInvoices,
+  mapInvoice, listInvoices, getInvoice, createInvoice, updateInvoiceStatus, deleteInvoice, deleteInvoices, sendInvoiceReminder,
 };

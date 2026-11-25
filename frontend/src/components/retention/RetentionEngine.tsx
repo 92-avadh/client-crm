@@ -74,7 +74,7 @@ export const RetentionEngine: React.FC = () => {
 
   const fetchHealth = () => {
     setLoadingHealth(true);
-    api.retention.getOverview()
+    return api.retention.getOverview()
       .then((res: AgencyHealthOverview) => setHealthData(res))
       .catch((err: any) => console.warn('Health overview fetch error:', err.message))
       .finally(() => setLoadingHealth(false));
@@ -508,9 +508,9 @@ export const RetentionEngine: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => {
-                      snoozeBrandRetention(score.brandId);
-                      fetchHealth();
+                    onClick={async () => {
+                      await snoozeBrandRetention(score.brandId);
+                      await fetchHealth();
                     }}
                     style={{
                       padding: '8px 12px',
@@ -532,9 +532,9 @@ export const RetentionEngine: React.FC = () => {
 
                   {(role === 'admin' || role === 'hr') && isDanger && (
                     <button
-                      onClick={() => {
-                        markBrandChurned(score.brandId);
-                        fetchHealth();
+                      onClick={async () => {
+                        await markBrandChurned(score.brandId);
+                        await fetchHealth();
                       }}
                       style={{
                         padding: '8px 12px',

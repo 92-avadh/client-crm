@@ -155,7 +155,7 @@ async function listBrands(user, { status, search, page = 1, pageSize = 50 } = {}
       ) AS assigned_member_ids,
       COALESCE(
         (SELECT json_agg(row_to_json(d)) FROM (
-          SELECT id, brand_id, name, size, upload_date, type FROM brand_documents WHERE brand_id = b.id
+          SELECT id, brand_id, name, size, upload_date, type, category, renewal_date, status, file_url FROM brand_documents WHERE brand_id = b.id
         ) d),
         '[]'
       ) AS documents
@@ -288,7 +288,7 @@ async function createBrand(user, data) {
   }
 }
 
-async function updateBrand(id, data) {
+async function updateBrand(id, data, user = null) {
   const existing = await pool.query('SELECT agency_id, owner_id FROM brands WHERE id = $1', [id]);
   if (!existing.rows.length) return null;
   const brandAgencyId = existing.rows[0].agency_id || existing.rows[0].owner_id;
@@ -436,11 +436,13 @@ async function updateBrand(id, data) {
 
     if (!existingSuccess.rows.length && newFee > 0) {
       const today = new Date().toISOString().split('T')[0];
+      const actorId = user?.id || brandRow.owner_id || null;
+      const resolvedAgencyId = brandRow.agency_id || (user ? getAgencyId(user) : null) || null;
       await pool.query(
         `INSERT INTO payments (id, invoice_id, brand_id, brand_name, amount, payment_date, mode, reference_no, status, owner_id, agency_id)
          VALUES ($1, NULL, $2, $3, $4, $5, 'Bank Transfer', $6, 'Success', $7, $8)`,
         [payId(), id, brandRow.name, newFee, today,
-         'RET-' + id.replace('brand_', '').toUpperCase(), user.id, brandRow.agency_id || user.agency_id || null]
+         'RET-' + id.replace('brand_', '').toUpperCase(), actorId, resolvedAgencyId]
       );
     }
   }
@@ -491,7 +493,7 @@ async function markChurned(id) {
 
 async function snoozeRetention(id) {
   const { rows } = await pool.query(
-    "UPDATE brands SET last_activity_date = last_activity_date + INTERVAL '7 days' WHERE id=$1 RETURNING *",
+    "UPDATE brands SET last_activity_date = GREATEST(COALESCE(last_activity_date, CURRENT_DATE), CURRENT_DATE) + INTERVAL '7 days' WHERE id=$1 RETURNING *",
     [id]
   );
   if (!rows.length) return null;
@@ -527,7 +529,7 @@ async function deleteBrand(user, id) {
     await client.query('BEGIN');
     const agencyId = getAgencyId(user);
     const checkQuery = agencyId
-      ? 'SELECT id, name FROM brands WHERE id = $1 AND (agency_id = $2 OR agency_id IS NULL)'
+      ? 'SELECT id, name FROM brands WHERE id = $1 AND (agency_id = $2 OR (agency_id IS NULL AND owner_id = $2))'
       : 'SELECT id, name FROM brands WHERE id = $1';
     const checkParams = agencyId ? [id, agencyId] : [id];
     const { rows } = await client.query(checkQuery, checkParams);

@@ -134,7 +134,7 @@ async function updateProject(user, id, data) {
     data.billingAmount ?? null, data.progress ?? null, id,
   ];
   if (agencyId) {
-    query += ` AND (agency_id = $9 OR (agency_id IS NULL AND (owner_id = $9 OR $9 = 'usr_admin')))`;
+    query += ` AND (agency_id = $9 OR (agency_id IS NULL AND owner_id = $9))`;
     params.push(agencyId);
   }
   query += ' RETURNING *';
@@ -163,7 +163,7 @@ async function deleteProject(user, id) {
     let checkQuery = 'SELECT id, name FROM projects WHERE id = $1';
     const checkParams = [id];
     if (agencyId) {
-      checkQuery += " AND (agency_id = $2 OR (agency_id IS NULL AND (owner_id = $2 OR $2 = 'usr_admin')))";
+      checkQuery += " AND (agency_id = $2 OR (agency_id IS NULL AND owner_id = $2))";
       checkParams.push(agencyId);
     }
     const { rows } = await client.query(checkQuery, checkParams);

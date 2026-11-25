@@ -35,8 +35,8 @@ export const TeamTable: React.FC<Props> = ({
       const isActive = user?.isActive !== false && user?.status !== 'inactive';
       const brandCount = getBrandCount(user?.id);
       const isTargetAdmin = user?.role === 'admin';
-      // Security: Non-admins can NEVER edit an admin/founder. Non-admins cannot edit other members either.
-      const canEditThisUser = isAdmin ? true : (user.id === currentUserId && !isTargetAdmin);
+      // Security: Non-admins can NEVER edit an admin/founder; HR/team-managers can edit non-admin members.
+      const canEditThisUser = isAdmin ? true : (!isTargetAdmin && (user.id === currentUserId || hasManageRights));
 
       return (
         <div

@@ -27,13 +27,14 @@ const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
  */
 const { getAgencyId } = require('../utils/agency');
 
-async function recordPayment({ invoiceId, brandId, brandName, amount, mode, referenceNo, proofUrl, actor }) {
+async function recordPayment({ invoiceId, brandId, brandName, amount, mode, referenceNo, proofUrl, paymentDate, actor }) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const id = genId();
     const today = new Date().toISOString().split('T')[0];
-    const agencyId = actor ? getAgencyId(actor) : null;
+    const effectiveDate = (paymentDate && /^\d{4}-\d{2}-\d{2}$/.test(String(paymentDate))) ? paymentDate : today;
+    let agencyId = actor ? getAgencyId(actor) : null;
 
     if (invoiceId) {
       const invCheck = await client.query('SELECT agency_id, brand_id, total_amount, paid_amount FROM invoices WHERE id = $1', [invoiceId]);
@@ -44,6 +45,7 @@ async function recordPayment({ invoiceId, brandId, brandName, amount, mode, refe
         throw err;
       }
       const inv = invCheck.rows[0];
+      if (!agencyId) agencyId = inv.agency_id || null;
       if (agencyId && inv.agency_id && String(inv.agency_id) !== String(agencyId)) {
         await client.query('ROLLBACK');
         const err = new Error('Access denied. Invoice belongs to another workspace.');
@@ -55,7 +57,7 @@ async function recordPayment({ invoiceId, brandId, brandName, amount, mode, refe
     const payRes = await client.query(
       `INSERT INTO payments (id,invoice_id,brand_id,brand_name,amount,payment_date,mode,reference_no,status,proof_url,owner_id,agency_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'Success',$9,$10,$11) RETURNING *`,
-      [id, invoiceId, brandId, brandName, amount, today, mode, referenceNo, proofUrl || null, actor ? actor.id : null, agencyId]
+      [id, invoiceId, brandId, brandName, amount, effectiveDate, mode, referenceNo, proofUrl || null, actor ? actor.id : null, agencyId]
     );
 
     const invRes = await client.query(
@@ -64,12 +66,13 @@ async function recordPayment({ invoiceId, brandId, brandName, amount, mode, refe
        payment_date = CASE WHEN paid_amount + $1 >= total_amount THEN $2::date ELSE payment_date END,
        payment_mode = CASE WHEN paid_amount + $1 >= total_amount THEN $3 ELSE payment_mode END
        WHERE id=$4 RETURNING *`,
-      [amount, today, mode, invoiceId]
+      [amount, effectiveDate, mode, invoiceId]
     );
 
+    const nextBrandStatus = invRes.rows[0]?.status === 'Paid' ? 'Paid' : 'Pending';
     const brandRes = await client.query(
-      `UPDATE brands SET last_payment_date=$1, last_activity_date=$1 WHERE id=$2 RETURNING *`,
-      [today, brandId]
+      `UPDATE brands SET last_payment_date=$1, last_activity_date=$1, payment_status=$2 WHERE id=$3 RETURNING *`,
+      [effectiveDate, nextBrandStatus, brandId]
     );
 
     const paymentNotif = {
@@ -82,11 +85,12 @@ async function recordPayment({ invoiceId, brandId, brandName, amount, mode, refe
       link_module: 'invoices',
       brand_id: brandId,
       recipient_roles: ['admin', 'manager', 'hr', 'team'],
+      agency_id: agencyId,
     };
 
     await client.query(
-      `INSERT INTO notifications (id,type,title,message,timestamp,is_read,link_module,brand_id,recipient_roles)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      `INSERT INTO notifications (id,type,title,message,timestamp,is_read,link_module,brand_id,recipient_roles,agency_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         paymentNotif.id,
         paymentNotif.type,
@@ -97,6 +101,7 @@ async function recordPayment({ invoiceId, brandId, brandName, amount, mode, refe
         paymentNotif.link_module,
         paymentNotif.brand_id,
         paymentNotif.recipient_roles,
+        agencyId,
       ]
     );
 
@@ -246,7 +251,7 @@ async function updatePayment(user, id, data) {
 /** Prepare a Razorpay order for an invoice. */
 async function initiateRazorpay(user, invoiceId) {
   const agencyId = user ? getAgencyId(user) : null;
-  let query = 'SELECT total_amount, paid_amount, agency_id FROM invoices WHERE id=$1';
+  let query = 'SELECT total_amount, paid_amount, agency_id, currency FROM invoices WHERE id=$1';
   const params = [invoiceId];
   if (agencyId) {
     query += ' AND (agency_id = $2 OR owner_id = $2)';
@@ -255,7 +260,15 @@ async function initiateRazorpay(user, invoiceId) {
   const { rows } = await pool.query(query, params);
   if (!rows.length) return null;
 
-  const settings = await pool.query("SELECT razorpay_key_id FROM settings WHERE id='main'");
+  const invAgencyId = rows[0].agency_id || agencyId;
+  const settings = invAgencyId
+    ? await pool.query(
+        `SELECT razorpay_key_id FROM settings
+         WHERE agency_id = $1 OR id = $2
+         ORDER BY CASE WHEN agency_id = $1 THEN 0 ELSE 1 END LIMIT 1`,
+        [invAgencyId, `set_${invAgencyId}`]
+      )
+    : { rows: [] };
   const keyId = settings.rows[0]?.razorpay_key_id || process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId) {
@@ -265,8 +278,14 @@ async function initiateRazorpay(user, invoiceId) {
   }
 
   const remainingBalance = Math.max(0, parseFloat(rows[0].total_amount) - parseFloat(rows[0].paid_amount || 0));
+  if (remainingBalance <= 0) {
+    const err = new Error('This invoice has already been fully paid.');
+    err.status = 400;
+    throw err;
+  }
   let orderId = 'order_' + crypto.randomBytes(10).toString('hex');
   const amountInPaise = Math.round(remainingBalance * 100);
+  const currency = rows[0].currency || 'INR';
 
   // If Razorpay API credentials are configured, create authentic order on Razorpay
   if (keyId && keySecret) {
@@ -280,7 +299,7 @@ async function initiateRazorpay(user, invoiceId) {
         },
         body: JSON.stringify({
           amount: amountInPaise,
-          currency: 'INR',
+          currency,
           receipt: `inv_${String(invoiceId).slice(0, 30)}`
         })
       });
@@ -307,14 +326,15 @@ async function initiateRazorpay(user, invoiceId) {
   return {
     razorpayOrderId: orderId,
     amount: Math.round(remainingBalance * 100),
-    currency: 'INR',
+    currency,
     keyId,
   };
 }
 
 async function deletePayment(user, id) {
-  if (user && !['admin', 'hr', 'manager'].includes(user.role)) {
-    const err = new Error('Only admin or manager can delete payments');
+  const perms = Array.isArray(user?.permissions) ? user.permissions : [];
+  if (user && !['admin', 'hr', 'manager'].includes(user.role) && !perms.includes('finance')) {
+    const err = new Error('Only admin, manager, or finance team can delete payments');
     err.status = 403;
     throw err;
   }
@@ -341,7 +361,12 @@ async function deletePayment(user, id) {
       if (invRes.rows.length) {
         const inv = invRes.rows[0];
         const newPaid = Math.max(0, parseFloat(inv.paid_amount || 0) - parseFloat(pay.amount || 0));
-        const newStatus = newPaid <= 0 ? 'Sent' : newPaid < parseFloat(inv.total_amount || 0) ? 'Partially Paid' : 'Paid';
+        const isPastDue = inv.due_date && new Date(inv.due_date) < new Date(new Date().toISOString().split('T')[0]);
+        const newStatus = newPaid >= parseFloat(inv.total_amount || 0)
+          ? 'Paid'
+          : newPaid > 0
+            ? 'Partially Paid'
+            : (isPastDue ? 'Overdue' : 'Sent');
         await client.query(
           'UPDATE invoices SET paid_amount=$1, status=$2 WHERE id=$3',
           [newPaid, newStatus, pay.invoice_id]
@@ -350,6 +375,16 @@ async function deletePayment(user, id) {
     }
 
     await client.query('DELETE FROM payments WHERE id=$1', [id]);
+
+    if (pay.brand_id && pay.status === 'Success') {
+      const { rows: openRows } = await client.query(
+        "SELECT 1 FROM invoices WHERE brand_id = $1 AND status IN ('Sent', 'Partially Paid', 'Overdue') LIMIT 1",
+        [pay.brand_id]
+      );
+      if (openRows.length > 0) {
+        await client.query("UPDATE brands SET payment_status = 'Pending' WHERE id = $1", [pay.brand_id]);
+      }
+    }
 
     await client.query(
       `INSERT INTO audit_logs (id,timestamp,actor_name,actor_role,action,details,ip_address,agency_id)

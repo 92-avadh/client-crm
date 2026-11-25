@@ -119,6 +119,7 @@ async function listExpenses(user, filters = {}) {
   if (filters.isRecurring !== undefined && filters.isRecurring !== '') {
     whereClause += ` AND is_recurring=$${idx}`;
     params.push(filters.isRecurring === 'true');
+    idx += 1;
   }
 
   // Count total matching rows
@@ -186,9 +187,15 @@ async function createExpense(user, data) {
 }
 
 async function updateExpense(user, id, data) {
+  const agencyId = user ? getAgencyId(user) : null;
   const existing = await pool.query('SELECT * FROM expenses WHERE id=$1', [id]);
   if (!existing.rows.length) return null;
   const prev = existing.rows[0];
+  if (agencyId && prev.agency_id && String(prev.agency_id) !== String(agencyId)) {
+    const err = new Error('Access denied. Expense belongs to another workspace.');
+    err.status = 403;
+    throw err;
+  }
 
   const pick = (key, fallback) => (data[key] !== undefined ? data[key] : fallback);
 
@@ -228,9 +235,15 @@ async function updateExpense(user, id, data) {
 }
 
 async function deleteExpense(user, id) {
+  const agencyId = user ? getAgencyId(user) : null;
   const existing = await pool.query('SELECT * FROM expenses WHERE id=$1', [id]);
   if (!existing.rows.length) return false;
   const prev = existing.rows[0];
+  if (agencyId && prev.agency_id && String(prev.agency_id) !== String(agencyId)) {
+    const err = new Error('Access denied. Expense belongs to another workspace.');
+    err.status = 403;
+    throw err;
+  }
 
   await pool.query('DELETE FROM expenses WHERE id=$1', [id]);
 

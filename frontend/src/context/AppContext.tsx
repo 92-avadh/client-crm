@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { api, fetchAll, fetchAllAuditLogs } from '../services/api';
+import { api, fetchAll, fetchAllAuditLogs, clearApiCache } from '../services/api';
 import { getNaturalErrorMessage } from '../services/errors';
 import {
   connectSocket,
@@ -10,7 +10,6 @@ import {
   joinConversationRoom,
   leaveConversationRoom,
   emitMarkRead,
-  emitDeleteMessage,
 } from '../services/socket';
 import type {
   User,
@@ -77,7 +76,7 @@ interface AppContextType {
   payments: Payment[];
   selectedInvoiceId: string | null;
   setSelectedInvoiceId: (id: string | null) => void;
-  createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'status'> & { status?: Invoice['status'] }) => Promise<Invoice>;
+  createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'status'> & { status?: Invoice['status']; sendEmail?: boolean }) => Promise<Invoice>;
   updateInvoiceStatus: (id: string, status: Invoice['status']) => Promise<void>;
   deleteInvoice: (id: string) => Promise<void>;
   deleteInvoices: (ids: string[]) => Promise<void>;
@@ -147,7 +146,7 @@ interface AppContextType {
   updateTeamMember: (id: string, data: any) => Promise<any>;
   deactivateTeamMember: (id: string) => Promise<void>;
   reloadAll: () => Promise<void>;
-  loadDomain: (domain: string) => Promise<void>;
+  loadDomain: (domain: string, force?: boolean) => Promise<void>;
   logout: () => void;
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
@@ -271,11 +270,17 @@ export const AppProvider: React.FC<{
   onLogout
 }) => {
   const logout = useCallback(() => {
+    api.auth.logout().catch(() => {});
+    clearApiCache();
     try {
       localStorage.removeItem('retentio_token');
+      sessionStorage.removeItem('retentio_token');
       localStorage.removeItem('retentio_user');
       localStorage.removeItem('retentio_active_user_id');
       localStorage.removeItem('retentio_bypass_mode');
+      localStorage.removeItem('retentio_local_users');
+      localStorage.removeItem('retentio_onboarding_completed');
+      localStorage.removeItem('retentio_onboarding_data');
     } catch {}
     if (onLogout) {
       onLogout();
@@ -918,12 +923,15 @@ export const AppProvider: React.FC<{
     loadFailuresRef.current = new Map();
   }, []);
 
-  const loadDomain = useCallback(async (domain: string) => {
+  const loadDomain = useCallback(async (domain: string, force = false) => {
     if (!currentUser) return;
-    // Only skip if successfully loaded before; failed domains are retried on revisit
-    if (loadedRef.current.has(domain)) return;
+    // Only skip if successfully loaded before; failed domains or forced reloads refresh
+    if (!force && loadedRef.current.has(domain)) return;
+    if (force) {
+      clearApiCache(domain);
+    }
     const inflight = inflightRef.current.get(domain);
-    if (inflight) return inflight;
+    if (!force && inflight) return inflight;
 
     // Clear any previous failure record for this domain before retrying
     failedRef.current.delete(domain);
@@ -1544,8 +1552,9 @@ export const AppProvider: React.FC<{
 
     try {
       await api.brands.update(id, normalizedUpdates);
-    } catch (_err: any) {
-      // Local fallback
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update client details', 'error');
+      throw err;
     }
 
     setBrands(prev => {
@@ -1836,7 +1845,9 @@ export const AppProvider: React.FC<{
         return next;
       });
       const isDraft = created.status === 'Draft';
-      const actionText = isDraft ? 'draft created' : 'generated';
+      const actionText = isDraft
+        ? 'draft created'
+        : (created.emailSent ? 'generated & emailed' : 'generated');
 
       // Register local action to prevent duplicate toast on incoming socket event
       if (created.invoiceNumber) recordLocalAction(created.invoiceNumber);
@@ -2756,11 +2767,8 @@ export const AppProvider: React.FC<{
 
   const deleteMessage = async (conversationId: string, messageId: string, deleteType: 'forEveryone' | 'forMe') => {
     if (!currentUser) return;
-    // Apply the local update only after the server confirms it. Swallowing the
-    // error made a failed delete look successful and the message "disappeared"
-    // only until the next reload.
+    // Apply the local update only after the server confirms it.
     await api.chat.deleteMessage(conversationId, messageId, deleteType);
-    emitDeleteMessage(conversationId, messageId, deleteType, currentUser.id);
     setMessages(prev => {
       const list = prev[conversationId] || [];
       if (deleteType === 'forEveryone') {
@@ -2822,20 +2830,11 @@ export const AppProvider: React.FC<{
       if (updated.currencySymbol) {
         localStorage.setItem('retentio_currency_symbol', updated.currencySymbol);
       }
-    } catch (err) {
-      setSettings(prev => {
-        const next = { ...prev, ...updates };
-        try { localStorage.setItem('retentio_settings', JSON.stringify(next)); } catch {}
-        return next;
-      });
-      if (updates.currency) {
-        localStorage.setItem('retentio_currency', updates.currency);
-      }
-      if (updates.currencySymbol) {
-        localStorage.setItem('retentio_currency_symbol', updates.currencySymbol);
-      }
+      showToast('Settings saved successfully', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to save settings', 'error');
+      throw err;
     }
-    showToast('Settings saved successfully', 'success');
   };
 
   // ---- Holidays ----
@@ -2854,9 +2853,12 @@ export const AppProvider: React.FC<{
   const deleteHoliday = async (id: string) => {
     try {
       await api.holidays.delete(id);
-    } catch {}
-    setHolidays(prev => prev.filter(h => h.id !== id));
-    showToast('Holiday removed', 'info');
+      setHolidays(prev => prev.filter(h => h.id !== id));
+      showToast('Holiday removed', 'info');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to remove holiday', 'error');
+      throw err;
+    }
   };
 
   // ---- Team ----

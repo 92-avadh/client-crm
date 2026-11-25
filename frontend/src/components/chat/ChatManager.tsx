@@ -239,6 +239,8 @@ export const ChatManager: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const chatFileRef = useRef<HTMLInputElement | null>(null);
+  const [attachAccept, setAttachAccept] = useState<string>('image/*,application/pdf');
 
   // Save pinned & favourites
   useEffect(() => {
@@ -394,19 +396,6 @@ export const ChatManager: React.FC = () => {
     setInputText('');
     setReplyingTo(null);
     setShowEmojiPicker(false);
-
-    // If direct recipient is online, simulate WhatsApp read receipt after ~3.5 seconds
-    if (activeConv.type === 'direct') {
-      const currentUserId = currentUser?.id || '';
-      const otherId = activeConv.otherMember?.id || (Array.isArray(activeConv.participantIds) ? activeConv.participantIds.find((id) => id !== currentUserId) : undefined);
-      if (otherId && isUserOnline(otherId)) {
-        setTimeout(() => {
-          if (activeConv) {
-            getSocket().emit('mark_read', { conversationId: activeConv.id, userId: otherId });
-          }
-        }, 3500);
-      }
-    }
   };
 
   // Format timestamp to clean WhatsApp 12h time (e.g. "10:55 am", "5:25 am")
@@ -562,34 +551,51 @@ export const ChatManager: React.FC = () => {
     setChatContextMenu(null);
   };
 
-  // Attachment dispatch
+  // Attachment dispatch — opens native file picker and reads real image/PDF data URI
   const handleAttachDocument = (type: 'pdf' | 'image' | 'generic') => {
     if (!activeConv) return;
     setShowAttachMenu(false);
+    setAttachAccept(type === 'image' ? 'image/jpeg,image/png,image/webp,image/gif' : 'application/pdf,image/jpeg,image/png,image/webp');
+    setTimeout(() => {
+      chatFileRef.current?.click();
+    }, 0);
+  };
 
-    if (type === 'pdf') {
-      sendMessage(activeConv.id, 'Shared document: Retainer Agreement & Statement.pdf', [
-        {
-          name: 'Retainer_Agreement_Q4.pdf',
-          size: '1.4 MB',
-          url: '#',
-          type: 'application/pdf',
-        },
-      ]);
-      playSentSound();
-      showToast('Document sent successfully', 'success');
-    } else if (type === 'image') {
-      sendMessage(activeConv.id, 'Shared campaign creatives & design previews.', [
-        {
-          name: 'Campaign_Banner_Preview.png',
-          size: '3.1 MB',
-          url: '#',
-          type: 'image/png',
-        },
-      ]);
-      playSentSound();
-      showToast('Media sent successfully', 'success');
+  const handleChatFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !activeConv) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast('Only PDF and image files (PNG, JPG, WebP, GIF) can be shared in chat.', 'error');
+      return;
     }
+    if (file.size > 1.5 * 1024 * 1024) {
+      showToast('File must be under 1.5 MB to share in chat.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => showToast('Could not read file for upload.', 'error');
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      if (!dataUrl) return;
+      const sizeStr = file.size >= 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(file.size / 1024))} KB`;
+      sendMessage(activeConv.id, `Shared ${file.type.startsWith('image/') ? 'image' : 'document'}: ${file.name}`, [
+        {
+          name: file.name,
+          size: sizeStr,
+          url: dataUrl,
+          type: file.type,
+        },
+      ]);
+      playSentSound();
+      showToast(`${file.name} sent`, 'success');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleLaunchDirectChat = async (targetUserId: string) => {
@@ -1778,6 +1784,14 @@ export const ChatManager: React.FC = () => {
                   </button>
                 </div>
               )}
+
+              <input
+                ref={chatFileRef}
+                type="file"
+                accept={attachAccept}
+                style={{ display: 'none' }}
+                onChange={handleChatFileSelected}
+              />
 
               {/* Extended Emoji Picker Tray */}
               {showEmojiPicker && (

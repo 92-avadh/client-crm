@@ -101,9 +101,38 @@ export const FinanceManager: React.FC = () => {
   const [paymentToDelete, setPaymentToDelete] = useState<any | null>(null);
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
 
+  // ── STRICT USER DATA SCOPING: Associate data exclusively with the active user ──
+  // An account must only see payments, revenue, and expenses belonging to their own clients/brands
+  const userBrandIds = React.useMemo(() => new Set((brands || []).map((b) => b.id)), [brands]);
+
+  const scopedPayments = React.useMemo(() => {
+    return (payments || []).filter((p) => {
+      if (!p) return false;
+      // If the current account has no brands, they must not see unassociated client payments
+      if (userBrandIds.size === 0) return false;
+      return Boolean(p.brandId && userBrandIds.has(p.brandId));
+    });
+  }, [payments, userBrandIds]);
+
+  const scopedExpenses = React.useMemo(() => {
+    return (expenses || []).filter((e) => {
+      if (!e) return false;
+      if (e.brandId && !userBrandIds.has(e.brandId)) return false;
+      return true;
+    });
+  }, [expenses, userBrandIds]);
+
+  const scopedInvoices = React.useMemo(() => {
+    return (invoices || []).filter((i) => {
+      if (!i) return false;
+      if (userBrandIds.size === 0) return false;
+      return Boolean(i.brandId && userBrandIds.has(i.brandId));
+    });
+  }, [invoices, userBrandIds]);
+
   const headerCheckboxRef = React.useRef<HTMLInputElement>(null);
-  const allExpensesSelected = expenses.length > 0 && selectedExpenseIds.size > 0 && expenses.every(e => selectedExpenseIds.has(e.id));
-  const someExpensesSelected = selectedExpenseIds.size > 0 && expenses.some(e => selectedExpenseIds.has(e.id)) && !allExpensesSelected;
+  const allExpensesSelected = scopedExpenses.length > 0 && selectedExpenseIds.size > 0 && scopedExpenses.every(e => selectedExpenseIds.has(e.id));
+  const someExpensesSelected = selectedExpenseIds.size > 0 && scopedExpenses.some(e => selectedExpenseIds.has(e.id)) && !allExpensesSelected;
 
   React.useEffect(() => {
     if (headerCheckboxRef.current) {
@@ -122,14 +151,14 @@ export const FinanceManager: React.FC = () => {
 
   const handleSelectAllExpenses = (checked: boolean) => {
     if (checked) {
-      setSelectedExpenseIds(new Set(expenses.map((e) => e.id)));
+      setSelectedExpenseIds(new Set(scopedExpenses.map((e) => e.id)));
     } else {
       setSelectedExpenseIds(new Set());
     }
   };
 
   const handleOpenBulkDeleteExpenses = () => {
-    const selected = expenses.filter((e) => selectedExpenseIds.has(e.id));
+    const selected = scopedExpenses.filter((e) => selectedExpenseIds.has(e.id));
     if (selected.length === 0) return;
     setExpensesToDelete(selected);
     setExpenseToDelete(null);
@@ -170,35 +199,6 @@ export const FinanceManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'payments' | 'expenses' | 'profitability'>('payments');
   const [paymentFilterStatus, setPaymentFilterStatus] = useState<'all' | 'Success' | 'Pending'>('all');
   const [paymentSearch, setPaymentSearch] = useState('');
-
-  // ── STRICT USER DATA SCOPING: Associate data exclusively with the active user ──
-  // An account must only see payments, revenue, and expenses belonging to their own clients/brands
-  const userBrandIds = React.useMemo(() => new Set((brands || []).map((b) => b.id)), [brands]);
-
-  const scopedPayments = React.useMemo(() => {
-    return (payments || []).filter((p) => {
-      if (!p) return false;
-      // If the current account has no brands, they must not see unassociated client payments
-      if (userBrandIds.size === 0) return false;
-      return Boolean(p.brandId && userBrandIds.has(p.brandId));
-    });
-  }, [payments, userBrandIds]);
-
-  const scopedExpenses = React.useMemo(() => {
-    return (expenses || []).filter((e) => {
-      if (!e) return false;
-      if (e.brandId && !userBrandIds.has(e.brandId)) return false;
-      return true;
-    });
-  }, [expenses, userBrandIds]);
-
-  const scopedInvoices = React.useMemo(() => {
-    return (invoices || []).filter((i) => {
-      if (!i) return false;
-      if (userBrandIds.size === 0) return false;
-      return Boolean(i.brandId && userBrandIds.has(i.brandId));
-    });
-  }, [invoices, userBrandIds]);
 
   // Filtered payments list — strictly scoped to active user
   const filteredPayments = scopedPayments.filter(p => {
@@ -269,7 +269,7 @@ export const FinanceManager: React.FC = () => {
 
   const exportToCSV = () => {
     const headers = ['Date', 'Client', 'Amount', 'Mode', 'Reference', 'Status'];
-    const rows = payments.filter(Boolean).map(p => [p.paymentDate, p.brandName, p.amount, p.mode, p.referenceNo, p.status]);
+    const rows = scopedPayments.filter(Boolean).map(p => [p.paymentDate, p.brandName, p.amount, p.mode, p.referenceNo, p.status]);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -353,7 +353,7 @@ export const FinanceManager: React.FC = () => {
   // Pending Collections / Unpaid client receivables (strictly real unpaid invoices and cleared payments)
   const pendingPaymentsTotal = pendingPaymentsList.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
   const unpaidInvoicesList = scopedInvoices.filter(
-    i => i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedBrandIds.has(i.brandId))
+    i => i && (i.status === 'Sent' || i.status === 'Partially Paid' || i.status === 'Overdue') && (!i.brandId || !churnedBrandIds.has(i.brandId))
   );
   const invoicePendingTotal = unpaidInvoicesList.reduce(
     (acc, i) => acc + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)),
@@ -366,7 +366,7 @@ export const FinanceManager: React.FC = () => {
     const isChurned = b.status === 'Churned' || b.status === 'Inactive';
     const hasPaidInvoice = scopedInvoices.some(i => i && i.brandId === b.id && (i.status === 'Paid' || (Number(i.paidAmount) || 0) > 0));
     const brandInvoicePending = scopedInvoices
-      .filter(i => i && i.brandId === b.id && (i.status === 'Sent' || i.status === 'Overdue'))
+      .filter(i => i && i.brandId === b.id && (i.status === 'Sent' || i.status === 'Partially Paid' || i.status === 'Overdue'))
       .reduce((acc, i) => acc + Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0)), 0);
 
     // Only actual received payments for this brand count as collected revenue
@@ -498,7 +498,7 @@ export const FinanceManager: React.FC = () => {
             </div>
             <div style={{ fontSize: 11, color: pendingExpensesTotal > 0 ? 'var(--warn-text)' : 'var(--text-secondary)', marginTop: 8 }}>
               {pendingExpensesTotal > 0
-                ? `₹${pendingExpensesTotal.toLocaleString('en-IN')} pending payouts (${pendingExpenses.length})`
+                ? `${currencySymbol}${pendingExpensesTotal.toLocaleString('en-IN')} pending payouts (${pendingExpenses.length})`
                 : 'Salaries, SaaS & operational spend'}
             </div>
           </div>
@@ -548,7 +548,7 @@ export const FinanceManager: React.FC = () => {
           onClick={() => setActiveTab('payments')}
           style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'payments' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'payments' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
         >
-          Client Payments Ledger ({payments.length})
+          Client Payments Ledger ({scopedPayments.length})
         </button>
 
         {isAdmin && (
@@ -557,7 +557,7 @@ export const FinanceManager: React.FC = () => {
               onClick={() => setActiveTab('expenses')}
               style={{ flexShrink: 0, whiteSpace: 'nowrap', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: 'none', background: activeTab === 'expenses' ? 'var(--solid-btn-bg)' : 'transparent', color: activeTab === 'expenses' ? 'var(--solid-btn-text)' : 'var(--text-secondary)' }}
             >
-              Agency Expenses ({expenses.length})
+              Agency Expenses ({scopedExpenses.length})
             </button>
             <button
               onClick={() => setActiveTab('profitability')}
@@ -615,7 +615,7 @@ export const FinanceManager: React.FC = () => {
                   color: paymentFilterStatus === 'all' ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
                 }}
               >
-                All Payments ({payments.length})
+                All Payments ({scopedPayments.length})
               </button>
               <button
                 onClick={() => setPaymentFilterStatus('Success')}
@@ -636,7 +636,7 @@ export const FinanceManager: React.FC = () => {
                 }}
               >
                 <CheckCircle style={{ width: 13, height: 13 }} />
-                Received &amp; Settled ({receivedPayments.length} • <span className="font-amount" style={{ fontWeight: 800 }}>₹{paymentsTotal.toLocaleString('en-IN')}</span>)
+                Received &amp; Settled ({receivedPayments.length} • <span className="font-amount" style={{ fontWeight: 800 }}>{currencySymbol}{paymentsTotal.toLocaleString('en-IN')}</span>)
               </button>
               <button
                 onClick={() => setPaymentFilterStatus('Pending')}
@@ -657,7 +657,7 @@ export const FinanceManager: React.FC = () => {
                 }}
               >
                 <Clock style={{ width: 13, height: 13 }} />
-                Pending Clearance ({pendingPaymentsList.length} • <span className="font-amount" style={{ fontWeight: 800 }}>₹{pendingPaymentsTotal.toLocaleString('en-IN')}</span>)
+                Pending Clearance ({pendingPaymentsList.length} • <span className="font-amount" style={{ fontWeight: 800 }}>{currencySymbol}{pendingPaymentsTotal.toLocaleString('en-IN')}</span>)
               </button>
             </div>
 

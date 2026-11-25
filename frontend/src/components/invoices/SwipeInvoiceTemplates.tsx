@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Invoice, AppSettings, Brand } from '../../types';
 import { numberToWordsINR } from '../../utils/numberToWords';
+import { resolveInvoiceBank, buildUpiDeepLink } from '../../utils/bankAccounts';
 
 export type SwipeTemplateId = 'modern' | 'classic' | 'navy' | 'executive';
 
@@ -10,8 +11,30 @@ interface TemplateProps {
   brand?: Brand;
 }
 
-const inr = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const inrPlain = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+const getSymbol = (invoice: Invoice, settings: AppSettings) =>
+  invoice.currencySymbol || settings.currencySymbol || '₹';
+
+const fmtMoney = (n: number, sym = '₹') =>
+  `${sym}${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const fmtMoneyPlain = (n: number, sym = '₹') =>
+  `${sym}${Number(n || 0).toLocaleString('en-IN')}`;
+
+const formatBrandAddress = (brand?: Brand): string => {
+  if (!brand) return '';
+  const parts = [
+    brand.billingAddress,
+    brand.city,
+    brand.state,
+    brand.pincode ? `- ${brand.pincode}` : '',
+  ].filter(Boolean);
+  return parts.join(', ').replace(', - ', ' - ');
+};
+
+const getPayable = (invoice: Invoice): number => {
+  if (invoice.status === 'Paid') return 0;
+  return Math.max(0, Number(invoice.totalAmount || 0) - Number(invoice.paidAmount || 0));
+};
 
 export const InvoiceLogo: React.FC<{ settings: AppSettings; maxHeight?: number; maxWidth?: number }> = ({
   settings,
@@ -33,7 +56,6 @@ export const InvoiceLogo: React.FC<{ settings: AppSettings; maxHeight?: number; 
     );
   }
 
-  // Default platform logo, rendered small and clean
   return (
     <img
       src="/retentio-logo-horizontal.png"
@@ -74,49 +96,55 @@ export function getGstBreakdown(invoice: Invoice, settings: AppSettings) {
   return { effectiveRate, gstRateDec, halfRate };
 }
 
-export const BankDetailsBlock: React.FC<{ settings: AppSettings; titleColor?: string }> = ({ settings, titleColor = '#0f172a' }) => {
-  const hasBankDetails = Boolean(settings.bankName || settings.bankAccountNumber || settings.bankIfsc);
-  if (!hasBankDetails) {
-    return (
-      <div style={{ padding: '8px 10px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 6, fontSize: 10, color: '#64748b' }}>
-        <div style={{ fontWeight: 700, color: titleColor, marginBottom: 2 }}>Bank Details:</div>
-        <div>No bank account configured yet.</div>
-        <div style={{ color: '#2563eb', fontWeight: 600, marginTop: 2 }}>Add in Settings &gt; Banking &amp; Gateways</div>
-      </div>
-    );
-  }
+export const BankDetailsBlock: React.FC<{
+  settings: AppSettings;
+  invoice?: Invoice;
+  titleColor?: string;
+}> = ({ settings, invoice, titleColor = '#0f172a' }) => {
+  const bank = resolveInvoiceBank(invoice, settings);
+  const hasBankDetails = Boolean(
+    bank && (bank.bankName || bank.bankAccountName || bank.bankAccountNumber || bank.bankIfsc || bank.upiId)
+  );
+  if (!hasBankDetails || !bank) return null;
+
   return (
     <div>
       <div style={{ fontSize: 11, fontWeight: 700, color: titleColor, marginBottom: 4 }}>Bank Details:</div>
       <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: '3px 8px', fontSize: 10.5, color: '#334155' }}>
-        {settings.bankName && (
+        {bank.bankName && (
           <>
             <span style={{ color: '#64748b' }}>Bank:</span>
-            <span style={{ fontWeight: 700, color: titleColor }}>{settings.bankName}</span>
+            <span style={{ fontWeight: 700, color: titleColor }}>{bank.bankName}</span>
           </>
         )}
-        {settings.bankAccountName && (
+        {bank.bankAccountName && (
           <>
             <span style={{ color: '#64748b' }}>A/c Name:</span>
-            <span style={{ fontWeight: 700, color: titleColor }}>{settings.bankAccountName}</span>
+            <span style={{ fontWeight: 700, color: titleColor }}>{bank.bankAccountName}</span>
           </>
         )}
-        {settings.bankAccountNumber && (
+        {bank.bankAccountNumber && (
           <>
             <span style={{ color: '#64748b' }}>Account #:</span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankAccountNumber}</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{bank.bankAccountNumber}</span>
           </>
         )}
-        {settings.bankIfsc && (
+        {bank.bankIfsc && (
           <>
             <span style={{ color: '#64748b' }}>IFSC:</span>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{settings.bankIfsc}</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{bank.bankIfsc}</span>
           </>
         )}
-        {settings.bankBranch && (
+        {bank.bankBranch && (
           <>
             <span style={{ color: '#64748b' }}>Branch:</span>
-            <span>{settings.bankBranch}</span>
+            <span style={{ color: '#334155' }}>{bank.bankBranch}</span>
+          </>
+        )}
+        {bank.upiId && (
+          <>
+            <span style={{ color: '#64748b' }}>UPI ID:</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{bank.upiId}</span>
           </>
         )}
       </div>
@@ -125,81 +153,200 @@ export const BankDetailsBlock: React.FC<{ settings: AppSettings; titleColor?: st
 };
 
 /**
- * Authentic Circular Stamp matching Swipe's signature badge
+ * Custom Uploaded Signature / Company Stamp or Authentic Circular Seal
  */
-export const AuthorizedSignatoryStamp: React.FC<{ companyName?: string }> = ({ companyName }) => (
+export const AuthorizedSignatoryStamp: React.FC<{
+  companyName?: string;
+  signatureUrl?: string;
+}> = ({ companyName, signatureUrl }) => (
   <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', userSelect: 'none' }}>
-    <svg width="78" height="78" viewBox="0 0 100 100" style={{ transform: 'rotate(-5deg)', opacity: 0.9 }}>
-      {/* Outer Circles */}
-      <circle cx="50" cy="50" r="46" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeDasharray="3,2" />
-      <circle cx="50" cy="50" r="42" fill="none" stroke="#2563eb" strokeWidth="1.5" />
-      <circle cx="50" cy="50" r="32" fill="none" stroke="#2563eb" strokeWidth="1" strokeDasharray="2,1" />
-
-      {/* Curved Text Paths */}
-      <defs>
-        <path id="topCurve" d="M 18,50 A 32,32 0 0,1 82,50" />
-        <path id="bottomCurve" d="M 82,50 A 32,32 0 0,1 18,50" />
-      </defs>
-
-      <text fill="#2563eb" fontSize="8" fontWeight="800" letterSpacing="1.2">
-        <textPath href="#topCurve" startOffset="50%" textAnchor="middle">
-          ★ SIGNATURE ★
-        </textPath>
-      </text>
-
-      <text fill="#2563eb" fontSize="6.5" fontWeight="700" letterSpacing="0.8">
-        <textPath href="#bottomCurve" startOffset="50%" textAnchor="middle">
-          {(companyName || 'VERIFIED').slice(0, 16).toUpperCase()}
-        </textPath>
-      </text>
-
-      {/* Center Signature Script Representation */}
-      <path
-        d="M 30,52 Q 40,40 48,54 T 66,46 Q 74,56 70,52"
-        fill="none"
-        stroke="#1d4ed8"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <circle cx="48" cy="42" r="1.5" fill="#1d4ed8" />
-      <line x1="28" y1="57" x2="72" y2="57" stroke="#2563eb" strokeWidth="1" />
-    </svg>
+    {signatureUrl ? (
+      <div style={{ height: 68, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+        <img
+          src={signatureUrl}
+          alt="Authorized Signature"
+          style={{ maxHeight: 68, maxWidth: 140, objectFit: 'contain' }}
+        />
+      </div>
+    ) : (
+      <svg width="78" height="78" viewBox="0 0 100 100" style={{ transform: 'rotate(-5deg)', opacity: 0.9 }}>
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeDasharray="3,2" />
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#2563eb" strokeWidth="1.5" />
+        <circle cx="50" cy="50" r="32" fill="none" stroke="#2563eb" strokeWidth="1" strokeDasharray="2,1" />
+        <defs>
+          <path id="topCurve" d="M 18,50 A 32,32 0 0,1 82,50" />
+          <path id="bottomCurve" d="M 82,50 A 32,32 0 0,1 18,50" />
+        </defs>
+        <text fill="#2563eb" fontSize="8" fontWeight="800" letterSpacing="1.2">
+          <textPath href="#topCurve" startOffset="50%" textAnchor="middle">
+            ★ SIGNATURE ★
+          </textPath>
+        </text>
+        <text fill="#2563eb" fontSize="6.5" fontWeight="700" letterSpacing="0.8">
+          <textPath href="#bottomCurve" startOffset="50%" textAnchor="middle">
+            {(companyName || 'VERIFIED').slice(0, 16).toUpperCase()}
+          </textPath>
+        </text>
+        <path
+          d="M 30,52 Q 40,40 48,54 T 66,46 Q 74,56 70,52"
+          fill="none"
+          stroke="#1d4ed8"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+        <circle cx="48" cy="42" r="1.5" fill="#1d4ed8" />
+        <line x1="28" y1="57" x2="72" y2="57" stroke="#2563eb" strokeWidth="1" />
+      </svg>
+    )}
     <div style={{ fontSize: 10, fontWeight: 700, color: '#334155', marginTop: 4 }}>Authorized Signatory</div>
   </div>
 );
 
 /**
- * Dynamic Scannable UPI QR Code generator
+ * UPI QR Code (prefers uploaded bank QR image; falls back to dynamic UPI QR only if UPI ID exists) + Tap-to-Pay Deep Link.
+ * Returns null if no QR image and no UPI ID are configured.
  */
 export const DynamicUpiQrCode: React.FC<{
   upiId?: string;
+  qrCodeUrl?: string;
   companyName?: string;
   amount?: number;
   invoiceNumber?: string;
-}> = ({ upiId, companyName, amount, invoiceNumber }) => {
-  const upi = upiId || 'retentio@upi';
-  const name = encodeURIComponent(companyName || 'Retentio');
-  const inv = encodeURIComponent(invoiceNumber || 'INV');
-  const amt = amount || 0;
-  const upiUri = `upi://pay?pa=${upi}&pn=${name}&am=${amt}&tn=${inv}&cu=INR`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=${encodeURIComponent(upiUri)}`;
+}> = ({ upiId, qrCodeUrl, companyName, amount, invoiceNumber }) => {
+  const cleanUpi = (upiId || '').trim();
+  const upiDeepLink = buildUpiDeepLink({ upiId: cleanUpi, companyName, amount, invoiceNumber });
+  const generatedQrUrl = upiDeepLink
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=${encodeURIComponent(upiDeepLink)}`
+    : '';
+  const displayQrSrc = qrCodeUrl || generatedQrUrl;
+
+  if (!displayQrSrc && !cleanUpi) return null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Pay using UPI:</div>
-      <div style={{ padding: 4, background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 4, display: 'inline-block' }}>
-        <img
-          src={qrUrl}
-          alt="UPI QR Code"
-          width="92"
-          height="92"
-          style={{ display: 'block' }}
-          onError={(e) => {
-            // Fallback placeholder if offline
-            (e.target as HTMLElement).style.display = 'none';
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 5 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>Pay using UPI:</div>
+      {displayQrSrc && (
+        <div style={{ padding: 4, background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 4, display: 'inline-block' }}>
+          <img
+            src={displayQrSrc}
+            alt="UPI QR Code"
+            width="92"
+            height="92"
+            style={{ display: 'block', objectFit: 'contain' }}
+            onError={(e) => {
+              (e.target as HTMLElement).style.display = 'none';
+            }}
+          />
+        </div>
+      )}
+      {cleanUpi && (
+        <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#475569', fontWeight: 600 }}>
+          {cleanUpi}
+        </div>
+      )}
+      {upiDeepLink && Number(amount || 0) > 0 && (
+        <a
+          href={upiDeepLink}
+          className="no-print"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            marginTop: 2,
+            padding: '4px 8px',
+            borderRadius: 5,
+            background: '#059669',
+            color: '#ffffff',
+            fontSize: 9.5,
+            fontWeight: 700,
+            textDecoration: 'none',
           }}
-        />
+          title="Open GPay, PhonePe, Paytm, or BHIM on mobile"
+        >
+          Pay via GPay / PhonePe
+        </a>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Shared dynamic payment & signatory footer that omits empty Bank/QR blocks cleanly.
+ */
+const InvoicePaymentFooter: React.FC<{
+  invoice: Invoice;
+  settings: AppSettings;
+  payableAmount: number;
+  titleColor?: string;
+  bordered?: boolean;
+  qrFirst?: boolean;
+}> = ({ invoice, settings, payableAmount, titleColor = '#0f172a', bordered = false, qrFirst = true }) => {
+  const bank = resolveInvoiceBank(invoice, settings);
+  const hasBank = Boolean(
+    bank && (bank.bankName || bank.bankAccountName || bank.bankAccountNumber || bank.bankIfsc || bank.upiId)
+  );
+  const hasQr = Boolean(bank && (bank.qrCodeUrl || (bank.upiId || '').trim()));
+  const showSig = settings.invoiceDesign?.showSignature !== false;
+
+  if (!hasBank && !hasQr && !showSig) return null;
+
+  const qrEl = hasQr ? (
+    <div key="qr" style={bordered ? { padding: '10px 12px', borderRight: hasBank || showSig ? '1px solid #0f172a' : undefined, display: 'flex', justifyContent: 'center' } : undefined}>
+      <DynamicUpiQrCode
+        upiId={bank?.upiId}
+        qrCodeUrl={bank?.qrCodeUrl}
+        companyName={settings.companyName}
+        amount={payableAmount}
+        invoiceNumber={invoice.invoiceNumber}
+      />
+    </div>
+  ) : null;
+
+  const bankEl = hasBank ? (
+    <div key="bank" style={bordered ? { padding: '10px 12px', borderRight: (!qrFirst && hasQr) || showSig ? '1px solid #0f172a' : undefined } : undefined}>
+      <BankDetailsBlock settings={settings} invoice={invoice} titleColor={titleColor} />
+    </div>
+  ) : null;
+
+  const sigEl = showSig ? (
+    <div key="sig" style={{ ...(bordered ? { padding: '10px 12px', justifyContent: 'space-between' } : {}), textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: !hasBank && !hasQr ? 'auto' : undefined }}>
+      <div style={{ fontSize: 10.5, color: '#475569', marginBottom: 4 }}>
+        For {settings.companyName || 'Agency'}
       </div>
+      <AuthorizedSignatoryStamp companyName={settings.companyName} signatureUrl={settings.invoiceDesign?.signatureUrl} />
+    </div>
+  ) : null;
+
+  const cols: string[] = [];
+  if (qrFirst) {
+    if (hasQr) cols.push('1fr');
+    if (hasBank) cols.push('1.3fr');
+  } else {
+    if (hasBank) cols.push('1.2fr');
+    if (hasQr) cols.push('1fr');
+  }
+  if (showSig) cols.push('1fr');
+
+  return (
+    <div
+      style={
+        bordered
+          ? { display: 'grid', gridTemplateColumns: cols.join(' '), borderBottom: '1px solid #0f172a', fontSize: 10.5 }
+          : { display: 'grid', gridTemplateColumns: cols.join(' '), gap: 16, alignItems: 'flex-start', borderTop: '1px solid #cbd5e1', paddingTop: 14, marginBottom: 14 }
+      }
+    >
+      {qrFirst ? (
+        <>
+          {qrEl}
+          {bankEl}
+        </>
+      ) : (
+        <>
+          {bankEl}
+          {qrEl}
+        </>
+      )}
+      {sigEl}
     </div>
   );
 };
@@ -209,10 +356,13 @@ export const DynamicUpiQrCode: React.FC<{
 /* ------------------------------------------------------------------ */
 export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings, brand }) => {
   const isPaid = invoice.status === 'Paid';
+  const sym = getSymbol(invoice, settings);
+  const payable = getPayable(invoice);
   const amountInWords = numberToWordsINR(invoice.totalAmount);
   const totalQty = invoice.items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
-  const placeOfSupply = brand?.state ? `${settings.companyState || '27'}-${brand.state.toUpperCase()}` : `${settings.companyState || '27-MAHARASHTRA'}`;
+  const placeOfSupply = brand?.state || settings.companyState || '';
   const { effectiveRate, gstRateDec, halfRate } = getGstBreakdown(invoice, settings);
+  const clientAddr = formatBrandAddress(brand);
 
   return (
     <div className="swipe-template-root swipe-modern" style={{ fontFamily: 'Inter, -apple-system, sans-serif', color: '#0f172a', background: '#ffffff', padding: 24, fontSize: 11.5, lineHeight: 1.45 }}>
@@ -223,18 +373,24 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
             TAX INVOICE
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-            {settings.companyName || 'Retentio Agency'}
+            {settings.companyName || 'Agency'}
           </div>
-          <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>GSTIN:</span> {settings.companyGst || '27AAACT2727Q1ZW'}
-          </div>
-          <div style={{ fontSize: 10.5, color: '#475569', maxWidth: 360, marginTop: 2 }}>
-            {settings.companyAddress || 'High-Tech Infotech Park, Ambegaon, Pune, Maharashtra 411046'}
-          </div>
-          <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2 }}>
-            <span style={{ fontWeight: 600 }}>Mobile:</span> {settings.companyPhone || '9999999999'} &nbsp;
-            {settings.companyEmail && <span>• <span style={{ fontWeight: 600 }}>Email:</span> {settings.companyEmail}</span>}
-          </div>
+          {settings.companyGst && (
+            <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
+              <span style={{ fontWeight: 700, color: '#0f172a' }}>GSTIN:</span> {settings.companyGst}
+            </div>
+          )}
+          {settings.companyAddress && (
+            <div style={{ fontSize: 10.5, color: '#475569', maxWidth: 360, marginTop: 2 }}>
+              {settings.companyAddress}
+            </div>
+          )}
+          {(settings.companyPhone || settings.companyEmail) && (
+            <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2 }}>
+              {settings.companyPhone && <span><span style={{ fontWeight: 600 }}>Mobile:</span> {settings.companyPhone} &nbsp;</span>}
+              {settings.companyEmail && <span>• <span style={{ fontWeight: 600 }}>Email:</span> {settings.companyEmail}</span>}
+            </div>
+          )}
         </div>
 
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
@@ -258,7 +414,7 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           <div style={{ marginTop: 6 }}>
             <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Customer Details:</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', marginTop: 1 }}>{invoice.brandName || brand?.name || 'Client'}</div>
-            <div style={{ fontSize: 10.5, color: '#475569', marginTop: 1 }}>Ph: {brand?.mobile || '9999999999'}</div>
+            {brand?.mobile && <div style={{ fontSize: 10.5, color: '#475569', marginTop: 1 }}>Ph: {brand.mobile}</div>}
             {brand?.email && <div style={{ fontSize: 10.5, color: '#475569' }}>{brand.email}</div>}
           </div>
         </div>
@@ -269,12 +425,11 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           </div>
           <div style={{ marginTop: 6 }}>
             <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Billing address:</div>
-            <div style={{ fontSize: 10.5, color: '#334155', marginTop: 1, lineHeight: 1.4 }}>
-              {brand?.billingAddress || 'Phase 3, Hinjewadi Rajiv Gandhi Infotech Park'}
-              {brand?.city ? `, ${brand.city}` : ''}
-              {brand?.state ? `, ${brand.state}` : ''}
-              {brand?.pincode ? ` - ${brand.pincode}` : ''}
-            </div>
+            {clientAddr && (
+              <div style={{ fontSize: 10.5, color: '#334155', marginTop: 1, lineHeight: 1.4 }}>
+                {clientAddr}
+              </div>
+            )}
             {brand?.gstNumber && (
               <div style={{ fontSize: 10.5, color: '#0f172a', marginTop: 2, fontWeight: 600 }}>
                 GSTIN: {brand.gstNumber}
@@ -287,21 +442,22 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           <div style={{ fontSize: 11, color: '#475569' }}>
             <span style={{ fontWeight: 700, color: '#0f172a' }}>Due Date:</span> {invoice.dueDate}
           </div>
-          <div style={{ marginTop: 6 }}>
-            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Shipping address:</div>
-            <div style={{ fontSize: 10.5, color: '#334155', marginTop: 1, lineHeight: 1.4 }}>
-              {brand?.billingAddress || 'Phase 3, Hinjewadi Rajiv Gandhi Infotech Park'}
-              {brand?.city ? `, ${brand.city}` : ''}
-              {brand?.state ? `, ${brand.state}` : ''}
-              {brand?.pincode ? ` - ${brand.pincode}` : ''}
+          {clientAddr && (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Shipping address:</div>
+              <div style={{ fontSize: 10.5, color: '#334155', marginTop: 1, lineHeight: 1.4 }}>
+                {clientAddr}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>
-        Place of Supply: <span style={{ textTransform: 'uppercase' }}>{placeOfSupply}</span>
-      </div>
+      {placeOfSupply && (
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>
+          Place of Supply: <span style={{ textTransform: 'uppercase' }}>{placeOfSupply}</span>
+        </div>
+      )}
 
       {/* Main Items Table */}
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
@@ -314,22 +470,22 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 50 }}>Qty</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 90 }}>Taxable Value</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 85 }}>Tax Amount</th>
-            <th style={{ padding: '7px 8px', textAlign: 'right', width: 95 }}>Amount</th>
+            <th style={{ padding: '7px 8px', textAlign: 'right', width: 95 }}>Line Total</th>
           </tr>
         </thead>
         <tbody>
           {invoice.items.map((it, idx) => {
-            const itemTax = invoice.hasGst && gstRateDec > 0 ? ((it.amount * gstRateDec) / (1 + gstRateDec)) : 0;
-            const itemTaxable = it.amount - itemTax;
+            const itemTaxable = Number(it.amount || 0);
+            const itemTax = invoice.hasGst && gstRateDec > 0 ? Math.round(itemTaxable * gstRateDec) : 0;
             return (
               <tr key={it.id || idx} style={{ borderBottom: '1px solid #e2e8f0', verticalAlign: 'top' }}>
                 <td style={{ padding: '8px 6px', color: '#64748b' }}>{idx + 1}</td>
                 <td style={{ padding: '8px 8px' }}>
                   <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 11.5 }}>{it.description}</div>
-                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>HSN: {it.hsnSac || '998311'}</div>
+                  {it.hsnSac && <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>HSN/SAC: {it.hsnSac}</div>}
                 </td>
                 <td style={{ padding: '8px 8px', textAlign: 'right', fontFamily: 'monospace', color: '#475569' }}>
-                  {it.hsnSac || '998311'}
+                  {it.hsnSac || '—'}
                 </td>
                 <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 600 }}>
                   {Number(it.unitPrice || it.amount).toFixed(2)}
@@ -338,13 +494,13 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
                   {it.quantity || 1}
                 </td>
                 <td style={{ padding: '8px 8px', textAlign: 'right' }}>
-                  {Number(itemTaxable || it.amount).toFixed(2)}
+                  {itemTaxable.toFixed(2)}
                 </td>
                 <td style={{ padding: '8px 8px', textAlign: 'right', color: '#475569' }}>
-                  {invoice.hasGst ? `${Number(itemTax).toFixed(2)} (${effectiveRate}%)` : '0.00'}
+                  {invoice.hasGst ? `${itemTax.toFixed(2)} (${effectiveRate}%)` : '0.00'}
                 </td>
                 <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
-                  {Number(it.amount).toFixed(2)}
+                  {(itemTaxable + itemTax).toFixed(2)}
                 </td>
               </tr>
             );
@@ -361,13 +517,13 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
         <div style={{ width: 280, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
             <span>Taxable Amount</span>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.subtotal)}</span>
+            <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.subtotal, sym)}</span>
           </div>
 
           {invoice.hasGst && invoice.gstType === 'IGST' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
               <span>IGST {effectiveRate}%</span>
-              <span style={{ fontWeight: 600, color: '#0f172a' }}>{inr(invoice.igstAmount)}</span>
+              <span style={{ fontWeight: 600, color: '#0f172a' }}>{fmtMoney(invoice.igstAmount, sym)}</span>
             </div>
           )}
 
@@ -375,11 +531,11 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                 <span>CGST {halfRate}%</span>
-                <span style={{ fontWeight: 600, color: '#0f172a' }}>{inr(invoice.cgstAmount)}</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>{fmtMoney(invoice.cgstAmount, sym)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                 <span>SGST {halfRate}%</span>
-                <span style={{ fontWeight: 600, color: '#0f172a' }}>{inr(invoice.sgstAmount)}</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>{fmtMoney(invoice.sgstAmount, sym)}</span>
               </div>
             </>
           )}
@@ -388,24 +544,26 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 900, color: '#0f172a' }}>
             <span>Total</span>
-            <span>{inrPlain(invoice.totalAmount)}</span>
+            <span>{fmtMoneyPlain(invoice.totalAmount, sym)}</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>
             <span>Amount Payable:</span>
-            <span>{inr(isPaid ? 0 : invoice.totalAmount)}</span>
+            <span>{fmtMoney(payable, sym)}</span>
           </div>
 
-          {isPaid && (
+          {(isPaid || Number(invoice.paidAmount || 0) > 0) && (
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: '#16a34a' }}>
               <span>Amount Paid:</span>
-              <span>{inr(invoice.totalAmount)}</span>
+              <span>{fmtMoney(isPaid ? invoice.totalAmount : invoice.paidAmount, sym)}</span>
             </div>
           )}
 
           {isPaid && (
             <div style={{ textAlign: 'right', fontSize: 10, color: '#16a34a', fontWeight: 600 }}>
-              ₹{invoice.totalAmount} Paid via UPI on {invoice.issueDate}
+              {sym}{Number(invoice.totalAmount).toLocaleString('en-IN')} Paid
+              {invoice.paymentMode ? ` via ${invoice.paymentMode}` : ''}
+              {invoice.paymentDate ? ` on ${invoice.paymentDate}` : ''}
             </div>
           )}
         </div>
@@ -416,38 +574,23 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
         <span style={{ fontWeight: 700, color: '#0f172a' }}>Total amount (in words):</span> {amountInWords}
       </div>
 
-      {/* 3-Column Footer: UPI QR | Bank Details | Signatory */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1fr', gap: 16, alignItems: 'flex-start', borderTop: '1px solid #cbd5e1', paddingTop: 14, marginBottom: 14 }}>
-        <div>
-          <DynamicUpiQrCode
-            upiId={settings.upiId}
-            companyName={settings.companyName}
-            amount={isPaid ? 0 : invoice.totalAmount}
-            invoiceNumber={invoice.invoiceNumber}
-          />
-        </div>
-
-        <BankDetailsBlock settings={settings} />
-
-        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div style={{ fontSize: 10.5, color: '#475569', marginBottom: 4 }}>
-            For {settings.companyName || 'Retentio'}
-          </div>
-          <AuthorizedSignatoryStamp companyName={settings.companyName} />
-        </div>
-      </div>
+      {/* Dynamic Footer: UPI QR | Bank Details | Signatory */}
+      <InvoicePaymentFooter invoice={invoice} settings={settings} payableAmount={payable} />
 
       {/* Notes & Terms */}
       <div style={{ fontSize: 10, color: '#475569', lineHeight: 1.5, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
         <div style={{ fontWeight: 700, color: '#0f172a' }}>Notes:</div>
-        <div>Thank you for the Business</div>
+        <div>{invoice.notes || 'Thank you for your business.'}</div>
         <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 4 }}>Terms and Conditions:</div>
-        <ol style={{ margin: '2px 0 0 16px', padding: 0 }}>
-          <li>Goods/Services once confirmed cannot be cancelled or refunded.</li>
-          <li>We are not the manufacturers; company will stand for warranty as per service terms.</li>
-          <li>Interest @18% p.a. will be charged for uncleared bills beyond 15 days.</li>
-          <li>Subject to local Jurisdiction.</li>
-        </ol>
+        {settings.invoiceDesign?.termsAndConditions ? (
+          <div>{settings.invoiceDesign.termsAndConditions}</div>
+        ) : (
+          <ol style={{ margin: '2px 0 0 16px', padding: 0 }}>
+            <li>Services once delivered/confirmed cannot be cancelled or refunded.</li>
+            <li>Interest @18% p.a. may be charged for overdue invoices beyond 15 days.</li>
+            <li>Subject to local jurisdiction.</li>
+          </ol>
+        )}
       </div>
 
       {/* Document Footer */}
@@ -461,14 +604,17 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
 };
 
 /* ------------------------------------------------------------------ */
-/*  TEMPLATE 2: SWIPE CLASSIC FRAMED GST (Tata Motors Style)        */
+/*  TEMPLATE 2: SWIPE CLASSIC FRAMED GST                             */
 /* ------------------------------------------------------------------ */
 export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, settings, brand }) => {
   const isPaid = invoice.status === 'Paid';
+  const sym = getSymbol(invoice, settings);
+  const payable = getPayable(invoice);
   const amountInWords = numberToWordsINR(invoice.totalAmount);
   const totalQty = invoice.items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
-  const placeOfSupply = brand?.state ? `${settings.companyState || '36'}-${brand.state.toUpperCase()}` : `${settings.companyState || '36-TELANGANA'}`;
+  const placeOfSupply = brand?.state || settings.companyState || '';
   const { effectiveRate, gstRateDec, halfRate } = getGstBreakdown(invoice, settings);
+  const clientAddr = formatBrandAddress(brand);
 
   return (
     <div className="swipe-template-root swipe-classic" style={{ fontFamily: 'Inter, -apple-system, sans-serif', color: '#0f172a', background: '#ffffff', padding: 20, fontSize: 11 }}>
@@ -486,26 +632,31 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
 
         {/* Company & Invoice Grid Header */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderBottom: '1px solid #0f172a' }}>
-          {/* Company Details */}
           <div style={{ padding: '12px 14px', borderRight: '1px solid #0f172a' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <InvoiceLogo settings={settings} maxHeight={34} maxWidth={120} />
               <div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase' }}>
-                  {settings.companyName || 'TATA MOTORS LIMITED'}
+                  {settings.companyName || 'Agency'}
                 </div>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0f172a' }}>
-                  GSTIN {settings.companyGst || '27AAACT2727Q1ZW'}
-                </div>
+                {settings.companyGst && (
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0f172a' }}>
+                    GSTIN {settings.companyGst}
+                  </div>
+                )}
               </div>
             </div>
-            <div style={{ fontSize: 10, color: '#475569', marginTop: 4, lineHeight: 1.4 }}>
-              {settings.companyAddress || 'Nigadi Bhosari Road, PIMPRI, Pune, MAHARASHTRA, 411018'}
-            </div>
-            <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
-              Mobile: {settings.companyPhone || '9999999999'} &nbsp;
-              Email: {settings.companyEmail || 'Swipe@getswipe.in'}
-            </div>
+            {settings.companyAddress && (
+              <div style={{ fontSize: 10, color: '#475569', marginTop: 4, lineHeight: 1.4 }}>
+                {settings.companyAddress}
+              </div>
+            )}
+            {(settings.companyPhone || settings.companyEmail) && (
+              <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
+                {settings.companyPhone && <span>Mobile: {settings.companyPhone} &nbsp;</span>}
+                {settings.companyEmail && <span>Email: {settings.companyEmail}</span>}
+              </div>
+            )}
           </div>
 
           {/* Invoice Meta Grid */}
@@ -523,7 +674,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
               <div style={{ padding: '6px 10px', borderRight: '1px solid #0f172a' }}>
                 <span style={{ color: '#64748b' }}>Place of Supply:</span>
-                <div style={{ fontWeight: 700, color: '#0f172a' }}>{placeOfSupply}</div>
+                <div style={{ fontWeight: 700, color: '#0f172a' }}>{placeOfSupply || '—'}</div>
               </div>
               <div style={{ padding: '6px 10px' }}>
                 <span style={{ color: '#64748b' }}>Due Date:</span>
@@ -538,46 +689,47 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
           <div style={{ padding: '8px 14px', borderRight: '1px solid #0f172a' }}>
             <span style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Customer Details:</span>
             <div style={{ fontWeight: 800, fontSize: 12, color: '#0f172a', marginTop: 1 }}>{invoice.brandName || brand?.name || 'Client'}</div>
-            <div style={{ fontWeight: 600, color: '#475569', marginTop: 2 }}>Billing address:</div>
-            <div style={{ color: '#475569', lineHeight: 1.35 }}>
-              {brand?.billingAddress || 'Survey 115/1, ISB Rd, Financial District, Gachibowli, Nanakramguda, Hyderabad, 500032'}
-            </div>
-            <div style={{ color: '#475569', marginTop: 2 }}>Ph: {brand?.mobile || '9999999999'}</div>
+            {clientAddr && (
+              <>
+                <div style={{ fontWeight: 600, color: '#475569', marginTop: 2 }}>Billing address:</div>
+                <div style={{ color: '#475569', lineHeight: 1.35 }}>{clientAddr}</div>
+              </>
+            )}
+            {brand?.mobile && <div style={{ color: '#475569', marginTop: 2 }}>Ph: {brand.mobile}</div>}
+            {brand?.gstNumber && <div style={{ color: '#0f172a', fontWeight: 600, marginTop: 2 }}>GSTIN: {brand.gstNumber}</div>}
           </div>
           <div style={{ padding: '8px 10px' }}>
             <span style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Shipping address:</span>
             <div style={{ color: '#475569', marginTop: 2, lineHeight: 1.35 }}>
-              {brand?.billingAddress || 'Survey 115/1, ISB Rd, Financial District, Gachibowli, Nanakramguda, Hyderabad, 500032'}
+              {clientAddr || 'Same as billing details'}
             </div>
           </div>
         </div>
 
-        {/* Line Items Table with Box Dividers */}
+        {/* Line Items Table */}
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #0f172a', fontWeight: 800, color: '#0f172a' }}>
               <th style={{ padding: '6px 6px', borderRight: '1px solid #cbd5e1', width: 28, textAlign: 'center' }}>#</th>
               <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'left' }}>Item</th>
               <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'center', width: 85 }}>HSN/SAC</th>
-              <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right', width: 85 }}>Rate/ Item</th>
+              <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right', width: 80 }}>Rate</th>
               <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'center', width: 45 }}>Qty</th>
-              <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right', width: 85 }}>Taxable Value</th>
-              <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right', width: 90 }}>Tax Amount</th>
-              <th style={{ padding: '6px 8px', textAlign: 'right', width: 95 }}>Amount</th>
+              <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right', width: 80 }}>Taxable</th>
+              <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right', width: 85 }}>Tax</th>
+              <th style={{ padding: '6px 8px', textAlign: 'right', width: 85 }}>Total</th>
             </tr>
           </thead>
           <tbody>
             {invoice.items.map((it, idx) => {
-              const itemTax = invoice.hasGst && gstRateDec > 0 ? ((it.amount * gstRateDec) / (1 + gstRateDec)) : 0;
-              const itemTaxable = it.amount - itemTax;
+              const itemTaxable = Number(it.amount || 0);
+              const itemTax = invoice.hasGst && gstRateDec > 0 ? Math.round(itemTaxable * gstRateDec) : 0;
               return (
                 <tr key={it.id || idx} style={{ borderBottom: '1px solid #cbd5e1' }}>
                   <td style={{ padding: '8px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'center' }}>{idx + 1}</td>
-                  <td style={{ padding: '8px 8px', borderRight: '1px solid #cbd5e1' }}>
-                    <div style={{ fontWeight: 800, color: '#0f172a' }}>{it.description}</div>
-                  </td>
+                  <td style={{ padding: '8px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{it.description}</td>
                   <td style={{ padding: '8px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'center', fontFamily: 'monospace' }}>
-                    {it.hsnSac || '87038070'}
+                    {it.hsnSac || '—'}
                   </td>
                   <td style={{ padding: '8px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>
                     {Number(it.unitPrice || it.amount).toFixed(2)}
@@ -586,13 +738,13 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
                     {it.quantity || 1}
                   </td>
                   <td style={{ padding: '8px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>
-                    {Number(itemTaxable || it.amount).toFixed(2)}
+                    {itemTaxable.toFixed(2)}
                   </td>
                   <td style={{ padding: '8px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>
-                    {invoice.hasGst ? `${Number(itemTax).toFixed(2)} (${effectiveRate}%)` : '0.00'}
+                    {invoice.hasGst ? `${itemTax.toFixed(2)} (${effectiveRate}%)` : '0.00'}
                   </td>
                   <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 800 }}>
-                    {Number(it.amount).toFixed(2)}
+                    {(itemTaxable + itemTax).toFixed(2)}
                   </td>
                 </tr>
               );
@@ -608,17 +760,23 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
           <div style={{ padding: '6px 12px', display: 'flex', flexDirection: 'column', gap: 3 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#475569', fontWeight: 600 }}>Taxable Amount</span>
-              <span style={{ fontWeight: 800 }}>₹{invoice.subtotal.toFixed(2)}</span>
+              <span style={{ fontWeight: 800 }}>{fmtMoney(invoice.subtotal, sym)}</span>
             </div>
             {invoice.hasGst && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#475569', fontWeight: 600 }}>{invoice.gstType === 'IGST' ? `IGST ${effectiveRate}%` : `CGST + SGST (${effectiveRate}%)`}</span>
-                <span style={{ fontWeight: 700 }}>₹{(invoice.igstAmount || (invoice.cgstAmount + invoice.sgstAmount)).toFixed(2)}</span>
+                <span style={{ color: '#475569', fontWeight: 600 }}>
+                  {invoice.gstType === 'IGST' ? `IGST ${effectiveRate}%` : `CGST ${halfRate}% + SGST ${halfRate}%`}
+                </span>
+                <span style={{ fontWeight: 700 }}>{fmtMoney(invoice.igstAmount || (invoice.cgstAmount + invoice.sgstAmount), sym)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #0f172a', paddingTop: 3, fontWeight: 900, fontSize: 13 }}>
               <span>Total</span>
-              <span>₹{invoice.totalAmount.toFixed(2)}</span>
+              <span>{fmtMoney(invoice.totalAmount, sym)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, fontWeight: 700, color: '#0f172a' }}>
+              <span>Amount Payable</span>
+              <span>{fmtMoney(payable, sym)}</span>
             </div>
           </div>
         </div>
@@ -635,17 +793,17 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
                 <th style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'left' }}>HSN/SAC</th>
                 <th style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>Taxable Value</th>
                 <th style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'center' }}>Rate</th>
-                <th style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>Integrated Tax Amount</th>
-                <th style={{ padding: '4px 6px', textAlign: 'right' }}>Total Tax Amount</th>
+                <th style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>Tax Amount</th>
+                <th style={{ padding: '4px 6px', textAlign: 'right' }}>Total Tax</th>
               </tr>
             </thead>
             <tbody>
               {invoice.items.map((it, i) => {
-                const tax = invoice.hasGst && gstRateDec > 0 ? ((it.amount * gstRateDec) / (1 + gstRateDec)) : 0;
-                const val = it.amount - tax;
+                const val = Number(it.amount || 0);
+                const tax = invoice.hasGst && gstRateDec > 0 ? Math.round(val * gstRateDec) : 0;
                 return (
                   <tr key={i} style={{ borderBottom: '1px solid #cbd5e1' }}>
-                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', fontFamily: 'monospace' }}>{it.hsnSac || '87038070'}</td>
+                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', fontFamily: 'monospace' }}>{it.hsnSac || '—'}</td>
                     <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>{val.toFixed(2)}</td>
                     <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'center' }}>{invoice.hasGst ? `${effectiveRate}%` : '0%'}</td>
                     <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', textAlign: 'right' }}>{tax.toFixed(2)}</td>
@@ -669,42 +827,27 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
 
           {isPaid && (
             <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700 }}>
-              ✓ Amount Paid: ₹{invoice.totalAmount.toFixed(2)}
+              ✓ Amount Paid: {fmtMoney(invoice.totalAmount, sym)}
             </div>
           )}
         </div>
 
-        {/* Footer 3-Grid: Bank Details | Pay using UPI | Signatory */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', borderBottom: '1px solid #0f172a', fontSize: 10.5 }}>
-          <div style={{ padding: '10px 12px', borderRight: '1px solid #0f172a' }}>
-            <BankDetailsBlock settings={settings} />
-          </div>
-
-          <div style={{ padding: '10px 12px', borderRight: '1px solid #0f172a', display: 'flex', justifyContent: 'center' }}>
-            <DynamicUpiQrCode
-              upiId={settings.upiId}
-              companyName={settings.companyName}
-              amount={isPaid ? 0 : invoice.totalAmount}
-              invoiceNumber={invoice.invoiceNumber}
-            />
-          </div>
-
-          <div style={{ padding: '10px 12px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 10, color: '#64748b' }}>For {settings.companyName || 'TATA MOTORS LIMITED'}</div>
-            <AuthorizedSignatoryStamp companyName={settings.companyName} />
-          </div>
-        </div>
+        {/* Dynamic Footer */}
+        <InvoicePaymentFooter invoice={invoice} settings={settings} payableAmount={payable} bordered qrFirst={false} />
 
         {/* Notes & Terms Box */}
         <div style={{ padding: '8px 12px', fontSize: 9.5, color: '#475569', lineHeight: 1.45, background: '#f8fafc' }}>
-          <div><span style={{ fontWeight: 700, color: '#0f172a' }}>Notes:</span> Thank you for the Business</div>
+          <div><span style={{ fontWeight: 700, color: '#0f172a' }}>Notes:</span> {invoice.notes || 'Thank you for your business.'}</div>
           <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 3 }}>Terms and Conditions:</div>
-          <ol style={{ margin: '2px 0 0 16px', padding: 0 }}>
-            <li>Goods once sold cannot be taken back or exchanged.</li>
-            <li>We are not the manufacturers; company will stand for warranty as per their terms and conditions.</li>
-            <li>Interest @24% p.a. will be charged for uncleared bills beyond 15 days.</li>
-            <li>Subject to local Jurisdiction.</li>
-          </ol>
+          {settings.invoiceDesign?.termsAndConditions ? (
+            <div>{settings.invoiceDesign.termsAndConditions}</div>
+          ) : (
+            <ol style={{ margin: '2px 0 0 16px', padding: 0 }}>
+              <li>Services once delivered/confirmed cannot be cancelled or refunded.</li>
+              <li>Interest @18% p.a. may be charged for overdue invoices beyond 15 days.</li>
+              <li>Subject to local jurisdiction.</li>
+            </ol>
+          )}
         </div>
       </div>
 
@@ -718,14 +861,16 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
 };
 
 /* ------------------------------------------------------------------ */
-/*  TEMPLATE 3: SWIPE VIBRANT NAVY (Samsung Style)                   */
+/*  TEMPLATE 3: SWIPE VIBRANT NAVY                                   */
 /* ------------------------------------------------------------------ */
 export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, settings, brand }) => {
-  const isPaid = invoice.status === 'Paid';
+  const sym = getSymbol(invoice, settings);
+  const payable = getPayable(invoice);
   const amountInWords = numberToWordsINR(invoice.totalAmount);
   const totalQty = invoice.items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
-  const placeOfSupply = brand?.state ? `${settings.companyState || '09'}-${brand.state.toUpperCase()}` : `${settings.companyState || '09-UTTARPRADESH'}`;
-  const { effectiveRate, gstRateDec, halfRate } = getGstBreakdown(invoice, settings);
+  const placeOfSupply = brand?.state || settings.companyState || '';
+  const { effectiveRate, halfRate } = getGstBreakdown(invoice, settings);
+  const clientAddr = formatBrandAddress(brand);
 
   return (
     <div className="swipe-template-root swipe-navy" style={{ fontFamily: 'Inter, -apple-system, sans-serif', color: '#0f172a', background: '#ffffff', padding: 24, fontSize: 11.5 }}>
@@ -735,14 +880,20 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
             <InvoiceLogo settings={settings} maxHeight={36} maxWidth={130} />
             <div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#002c6c' }}>{settings.companyName || 'Samsung'}</div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: '#475569' }}>GSTIN {settings.companyGst || '27AAAACT2727Q1ZW'}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#002c6c' }}>{settings.companyName || 'Agency'}</div>
+              {settings.companyGst && (
+                <div style={{ fontSize: 10.5, fontWeight: 700, color: '#475569' }}>GSTIN {settings.companyGst}</div>
+              )}
             </div>
           </div>
-          <div style={{ fontSize: 10.5, color: '#475569', maxWidth: 360, lineHeight: 1.4 }}>
-            {settings.companyAddress || 'DLF Centre, Sansad Marg 6th Floor, Delhi, 110001'}
-          </div>
-          <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2 }}>Mobile {settings.companyPhone || '9999999999'}</div>
+          {settings.companyAddress && (
+            <div style={{ fontSize: 10.5, color: '#475569', maxWidth: 360, lineHeight: 1.4 }}>
+              {settings.companyAddress}
+            </div>
+          )}
+          {settings.companyPhone && (
+            <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2 }}>Mobile {settings.companyPhone}</div>
+          )}
         </div>
 
         <div style={{ textAlign: 'right' }}>
@@ -767,19 +918,22 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
         <div>
           <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Bill To:</div>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName || brand?.name || 'Client'}</div>
-          <div style={{ fontSize: 10.5, color: '#475569' }}>Ph: {brand?.mobile || '9999999999'}</div>
-          <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2 }}>{brand?.billingAddress || 'Babuganj, Hasanganj, Lucknow, UTTARPRADESH, 226007'}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#002c6c', marginTop: 3 }}>
-            Place of Supply: {placeOfSupply}
-          </div>
+          {brand?.mobile && <div style={{ fontSize: 10.5, color: '#475569' }}>Ph: {brand.mobile}</div>}
+          {clientAddr && <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2 }}>{clientAddr}</div>}
+          {brand?.gstNumber && <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>GSTIN: {brand.gstNumber}</div>}
+          {placeOfSupply && (
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#002c6c', marginTop: 3 }}>
+              Place of Supply: {placeOfSupply}
+            </div>
+          )}
         </div>
 
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ship to:</div>
-          <div style={{ fontSize: 10.5, color: '#475569', marginTop: 4 }}>
-            {brand?.billingAddress || 'Babuganj, Hasanganj, Lucknow, UTTARPRADESH, 226007'}
+        {clientAddr && (
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ship to:</div>
+            <div style={{ fontSize: 10.5, color: '#475569', marginTop: 4 }}>{clientAddr}</div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Items Table with Navy Solid Header Bar */}
@@ -802,7 +956,7 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
                 <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 12 }}>{it.description}</div>
               </td>
               <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'monospace', color: '#475569' }}>
-                {it.hsnSac || '8517'}
+                {it.hsnSac || '—'}
               </td>
               <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>
                 {Number(it.unitPrice || it.amount).toFixed(2)}
@@ -818,7 +972,7 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
         </tbody>
       </table>
 
-      {/* Summary with Round Off */}
+      {/* Summary */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div style={{ fontSize: 10.5, color: '#64748b' }}>
           Total Items / Qty : {invoice.items.length} / {totalQty}.000
@@ -827,38 +981,34 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
         <div style={{ width: 260, fontSize: 11, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
             <span>Taxable Amount</span>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.subtotal)}</span>
+            <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.subtotal, sym)}</span>
           </div>
           {invoice.hasGst && invoice.gstType === 'IGST' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
               <span>IGST {effectiveRate}%</span>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.igstAmount)}</span>
+              <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.igstAmount, sym)}</span>
             </div>
           )}
           {invoice.hasGst && invoice.gstType !== 'IGST' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                 <span>CGST {halfRate}%</span>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.cgstAmount)}</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.cgstAmount, sym)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                 <span>SGST {halfRate}%</span>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.sgstAmount)}</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.sgstAmount, sym)}</span>
               </div>
             </>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 10.5 }}>
-            <span>Round Off</span>
-            <span>0.00</span>
-          </div>
           <div style={{ height: 1, background: '#cbd5e1', margin: '4px 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 900, color: '#002c6c' }}>
             <span>Total</span>
-            <span>{inrPlain(invoice.totalAmount)}</span>
+            <span>{fmtMoneyPlain(invoice.totalAmount, sym)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>
             <span>Amount Payable:</span>
-            <span>{inr(isPaid ? 0 : invoice.totalAmount)}</span>
+            <span>{fmtMoney(payable, sym)}</span>
           </div>
         </div>
       </div>
@@ -867,34 +1017,23 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
         <span style={{ fontWeight: 700, color: '#0f172a' }}>Total amount (in words):</span> {amountInWords}
       </div>
 
-      {/* 3-Col Footer */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1fr', gap: 16, borderTop: '1px solid #cbd5e1', paddingTop: 14, marginBottom: 14 }}>
-        <div>
-          <DynamicUpiQrCode
-            upiId={settings.upiId}
-            companyName={settings.companyName}
-            amount={isPaid ? 0 : invoice.totalAmount}
-            invoiceNumber={invoice.invoiceNumber}
-          />
-        </div>
-        <BankDetailsBlock settings={settings} titleColor="#002c6c" />
-        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div style={{ fontSize: 10, color: '#64748b' }}>For {settings.companyName || 'Samsung'}</div>
-          <AuthorizedSignatoryStamp companyName={settings.companyName} />
-        </div>
-      </div>
+      {/* Dynamic Footer */}
+      <InvoicePaymentFooter invoice={invoice} settings={settings} payableAmount={payable} titleColor="#002c6c" />
 
       {/* Notes & Terms */}
       <div style={{ fontSize: 10, color: '#475569', lineHeight: 1.5, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
         <div style={{ fontWeight: 700, color: '#0f172a' }}>Notes:</div>
-        <div>Thank you for the Business</div>
+        <div>{invoice.notes || 'Thank you for your business.'}</div>
         <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 4 }}>Terms and Conditions:</div>
-        <ol style={{ margin: '2px 0 0 16px', padding: 0 }}>
-          <li>Goods once sold cannot be taken back or exchanged.</li>
-          <li>We are not the manufacturers; company will stand for warranty as per their terms and conditions.</li>
-          <li>Interest @24% p.a. will be charged for uncleared bills beyond 15 days.</li>
-          <li>Subject to local Jurisdiction.</li>
-        </ol>
+        {settings.invoiceDesign?.termsAndConditions ? (
+          <div>{settings.invoiceDesign.termsAndConditions}</div>
+        ) : (
+          <ol style={{ margin: '2px 0 0 16px', padding: 0 }}>
+            <li>Services once delivered/confirmed cannot be cancelled or refunded.</li>
+            <li>Interest @18% p.a. may be charged for overdue invoices beyond 15 days.</li>
+            <li>Subject to local jurisdiction.</li>
+          </ol>
+        )}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: 14, paddingTop: 6, fontSize: 9.5, color: '#94a3b8' }}>
@@ -907,14 +1046,16 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
 };
 
 /* ------------------------------------------------------------------ */
-/*  TEMPLATE 4: SWIPE EXECUTIVE CARD (Marico Style)                 */
+/*  TEMPLATE 4: SWIPE EXECUTIVE CARD                                 */
 /* ------------------------------------------------------------------ */
 export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, settings, brand }) => {
-  const isPaid = invoice.status === 'Paid';
+  const sym = getSymbol(invoice, settings);
+  const payable = getPayable(invoice);
   const amountInWords = numberToWordsINR(invoice.totalAmount);
   const totalQty = invoice.items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
-  const placeOfSupply = brand?.state ? brand.state.toUpperCase() : 'TELANGANA';
+  const placeOfSupply = brand?.state || settings.companyState || '';
   const { effectiveRate, gstRateDec, halfRate } = getGstBreakdown(invoice, settings);
+  const clientAddr = formatBrandAddress(brand);
 
   return (
     <div className="swipe-template-root swipe-executive" style={{ fontFamily: 'Inter, -apple-system, sans-serif', color: '#0f172a', background: '#ffffff', padding: 24, fontSize: 11.5 }}>
@@ -924,13 +1065,17 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
           <div style={{ marginBottom: 6 }}>
             <InvoiceLogo settings={settings} maxHeight={38} maxWidth={140} />
           </div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a' }}>{settings.companyName || 'Marico Limited'}</div>
-          <div style={{ fontSize: 10.5, color: '#475569', maxWidth: 360, marginTop: 2, lineHeight: 1.4 }}>
-            {settings.companyAddress || '7th Floor, Grande Palladium, 175, CST Road, Kalina, Santacruz East, Mumbai, 400098'}
-          </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', marginTop: 3 }}>
-            GSTIN : {settings.companyGst || '27AAACM3452J1ZK'}
-          </div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a' }}>{settings.companyName || 'Agency'}</div>
+          {settings.companyAddress && (
+            <div style={{ fontSize: 10.5, color: '#475569', maxWidth: 360, marginTop: 2, lineHeight: 1.4 }}>
+              {settings.companyAddress}
+            </div>
+          )}
+          {settings.companyGst && (
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', marginTop: 3 }}>
+              GSTIN : {settings.companyGst}
+            </div>
+          )}
         </div>
 
         <div style={{ textAlign: 'right' }}>
@@ -938,32 +1083,35 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
           <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', letterSpacing: '0.05em' }}>ORIGINAL FOR RECIPIENT</div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '3px 12px', marginTop: 10, fontSize: 10.5, textAlign: 'left' }}>
-            <span style={{ color: '#64748b', fontWeight: 600 }}>Phone:</span>
-            <span style={{ fontWeight: 600, color: '#0f172a' }}>{settings.companyPhone || '+91 22 6648 0480'}</span>
-            <span style={{ color: '#64748b', fontWeight: 600 }}>Email:</span>
-            <span style={{ color: '#0f172a' }}>{settings.companyEmail || 'consumer@marico.com'}</span>
-            <span style={{ color: '#64748b', fontWeight: 600 }}>Website:</span>
-            <span style={{ color: '#0f172a' }}>www.retentio.co</span>
+            {settings.companyPhone && (
+              <>
+                <span style={{ color: '#64748b', fontWeight: 600 }}>Phone:</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>{settings.companyPhone}</span>
+              </>
+            )}
+            {settings.companyEmail && (
+              <>
+                <span style={{ color: '#64748b', fontWeight: 600 }}>Email:</span>
+                <span style={{ color: '#0f172a' }}>{settings.companyEmail}</span>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Tinted Metadata Card (Bill To | Ship To | Details) */}
+      {/* Tinted Metadata Card */}
       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '12px 14px', display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1fr', gap: 14, marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Bill to</div>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName || brand?.name || 'Client'}</div>
-          <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2, lineHeight: 1.4 }}>
-            {brand?.billingAddress || 'Flat No. 302, Sai Residency, Madhapur Main Road, Hyderabad, 500081'}
-          </div>
+          {clientAddr && <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2, lineHeight: 1.4 }}>{clientAddr}</div>}
+          {brand?.gstNumber && <div style={{ fontSize: 10.5, fontWeight: 600, color: '#0f172a', marginTop: 2 }}>GSTIN: {brand.gstNumber}</div>}
         </div>
 
         <div>
           <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ship to</div>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName || brand?.name || 'Client'}</div>
-          <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2, lineHeight: 1.4 }}>
-            {brand?.billingAddress || 'Flat No. 302, Sai Residency, Madhapur Main Road, Hyderabad, 500081'}
-          </div>
+          {clientAddr && <div style={{ fontSize: 10.5, color: '#475569', marginTop: 2, lineHeight: 1.4 }}>{clientAddr}</div>}
         </div>
 
         <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: 14 }}>
@@ -975,8 +1123,12 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
             <span style={{ fontWeight: 700 }}>{invoice.issueDate}</span>
             <span style={{ color: '#64748b' }}>Due Date</span>
             <span style={{ fontWeight: 700 }}>{invoice.dueDate}</span>
-            <span style={{ color: '#64748b' }}>Place of Supply</span>
-            <span style={{ fontWeight: 700 }}>{placeOfSupply}</span>
+            {placeOfSupply && (
+              <>
+                <span style={{ color: '#64748b' }}>Place of Supply</span>
+                <span style={{ fontWeight: 700 }}>{placeOfSupply}</span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -986,62 +1138,62 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
         <thead>
           <tr style={{ borderTop: '1.5px solid #cbd5e1', borderBottom: '1.5px solid #cbd5e1', fontSize: 10.5, fontWeight: 800, color: '#0f172a' }}>
             <th style={{ padding: '7px 8px', textAlign: 'left' }}>Item</th>
-            <th style={{ padding: '7px 8px', textAlign: 'left' }}>Description</th>
             <th style={{ padding: '7px 8px', textAlign: 'center', width: 45 }}>Qty</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 90 }}>Rate</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 85 }}>Tax</th>
-            <th style={{ padding: '7px 8px', textAlign: 'right', width: 95 }}>Amount</th>
+            <th style={{ padding: '7px 8px', textAlign: 'right', width: 95 }}>Line Total</th>
           </tr>
         </thead>
         <tbody>
-          {invoice.items.map((it, idx) => (
-            <tr key={it.id || idx} style={{ borderBottom: '1px solid #e2e8f0', verticalAlign: 'top' }}>
-              <td style={{ padding: '9px 8px' }}>
-                <div style={{ fontWeight: 800, color: '#0f172a' }}>{it.description}</div>
-                <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1 }}>HSN: {it.hsnSac || '898712'}</div>
-              </td>
-              <td style={{ padding: '9px 8px', color: '#475569' }}>
-                {it.description || 'Premium Service Retainer'}
-              </td>
-              <td style={{ padding: '9px 8px', textAlign: 'center' }}>
-                {it.quantity || 1}
-              </td>
-              <td style={{ padding: '9px 8px', textAlign: 'right' }}>
-                {Number(it.unitPrice || it.amount).toFixed(2)}
-              </td>
-              <td style={{ padding: '9px 8px', textAlign: 'right', color: '#475569' }}>
-                {invoice.hasGst ? `${((it.amount * (gstRateDec || 0.18)) / (1 + (gstRateDec || 0.18))).toFixed(2)} (${effectiveRate}%)` : '0.00'}
-              </td>
-              <td style={{ padding: '9px 8px', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
-                {Number(it.amount).toFixed(2)}
-              </td>
-            </tr>
-          ))}
+          {invoice.items.map((it, idx) => {
+            const taxable = Number(it.amount || 0);
+            const tax = invoice.hasGst && gstRateDec > 0 ? Math.round(taxable * gstRateDec) : 0;
+            return (
+              <tr key={it.id || idx} style={{ borderBottom: '1px solid #e2e8f0', verticalAlign: 'top' }}>
+                <td style={{ padding: '9px 8px' }}>
+                  <div style={{ fontWeight: 800, color: '#0f172a' }}>{it.description}</div>
+                  {it.hsnSac && <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1 }}>HSN/SAC: {it.hsnSac}</div>}
+                </td>
+                <td style={{ padding: '9px 8px', textAlign: 'center' }}>{it.quantity || 1}</td>
+                <td style={{ padding: '9px 8px', textAlign: 'right' }}>{Number(it.unitPrice || it.amount).toFixed(2)}</td>
+                <td style={{ padding: '9px 8px', textAlign: 'right', color: '#475569' }}>
+                  {invoice.hasGst ? `${tax.toFixed(2)} (${effectiveRate}%)` : '0.00'}
+                </td>
+                <td style={{ padding: '9px 8px', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
+                  {(taxable + tax).toFixed(2)}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
-      {/* Summary with CGST / SGST */}
+      {/* Summary */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div style={{ fontSize: 10.5, color: '#64748b' }}>
           Total Items / Qty : {invoice.items.length} / {totalQty}.000
         </div>
 
         <div style={{ width: 260, fontSize: 11, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+            <span>Subtotal</span>
+            <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.subtotal, sym)}</span>
+          </div>
           {invoice.hasGst && invoice.gstType !== 'IGST' ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                 <span>CGST ({halfRate}%)</span>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.cgstAmount)}</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.cgstAmount, sym)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                 <span>SGST ({halfRate}%)</span>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.sgstAmount)}</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.sgstAmount, sym)}</span>
               </div>
             </>
           ) : invoice.hasGst ? (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
               <span>IGST ({effectiveRate}%)</span>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>{inr(invoice.igstAmount)}</span>
+              <span style={{ fontWeight: 700, color: '#0f172a' }}>{fmtMoney(invoice.igstAmount, sym)}</span>
             </div>
           ) : null}
 
@@ -1049,7 +1201,11 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 900, color: '#0f172a' }}>
             <span>Total</span>
-            <span>{inrPlain(invoice.totalAmount)}</span>
+            <span>{fmtMoneyPlain(invoice.totalAmount, sym)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: '#0f172a' }}>
+            <span>Amount Payable</span>
+            <span>{fmtMoney(payable, sym)}</span>
           </div>
         </div>
       </div>
@@ -1058,35 +1214,23 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
         <span style={{ fontWeight: 700, color: '#0f172a' }}>Total amount (in words):</span> {amountInWords}
       </div>
 
-      {/* 3-Col Footer with Receiver Signature */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1fr', gap: 16, borderTop: '1px solid #cbd5e1', paddingTop: 14, marginBottom: 14 }}>
-        <div>
-          <DynamicUpiQrCode
-            upiId={settings.upiId}
-            companyName={settings.companyName}
-            amount={isPaid ? 0 : invoice.totalAmount}
-            invoiceNumber={invoice.invoiceNumber}
-          />
-        </div>
-
-        <BankDetailsBlock settings={settings} />
-
-        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div style={{ fontSize: 10, color: '#64748b' }}>For {settings.companyName || 'Marico Limited'}</div>
-          <AuthorizedSignatoryStamp companyName={settings.companyName} />
-        </div>
-      </div>
+      {/* Dynamic Footer */}
+      <InvoicePaymentFooter invoice={invoice} settings={settings} payableAmount={payable} />
 
       {/* Notes & Terms & Receiver Signature */}
       <div style={{ fontSize: 10, color: '#475569', lineHeight: 1.5, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
         <div style={{ fontWeight: 700, color: '#0f172a' }}>Notes</div>
-        <div>Thank you for the Business!</div>
+        <div>{invoice.notes || 'Thank you for your business.'}</div>
         <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 4 }}>Terms &amp; Condition</div>
-        <ol style={{ margin: '2px 0 0 16px', padding: 0 }}>
-          <li>Goods once sold cannot be taken back or exchanged.</li>
-          <li>Interest @24% p.a. will be charged for uncleared bills beyond 15 days.</li>
-          <li>Subject to local Jurisdiction.</li>
-        </ol>
+        {settings.invoiceDesign?.termsAndConditions ? (
+          <div>{settings.invoiceDesign.termsAndConditions}</div>
+        ) : (
+          <ol style={{ margin: '2px 0 0 16px', padding: 0 }}>
+            <li>Services once delivered/confirmed cannot be cancelled or refunded.</li>
+            <li>Interest @18% p.a. may be charged for overdue invoices beyond 15 days.</li>
+            <li>Subject to local jurisdiction.</li>
+          </ol>
+        )}
 
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, color: '#0f172a', fontWeight: 600 }}>
           <span>Receiver's Signature:</span>

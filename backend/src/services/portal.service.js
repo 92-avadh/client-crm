@@ -24,15 +24,15 @@ async function getPortalDataByToken(token) {
   const brandAgencyId = brand.agency_id || brand.owner_id;
   const settingsRes = await pool.query(
     `SELECT company_name, company_email, company_phone, company_address,
-            bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id
-     FROM settings WHERE id = $1 OR user_id = $1 LIMIT 1`,
+            bank_name, bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id, bank_accounts
+     FROM settings WHERE agency_id = $1 OR id = $1 OR id = 'set_' || $1 LIMIT 1`,
     [brandAgencyId || 'main']
   );
   let agency = settingsRes.rows[0];
   if (!agency) {
     const mainSettings = await pool.query(
       `SELECT company_name, company_email, company_phone, company_address,
-              bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id
+              bank_name, bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id, bank_accounts
        FROM settings WHERE id = 'main'`
     );
     agency = mainSettings.rows[0] || { company_name: 'Agency CRM' };
@@ -69,12 +69,15 @@ async function getPortalDataByToken(token) {
       companyPhone: agency.company_phone || '',
       companyAddress: agency.company_address || '',
       bankDetails: {
+        bankName: agency.bank_name || '',
         accountName: agency.bank_account_name || '',
         accountNumber: agency.bank_account_number || '',
         ifsc: agency.bank_ifsc || '',
         branch: agency.bank_branch || '',
         upiId: agency.upi_id || '',
+        qrCodeUrl: (Array.isArray(agency.bank_accounts) && agency.bank_accounts[0]?.qrCodeUrl) || '',
       },
+      bankAccounts: Array.isArray(agency.bank_accounts) ? agency.bank_accounts.slice(0, 2) : [],
     },
     client: {
       id: brand.id,
@@ -82,6 +85,10 @@ async function getPortalDataByToken(token) {
       ownerName: brand.owner_name,
       email: brand.email,
       mobile: brand.mobile,
+      billingAddress: brand.billing_address || '',
+      city: brand.city || '',
+      state: brand.state || '',
+      gstNumber: brand.gst_number || '',
       serviceDetails: brand.service_details,
       monthlyFee: parseFloat(brand.monthly_fee || 0),
       currency: brand.currency || 'INR',
@@ -133,7 +140,7 @@ async function submitPortalFeedback(token, score, comment = '') {
   }
 
   const brandRes = await pool.query(
-    'SELECT id, name, owner_name, email FROM brands WHERE magic_token = $1',
+    'SELECT id, name, owner_name, email, agency_id, owner_id FROM brands WHERE magic_token = $1',
     [token]
   );
   if (!brandRes.rows.length) {
@@ -179,13 +186,14 @@ async function submitPortalFeedback(token, score, comment = '') {
     title: `${sentiment}: ${brand.name} NPS ${score}/10`,
     description: comment ? `"${comment}"` : 'Client rated agency deliverables via Magic Portal.',
     brandName: brand.name,
+    agencyId: brand.agency_id || brand.owner_id || null,
   });
 
   return { success: true, message: 'Thank you for your feedback! Your rating has been recorded.' };
 }
 
 async function getPortalInvoiceDetails(token, invoiceId) {
-  const brandRes = await pool.query('SELECT id, name, currency, currency_symbol FROM brands WHERE magic_token = $1', [token]);
+  const brandRes = await pool.query('SELECT id, name, currency, currency_symbol, agency_id, owner_id FROM brands WHERE magic_token = $1', [token]);
   if (!brandRes.rows.length) return null;
   const brand = brandRes.rows[0];
 
@@ -201,7 +209,14 @@ async function getPortalInvoiceDetails(token, invoiceId) {
     [invoiceId]
   );
 
-  const settingsRes = await pool.query("SELECT * FROM settings WHERE id = 'main'");
+  const brandAgencyId = brand.agency_id || brand.owner_id || 'main';
+  let settingsRes = await pool.query(
+    `SELECT * FROM settings WHERE agency_id = $1 OR id = $1 OR id = 'set_' || $1 LIMIT 1`,
+    [brandAgencyId]
+  );
+  if (!settingsRes.rows.length) {
+    settingsRes = await pool.query("SELECT * FROM settings WHERE id = 'main'");
+  }
   const settings = settingsRes.rows[0] || {};
 
   return {
@@ -224,7 +239,24 @@ async function getPortalInvoiceDetails(token, invoiceId) {
         amount: parseFloat(i.amount || 0),
       })),
     },
-    agency: settings,
+    agency: {
+      companyName: settings.companyName || settings.company_name || '',
+      companyLogo: settings.companyLogo || settings.company_logo || '',
+      companyAddress: settings.companyAddress || settings.company_address || '',
+      companyState: settings.companyState || settings.company_state || '',
+      companyGst: settings.companyGst || settings.company_gst || '',
+      companyPhone: settings.companyPhone || settings.company_phone || '',
+      companyEmail: settings.companyEmail || settings.company_email || '',
+      bankAccounts: settings.bankAccounts || [],
+      bankName: settings.bankName || settings.bank_name || '',
+      bankAccountName: settings.bankAccountName || settings.bank_account_name || '',
+      bankAccountNumber: settings.bankAccountNumber || settings.bank_account_number || '',
+      bankIfsc: settings.bankIfsc || settings.bank_ifsc || '',
+      bankBranch: settings.bankBranch || settings.bank_branch || '',
+      upiId: settings.upiId || settings.upi_id || '',
+      bankUpiQr: settings.bankUpiQr || settings.bank_upi_qr || '',
+      invoiceDesign: settings.invoiceDesign || settings.invoice_design || null,
+    },
   };
 }
 

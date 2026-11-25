@@ -125,18 +125,61 @@ async function sendViaBrevo({ toEmail, subject, html }) {
 }
 
 /**
+ * Generic email dispatcher using Resend -> Brevo -> SMTP fallback chain.
+ */
+async function sendEmail({ toEmail, subject, html, agencyName = '' }) {
+  const brandName = process.env.BRAND_NAME || process.env.APP_NAME || 'Retentio';
+  const from = process.env.SMTP_FROM || `"${brandName}" <${process.env.SMTP_USER || 'noreply@client-crm.com'}>`;
+
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const res = await sendViaResend({ toEmail, subject, html, agencyName });
+      console.log(`📧 Email delivered via Resend HTTP to ${toEmail} (id: ${res.messageId})`);
+      return res;
+    } catch (err) {
+      console.error(`⚠️ Resend HTTP delivery error: ${err.message}`);
+    }
+  }
+
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const res = await sendViaBrevo({ toEmail, subject, html, agencyName });
+      console.log(`📧 Email delivered via Brevo HTTP to ${toEmail} (id: ${res.messageId})`);
+      return res;
+    } catch (err) {
+      console.error(`⚠️ Brevo HTTP delivery error: ${err.message}`);
+    }
+  }
+
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.log(`ℹ️  No external email service configured. Email to ${toEmail} logged only.`);
+    return { messageId: 'dev-console' };
+  }
+
+  try {
+    const info = await transporter.sendMail({ from, to: toEmail, subject, html });
+    console.log(`📧 Email delivered via SMTP to ${toEmail} (messageId: ${info.messageId})`);
+    return info;
+  } catch (err) {
+    const isTimeout = err.code === 'ETIMEDOUT' || err.message?.includes('timeout');
+    if (isTimeout) {
+      console.error(`⚠️ SMTP dispatch error to ${toEmail}: Connection timeout.`);
+    } else {
+      console.error(`⚠️ SMTP dispatch error to ${toEmail}: ${err.message}`);
+    }
+    return { messageId: 'fallback-logged', error: err.message };
+  }
+}
+
+/**
  * Send OTP email.
- * 1. Prints OTP to server logs immediately (instant backup for testing).
- * 2. If RESEND_API_KEY is present, delivers via Resend HTTPS (bypasses Render SMTP block).
- * 3. If BREVO_API_KEY is present, delivers via Brevo HTTPS.
- * 4. Otherwise falls back to SMTP (Nodemailer), which works locally or on paid Render tiers.
  */
 async function sendOtpEmail(toEmail, otp, agencyName = '') {
   const brandName = process.env.BRAND_NAME || process.env.APP_NAME || 'Retentio';
   const safeBrand = escapeHtml(brandName);
   const safeAgency = escapeHtml(agencyName);
   const safeOtp = escapeHtml(otp);
-  const from = process.env.SMTP_FROM || `"${brandName}" <${process.env.SMTP_USER || 'noreply@client-crm.com'}>`;
   const subject = `Your ${brandName} verification code: ${otp}`;
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; background: #ffffff;">
@@ -166,52 +209,83 @@ async function sendOtpEmail(toEmail, otp, agencyName = '') {
     </div>
   `;
 
-  // Log dispatch attempt with OTP code visible in server logs for testing & fallback
   console.log(`📤 Dispatching verification code [OTP: ${safeOtp}] to ${toEmail}...`);
-
-  // Priority 1: Resend HTTP API (HTTPS port 443, never blocked by Render)
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const res = await sendViaResend({ toEmail, subject, html, agencyName });
-      console.log(`📧 OTP email delivered via Resend HTTP to ${toEmail} (id: ${res.messageId})`);
-      return res;
-    } catch (err) {
-      console.error(`⚠️ Resend HTTP delivery error: ${err.message}`);
-    }
-  }
-
-  // Priority 2: Brevo HTTP API (HTTPS port 443)
-  if (process.env.BREVO_API_KEY) {
-    try {
-      const res = await sendViaBrevo({ toEmail, subject, html, agencyName });
-      console.log(`📧 OTP email delivered via Brevo HTTP to ${toEmail} (id: ${res.messageId})`);
-      return res;
-    } catch (err) {
-      console.error(`⚠️ Brevo HTTP delivery error: ${err.message}`);
-    }
-  }
-
-  // Priority 3: Nodemailer SMTP
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.log(`ℹ️  No external email service configured. OTP logged to console above.`);
-    return { messageId: 'dev-console' };
-  }
-
-  try {
-    const info = await transporter.sendMail({ from, to: toEmail, subject, html });
-    console.log(`📧 OTP email successfully delivered via SMTP to ${toEmail} (messageId: ${info.messageId})`);
-    return info;
-  } catch (err) {
-    const isTimeout = err.code === 'ETIMEDOUT' || err.message?.includes('timeout');
-    if (isTimeout) {
-      console.error(`⚠️ SMTP dispatch error to ${toEmail}: Connection timeout.`);
-      console.error(`ℹ️ Notice: Render Free Tier blocks outbound SMTP ports 25, 465, & 587. To send emails on Render, add RESEND_API_KEY in Render Environment Variables or use the console OTP printed above.`);
-    } else {
-      console.error(`⚠️ SMTP dispatch error to ${toEmail}: ${err.message}`);
-    }
-    return { messageId: 'fallback-logged', error: err.message };
-  }
+  return sendEmail({ toEmail, subject, html, agencyName });
 }
 
-module.exports = { sendOtpEmail };
+/**
+ * Send Invoice Notification or Overdue Payment Reminder email to client.
+ */
+async function sendInvoiceEmail({ toEmail, brandName, invoice, agencyName = 'Retentio', portalUrl = '', isReminder = false }) {
+  const safeAgency = escapeHtml(agencyName || 'Retentio');
+  const safeClient = escapeHtml(brandName || invoice.brandName || 'Client');
+  const safeInvNo = escapeHtml(invoice.invoiceNumber || '');
+  const safeSym = escapeHtml(invoice.currencySymbol || '₹');
+  const totalAmt = Number(invoice.totalAmount || 0);
+  const paidAmt = Number(invoice.paidAmount || 0);
+  const balanceDue = Math.max(0, totalAmt - paidAmt);
+  const formattedDue = `${safeSym}${balanceDue.toLocaleString('en-IN')}`;
+  const safeDueDate = escapeHtml(invoice.dueDate || 'On receipt');
+  const bank = invoice.bankAccountSnapshot || {};
+
+  const subject = isReminder
+    ? `Payment Reminder: Invoice ${invoice.invoiceNumber} (${invoice.currencySymbol || '₹'}${balanceDue.toLocaleString('en-IN')}) from ${agencyName}`
+    : `New Invoice ${invoice.invoiceNumber} (${invoice.currencySymbol || '₹'}${balanceDue.toLocaleString('en-IN')}) from ${agencyName}`;
+
+  const bankHtml = (bank.bankAccountNumber || bank.upiId) ? `
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; color: #334155;">
+      <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">Settlement Bank / UPI Details</div>
+      ${bank.bankName ? `<div><strong>Bank:</strong> ${escapeHtml(bank.bankName)}</div>` : ''}
+      ${bank.bankAccountName ? `<div><strong>Account Name:</strong> ${escapeHtml(bank.bankAccountName)}</div>` : ''}
+      ${bank.bankAccountNumber ? `<div><strong>Account #:</strong> <span style="font-family: monospace;">${escapeHtml(bank.bankAccountNumber)}</span></div>` : ''}
+      ${bank.bankIfsc ? `<div><strong>IFSC:</strong> <span style="font-family: monospace;">${escapeHtml(bank.bankIfsc)}</span></div>` : ''}
+      ${bank.upiId ? `<div><strong>UPI ID:</strong> <span style="font-family: monospace;">${escapeHtml(bank.upiId)}</span></div>` : ''}
+    </div>
+  ` : '';
+
+  const ctaHtml = portalUrl ? `
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="${escapeHtml(portalUrl)}" style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 26px; border-radius: 10px;">
+        View &amp; Pay Invoice Online
+      </a>
+    </div>
+  ` : '';
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 24px; background: #ffffff; color: #0f172a;">
+      <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h1 style="font-size: 20px; font-weight: 800; margin: 0; color: #0f172a;">${safeAgency}</h1>
+        <span style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: ${isReminder ? '#fef2f2' : '#eff6ff'}; color: ${isReminder ? '#dc2626' : '#2563eb'};">
+          ${isReminder ? 'PAYMENT REMINDER' : 'NEW INVOICE'}
+        </span>
+      </div>
+
+      <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 18px;">
+        Hi <strong>${safeClient}</strong>,<br/>
+        ${isReminder
+          ? `This is a friendly reminder regarding your pending invoice <strong>${safeInvNo}</strong>, which was due on <strong>${safeDueDate}</strong>.`
+          : `Please find the details for your new invoice <strong>${safeInvNo}</strong> issued by <strong>${safeAgency}</strong>.`
+        }
+      </p>
+
+      <div style="background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; font-weight: 700;">Amount Payable</div>
+        <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin: 4px 0;">${formattedDue}</div>
+        <div style="font-size: 12px; color: #475569;">Invoice <strong>${safeInvNo}</strong> · Due: <strong>${safeDueDate}</strong></div>
+      </div>
+
+      ${bankHtml}
+      ${ctaHtml}
+
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">
+        Sent via ${safeAgency} Billing Portal
+      </p>
+    </div>
+  `;
+
+  console.log(`📤 Dispatching ${isReminder ? 'payment reminder' : 'invoice'} email for ${safeInvNo} to ${toEmail}...`);
+  return sendEmail({ toEmail, subject, html, agencyName });
+}
+
+module.exports = { sendOtpEmail, sendInvoiceEmail, sendEmail };

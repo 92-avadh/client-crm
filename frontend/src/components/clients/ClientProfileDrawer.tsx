@@ -74,7 +74,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
   brand, role, allUsers, invoices, tasks, activeTab, onTabChange, onClose, onChat, onEdit, onDelete,
 }) => {
   const canManage = role === 'admin' || role === 'hr';
-  const { currencySymbol: globalCurrencySymbol = '₹', expenses = [], showToast, updateBrand } = useApp();
+  const { currencySymbol: globalCurrencySymbol = '₹', expenses = [], showToast, updateBrand, loadDomain } = useApp();
 
   // Log Hours State
   const [showLogHoursModal, setShowLogHoursModal] = useState(false);
@@ -139,7 +139,7 @@ export const ClientProfileDrawer: React.FC<Props> = ({
     setLoggingHours(true);
     try {
       await api.brands.logHours(brand.id, h);
-      await updateBrand(brand.id, { usedHours: usedHours + h });
+      await loadDomain?.('brands', true);
       showToast(`Added ${h} hours for this client!`, 'success');
       setShowLogHoursModal(false);
       setHoursToAdd('');
@@ -190,8 +190,9 @@ export const ClientProfileDrawer: React.FC<Props> = ({
         status: 'Signed',
         fileUrl: docFileBase64 || null,
       });
-      const updatedDocs = [...(brand.documents || []), doc];
-      await updateBrand(brand.id, { documents: updatedDocs });
+      if (doc) {
+        await loadDomain?.('brands', true);
+      }
       showToast(`Document "${newDocName.trim()}" added to client vault!`, 'success');
       setShowAddDocModal(false);
       setNewDocName('');
@@ -216,9 +217,8 @@ export const ClientProfileDrawer: React.FC<Props> = ({
       }
       return d;
     });
-    await updateBrand(brand.id, { deliverables: updated });
     try {
-      await api.brands.update(brand.id, { deliverables: updated });
+      await updateBrand(brand.id, { deliverables: updated });
       showToast('Deliverable progress updated!', 'success');
     } catch {
       showToast('Failed to save deliverable progress.', 'error');
@@ -237,9 +237,8 @@ export const ClientProfileDrawer: React.FC<Props> = ({
       unit: newDelUnit.trim() || 'items',
     };
     const updated = [...deliverables, item];
-    await updateBrand(brand.id, { deliverables: updated });
     try {
-      await api.brands.update(brand.id, { deliverables: updated });
+      await updateBrand(brand.id, { deliverables: updated });
       showToast(`Added "${item.title}" to monthly plan!`, 'success');
       setNewDelTitle('');
       setShowAddDeliverable(false);
@@ -250,9 +249,8 @@ export const ClientProfileDrawer: React.FC<Props> = ({
 
   const handleDeleteDeliverable = async (id: string) => {
     const updated = deliverables.filter((d) => d.id !== id);
-    await updateBrand(brand.id, { deliverables: updated });
     try {
-      await api.brands.update(brand.id, { deliverables: updated });
+      await updateBrand(brand.id, { deliverables: updated });
       showToast('Deliverable removed from monthly plan.', 'success');
     } catch {
       showToast('Failed to delete deliverable.', 'error');

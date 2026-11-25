@@ -19,7 +19,7 @@ async function listRecurring(user) {
     params.push(user.brandId || '');
   } else {
     const agencyId = getAgencyId(user);
-    query += ` WHERE (ri.agency_id = $1 OR b.agency_id = $1 OR (b.agency_id IS NULL AND (b.owner_id = $1 OR $1 = 'usr_admin')))`;
+    query += ` WHERE (ri.agency_id = $1 OR b.agency_id = $1 OR (b.agency_id IS NULL AND b.owner_id = $1))`;
     params.push(agencyId);
   }
   query += ' ORDER BY ri.created_at DESC';
@@ -42,7 +42,7 @@ async function getRecurring(user, id) {
       params.push(user.brandId || '');
     } else {
       const agencyId = getAgencyId(user);
-      query += ` AND (ri.agency_id = $2 OR b.agency_id = $2 OR (b.agency_id IS NULL AND (b.owner_id = $2 OR $2 = 'usr_admin')))`;
+      query += ` AND (ri.agency_id = $2 OR b.agency_id = $2 OR (b.agency_id IS NULL AND b.owner_id = $2))`;
       params.push(agencyId);
     }
   }
@@ -103,7 +103,7 @@ async function deleteRecurring(user, id) {
  * Generate the next invoice for due recurring schedules and client retainer cycle days.
  * Called by scheduled cron runner and on-demand trigger.
  */
-async function generateDueRecurring() {
+async function generateDueRecurring(targetAgencyId = null) {
   const today = new Date().toISOString().split('T')[0];
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
@@ -114,16 +114,22 @@ async function generateDueRecurring() {
   const generated = [];
 
   // Part A: Due recurring_invoices table schedules
-  const { rows: dueSchedules } = await pool.query(
-    `SELECT ri.*, b.name as brand_name, b.monthly_fee, b.currency, b.currency_symbol
+  const schedParams = [today];
+  let schedSql = `SELECT ri.*, b.name as brand_name, b.monthly_fee, b.currency, b.currency_symbol, b.agency_id as brand_agency_id, b.owner_id as brand_owner_id
      FROM recurring_invoices ri
      LEFT JOIN brands b ON b.id = ri.brand_id
-     WHERE ri.status = 'Active' AND ri.next_due_date <= $1 AND (b.status = 'Active' OR b.status IS NULL)`,
-    [today]
-  );
+     WHERE ri.status = 'Active' AND ri.next_due_date <= $1 AND (b.status = 'Active' OR b.status IS NULL)`;
+  if (targetAgencyId) {
+    schedSql += ` AND (ri.agency_id = $2 OR b.agency_id = $2 OR b.owner_id = $2)`;
+    schedParams.push(targetAgencyId);
+  }
+  const { rows: dueSchedules } = await pool.query(schedSql, schedParams);
 
   for (const sched of dueSchedules) {
     try {
+      const resolvedAgencyId = sched.agency_id || sched.brand_agency_id || sched.brand_owner_id;
+      if (!resolvedAgencyId) continue;
+
       const fee = parseFloat(sched.monthly_fee || 0);
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 15);
@@ -135,7 +141,7 @@ async function generateDueRecurring() {
         issueDate: today,
         dueDate: dueDateStr,
         items: [{
-          description: `Monthly Retainer Service - ${monthName} ${currentYear}`,
+          description: `${sched.frequency || 'Monthly'} Retainer Service - ${monthName} ${currentYear}`,
           quantity: 1,
           unitPrice: fee,
           amount: fee,
@@ -149,14 +155,15 @@ async function generateDueRecurring() {
         totalAmount: fee,
         currency: sched.currency || 'INR',
         currencySymbol: sched.currency_symbol || '₹',
-        notes: `Automated recurring retainer invoice for ${monthName} ${currentYear}.`,
+        notes: `Automated recurring retainer invoice (${sched.frequency || 'Monthly'}) for ${monthName} ${currentYear}.`,
         isRecurring: false,
       };
-      const created = await invoicesService.createInvoice({ id: 'system', name: 'System Cron', role: 'admin' }, invoiceData);
+      const created = await invoicesService.createInvoice({ id: resolvedAgencyId, agencyId: resolvedAgencyId, name: 'Retentio Billing Engine', role: 'admin' }, invoiceData);
 
-      // Advance next_due_date by one month
+      // Advance next_due_date based on schedule frequency
       const nextDue = new Date(sched.next_due_date || today);
-      nextDue.setMonth(nextDue.getMonth() + 1);
+      const monthsToAdd = sched.frequency === 'Yearly' ? 12 : sched.frequency === 'Quarterly' ? 3 : 1;
+      nextDue.setMonth(nextDue.getMonth() + monthsToAdd);
       await pool.query(
         'UPDATE recurring_invoices SET next_due_date = $1 WHERE id = $2',
         [nextDue.toISOString().split('T')[0], sched.id]
@@ -164,14 +171,15 @@ async function generateDueRecurring() {
 
       // Notify admins
       await pool.query(
-        `INSERT INTO notifications (id, type, title, message, timestamp, is_read, link_module, brand_id, recipient_roles)
-         VALUES ($1, 'invoice', $2, $3, $4, false, 'invoices', $5, ARRAY['admin','hr'])`,
+        `INSERT INTO notifications (id, type, title, message, timestamp, is_read, link_module, brand_id, recipient_roles, agency_id)
+         VALUES ($1, 'invoice', $2, $3, $4, false, 'invoices', $5, ARRAY['admin','hr'], $6)`,
         [
           notifId(),
           '🔁 Retainer Invoice Auto-Generated',
-          `Automated monthly invoice #${created.invoiceNumber} (${sched.currency_symbol || '₹'}${fee.toLocaleString()}) generated for ${sched.brand_name}.`,
+          `Automated ${sched.frequency || 'Monthly'} invoice #${created.invoiceNumber} (${sched.currency_symbol || '₹'}${fee.toLocaleString()}) generated for ${sched.brand_name}.`,
           new Date().toISOString(),
-          sched.brand_id
+          sched.brand_id,
+          resolvedAgencyId
         ]
       );
 
@@ -181,6 +189,7 @@ async function generateDueRecurring() {
         brandName: sched.brand_name,
         amount: fee,
         currency: sched.currency_symbol || '₹',
+        agencyId: resolvedAgencyId,
       });
 
       generated.push({ id: sched.id, invoiceNumber: created.invoiceNumber, brandName: sched.brand_name });
@@ -189,15 +198,21 @@ async function generateDueRecurring() {
     }
   }
 
-  // Part B: Direct Brand Retainers matching billingCycleDay
-  const { rows: cycleBrands } = await pool.query(
-    `SELECT b.* FROM brands b
-     WHERE b.status = 'Active' AND b.monthly_fee > 0 AND (b.billing_cycle_day = $1 OR b.billing_cycle_day IS NULL OR b.billing_cycle_day = 1)`,
-    [currentDay]
-  );
+  // Part B: Direct Brand Retainers matching exact billingCycleDay
+  const brandParams = [currentDay];
+  let brandSql = `SELECT b.* FROM brands b
+     WHERE b.status = 'Active' AND b.monthly_fee > 0 AND COALESCE(b.billing_cycle_day, 1) = $1`;
+  if (targetAgencyId) {
+    brandSql += ` AND (b.agency_id = $2 OR b.owner_id = $2)`;
+    brandParams.push(targetAgencyId);
+  }
+  const { rows: cycleBrands } = await pool.query(brandSql, brandParams);
 
   for (const b of cycleBrands) {
     try {
+      const resolvedBrandAgency = b.agency_id || b.owner_id;
+      if (!resolvedBrandAgency) continue;
+
       // Check if invoice already raised for this brand in the current calendar month
       const existing = await pool.query(
         `SELECT id FROM invoices
@@ -238,17 +253,18 @@ async function generateDueRecurring() {
         isRecurring: false,
       };
 
-      const created = await invoicesService.createInvoice({ id: 'system', name: 'System Cron', role: 'admin' }, invoiceData);
+      const created = await invoicesService.createInvoice({ id: resolvedBrandAgency, agencyId: resolvedBrandAgency, name: 'Retentio Billing Engine', role: 'admin' }, invoiceData);
 
       await pool.query(
-        `INSERT INTO notifications (id, type, title, message, timestamp, is_read, link_module, brand_id, recipient_roles)
-         VALUES ($1, 'invoice', $2, $3, $4, false, 'invoices', $5, ARRAY['admin','hr'])`,
+        `INSERT INTO notifications (id, type, title, message, timestamp, is_read, link_module, brand_id, recipient_roles, agency_id)
+         VALUES ($1, 'invoice', $2, $3, $4, false, 'invoices', $5, ARRAY['admin','hr'], $6)`,
         [
           notifId(),
           '📄 Monthly Retainer Invoice Drafted',
           `Auto-drafted invoice #${created.invoiceNumber} (${b.currency_symbol || '₹'}${fee.toLocaleString()}) for ${b.name} on monthly cycle day ${b.billing_cycle_day || 1}.`,
           new Date().toISOString(),
-          b.id
+          b.id,
+          resolvedBrandAgency
         ]
       );
 
@@ -258,6 +274,7 @@ async function generateDueRecurring() {
         brandName: b.name,
         amount: fee,
         currency: b.currency_symbol || '₹',
+        agencyId: b.agency_id || b.owner_id || null,
       });
 
       generated.push({ brandId: b.id, invoiceNumber: created.invoiceNumber, brandName: b.name });

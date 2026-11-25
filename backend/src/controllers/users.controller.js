@@ -71,6 +71,9 @@ const update = asyncHandler(async (req, res) => {
     .validate();
 
   const result = await users.updateUser(req.user, req.params.id, body);
+  if (result.error === 'forbidden') {
+    return res.status(403).json({ error: 'Access denied. Team member belongs to another workspace.' });
+  }
   if (result.error === 'not_found') {
     return res.status(404).json({ error: 'We could not find that team member.' });
   }

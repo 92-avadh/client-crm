@@ -9,8 +9,19 @@ const pool = require('../db');
  * - 25% Strategic Cadence: Has a review or meeting taken place in the last 30 days?
  * - 25% Client Feedback: NPS Score (1 to 10 scale)
  */
-async function calculateBrandHealth(brandId) {
-  const brandRes = await pool.query('SELECT * FROM brands WHERE id = $1', [brandId]);
+async function calculateBrandHealth(brandId, user = null) {
+  let brandQuery = 'SELECT * FROM brands WHERE id = $1';
+  const brandParams = [brandId];
+  if (user) {
+    if (user.role === 'brand') {
+      if (user.brandId !== brandId) return null;
+    } else {
+      const agencyId = getAgencyId(user);
+      brandQuery += ' AND (agency_id = $2 OR owner_id = $2)';
+      brandParams.push(agencyId);
+    }
+  }
+  const brandRes = await pool.query(brandQuery, brandParams);
   if (!brandRes.rows.length) return null;
   const brand = brandRes.rows[0];
 

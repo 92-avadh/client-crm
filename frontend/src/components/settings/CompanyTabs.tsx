@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Save, Coins, Briefcase, Layout, Target, Check, Upload, RotateCcw, Image as ImageIcon, Info, AlertCircle } from 'lucide-react';
-import type { AppSettings } from '../../types';
+import { Save, Coins, Briefcase, Layout, Target, Check, Upload, RotateCcw, Image as ImageIcon, Info, AlertCircle, Plus, Trash2, QrCode, Star, Landmark } from 'lucide-react';
+import type { AppSettings, BankAccount } from '../../types';
 import { fieldStyle, saveBtnStyle, fieldGridStyle, tabBodyStyle, TabHeader } from './settingsUi';
 import { SUPPORTED_CURRENCIES, getCurrencyConfig, formatCurrency } from '../../utils/currency';
 import { validateImageFile, LOGO_FORMAT_HINT } from '../../utils/fileValidation';
 import { isValidEmail, isValidPhone, sanitizePhone, isValidGSTIN, isValidPAN } from '../../utils/validation';
 import { isDirty } from '../../hooks/isDirty';
+import { normalizeBankAccounts, MAX_BANK_ACCOUNTS } from '../../utils/bankAccounts';
 
 interface Props {
   formData: AppSettings;
@@ -62,11 +63,14 @@ const TEAM_SIZES = [
 ];
 
 const GOALS_LIST = [
-  { id: 'retain_clients', label: 'High-Value Client Retainers' },
-  { id: 'invoicing_speed', label: 'Faster Automated Invoicing' },
-  { id: 'operations_efficiency', label: 'Streamlined Team Operations' },
-  { id: 'client_transparency', label: 'Direct Client Transparency' },
-  { id: 'multi_currency', label: 'Multi-Currency Financials' },
+  { id: 'retention', label: 'Improve Client Retention' },
+  { id: 'invoicing', label: 'Streamline Invoicing & Reminders' },
+  { id: 'team', label: 'Manage Team & Workload' },
+  { id: 'analytics', label: 'Track Revenue & Profit' },
+  { id: 'communication', label: 'Centralize Client Communication' },
+  { id: 'projects', label: 'Organize Projects & Deadlines' },
+  { id: 'onboarding', label: 'Faster Client Onboarding' },
+  { id: 'other_goal', label: 'Custom Workspace Objective' },
 ];
 
 /** Agency profile, currency configuration & onboarding preferences (admin). */
@@ -484,7 +488,7 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
             >
               <option value="balanced">Balanced (Overall Operations)</option>
               <option value="financial">Financial-Heavy (Cash Flow &amp; Collections First)</option>
-              <option value="operations">Operations-First (Deliverables &amp; Project Milestones)</option>
+              <option value="retention">Retention-First (Client Health &amp; Renewals Priority)</option>
             </select>
           </div>
         </div>
@@ -620,44 +624,273 @@ export const TaxTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
   );
 };
 
-/** Banking & Razorpay credentials (admin). */
+/** Banking & Razorpay credentials (admin) — supports up to 2 bank accounts with per-account UPI QR upload. */
 export const BankingTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
   const baseline = useRef<AppSettings | null>(null);
+  const [qrErrors, setQrErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!baseline.current) {
-      baseline.current = { ...formData };
+      baseline.current = { ...formData, bankAccounts: normalizeBankAccounts(formData) };
     }
   }, [formData]);
 
+  const accounts = normalizeBankAccounts(formData);
   const isChanged = Boolean(baseline.current && isDirty(formData as any, baseline.current as any));
+
+  const commitAccounts = (next: BankAccount[]) => {
+    const trimmed = next.slice(0, MAX_BANK_ACCOUNTS);
+    if (trimmed.length > 0 && !trimmed.some((a) => a.isDefault)) {
+      trimmed[0] = { ...trimmed[0], isDefault: true };
+    }
+    const primary = trimmed.find((a) => a.isDefault) || trimmed[0];
+    onChange({
+      bankAccounts: trimmed,
+      bankName: primary?.bankName || '',
+      bankAccountName: primary?.bankAccountName || '',
+      bankAccountNumber: primary?.bankAccountNumber || '',
+      bankIfsc: primary?.bankIfsc || '',
+      bankBranch: primary?.bankBranch || '',
+      upiId: primary?.upiId || '',
+    });
+  };
+
+  const updateSlot = (idx: number, patch: Partial<BankAccount>) => {
+    const next = [...accounts];
+    next[idx] = { ...next[idx], ...patch };
+    commitAccounts(next);
+  };
+
+  const setDefaultSlot = (idx: number) => {
+    const next = accounts.map((a, i) => ({ ...a, isDefault: i === idx }));
+    commitAccounts(next);
+  };
+
+  const addAccountSlot = () => {
+    if (accounts.length >= MAX_BANK_ACCOUNTS) return;
+    const newId = accounts.some((a) => a.id === 'bank_1') ? 'bank_2' : 'bank_1';
+    commitAccounts([
+      ...accounts,
+      {
+        id: newId,
+        bankName: '',
+        bankAccountName: '',
+        bankAccountNumber: '',
+        bankIfsc: '',
+        bankBranch: '',
+        upiId: '',
+        qrCodeUrl: '',
+        isDefault: accounts.length === 0,
+      },
+    ]);
+  };
+
+  const removeSlot = (idx: number) => {
+    const next = accounts.filter((_, i) => i !== idx);
+    commitAccounts(next);
+  };
+
+  const handleQrUpload = (idx: number, accId: string, file?: File) => {
+    if (!file) return;
+    setQrErrors((prev) => ({ ...prev, [accId]: '' }));
+    const validation = validateImageFile(file, { maxSizeMB: 3, allowSvg: true });
+    if (!validation.valid) {
+      setQrErrors((prev) => ({ ...prev, [accId]: validation.error || 'Invalid QR image file' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => setQrErrors((prev) => ({ ...prev, [accId]: 'Could not read QR image.' }));
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      if (result) updateSlot(idx, { qrCodeUrl: result });
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <form onSubmit={onSave} style={tabBodyStyle}>
       <TabHeader
-        title="Direct Settlement Bank & Razorpay Credentials"
-        subtitle="Client payments settle straight into this account. These details appear automatically on all client invoices."
+        title="Bank Accounts, UPI QR Codes &amp; Razorpay"
+        subtitle="Add up to 2 settlement bank accounts with dedicated UPI QR codes. Choose which account appears on each invoice."
       />
 
-      <div style={{ padding: '16px 20px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-        <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Direct Settlement Architecture:</span>{' '}
-        Direct bank account settlement via Razorpay Route. Funds flow directly to your business account without intermediary vendor pooling.
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'var(--bg-subtle)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Landmark size={15} style={{ color: 'var(--accent-text)' }} />
+          <span>
+            <strong style={{ color: 'var(--text-primary)' }}>Multi-Account Billing:</strong>{' '}
+            {accounts.length} / {MAX_BANK_ACCOUNTS} bank accounts configured
+          </span>
+        </div>
+        {accounts.length < MAX_BANK_ACCOUNTS ? (
+          <button
+            type="button"
+            onClick={addAccountSlot}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+              borderRadius: 8, background: 'var(--solid-btn-bg, #0f172a)', color: '#ffffff',
+              border: 'none', fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            <Plus size={13} />
+            <span>Add Bank Account ({accounts.length + 1} of {MAX_BANK_ACCOUNTS})</span>
+          </button>
+        ) : (
+          <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}>
+            Max 2 / 2 Accounts Added
+          </span>
+        )}
       </div>
 
-      <div style={fieldGridStyle}>
-        <Field label="Bank Name" value={formData.bankName || ''}
-          onChange={(v) => onChange({ bankName: v })} />
-        <Field label="Account Beneficiary Name" value={formData.bankAccountName}
-          onChange={(v) => onChange({ bankAccountName: v })} />
-        <Field label="Bank Account Number" value={formData.bankAccountNumber} mono maxLength={30} placeholder="e.g. 50100234567890"
-          onChange={(v) => onChange({ bankAccountNumber: v })} />
-        <Field label="Bank IFSC Code" value={formData.bankIfsc} mono maxLength={11} placeholder="e.g. HDFC0001234"
-          onChange={(v) => onChange({ bankIfsc: v.toUpperCase() })} />
-        <Field label="Bank Branch Location" value={formData.bankBranch}
-          onChange={(v) => onChange({ bankBranch: v })} />
-        <Field label="UPI ID for Direct QR Codes" value={formData.upiId} mono maxLength={50} placeholder="e.g. username@okhdfcbank"
-          onChange={(v) => onChange({ upiId: v })} />
-        <Field label="Razorpay Key ID" value={formData.razorpayKeyId} mono maxLength={50} placeholder="e.g. rzp_live_xxxxxxxxx"
+      {accounts.length === 0 ? (
+        <div style={{ border: '1.5px dashed var(--border)', borderRadius: 14, padding: 28, textAlign: 'center', background: 'var(--bg-subtle)' }}>
+          <Landmark size={26} style={{ color: 'var(--text-muted)', margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>No Bank Accounts Added Yet</div>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '4px 0 14px' }}>
+            Add up to 2 settlement bank accounts with UPI QR codes to show on your GST invoices.
+          </p>
+          <button
+            type="button"
+            onClick={addAccountSlot}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px',
+              borderRadius: 8, background: 'var(--solid-btn-bg, #0f172a)', color: '#ffffff',
+              border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            <Plus size={14} />
+            <span>Add First Bank Account</span>
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {accounts.map((acc, idx) => (
+            <div
+              key={acc.id}
+              style={{
+                border: acc.isDefault ? '1.5px solid var(--accent-text, #2563eb)' : '1px solid var(--border)',
+                borderRadius: 14,
+                padding: 18,
+                background: 'var(--bg-subtle)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
+              }}
+            >
+              {/* Card Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
+                    Bank Account {idx + 1} {acc.bankName ? `· ${acc.bankName}` : ''}
+                  </span>
+                  {acc.isDefault && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'var(--info-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}>
+                      <Star size={10} /> Default
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {!acc.isDefault && (
+                    <button
+                      type="button"
+                      onClick={() => setDefaultSlot(idx)}
+                      style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--bg-card)', color: 'var(--accent-text)', border: '1px solid var(--border)', cursor: 'pointer' }}
+                    >
+                      Set as Default
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeSlot(idx)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)', cursor: 'pointer' }}
+                  >
+                    <Trash2 size={12} />
+                    <span>Remove</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Fields */}
+              <div style={fieldGridStyle}>
+                <Field label="Bank Name" value={acc.bankName} placeholder="e.g. HDFC Bank"
+                  onChange={(v) => updateSlot(idx, { bankName: v })} />
+                <Field label="Account Beneficiary Name" value={acc.bankAccountName} placeholder="e.g. Retentio Agency LLP"
+                  onChange={(v) => updateSlot(idx, { bankAccountName: v })} />
+                <Field label="Bank Account Number" value={acc.bankAccountNumber} mono maxLength={30} placeholder="e.g. 50100234567890"
+                  onChange={(v) => updateSlot(idx, { bankAccountNumber: v })} />
+                <Field label="Bank IFSC Code" value={acc.bankIfsc} mono maxLength={11} placeholder="e.g. HDFC0001234"
+                  onChange={(v) => updateSlot(idx, { bankIfsc: v.toUpperCase() })} />
+                <Field label="Bank Branch Location" value={acc.bankBranch} placeholder="e.g. Andheri East, Mumbai"
+                  onChange={(v) => updateSlot(idx, { bankBranch: v })} />
+                <Field label="UPI ID (for Tap-to-Pay &amp; Fallback QR)" value={acc.upiId} mono maxLength={50} placeholder="e.g. username@okhdfcbank"
+                  onChange={(v) => updateSlot(idx, { upiId: v })} />
+              </div>
+
+              {/* UPI QR Image Upload Box */}
+              <div style={{ padding: 14, borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 72, height: 72, borderRadius: 10, background: '#ffffff', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {acc.qrCodeUrl ? (
+                      <img src={acc.qrCodeUrl} alt={`Bank ${idx + 1} UPI QR`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <QrCode size={28} style={{ color: '#94a3b8' }} />
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-primary)' }}>
+                      {acc.qrCodeUrl ? 'Custom UPI QR Code Uploaded' : 'Upload UPI Payment QR Code'}
+                    </div>
+                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0', lineHeight: 1.4 }}>
+                      Shown on invoices &amp; bank details for instant UPI scan-to-pay.
+                    </p>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+                      <Info size={11} style={{ color: 'var(--brand-green, #10b981)' }} />
+                      PNG, JPG, WebP, SVG (max 3MB)
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8, background: 'var(--solid-btn-bg, #0f172a)', color: '#ffffff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
+                    <Upload size={13} />
+                    <span>{acc.qrCodeUrl ? 'Change QR' : 'Upload QR'}</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        handleQrUpload(idx, acc.id, e.target.files?.[0]);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {acc.qrCodeUrl && (
+                    <button
+                      type="button"
+                      onClick={() => updateSlot(idx, { qrCodeUrl: '' })}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--danger-text)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      <RotateCcw size={12} />
+                      <span>Remove QR</span>
+                    </button>
+                  )}
+                  {qrErrors[acc.id] && (
+                    <div style={{ width: '100%', fontSize: 11, fontWeight: 600, color: 'var(--danger-text)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <AlertCircle size={12} />
+                      <span>{qrErrors[acc.id]}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Razorpay Key */}
+      <div style={{ paddingTop: 4 }}>
+        <Field label="Razorpay Key ID (Optional Gateway)" value={formData.razorpayKeyId} mono maxLength={50} placeholder="e.g. rzp_live_xxxxxxxxx"
           onChange={(v) => onChange({ razorpayKeyId: v })} />
       </div>
 

@@ -42,6 +42,7 @@ export const SettingsManager: React.FC = () => {
     deleteHoliday,
     updateTeamMember,
     resetWorkspaceData,
+    loadDomain,
   } = useApp();
 
   const role = currentUser.role;
@@ -65,6 +66,12 @@ export const SettingsManager: React.FC = () => {
       }));
     }
   }, [settings]);
+
+  React.useEffect(() => {
+    if (activeTab === 'security' && isAdmin) {
+      loadDomain?.('audit');
+    }
+  }, [activeTab, isAdmin, loadDomain]);
 
   const [profileName, setProfileName] = useState(currentUser.name);
   const [profileEmail, setProfileEmail] = useState(currentUser.email);
@@ -428,18 +435,8 @@ export const SettingsManager: React.FC = () => {
                       dataUrl ? 'Profile photo updated successfully!' : 'Profile photo removed',
                       'success'
                     );
-                  } catch {
-                    setCurrentUser((prev: any) => {
-                      const next = { ...prev, avatar: dataUrl };
-                      try {
-                        localStorage.setItem('retentio_user', JSON.stringify(next));
-                      } catch {}
-                      return next;
-                    });
-                    showToast(
-                      dataUrl ? 'Profile photo updated successfully!' : 'Profile photo removed',
-                      'success'
-                    );
+                  } catch (err: any) {
+                    showToast(err?.message || 'Could not update profile photo. Please try again.', 'error');
                   }
                 }}
                 onSave={async (e) => {
@@ -450,21 +447,10 @@ export const SettingsManager: React.FC = () => {
                       email: profileEmail,
                       phone: profilePhone,
                     });
-                  } catch {
-                    setCurrentUser((prev: any) => {
-                      const next = {
-                        ...prev,
-                        name: profileName,
-                        email: profileEmail,
-                        phone: profilePhone,
-                      };
-                      try {
-                        localStorage.setItem('retentio_user', JSON.stringify(next));
-                      } catch {}
-                      return next;
-                    });
+                    showToast('Profile preferences updated successfully', 'success');
+                  } catch (err: any) {
+                    showToast(err?.message || 'Could not update profile preferences.', 'error');
                   }
-                  showToast('Profile preferences updated successfully', 'success');
                 }}
               />
             )}

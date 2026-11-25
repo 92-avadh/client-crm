@@ -132,6 +132,7 @@ async function updateTaskStatus(id, status) {
         linkModule: 'projects',
         brandId: task.brandId,
         recipientRoles: ['admin', 'manager'],
+        agencyId: rows[0].agency_id || null,
       });
     } catch {}
   }
@@ -166,6 +167,7 @@ async function updateTask(id, data) {
         linkModule: 'projects',
         brandId: task.brandId,
         recipientRoles: ['admin', 'manager'],
+        agencyId: rows[0].agency_id || null,
       });
     } catch {}
   }
@@ -174,15 +176,27 @@ async function updateTask(id, data) {
 
 async function verifyTaskAccess(user, id) {
   if (!user) return false;
-  const perms = Array.isArray(user.permissions) ? user.permissions : [];
-  if (['admin', 'hr', 'manager'].includes(user.role) || perms.includes('tasks') || perms.includes('projects')) return true;
-  const { rows } = await pool.query('SELECT brand_id, assignee_id, owner_id, agency_id FROM tasks WHERE id=$1', [id]);
+  const { rows } = await pool.query(
+    `SELECT t.brand_id, t.assignee_id, t.owner_id, t.agency_id, b.agency_id AS brand_agency_id, b.owner_id AS brand_owner_id
+     FROM tasks t
+     LEFT JOIN brands b ON b.id = t.brand_id
+     WHERE t.id = $1`,
+    [id]
+  );
   if (!rows.length) return false;
   const task = rows[0];
-  if (user.id === task.assignee_id || user.id === task.owner_id) return true;
+
   if (user.role === 'brand') return user.brandId === task.brand_id;
+
   const agencyId = getAgencyId(user);
-  if (task.agency_id && String(task.agency_id) === String(agencyId)) return true;
+  const taskAgencyId = task.agency_id || task.brand_agency_id || task.brand_owner_id || task.owner_id;
+  if (!taskAgencyId || String(taskAgencyId) !== String(agencyId)) {
+    return false;
+  }
+
+  const perms = Array.isArray(user.permissions) ? user.permissions : [];
+  if (['admin', 'hr', 'manager'].includes(user.role) || perms.includes('tasks') || perms.includes('projects')) return true;
+  if (user.id === task.assignee_id || user.id === task.owner_id) return true;
   const assignCheck = await pool.query(
     'SELECT 1 FROM brand_assignments WHERE brand_id = $1 AND member_id = $2',
     [task.brand_id, user.id]

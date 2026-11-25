@@ -8,7 +8,7 @@ router.get('/overview', asyncHandler(async (req, res) => {
 }));
 
 router.get('/:brandId', asyncHandler(async (req, res) => {
-  const result = await healthService.calculateBrandHealth(req.params.brandId);
+  const result = await healthService.calculateBrandHealth(req.params.brandId, req.user);
   if (!result) {
     return res.status(404).json({ error: 'Client not found.' });
   }

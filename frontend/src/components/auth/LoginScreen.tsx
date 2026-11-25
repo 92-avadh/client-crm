@@ -12,7 +12,7 @@ import { api, setToken } from '../../services/api';
 import { getNaturalErrorMessage } from '../../services/errors';
 
 interface LoginScreenProps {
-  onLogin: (credentials: { email: string; password: string; agencyId?: string; portalType?: 'company' | 'employee' } | string, password?: string) => void;
+  onLogin: (credentials: { email: string; password: string; agencyId?: string; portalType?: 'company' | 'employee'; stayLoggedIn?: boolean } | string, password?: string) => void;
   loginError?: string;
   loginLoading?: boolean;
   defaultMode?: 'signin' | 'register';
@@ -217,12 +217,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         setResendTimer(p => { if (p <= 1) { setCanResend(true); return 0; } return p - 1; });
       }
       if (forgotStep === 'code') {
-        setForgotTimer(p => { if (p <= 1) { clearInterval(t); return 0; } return p - 1; });
-        if (forgotTimer <= 60) setForgotCanResend(true);
+        setForgotTimer(p => {
+          const next = p <= 1 ? 0 : p - 1;
+          if (next <= 840) setForgotCanResend(true);
+          if (next === 0) clearInterval(t);
+          return next;
+        });
       }
     }, 1000);
     return () => clearInterval(t);
-  }, [regStep, forgotStep, forgotTimer]);
+  }, [regStep, forgotStep]);
 
   const fmtTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -346,14 +350,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
     try {
       setLoading(true);
-      await api.auth.forgotPassword(cleanEmail).catch(() => {});
+      await api.auth.forgotPassword(cleanEmail);
       setForgotStep('code');
-      setForgotTimer(300);
+      setForgotTimer(900);
       setForgotCanResend(false);
-    } catch (_err: any) {
-      setForgotStep('code');
-      setForgotTimer(300);
-      setForgotCanResend(false);
+    } catch (err: any) {
+      setError(getNaturalErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -365,12 +367,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     const cleanEmail = forgotEmail.trim().toLowerCase();
     try {
       setLoading(true);
-      await api.auth.forgotPassword(cleanEmail).catch(() => {});
-      setForgotTimer(300);
+      await api.auth.forgotPassword(cleanEmail);
+      setForgotTimer(900);
       setForgotCanResend(false);
-    } catch (_err: any) {
-      setForgotTimer(300);
-      setForgotCanResend(false);
+    } catch (err: any) {
+      setError(getNaturalErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -987,6 +988,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       password: siPassword,
                       agencyId: portalType === 'employee' ? selectedAgency?.agencyId : undefined,
                       portalType,
+                      stayLoggedIn,
                     });
                   }}
                   className="form-fields"

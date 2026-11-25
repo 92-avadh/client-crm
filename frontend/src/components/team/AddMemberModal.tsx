@@ -90,6 +90,10 @@ export const AddMemberModal: React.FC<Props> = ({
         return;
       }
     }
+    if (!form.password || form.password.trim().length < 8) {
+      setValidationError('Password must be at least 8 characters long');
+      return;
+    }
     onSubmit(e);
   };
 

@@ -5,9 +5,17 @@ const { safeFetch } = require('../utils/safeFetch');
  * Send an event payload to configured Slack or Discord webhooks.
  * Designed defensively: never throws or blocks execution.
  */
-async function sendWebhookEvent(eventType, { title, description, brandName, amount, currency, linkUrl }) {
+async function sendWebhookEvent(eventType, { title, description, brandName, amount, currency, linkUrl, agencyId = null }) {
   try {
-    const { rows } = await pool.query("SELECT slack_webhook_url, discord_webhook_url FROM settings WHERE id = 'main'");
+    if (!agencyId) return;
+    const { rows } = await pool.query(
+      `SELECT slack_webhook_url, discord_webhook_url
+       FROM settings
+       WHERE agency_id = $1 OR id = $2
+       ORDER BY CASE WHEN agency_id = $1 THEN 0 ELSE 1 END
+       LIMIT 1`,
+      [agencyId, `set_${agencyId}`]
+    );
     if (!rows.length) return;
 
     const { slack_webhook_url: slackUrl, discord_webhook_url: discordUrl } = rows[0];

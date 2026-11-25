@@ -182,7 +182,7 @@ export const ProjectsAndTasks: React.FC = () => {
     scope: '',
     startDate: getTodayDate(),
     endDate: '',
-    status: 'In progress' as any,
+    status: 'In Progress' as ProjectStatus,
     assignedMemberIds: [] as string[],
     billingAmount: 0
   });
@@ -260,7 +260,7 @@ export const ProjectsAndTasks: React.FC = () => {
     scope: '',
     startDate: '',
     endDate: '',
-    status: 'In progress' as ProjectStatus,
+    status: 'In Progress' as ProjectStatus,
     progress: 0,
     billingAmount: 0,
   });
@@ -274,7 +274,7 @@ export const ProjectsAndTasks: React.FC = () => {
       scope: proj.scope || '',
       startDate: proj.startDate || '',
       endDate: proj.endDate || '',
-      status: (proj.status || 'In progress') as ProjectStatus,
+      status: (proj.status === 'In progress' ? 'In Progress' : proj.status === 'On hold' ? 'On Hold' : (proj.status || 'In Progress')) as ProjectStatus,
       progress: proj.progress || 0,
       billingAmount: proj.billingAmount || 0,
     };
@@ -348,7 +348,7 @@ export const ProjectsAndTasks: React.FC = () => {
         scope: '',
         startDate: getTodayDate(),
         endDate: '',
-        status: 'In progress' as any,
+        status: 'In Progress' as ProjectStatus,
         assignedMemberIds: [] as string[],
         billingAmount: 0
       });
@@ -408,7 +408,7 @@ export const ProjectsAndTasks: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
-          {(role === 'admin' || role === 'hr') && (
+          {(role === 'admin' || role === 'hr' || perms.includes('projects')) && (
             <button onClick={() => setShowAddProjectModal(true)} style={btnSecondary}>
               <Plus style={{ width: 14, height: 14 }} />
               <span>New Project</span>
@@ -680,7 +680,7 @@ export const ProjectsAndTasks: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                   <span>Timeline: {proj.startDate} → {proj.endDate}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {(role === 'admin' || role === 'hr') && (
+                    {(role === 'admin' || role === 'hr' || perms.includes('projects')) && (
                       <>
                         <button
                           type="button"
@@ -1108,8 +1108,8 @@ export const ProjectsAndTasks: React.FC = () => {
                     style={inputFieldStyle}
                   >
                     <option value="Not started">Not started</option>
-                    <option value="In progress">In progress</option>
-                    <option value="On hold">On hold</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                   </select>
                 </div>

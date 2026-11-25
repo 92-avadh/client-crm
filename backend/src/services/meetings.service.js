@@ -76,6 +76,7 @@ async function listMeetings(user, { brandId, leadId, page = 1, pageSize = 50 } =
   if (leadId) {
     whereClause += ` AND lead_id=$${idx}`;
     params.push(leadId);
+    idx += 1;
   }
 
   // Count total matching rows

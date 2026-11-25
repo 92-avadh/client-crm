@@ -20,6 +20,8 @@ const record = asyncHandler(async (req, res) => {
     .number('amount', { min: 0.01, required: true, label: 'Amount' })
     .oneOf('mode', payments.PAYMENT_MODES, { label: 'Payment mode' })
     .optionalString('referenceNo', { max: 120, label: 'Reference number' })
+    .optionalString('paymentDate', { max: 20, label: 'Payment date' })
+    .optionalString('proofUrl', { max: 2000000, label: 'Payment proof' })
     .validate();
 
   res.status(201).json(await payments.recordPayment({ ...body, actor: req.user }));
@@ -48,7 +50,7 @@ const razorpayVerify = asyncHandler(async (req, res) => {
 
   // 1. Fetch invoice server-side to prevent untrusted amount/client tampering
   const invRes = await pool.query(
-    `SELECT i.id, i.brand_id, i.total_amount, i.paid_amount, i.agency_id, b.name as brand_name
+    `SELECT i.id, i.brand_id, i.total_amount, i.paid_amount, i.agency_id, i.razorpay_payment_id, b.name as brand_name
      FROM invoices i
      LEFT JOIN brands b ON b.id = i.brand_id
      WHERE i.id = $1`,
@@ -63,7 +65,19 @@ const razorpayVerify = asyncHandler(async (req, res) => {
     return res.status(403).json({ error: 'Access denied. Invoice belongs to another workspace.' });
   }
 
+  // Prevent replay of already-verified Razorpay payment IDs or mismatched initiated orders
+  if (invoice.razorpay_payment_id && invoice.razorpay_payment_id.startsWith('order_') && invoice.razorpay_payment_id !== body.razorpayOrderId) {
+    return res.status(400).json({ error: 'Order ID does not match the initiated payment order for this invoice.' });
+  }
+  const existingPay = await pool.query('SELECT id FROM payments WHERE reference_no = $1 LIMIT 1', [body.razorpayPaymentId]);
+  if (existingPay.rows.length > 0) {
+    return res.status(409).json({ error: 'This Razorpay payment has already been verified and recorded.' });
+  }
+
   const remainingBalance = Math.max(0, parseFloat(invoice.total_amount) - parseFloat(invoice.paid_amount || 0));
+  if (remainingBalance <= 0) {
+    return res.status(400).json({ error: 'This invoice is already fully paid.' });
+  }
   if (body.amount > remainingBalance + 0.01) {
     return res.status(400).json({ error: `Payment amount (${body.amount}) exceeds remaining invoice balance (${remainingBalance}).` });
   }
@@ -113,6 +127,7 @@ const update = asyncHandler(async (req, res) => {
   const body = makeValidator(req.body)
     .oneOf('status', payments.PAYMENT_STATUSES, { label: 'Status' })
     .oneOf('mode', payments.PAYMENT_MODES, { label: 'Payment mode' })
+    .optionalString('paymentDate', { max: 20, label: 'Payment date' })
     .optionalString('referenceNo', { max: 120, label: 'Reference number' })
     .validate();
 

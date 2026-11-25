@@ -59,7 +59,9 @@ function getIconColor(type: AppNotification['type']): string {
 }
 
 function formatTime(timestamp: string): string {
+  if (!timestamp) return '';
   const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return String(timestamp);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -74,7 +76,9 @@ function formatTime(timestamp: string): string {
 }
 
 function isToday(timestamp: string): boolean {
+  if (!timestamp) return false;
   const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return false;
   const now = new Date();
   return (
     date.getDate() === now.getDate() &&
@@ -130,10 +134,11 @@ export const InboxManager: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [hoveredNotifId, setHoveredNotifId] = useState<string | null>(null);
 
-  // Role-filtered notifications
+  // Role-filtered notifications (matches backend 'team' wildcard for non-brand internal members)
   const roleFilteredNotifications = notifications.filter((n) => {
     if (!n.recipientRoles || n.recipientRoles.length === 0) return true;
-    return n.recipientRoles.includes(currentUser.role);
+    if (n.targetUserId && n.targetUserId === currentUser.id) return true;
+    return n.recipientRoles.includes(currentUser.role) || (currentUser.role !== 'brand' && n.recipientRoles.includes('team'));
   });
 
   const unreadCount = roleFilteredNotifications.filter((n) => !n.isRead).length;

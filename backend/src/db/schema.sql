@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS brands (
   currency_symbol VARCHAR(10) DEFAULT '₹',
   retainer_hours NUMERIC(10,2) DEFAULT 40,
   used_hours NUMERIC(10,2) DEFAULT 0,
-  nps_score INTEGER DEFAULT 9,
+  nps_score INTEGER,
   contract_start_date DATE,
   contract_end_date DATE,
   magic_token VARCHAR(100),
@@ -140,6 +140,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   is_recurring BOOLEAN DEFAULT false,
   currency VARCHAR(10) DEFAULT 'INR',
   currency_symbol VARCHAR(10) DEFAULT '₹',
+  bank_account_id VARCHAR(50),
+  bank_account_snapshot JSONB,
   agency_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -329,6 +331,7 @@ CREATE TABLE IF NOT EXISTS settings (
   bank_ifsc VARCHAR(20),
   bank_branch VARCHAR(200),
   upi_id VARCHAR(100),
+  bank_accounts JSONB DEFAULT '[]',
   razorpay_key_id VARCHAR(100),
   razorpay_connected BOOLEAN DEFAULT false,
   subscription_plan_name VARCHAR(100),
@@ -382,6 +385,7 @@ CREATE TABLE IF NOT EXISTS otp_verifications (
   email VARCHAR(200) NOT NULL,
   otp_code VARCHAR(6) NOT NULL,
   purpose VARCHAR(50) DEFAULT 'register',
+  attempts INTEGER DEFAULT 0,
   expires_at TIMESTAMP NOT NULL,
   verified BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW()

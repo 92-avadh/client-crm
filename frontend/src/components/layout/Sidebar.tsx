@@ -15,6 +15,7 @@ import {
   Settings,
   Users,
   Inbox,
+  TrendingUp,
   LogOut,
   PanelLeftClose,
   PanelLeft,
@@ -58,7 +59,7 @@ export const Sidebar: React.FC = () => {
   const role = currentUser.role;
 
   const unpaidCount = useMemo(
-    () => (invoices || []).filter(i => i && (i.status === 'Sent' || i.status === 'Overdue')).length,
+    () => (invoices || []).filter(i => i && (i.status === 'Sent' || i.status === 'Partially Paid' || i.status === 'Overdue')).length,
     [invoices]
   );
   const pendingTaskCount = useMemo(
@@ -94,9 +95,12 @@ export const Sidebar: React.FC = () => {
       badge: unpaidCount || undefined, badgeVariant: 'warn' },
     { id: 'finance',      label: role === 'admin' ? 'Finance' : 'Payments', icon: Wallet, roles: ['admin','hr'] },
     { id: 'expenses',     label: 'Expenses',            icon: CreditCard,      roles: ['admin','hr'] },
+    { id: 'retention',    label: 'Client Health',       icon: TrendingUp,      roles: ['admin','hr','team'] },
     { id: 'team',         label: 'Team',                icon: Users,           roles: ['admin','hr'] },
     { id: 'inbox',        label: 'Inbox',               icon: Inbox,           roles: ['admin','hr','team','brand'],
       badge: unreadNotifCount || undefined, badgeVariant: 'danger' },
+    { id: 'chat',         label: 'Team Chat',           icon: MessageSquare,   roles: ['admin','hr','team','brand'],
+      badge: unreadChat || undefined, badgeVariant: 'warn' },
     { id: 'meetings',     label: 'Meetings',            icon: CalendarDays,    roles: ['admin','hr','team','brand'] },
     { id: 'leads',        label: 'Leads Pipeline',      icon: Target,          roles: ['admin','hr'] },
     { id: 'settings',     label: 'Settings',            icon: Settings,        roles: ['admin','hr','team','brand'] },
@@ -115,8 +119,8 @@ export const Sidebar: React.FC = () => {
     // the role-based defaults.
     return i.roles.includes(role) || (role !== 'brand' && i.roles.includes('team'));
   });
-  const coreItems = items.filter(i => !['meetings','leads','settings'].includes(i.id));
-  const commItems = items.filter(i => ['meetings','leads'].includes(i.id));
+  const coreItems = items.filter(i => !['chat','meetings','leads','settings'].includes(i.id));
+  const commItems = items.filter(i => ['chat','meetings','leads'].includes(i.id));
   const sysItems  = items.filter(i => i.id === 'settings');
 
   const BadgePill = ({ item, isSelected }: { item: NavItem; isSelected?: boolean }) => {

@@ -20,7 +20,13 @@ const markRead = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const created = await notifications.createNotification(req.body);
+  if (req.user.role === 'brand') {
+    return res.status(403).json({ error: 'Permission denied.' });
+  }
+  const created = await notifications.createNotification({
+    ...req.body,
+    agencyId: req.user.agencyId,
+  });
   res.status(201).json(created);
 });
 

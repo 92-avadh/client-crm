@@ -185,7 +185,7 @@ export const TeamManager: React.FC = () => {
       setShowUpgradeModal(true);
       return;
     }
-    if (allUsers.length >= planLimits.maxTeamMembers) {
+    if (activeMembers >= planLimits.maxTeamMembers) {
       setUpgradeModalTitle('Team Seats Limit Reached (10/10 Members)');
       setUpgradeModalDesc('Your Growth plan includes 10 team members. Upgrade to the Scale plan (₹7,999/mo) for unlimited team seats with granular RBAC permissions.');
       setShowUpgradeModal(true);
@@ -203,7 +203,7 @@ export const TeamManager: React.FC = () => {
       showToast('Team collaboration requires Growth plan', 'info');
       return;
     }
-    if (allUsers.length >= planLimits.maxTeamMembers) {
+    if (activeMembers >= planLimits.maxTeamMembers) {
       setShowUpgradeModal(true);
       showToast('Team limit reached (10 max). Upgrade to Scale for unlimited seats.', 'info');
       return;
@@ -250,13 +250,13 @@ export const TeamManager: React.FC = () => {
   /* ── Edit member ─────────────────────────────────────────────── */
 
   const openEditModal = (user: User) => {
-    // Security check: non-admins cannot edit admin/founder accounts or other members
+    // Security check: non-admins cannot edit admin/founder accounts; HR/team managers can edit non-admin members
     if (user.role === 'admin' && !isAdmin) {
       showToast('Access denied: You do not have permission to edit an administrator or founder account.', 'error');
       return;
     }
-    if (user.id !== currentUser.id && !isAdmin) {
-      showToast('Access denied: Only administrators can edit team members.', 'error');
+    if (user.id !== currentUser.id && !canManageTeam) {
+      showToast('Access denied: Only administrators or HR can edit team members.', 'error');
       return;
     }
 
@@ -269,7 +269,7 @@ export const TeamManager: React.FC = () => {
       role: (user.role as any) || 'team',
       password: '',
       avatar: user.avatar || '',
-      permissions: user.permissions && user.permissions.length > 0
+      permissions: Array.isArray(user.permissions)
         ? user.permissions
         : getDefaultPermissionsForRole(user.role || 'team'),
     });
@@ -284,8 +284,8 @@ export const TeamManager: React.FC = () => {
       showToast('Access denied: Only administrators can edit an administrator account.', 'error');
       return;
     }
-    if (editingMember.id !== currentUser.id && !isAdmin) {
-      showToast('Access denied: Only administrators can edit other team members.', 'error');
+    if (editingMember.id !== currentUser.id && !canManageTeam) {
+      showToast('Access denied: Only administrators or HR can edit other team members.', 'error');
       return;
     }
     if (!editForm.name.trim() || !editForm.email.trim() || !editForm.designation.trim()) {
@@ -403,16 +403,16 @@ export const TeamManager: React.FC = () => {
                 borderRadius: 20,
                 fontSize: 12,
                 fontWeight: 700,
-                background: (planLimits.maxTeamMembers === 1 || allUsers.length >= planLimits.maxTeamMembers) ? 'var(--warn-bg, #fffbeb)' : 'var(--bg-subtle, #f1f5f9)',
-                color: (planLimits.maxTeamMembers === 1 || allUsers.length >= planLimits.maxTeamMembers) ? 'var(--warn-text, #92400e)' : 'var(--text-secondary, #64748b)',
-                border: `1px solid ${(planLimits.maxTeamMembers === 1 || allUsers.length >= planLimits.maxTeamMembers) ? 'var(--warn-border, #fde68a)' : 'var(--border, #e2e8f0)'}`,
+                background: (planLimits.maxTeamMembers === 1 || activeMembers >= planLimits.maxTeamMembers) ? 'var(--warn-bg, #fffbeb)' : 'var(--bg-subtle, #f1f5f9)',
+                color: (planLimits.maxTeamMembers === 1 || activeMembers >= planLimits.maxTeamMembers) ? 'var(--warn-text, #92400e)' : 'var(--text-secondary, #64748b)',
+                border: `1px solid ${(planLimits.maxTeamMembers === 1 || activeMembers >= planLimits.maxTeamMembers) ? 'var(--warn-border, #fde68a)' : 'var(--border, #e2e8f0)'}`,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
               }}
             >
-              <span>{allUsers.length} / {planLimits.maxTeamMembers === 1 ? '1 Solo Seat (Starter)' : `${planLimits.maxTeamMembers} Seats (Growth)`}</span>
-              {(planLimits.maxTeamMembers === 1 || allUsers.length >= planLimits.maxTeamMembers) && (
+              <span>{activeMembers} / {planLimits.maxTeamMembers === 1 ? '1 Solo Seat (Starter)' : `${planLimits.maxTeamMembers} Seats (Growth)`}</span>
+              {(planLimits.maxTeamMembers === 1 || activeMembers >= planLimits.maxTeamMembers) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -454,6 +454,7 @@ export const TeamManager: React.FC = () => {
         onView={setSelectedMember}
         onEdit={openEditModal}
         onDeactivate={handleDeactivate}
+        onDelete={handleDelete}
       />
 
       <Pagination

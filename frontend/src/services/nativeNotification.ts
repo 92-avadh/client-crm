@@ -211,8 +211,8 @@ export async function sendNativeNotification(opts: NativeNotificationOptions): P
 
     notif.onclick = () => {
       window.focus();
-      if (targetUrl && targetUrl !== '/') {
-        window.location.hash = targetUrl;
+      if (targetUrl && targetUrl !== '/' && targetUrl !== window.location.pathname) {
+        window.location.href = targetUrl;
       }
       notif.close();
     };

@@ -72,8 +72,13 @@ const login = asyncHandler(async (req, res) => {
     .optionalString('portalType', { max: 30, label: 'Portal type' })
     .validate();
 
-  const result = await auth.login(body);
-  res.cookie('token', result.token, COOKIE_OPTIONS);
+  const stayLoggedIn = req.body?.stayLoggedIn !== false;
+  const result = await auth.login({ ...body, stayLoggedIn });
+  res.cookie(
+    'token',
+    result.token,
+    stayLoggedIn ? COOKIE_OPTIONS : { httpOnly: true, secure: isProd, sameSite: 'lax' }
+  );
   res.json({ user: result.user, token: result.token });
 });
 
@@ -96,35 +101,28 @@ const { getAgencyId } = require('../utils/agency');
 const { resolvePermissions } = require('../utils/permissions');
 
 const me = asyncHandler(async (req, res) => {
-  try {
-    const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
-    if (rows.length) {
-      const u = rows[0];
-      const perms = resolvePermissions(u.role, u.permissions);
-      const agencyId = getAgencyId(u);
-      return res.json({
-        user: {
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          phone: u.phone,
-          role: u.role,
-          avatar: u.avatar,
-          designation: u.designation,
-          brandId: u.brand_id,
-          agencyId,
-          createdBy: u.created_by || null,
-          permissions: perms,
-          onboardingCompleted: Boolean(u.onboarding_completed),
-        }
-      });
-    }
-  } catch (_e) {}
-  res.json({
+  const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+  if (!rows.length || rows[0].is_active === false) {
+    res.clearCookie('token', { httpOnly: true, secure: isProd, sameSite: 'lax' });
+    return res.status(401).json({ error: 'Account unavailable or deactivated. Please sign in again.' });
+  }
+  const u = rows[0];
+  const perms = resolvePermissions(u.role, u.permissions);
+  const agencyId = getAgencyId(u);
+  return res.json({
     user: {
-      ...req.user,
-      agencyId: getAgencyId(req.user),
-      permissions: resolvePermissions(req.user?.role, req.user?.permissions),
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      role: u.role,
+      avatar: u.avatar,
+      designation: u.designation,
+      brandId: u.brand_id,
+      agencyId,
+      createdBy: u.created_by || null,
+      permissions: perms,
+      onboardingCompleted: Boolean(u.onboarding_completed),
     }
   });
 });
@@ -154,8 +152,8 @@ const completeOnboarding = asyncHandler(async (req, res) => {
 
   await pool.query('UPDATE users SET onboarding_completed = true WHERE id = $1', [userId]);
   await pool.query(
-    'UPDATE settings SET onboarding_completed = true WHERE agency_id = $1 OR id = $2 OR id = $3',
-    [agencyId, 'set_' + agencyId, 'main']
+    "UPDATE settings SET onboarding_completed = true WHERE agency_id = $1 OR id = $2 OR ($1 = 'usr_admin' AND id = 'main')",
+    [agencyId, 'set_' + agencyId]
   );
 
   res.json({ success: true, onboardingCompleted: true });

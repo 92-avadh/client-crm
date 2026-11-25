@@ -50,14 +50,62 @@ const update = asyncHandler(async (req, res) => {
 
   const body = v.validate();
 
-  // Merge extra non-scalar configurations like subscriptionPlan, goals, invoiceDesign
+  // Validate bankAccounts (max 2 accounts, each with optional uploaded UPI QR data URL)
+  let bankAccounts;
+  if (req.body.bankAccounts !== undefined) {
+    if (!Array.isArray(req.body.bankAccounts)) {
+      return res.status(400).json({ error: 'Bank accounts must be a list.' });
+    }
+    if (req.body.bankAccounts.length > 2) {
+      return res.status(400).json({ error: 'A maximum of 2 bank accounts can be configured.' });
+    }
+    bankAccounts = req.body.bankAccounts.map((acc, idx) => {
+      if (!acc || typeof acc !== 'object') {
+        throw Object.assign(new Error('Invalid bank account entry.'), { status: 400 });
+      }
+      const qr = typeof acc.qrCodeUrl === 'string' ? acc.qrCodeUrl.trim() : '';
+      if (qr) {
+        if (qr.length > 3_000_000) {
+          throw Object.assign(new Error('UPI QR image is too large (max ~2MB).'), { status: 400 });
+        }
+        if (!/^data:image\/(png|jpeg|jpg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(qr)) {
+          throw Object.assign(new Error('UPI QR image must be a valid PNG, JPEG, WebP, or SVG image.'), { status: 400 });
+        }
+      }
+      return {
+        id: String(acc.id || `bank_${idx + 1}`).slice(0, 50),
+        bankName: String(acc.bankName || '').trim().slice(0, 150),
+        bankAccountName: String(acc.bankAccountName || '').trim().slice(0, 150),
+        bankAccountNumber: String(acc.bankAccountNumber || '').trim().slice(0, 50),
+        bankIfsc: String(acc.bankIfsc || '').trim().toUpperCase().slice(0, 20),
+        bankBranch: String(acc.bankBranch || '').trim().slice(0, 150),
+        upiId: String(acc.upiId || '').trim().slice(0, 100),
+        qrCodeUrl: qr,
+        isDefault: Boolean(acc.isDefault),
+      };
+    });
+    if (bankAccounts.length > 0 && !bankAccounts.some(a => a.isDefault)) {
+      bankAccounts[0].isDefault = true;
+    }
+  }
+
+  // Validate optional custom signature image size in invoiceDesign
+  if (req.body.invoiceDesign?.signatureUrl) {
+    const sig = String(req.body.invoiceDesign.signatureUrl);
+    if (sig.length > 3_000_000) {
+      return res.status(400).json({ error: 'Signature image is too large (max ~2MB).' });
+    }
+  }
+
+  // Merge extra non-scalar configurations like subscriptionPlan, goals, invoiceDesign, bankAccounts
   const fullPayload = {
     ...body,
     subscriptionPlan: req.body.subscriptionPlan,
     goals: Array.isArray(req.body.goals) ? req.body.goals : undefined,
     invoiceDesign: req.body.invoiceDesign,
-    whatsappEnabled: req.body.whatsappEnabled,
+    whatsappEnabled: req.body.whatsappEnabled ?? req.body.whatsappClickToShareEnabled,
     razorpayConnected: req.body.razorpayConnected,
+    bankAccounts,
   };
 
   res.json(await settings.updateSettings(req.user, fullPayload));
@@ -115,7 +163,7 @@ const resetData = asyncHandler(async (req, res) => {
 
     // Reset agency-specific settings if not main
     if (agencyId !== 'main' && agencyId !== 'usr_admin') {
-      await client.query('DELETE FROM settings WHERE id = $1', [agencyId]);
+      await client.query('DELETE FROM settings WHERE agency_id = $1 OR id = $2', [agencyId, `set_${agencyId}`]);
     }
 
     // Record an audit log entry for this sensitive administrative action

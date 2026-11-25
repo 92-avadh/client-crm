@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { getToken } from './api';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://client-crm-api-g9qz.onrender.com/api';
 
@@ -23,6 +24,7 @@ export function getSocket(): Socket {
       path: '/socket.io',
       transports: ['websocket', 'polling'],
       withCredentials: true,
+      auth: (cb) => cb({ token: getToken() }),
       autoConnect: false,
       reconnectionAttempts: 10,
       reconnectionDelay: 1500,

@@ -15,6 +15,7 @@ export interface InvoiceDesign {
   showLogo: boolean;
   showSignature: boolean;
   logoUrl?: string;
+  signatureUrl?: string;
 }
 
 interface Props {
@@ -27,6 +28,7 @@ interface Props {
 /** Invoice design & branding (admin). */
 export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, onSave }) => {
   const [logoError, setLogoError] = useState('');
+  const [sigError, setSigError] = useState('');
   const baseline = useRef<InvoiceDesign | null>(null);
 
   useEffect(() => {
@@ -165,6 +167,111 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--danger-text, #ef4444)', fontSize: 11, fontWeight: 600 }}>
               <AlertCircle size={13} />
               <span>{logoError}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+
+    {/* Custom Signature / Company Stamp */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Authorized Signature / Company Stamp</label>
+      <div style={{ border: '1.5px solid var(--border)', borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, background: 'var(--bg-subtle)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 90, height: 54, borderRadius: 8, background: '#ffffff', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, overflow: 'hidden' }}>
+            {design.signatureUrl ? (
+              <img
+                src={design.signatureUrl}
+                alt="Custom Signature / Stamp"
+                style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'center' }}>Default Stamp</span>
+            )}
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {design.signatureUrl ? 'Custom Signature / Stamp Active' : 'Default Verified Seal'}
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              Upload a transparent PNG of your handwritten signature or company stamp to print on invoices.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '7px 14px',
+              borderRadius: 8,
+              background: 'var(--solid-btn-bg, #0f172a)',
+              color: '#ffffff',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            <Upload size={13} />
+            <span>{design.signatureUrl ? 'Change Signature' : 'Upload Signature / Stamp'}</span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setSigError('');
+                const validation = validateImageFile(file, { maxSizeMB: 3, allowSvg: true });
+                if (!validation.valid) {
+                  setSigError(validation.error || 'Invalid signature image');
+                  e.target.value = '';
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onerror = () => setSigError('Could not read image file.');
+                reader.onload = (event) => {
+                  const result = event.target?.result as string;
+                  if (result) onChange({ signatureUrl: result, showSignature: true });
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+
+          {design.signatureUrl && (
+            <button
+              type="button"
+              onClick={() => {
+                setSigError('');
+                onChange({ signatureUrl: '' });
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '7px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-card)',
+                color: 'var(--danger-text, #ef4444)',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <RotateCcw size={13} />
+              <span>Use Default Stamp</span>
+            </button>
+          )}
+
+          {sigError && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--danger-text, #ef4444)', fontSize: 11, fontWeight: 600 }}>
+              <AlertCircle size={13} />
+              <span>{sigError}</span>
             </div>
           )}
         </div>

@@ -6,6 +6,7 @@ router.get('/', controller.list);
 router.get('/:id', controller.get);
 router.get('/:id/pdf', controller.pdfData);
 router.post('/', controller.create);
+router.post('/:id/remind', controller.remind);
 router.patch('/:id/status', controller.updateStatus);
 router.post('/bulk-delete', controller.bulkRemove);
 router.delete('/:id', controller.remove);

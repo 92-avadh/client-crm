@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { api, clearToken, setToken } from './services/api';
+import { api, clearToken, setToken, clearApiCache } from './services/api';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
@@ -35,6 +35,7 @@ const importLeads = () => import('./components/leads/LeadsPipeline').then(m => (
 const importSettings = () => import('./components/settings/SettingsManager').then(m => ({ default: m.SettingsManager }));
 const importTeam = () => import('./components/team/TeamManager').then(m => ({ default: m.TeamManager }));
 const importInbox = () => import('./components/inbox/InboxManager').then(m => ({ default: m.InboxManager }));
+const importRetention = () => import('./components/retention/RetentionEngine').then(m => ({ default: m.RetentionEngine }));
 const importPortal = () => import('./components/portal/ClientPortal').then(m => ({ default: m.ClientPortal }));
 const importLanding = () => import('./components/landing/LandingPage').then(m => ({ default: m.LandingPage }));
 const importIntake = () => import('./components/intake/ClientIntakePage').then(m => ({ default: m.ClientIntakePage }));
@@ -51,6 +52,7 @@ const LeadsPipeline = lazy(importLeads);
 const SettingsManager = lazy(importSettings);
 const TeamManager = lazy(importTeam);
 const InboxManager = lazy(importInbox);
+const RetentionEngine = lazy(importRetention);
 const ClientPortal = lazy(importPortal);
 const LandingPage = lazy(importLanding);
 const ClientIntakePage = lazy(importIntake);
@@ -69,6 +71,8 @@ export const prefetchRoute = (tab: string) => {
     case 'settings': importSettings(); break;
     case 'team': importTeam(); break;
     case 'inbox': importInbox(); break;
+    case 'chat': importChat(); break;
+    case 'retention': importRetention(); break;
     default: break;
   }
 };
@@ -479,8 +483,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path={ROUTES.invoices} element={<PermissionGate module="invoices"><InvoicesManager /></PermissionGate>} />
         <Route path={ROUTES.finance} element={<PermissionGate module="finance"><FinanceManager /></PermissionGate>} />
         <Route path={ROUTES.expenses} element={<PermissionGate module="expenses"><ExpensesManager /></PermissionGate>} />
-        <Route path={ROUTES.retention} element={<Navigate to={DEFAULT_ROUTE} replace />} />
-        <Route path={ROUTES.chat} element={<Navigate to={DEFAULT_ROUTE} replace />} />
+        <Route path={ROUTES.retention} element={<PermissionGate module="retention"><RetentionEngine /></PermissionGate>} />
+        <Route path={ROUTES.chat} element={<PermissionGate module="chat"><ChatManager /></PermissionGate>} />
         <Route path={ROUTES.meetings} element={<PermissionGate module="meetings"><MeetingsCalendar /></PermissionGate>} />
         <Route path={ROUTES.leads} element={<PermissionGate module="leads"><LeadsPipeline /></PermissionGate>} />
         <Route path={ROUTES.team} element={<PermissionGate module="team"><TeamManager /></PermissionGate>} />
@@ -508,9 +512,13 @@ export const App: React.FC = () => {
   const handleForceLogout = useCallback((msg: string = 'Your session has expired. Please sign in again.') => {
     api.auth.logout().catch(() => {});
     clearToken();
+    clearApiCache();
     try {
       localStorage.removeItem('retentio_user');
       localStorage.removeItem('retentio_active_user_id');
+      localStorage.removeItem('retentio_onboarding_completed');
+      localStorage.removeItem('retentio_onboarding_data');
+      localStorage.removeItem('retentio_local_users');
     } catch {}
     setLoginUser(null);
     setIsLoggedIn(false);
@@ -563,10 +571,11 @@ export const App: React.FC = () => {
                 localStorage.setItem('retentio_user', JSON.stringify(mergedUser));
               } catch {}
               const isOwnerAdmin = mergedUser.role === 'admin' || mergedUser.role === 'owner';
-              const onboardingDone = Boolean(mergedUser.onboardingCompleted) || localStorage.getItem('retentio_onboarding_completed') === 'true';
+              const obKey = `retentio_onboarding_completed_${mergedUser.id}`;
+              const onboardingDone = Boolean(mergedUser.onboardingCompleted) || localStorage.getItem(obKey) === 'true';
               if (onboardingDone) {
                 try {
-                  localStorage.setItem('retentio_onboarding_completed', 'true');
+                  localStorage.setItem(obKey, 'true');
                 } catch {}
               }
               setShowOnboarding(!onboardingDone && isOwnerAdmin);
@@ -579,10 +588,11 @@ export const App: React.FC = () => {
             }
           });
 
-        const onboardingDone = Boolean(user.onboardingCompleted) || localStorage.getItem('retentio_onboarding_completed') === 'true';
+        const obKey = `retentio_onboarding_completed_${user.id}`;
+        const onboardingDone = Boolean(user.onboardingCompleted) || localStorage.getItem(obKey) === 'true';
         if (onboardingDone) {
           try {
-            localStorage.setItem('retentio_onboarding_completed', 'true');
+            localStorage.setItem(obKey, 'true');
           } catch {}
         }
         const isOwnerAdmin = user.role === 'admin' || user.role === 'owner';
@@ -643,13 +653,15 @@ export const App: React.FC = () => {
   }, [isLoggedIn, loginUser]);
 
   const handleOnboardingComplete = useCallback((data: any) => {
-    localStorage.setItem('retentio_onboarding_completed', 'true');
     localStorage.setItem('retentio_onboarding_data', JSON.stringify(data));
 
     // Persist to database so incognito / new devices never show onboarding again
     api.auth.completeOnboarding().catch(() => {});
     setLoginUser((prev: any) => {
       if (!prev) return prev;
+      try {
+        localStorage.setItem(`retentio_onboarding_completed_${prev.id}`, 'true');
+      } catch {}
       const updated = { ...prev, onboardingCompleted: true };
       try {
         localStorage.setItem('retentio_user', JSON.stringify(updated));
@@ -693,28 +705,34 @@ export const App: React.FC = () => {
     }).catch(() => {});
 
     if (data.role || data.industry) {
+      const roleLabel = data.roleLabel || (data.role === 'owner' ? 'Agency Owner' : data.role);
+      const nextDesignation = `${roleLabel}${data.industry ? ` · ${data.industry}` : ''}`;
+      if (loginUser?.id) {
+        api.users.update(loginUser.id, { designation: nextDesignation }).catch(() => {});
+      }
       setLoginUser((prev: any) => {
         if (!prev) return prev;
-        const roleLabel = data.roleLabel || (data.role === 'owner' ? 'Agency Owner' : data.role);
         const updated = {
           ...prev,
-          designation: `${roleLabel}${data.industry ? ` · ${data.industry}` : ''}`,
+          designation: nextDesignation,
           industry: data.industry || prev.industry,
         };
-        localStorage.setItem('retentio_user', JSON.stringify(updated));
+        try { localStorage.setItem('retentio_user', JSON.stringify(updated)); } catch {}
         return updated;
       });
     }
 
     window.dispatchEvent(new CustomEvent('retentio_preferences_updated', { detail: data }));
     setShowOnboarding(false);
-  }, []);
+  }, [loginUser?.id]);
 
   const handleOnboardingSkip = useCallback(() => {
-    localStorage.setItem('retentio_onboarding_completed', 'true');
     api.auth.completeOnboarding().catch(() => {});
     setLoginUser((prev: any) => {
       if (!prev) return prev;
+      try {
+        localStorage.setItem(`retentio_onboarding_completed_${prev.id}`, 'true');
+      } catch {}
       const updated = { ...prev, onboardingCompleted: true };
       try {
         localStorage.setItem('retentio_user', JSON.stringify(updated));
@@ -725,33 +743,37 @@ export const App: React.FC = () => {
   }, []);
 
   const handleLogin = async (
-    credentials: { email: string; password: string; agencyId?: string; portalType?: 'company' | 'employee' } | string,
+    credentials: { email: string; password: string; agencyId?: string; portalType?: 'company' | 'employee'; stayLoggedIn?: boolean } | string,
     passwordArg?: string
   ) => {
     setLoginError('');
     setLoginLoading(true);
+    clearApiCache();
 
     try {
+      const stayLoggedIn = typeof credentials === 'string' ? true : credentials.stayLoggedIn !== false;
       const payload = typeof credentials === 'string'
-        ? { email: credentials.trim().toLowerCase(), password: passwordArg || '' }
+        ? { email: credentials.trim().toLowerCase(), password: passwordArg || '', stayLoggedIn: true }
         : {
             ...credentials,
             email: credentials.email.trim().toLowerCase(),
+            stayLoggedIn,
           };
 
       const res = await api.auth.login(payload);
       if (res && res.user) {
         if (res.token) {
-          setToken(res.token);
+          setToken(res.token, stayLoggedIn);
         }
         localStorage.setItem('retentio_user', JSON.stringify(res.user));
         setLoginUser(res.user);
         setIsLoggedIn(true);
         const isOwnerAdmin = res.user.role === 'admin' || res.user.role === 'owner';
-        const onboardingDone = Boolean(res.user.onboardingCompleted) || localStorage.getItem('retentio_onboarding_completed') === 'true';
+        const obKey = `retentio_onboarding_completed_${res.user.id}`;
+        const onboardingDone = Boolean(res.user.onboardingCompleted) || localStorage.getItem(obKey) === 'true';
         if (onboardingDone) {
           try {
-            localStorage.setItem('retentio_onboarding_completed', 'true');
+            localStorage.setItem(obKey, 'true');
           } catch {}
         }
         setShowOnboarding(!onboardingDone && isOwnerAdmin);
@@ -779,10 +801,14 @@ export const App: React.FC = () => {
   const handleLogout = useCallback(() => {
     api.auth.logout().catch(() => {});
     clearToken();
+    clearApiCache();
     try {
       localStorage.removeItem('retentio_user');
       localStorage.removeItem('retentio_token');
       localStorage.removeItem('retentio_active_user_id');
+      localStorage.removeItem('retentio_onboarding_completed');
+      localStorage.removeItem('retentio_onboarding_data');
+      localStorage.removeItem('retentio_local_users');
     } catch {}
     setLoginUser(null);
     setIsLoggedIn(false);

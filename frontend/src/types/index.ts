@@ -89,7 +89,7 @@ export interface Brand {
   surveyReminderScheduledAt?: string;
 }
 
-export type ProjectStatus = 'Not started' | 'In progress' | 'On hold' | 'Completed';
+export type ProjectStatus = 'Not started' | 'In Progress' | 'On Hold' | 'Completed';
 
 export interface Project {
   id: string;
@@ -131,6 +131,18 @@ export interface InvoiceItem {
 
 export type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Partially Paid' | 'Overdue' | 'Cancelled';
 
+export interface BankAccount {
+  id: string;
+  bankName: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankIfsc: string;
+  bankBranch: string;
+  upiId: string;
+  qrCodeUrl?: string;
+  isDefault?: boolean;
+}
+
 export interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -148,10 +160,16 @@ export interface Invoice {
   totalAmount: number;
   paidAmount: number;
   status: InvoiceStatus;
+  currency?: string;
+  currencySymbol?: string;
   notes?: string;
   paymentDate?: string;
   paymentMode?: string;
   razorpayPaymentId?: string;
+  isRecurring?: boolean;
+  bankAccountId?: string | null;
+  bankAccountSnapshot?: BankAccount | null;
+  emailSent?: boolean;
 }
 
 export type PaymentMode = 'Razorpay UPI' | 'Razorpay Card' | 'Razorpay NetBanking' | 'Bank Transfer' | 'Cash' | 'Cheque';
@@ -336,6 +354,7 @@ export interface AppSettings {
   bankIfsc: string;
   bankBranch: string;
   upiId: string;
+  bankAccounts?: BankAccount[];
   razorpayKeyId: string;
   razorpayConnected: boolean;
   subscriptionPlan: {

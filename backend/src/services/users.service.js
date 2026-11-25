@@ -139,8 +139,14 @@ async function updateUser(actor, userId, data) {
   if (!existing.rows.length) return { error: 'not_found' };
   const prev = existing.rows[0];
 
+  const actorAgencyId = actor ? getAgencyId(actor) : null;
+  const targetAgencyId = prev.agency_id || prev.created_by || prev.id;
+  if (actor && actorAgencyId && String(actorAgencyId) !== String(targetAgencyId)) {
+    return { error: 'forbidden' };
+  }
+
   // Email must stay unique across team members.
-  if (data.email && data.email.toLowerCase() !== (prev.email || '').toLowerCase()) {
+  if (data.email && data.email.trim().toLowerCase() !== (prev.email || '').toLowerCase()) {
     const emailCheck = await pool.query(
       'SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND id != $2',
       [data.email.trim(), userId]
@@ -157,8 +163,9 @@ async function updateUser(actor, userId, data) {
     ? prev.permissions
     : (typeof prev.permissions === 'string' ? JSON.parse(prev.permissions || '[]') : []);
 
-  // Privilege Escalation Defense: Admins or HR (for non-admin roles) may change roles/permissions
-  const canManageRoles = actor && (actor.role === 'admin' || (actor.role === 'hr' && prev.role !== 'admin' && data.role !== 'admin'));
+  // Privilege Escalation Defense: Admins or HR (for non-admin targets & non-admin new roles) may change roles/permissions
+  const isSelf = actor && actor.id === userId;
+  const canManageRoles = actor && !isSelf && (actor.role === 'admin' || (actor.role === 'hr' && prev.role !== 'admin' && data.role !== 'admin'));
   const nextRole = (canManageRoles && data.role !== undefined) ? data.role : prev.role;
   const permissionsJson = (canManageRoles && data.permissions !== undefined)
     ? JSON.stringify(Array.isArray(data.permissions) ? data.permissions : [])
@@ -171,7 +178,7 @@ async function updateUser(actor, userId, data) {
      WHERE id = $10 RETURNING *`,
     [
       data.name !== undefined ? data.name : prev.name,
-      data.email !== undefined ? data.email.trim() : prev.email,
+      data.email !== undefined ? data.email.trim().toLowerCase() : prev.email,
       data.phone !== undefined ? data.phone : prev.phone,
       data.designation !== undefined ? data.designation : prev.designation,
       data.avatar !== undefined ? (data.avatar || null) : prev.avatar,
@@ -280,6 +287,7 @@ async function deleteUser(actor, id) {
     await client.query('DELETE FROM meeting_attendees WHERE user_id = $1', [targetId]);
     await client.query('DELETE FROM conversation_participants WHERE user_id = $1', [targetId]);
     await client.query('DELETE FROM message_read_by WHERE user_id = $1', [targetId]);
+    await client.query('DELETE FROM push_subscriptions WHERE user_id = $1', [targetId]);
 
     await client.query('UPDATE tasks SET assignee_id = NULL WHERE assignee_id = $1', [targetId]);
     await client.query('UPDATE expenses SET employee_id = NULL WHERE employee_id = $1', [targetId]);

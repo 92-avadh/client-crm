@@ -10,8 +10,18 @@ const list = asyncHandler(async (req, res) => {
   }));
 });
 
+const normalizeProjectPayload = (raw = {}) => {
+  const normalized = { ...raw };
+  if (normalized.status === 'In progress') normalized.status = 'In Progress';
+  if (normalized.status === 'On hold') normalized.status = 'On Hold';
+  if (!normalized.memberIds && Array.isArray(normalized.assignedMemberIds)) {
+    normalized.memberIds = normalized.assignedMemberIds;
+  }
+  return normalized;
+};
+
 const create = asyncHandler(async (req, res) => {
-  const body = makeValidator(req.body)
+  const body = makeValidator(normalizeProjectPayload(req.body))
     .requiredString('name', { max: 200, label: 'Project name' })
     .requiredString('brandId', { max: 80, label: 'Client' })
     .optionalString('scope', { max: 3000, label: 'Scope' })
@@ -27,7 +37,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  const body = makeValidator(req.body)
+  const body = makeValidator(normalizeProjectPayload(req.body))
     .optionalString('name', { max: 200, label: 'Project name' })
     .optionalString('scope', { max: 3000, label: 'Scope' })
     .optionalString('startDate', { max: 50, label: 'Start date' })

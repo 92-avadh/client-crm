@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, CreditCard, MessageCircle, Trash2, Loader2, Printer } from 'lucide-react';
+import { Eye, CreditCard, MessageCircle, Trash2, Loader2, Printer, Mail } from 'lucide-react';
 import type { Invoice } from '../../types';
 import { getStatusBadgeStyle } from './invoiceStyles';
 
@@ -9,6 +9,8 @@ interface Props {
   onView: (id: string) => void;
   onPay: (inv: Invoice) => void;
   onWhatsApp: (inv: Invoice) => void;
+  onRemind?: (inv: Invoice) => void;
+  remindingId?: string | null;
   onPrintReceipt?: (inv: Invoice) => void;
   onDelete?: (inv: Invoice) => void;
   deletingId?: string | null;
@@ -21,7 +23,7 @@ interface Props {
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 export const InvoiceTable: React.FC<Props> = ({
-  invoices, recurringIds, onView, onPay, onWhatsApp, onPrintReceipt, onDelete, deletingId, canDelete = true,
+  invoices, recurringIds, onView, onPay, onWhatsApp, onRemind, remindingId, onPrintReceipt, onDelete, deletingId, canDelete = true,
   selectedIds, onToggleSelect, onSelectAll,
 }) => {
   const headerCheckboxRef = React.useRef<HTMLInputElement>(null);
@@ -128,6 +130,35 @@ export const InvoiceTable: React.FC<Props> = ({
                         <button onClick={() => onPrintReceipt(inv)} title="Print Thermal Receipt (Animation)"
                           style={{ padding: '5px', borderRadius: 8, background: 'var(--bg-subtle)', color: 'var(--text-secondary)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                           <Printer style={{ width: 14, height: 14 }} />
+                        </button>
+                      )}
+
+                      {inv?.status !== 'Paid' && onRemind && (
+                        <button
+                          onClick={() => onRemind(inv)}
+                          disabled={remindingId === inv.id}
+                          title="Send Payment Reminder Email"
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: 8,
+                            background: inv.status === 'Overdue' ? 'var(--danger-bg)' : 'var(--warn-bg)',
+                            color: inv.status === 'Overdue' ? 'var(--danger-text)' : 'var(--warn-text)',
+                            border: `1px solid ${inv.status === 'Overdue' ? 'var(--danger-border)' : 'var(--warn-border)'}`,
+                            fontSize: 11.5,
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            cursor: remindingId === inv.id ? 'not-allowed' : 'pointer',
+                            opacity: remindingId === inv.id ? 0.6 : 1,
+                          }}
+                        >
+                          {remindingId === inv.id ? (
+                            <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />
+                          ) : (
+                            <Mail style={{ width: 12, height: 12 }} />
+                          )}
+                          <span>Remind</span>
                         </button>
                       )}
 

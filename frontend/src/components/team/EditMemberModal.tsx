@@ -97,8 +97,8 @@ export const EditMemberModal: React.FC<Props> = ({
         return;
       }
     }
-    if (form.password && form.password.trim().length > 0 && form.password.trim().length < 6) {
-      setValidationError('New password must be at least 6 characters long');
+    if (form.password && form.password.trim().length > 0 && form.password.trim().length < 8) {
+      setValidationError('New password must be at least 8 characters long');
       return;
     }
     onSubmit(e);

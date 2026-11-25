@@ -13,31 +13,45 @@ if (typeof window !== 'undefined') {
 }
 
 export const getToken = (): string | null => {
-  if (typeof localStorage !== 'undefined') {
-    return localStorage.getItem('retentio_token');
-  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const localTok = localStorage.getItem('retentio_token');
+      if (localTok) return localTok;
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage.getItem('retentio_token');
+    }
+  } catch {}
   return null;
 };
 
 let isCircuitBroken = false;
 
-export const setToken = (t: string) => {
-  if (typeof localStorage !== 'undefined') {
+export const setToken = (t: string, persist = true) => {
+  try {
     if (t) {
-      localStorage.setItem('retentio_token', t);
+      if (persist && typeof localStorage !== 'undefined') {
+        localStorage.setItem('retentio_token', t);
+        if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('retentio_token');
+      } else if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('retentio_token', t);
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('retentio_token');
+      }
       isCircuitBroken = false;
     } else {
-      localStorage.removeItem('retentio_token');
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('retentio_token');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('retentio_token');
       isCircuitBroken = true;
     }
-  }
+  } catch {}
 };
 
 export const clearToken = () => {
   isCircuitBroken = true;
-  if (typeof localStorage !== 'undefined') {
-    localStorage.removeItem('retentio_token');
-  }
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem('retentio_token');
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('retentio_token');
+  } catch {}
 };
 
 let sessionExpiredDebounceTimer: any = null;
@@ -75,6 +89,7 @@ const CACHE_TTL_MS = 15_000;
 export const clearApiCache = (pattern?: string) => {
   if (!pattern) {
     responseCache.clear();
+    inFlightRequests.clear();
     return;
   }
   for (const k of responseCache.keys()) {
@@ -145,6 +160,7 @@ export async function fetchAll<T>(path: string, pageSize = 200): Promise<T[]> {
 
 const isPublicRoute = (path: string) =>
   path.startsWith('/auth/login') ||
+  path.startsWith('/auth/logout') ||
   path.startsWith('/auth/send-otp') ||
   path.startsWith('/auth/verify-otp') ||
   path.startsWith('/auth/resend-otp') ||
@@ -172,10 +188,22 @@ async function req<T>(method: string, path: string, body?: any): Promise<T> {
     return Promise.reject(new Error('Session expired or unauthorized'));
   }
 
-  // Invalidate cache on mutations
+  // Invalidate cache (and related cross-resource caches) on mutations
   if (method !== 'GET') {
     const resourcePrefix = path.split('/')[1] || '';
     clearApiCache(resourcePrefix);
+    if (resourcePrefix === 'payments') {
+      clearApiCache('invoices');
+      clearApiCache('brands');
+    } else if (resourcePrefix === 'invoices') {
+      clearApiCache('payments');
+      clearApiCache('brands');
+    } else if (resourcePrefix === 'tasks' || resourcePrefix === 'projects') {
+      clearApiCache('brands');
+      clearApiCache('retention');
+    } else if (resourcePrefix === 'leads') {
+      clearApiCache('brands');
+    }
   }
 
   // Cache lookup for GET
@@ -341,6 +369,7 @@ export const api = {
     listAll: () => fetchAll<any>('/invoices'),
     get: (id: string) => req<any>('GET', `/invoices/${id}`),
     create: (data: any) => req<any>('POST', '/invoices', data),
+    remind: (id: string) => req<{ success: boolean; sentTo: string; invoiceNumber: string }>('POST', `/invoices/${id}/remind`),
     updateStatus: (id: string, status: string) => req<any>('PATCH', `/invoices/${id}/status`, { status }),
     delete: (id: string) => req<any>('DELETE', `/invoices/${id}`),
     bulkDelete: (ids: string[]) => req<any>('POST', '/invoices/bulk-delete', { ids }),

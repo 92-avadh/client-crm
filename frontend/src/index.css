@@ -1328,6 +1328,45 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   background-color: var(--bg-raised) !important;
 }
 
+/* Preserve crisp white paper & dark ink inside Tax Invoice previews in dark mode */
+.dark .printable-invoice,
+.dark .printable-invoice .swipe-template-root {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+.dark .printable-invoice [style*="rgb(248, 250, 252)"] {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+.dark .printable-invoice [style*="rgb(241, 245, 249)"] {
+  background-color: #f1f5f9 !important;
+}
+.dark .printable-invoice [style*="rgb(255, 255, 255)"] {
+  background-color: #ffffff !important;
+}
+.dark .printable-invoice [style*="color: rgb(15, 23, 42)"],
+.dark .printable-invoice [style*="color: rgb(15, 42, 66)"],
+.dark .printable-invoice [style*="color: rgb(10, 37, 64)"],
+.dark .printable-invoice [style*="color: rgb(10, 10, 10)"] {
+  color: #0f172a !important;
+}
+.dark .printable-invoice [style*="color: rgb(51, 65, 85)"] {
+  color: #334155 !important;
+}
+.dark .printable-invoice [style*="color: rgb(71, 85, 105)"] {
+  color: #475569 !important;
+}
+.dark .printable-invoice [style*="color: rgb(100, 116, 139)"] {
+  color: #64748b !important;
+}
+.dark .printable-invoice [style*="1px solid rgb(203, 213, 225)"] {
+  border-color: #cbd5e1 !important;
+}
+.dark .printable-invoice [style*="1px solid rgb(226, 232, 240)"] {
+  border-color: #e2e8f0 !important;
+}
+
 /* ─── View Transition API: Circular Reveal Animation ───── */
 ::view-transition-old(root),
 ::view-transition-new(root) {

@@ -10,7 +10,7 @@ const listConversations = asyncHandler(async (req, res) => {
 });
 
 const listMessages = asyncHandler(async (req, res) => {
-  res.json(await chat.listMessages(req.params.id, {
+  res.json(await chat.listMessages(req.params.id, req.user, {
     page: Math.max(1, parseInt(req.query.page, 10) || 1),
     pageSize: Math.max(1, Math.min(200, parseInt(req.query.pageSize, 10) || 100)),
   }));
@@ -79,24 +79,30 @@ const directConversation = asyncHandler(async (req, res) => {
 });
 
 const markRead = asyncHandler(async (req, res) => {
-  const result = await chat.markMessagesRead(req.params.id, req.user.id);
+  const result = await chat.markMessagesRead(req.params.id, req.user);
   res.json(result);
 });
 
 const deleteMessage = asyncHandler(async (req, res) => {
   const { id: conversationId, messageId } = req.params;
   const deleteType = req.body?.deleteType || req.query?.deleteType || 'forEveryone';
-  const result = await chat.deleteMessage(conversationId, messageId, deleteType, req.user.id);
+  const result = await chat.deleteMessage(conversationId, messageId, deleteType, req.user);
+  if (deleteType === 'forEveryone') {
+    try {
+      const socket = require('../socket');
+      socket.broadcastMessageDeleted(conversationId, messageId, deleteType, req.user.id);
+    } catch {}
+  }
   res.json(result);
 });
 
 const deleteConversation = asyncHandler(async (req, res) => {
-  const result = await chat.deleteConversation(req.params.id, req.user.id);
+  const result = await chat.deleteConversation(req.params.id, req.user);
   res.json(result);
 });
 
 const clearConversation = asyncHandler(async (req, res) => {
-  const result = await chat.clearConversationMessages(req.params.id);
+  const result = await chat.clearConversationMessages(req.params.id, req.user);
   res.json(result);
 });
 

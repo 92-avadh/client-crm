@@ -2,7 +2,7 @@ const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { sendOtpEmail } = require('../utils/mailer');
+const { sendOtpEmail, sendEmail } = require('../utils/mailer');
 
 const genId = () => 'usr_' + crypto.randomBytes(8).toString('hex');
 const genOtp = () => String(crypto.randomInt(100000, 1000000));
@@ -22,21 +22,21 @@ const OTP_COOLDOWN_S = 60;
 const MAX_OTP_ATTEMPTS = 5;
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 
-function makeToken(user) {
+function makeToken(user, expiresIn = '30d') {
   const perms = resolvePermissions(user.role, user.permissions);
   const agencyId = getAgencyId(user);
   return jwt.sign(
     { id: user.id, name: user.name, email: user.email, role: user.role, brandId: user.brand_id, agencyId, permissions: perms },
     JWT_SECRET,
-    { expiresIn: '30d' }
+    { expiresIn }
   );
 }
 
 /** Seconds remaining before another OTP may be requested. */
-async function otpCooldownRemaining(email) {
+async function otpCooldownRemaining(email, purpose = 'register') {
   const prev = await pool.query(
-    `SELECT created_at FROM otp_verifications WHERE email = $1 ORDER BY created_at DESC LIMIT 1`,
-    [email.toLowerCase()]
+    `SELECT created_at FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = $2 ORDER BY created_at DESC LIMIT 1`,
+    [email.trim(), purpose]
   );
   if (!prev.rows.length) return 0;
   const secs = (Date.now() - new Date(prev.rows[0].created_at).getTime()) / 1000;
@@ -44,47 +44,55 @@ async function otpCooldownRemaining(email) {
 }
 
 async function issueOtp(email, company) {
-  const wait = await otpCooldownRemaining(email);
+  const cleanEmail = email.trim().toLowerCase();
+  const wait = await otpCooldownRemaining(cleanEmail, 'register');
   if (wait > 0) {
     const err = new Error(`Please wait ${wait}s before requesting another code.`);
     err.status = 429;
     throw err;
   }
 
-  await pool.query('DELETE FROM otp_verifications WHERE email = $1', [email.toLowerCase()]);
+  await pool.query("DELETE FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = 'register'", [cleanEmail]);
   const otp = genOtp();
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
   await pool.query(
     `INSERT INTO otp_verifications (email, otp_code, purpose, expires_at) VALUES ($1, $2, 'register', $3)`,
-    [email.toLowerCase(), otp, expiresAt]
+    [cleanEmail, otp, expiresAt]
   );
 
-  sendOtpEmail(email, otp, company || 'Client-crm').catch((err) => {
-    console.error(`Background email dispatch failure for ${email}: ${err.message}`);
-  });
+  await sendOtpEmail(cleanEmail, otp, company || 'Client-crm');
 }
 
 async function requestRegistrationOtp({ name, email, password, company }) {
-  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+  const cleanEmail = email.trim().toLowerCase();
+  const existing = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [cleanEmail]);
   if (existing.rows.length > 0) {
-    const err = new Error('This email is already registered. Please sign in.');
+    const err = new Error('This email address is already registered. Please sign in.');
     err.status = 409;
     throw err;
   }
-  await issueOtp(email, company);
+  await issueOtp(cleanEmail, company);
 }
 
 async function resendOtp({ email, company }) {
-  await issueOtp(email, company);
+  const cleanEmail = email.trim().toLowerCase();
+  const existing = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [cleanEmail]);
+  if (existing.rows.length > 0) {
+    const err = new Error('This email address is already registered. Please sign in.');
+    err.status = 409;
+    throw err;
+  }
+  await issueOtp(cleanEmail, company);
 }
 
 async function verifyOtpAndRegister({ name, email, password, company, otp }) {
+  const cleanEmail = email.trim().toLowerCase();
   const { rows } = await pool.query(
     `SELECT * FROM otp_verifications
-     WHERE email = $1 AND purpose = 'register' AND verified = false
+     WHERE LOWER(email) = LOWER($1) AND purpose = 'register' AND verified = false
      ORDER BY created_at DESC LIMIT 1`,
-    [email.toLowerCase()]
+    [cleanEmail]
   );
 
   const record = rows[0];
@@ -121,9 +129,9 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
   const id = genId();
 
   // Ensure email is not already registered
-  const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+  const existingUser = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email.trim()]);
   if (existingUser.rows.length > 0) {
-    await pool.query('DELETE FROM otp_verifications WHERE email = $1', [email.toLowerCase()]);
+    await pool.query("DELETE FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = 'register'", [email.trim()]);
     const err = new Error('This email is already registered. Please sign in.');
     err.status = 409;
     throw err;
@@ -152,13 +160,14 @@ async function verifyOtpAndRegister({ name, email, password, company, otp }) {
     ['set_' + agencyId, agencyId, company, email.toLowerCase()]
   );
 
-  await pool.query('DELETE FROM otp_verifications WHERE email = $1', [email.toLowerCase()]);
+  await pool.query("DELETE FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = 'register'", [email.trim()]);
 
   return {
-    token: makeToken(user),
+    token: makeToken(user, stayLoggedIn === false ? '24h' : '30d'),
     user: {
       id: user.id, name: user.name, email: user.email,
       role: user.role, designation: user.designation,
+      agencyId,
       permissions: JSON.parse(defaultAdminPerms),
       onboardingCompleted: false,
     },
@@ -203,7 +212,7 @@ async function searchAgencies(query) {
   });
 }
 
-async function login({ email, password, agencyId, portalType }) {
+async function login({ email, password, agencyId, portalType, stayLoggedIn = true }) {
   const emailNorm = email.toLowerCase().trim();
 
   let query = 'SELECT * FROM users WHERE LOWER(email) = $1';
@@ -276,7 +285,7 @@ async function login({ email, password, agencyId, portalType }) {
   const perms = resolvePermissions(user.role, user.permissions);
 
   return {
-    token: makeToken(user),
+    token: makeToken(user, stayLoggedIn === false ? '24h' : '30d'),
     user: {
       id: user.id,
       name: user.name,
@@ -295,21 +304,29 @@ async function login({ email, password, agencyId, portalType }) {
 }
 
 async function forgotPassword({ email }) {
-  const { rows } = await pool.query('SELECT * FROM users WHERE email = $1 AND is_active = true', [email.toLowerCase()]);
+  const cleanEmail = email.trim().toLowerCase();
+  const { rows } = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1) AND is_active = true', [cleanEmail]);
   const user = rows[0];
 
   if (!user) {
     return { message: 'If the email is registered, you will get a code in your mail.' };
   }
 
+  const wait = await otpCooldownRemaining(cleanEmail, 'reset');
+  if (wait > 0) {
+    const err = new Error(`Please wait ${wait}s before requesting another reset code.`);
+    err.status = 429;
+    throw err;
+  }
+
   const resetCode = genOtp();
   const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
 
-  await pool.query("DELETE FROM otp_verifications WHERE email = $1 AND purpose = 'reset'", [email.toLowerCase()]);
+  await pool.query("DELETE FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = 'reset'", [cleanEmail]);
 
   await pool.query(
     `INSERT INTO otp_verifications (email, otp_code, purpose, expires_at) VALUES ($1, $2, 'reset', $3)`,
-    [email.toLowerCase(), resetCode, expiresAt]
+    [cleanEmail, resetCode, expiresAt]
   );
 
   const brandName = process.env.BRAND_NAME || process.env.APP_NAME || 'Retentio';
@@ -336,11 +353,8 @@ async function forgotPassword({ email }) {
     </div>
   `;
 
-  console.log(`Dispatching password reset code to ${email}...`);
-
-  sendOtpEmail(email, resetCode, brandName).catch((err) => {
-    console.error(`Background reset email dispatch failure for ${email}: ${err.message}`);
-  });
+  console.log(`Dispatching password reset code to ${cleanEmail}...`);
+  await sendEmail({ toEmail: cleanEmail, subject, html, agencyName: brandName });
 
   return { message: 'If the email is registered, you will get a code in your mail.' };
 }
@@ -352,11 +366,12 @@ async function resetPassword({ email, code, newPassword }) {
     throw err;
   }
 
+  const cleanEmail = email.trim().toLowerCase();
   const { rows } = await pool.query(
     `SELECT * FROM otp_verifications
-     WHERE email = $1 AND purpose = 'reset' AND verified = false
+     WHERE LOWER(email) = LOWER($1) AND purpose = 'reset' AND verified = false
      ORDER BY created_at DESC LIMIT 1`,
-    [email.toLowerCase()]
+    [cleanEmail]
   );
 
   const record = rows[0];
@@ -366,7 +381,7 @@ async function resetPassword({ email, code, newPassword }) {
     throw err;
   }
   if (new Date() > new Date(record.expires_at)) {
-    await pool.query("DELETE FROM otp_verifications WHERE email = $1 AND purpose = 'reset'", [email.toLowerCase()]);
+    await pool.query("DELETE FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = 'reset'", [cleanEmail]);
     const err = new Error('That code has expired. Please request a new one.');
     err.status = 400;
     throw err;
@@ -379,7 +394,7 @@ async function resetPassword({ email, code, newPassword }) {
   if (!isMatch) {
     const attempts = (record.attempts || 0) + 1;
     if (attempts >= MAX_OTP_ATTEMPTS) {
-      await pool.query("DELETE FROM otp_verifications WHERE email = $1 AND purpose = 'reset'", [email.toLowerCase()]);
+      await pool.query("DELETE FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = 'reset'", [cleanEmail]);
       const err = new Error('Too many incorrect attempts. Please request a new code.');
       err.status = 429;
       throw err;
@@ -390,9 +405,9 @@ async function resetPassword({ email, code, newPassword }) {
     throw err;
   }
 
-  const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+  const userRes = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [cleanEmail]);
   if (userRes.rows.length === 0) {
-    await pool.query("DELETE FROM otp_verifications WHERE email = $1 AND purpose = 'reset'", [email.toLowerCase()]);
+    await pool.query("DELETE FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = 'reset'", [cleanEmail]);
     const err = new Error('User not found.');
     err.status = 404;
     throw err;
@@ -400,7 +415,7 @@ async function resetPassword({ email, code, newPassword }) {
 
   const hash = await bcrypt.hash(newPassword, 10);
   await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userRes.rows[0].id]);
-  await pool.query("DELETE FROM otp_verifications WHERE email = $1 AND purpose = 'reset'", [email.toLowerCase()]);
+  await pool.query("DELETE FROM otp_verifications WHERE LOWER(email) = LOWER($1) AND purpose = 'reset'", [cleanEmail]);
 
   return { message: 'Password has been reset successfully. Please sign in.' };
 }

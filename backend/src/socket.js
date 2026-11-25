@@ -1,6 +1,20 @@
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+const pool = require('./db');
+const { getAgencyId } = require('./utils/agency');
+const { JWT_SECRET } = require('./middleware/auth');
 
 let io = null;
+
+function parseSocketCookie(cookieHeader, name) {
+  if (!cookieHeader) return null;
+  const parts = cookieHeader.split(';');
+  for (const part of parts) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k === name) return decodeURIComponent(rest.join('='));
+  }
+  return null;
+}
 
 function initSocket(httpServer, isAllowedOrigin) {
   io = new Server(httpServer, {
@@ -18,39 +32,80 @@ function initSocket(httpServer, isAllowedOrigin) {
     pingInterval: 10000,
   });
 
-  const onlineUserSockets = new Map(); // userId -> Set of socket IDs
+  // Authenticate every socket connection via JWT before allowing room joins/events
+  io.use(async (socket, next) => {
+    try {
+      const token =
+        socket.handshake.auth?.token ||
+        parseSocketCookie(socket.handshake.headers?.cookie, 'token');
+      if (!token) {
+        return next(new Error('Authentication required'));
+      }
+      const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+      const { rows } = await pool.query(
+        'SELECT id, name, role, agency_id, brand_id, created_by, is_active FROM users WHERE id = $1',
+        [decoded.id]
+      );
+      const u = rows[0];
+      if (!u || u.is_active === false) {
+        return next(new Error('Account unavailable'));
+      }
+      socket.user = {
+        id: u.id,
+        name: u.name,
+        role: u.role,
+        brandId: u.brand_id,
+        agencyId: getAgencyId(u),
+      };
+      next();
+    } catch {
+      next(new Error('Invalid authentication token'));
+    }
+  });
+
+  // agencyId -> Map(userId -> Set(socketId)) so online presence stays strictly within each tenant
+  const agencyOnlineUsers = new Map();
+
+  const getAgencyMap = (agencyId) => {
+    if (!agencyOnlineUsers.has(agencyId)) {
+      agencyOnlineUsers.set(agencyId, new Map());
+    }
+    return agencyOnlineUsers.get(agencyId);
+  };
 
   io.on('connection', (socket) => {
-    let currentUserId = null;
+    const currentUser = socket.user;
+    const currentUserId = currentUser.id;
+    const currentAgencyId = currentUser.agencyId;
 
-    const registerUser = (userId, agencyId) => {
-      if (!userId) return;
-      currentUserId = userId;
-      socket.join(`user_${userId}`);
-      if (agencyId) {
-        socket.join(`agency_${agencyId}`);
+    socket.join(`user_${currentUserId}`);
+    if (currentAgencyId) {
+      socket.join(`agency_${currentAgencyId}`);
+      const agencyMap = getAgencyMap(currentAgencyId);
+      if (!agencyMap.has(currentUserId)) {
+        agencyMap.set(currentUserId, new Set());
       }
-      if (!onlineUserSockets.has(userId)) {
-        onlineUserSockets.set(userId, new Set());
-      }
-      onlineUserSockets.get(userId).add(socket.id);
-      socket.emit('online_users_list', Array.from(onlineUserSockets.keys()));
-      io.emit('user_online', { userId });
-    };
+      agencyMap.get(currentUserId).add(socket.id);
+      socket.emit('online_users_list', Array.from(agencyMap.keys()));
+      io.to(`agency_${currentAgencyId}`).emit('user_online', { userId: currentUserId });
+    }
 
-    // Handle user authentication / registration for personal notifications
-    socket.on('authenticate', ({ userId, agencyId }) => {
-      registerUser(userId, agencyId);
+    // Re-emit tenant-scoped online users list (ignores untrusted client userId/agencyId)
+    socket.on('authenticate', () => {
+      if (currentAgencyId) {
+        const agencyMap = getAgencyMap(currentAgencyId);
+        socket.emit('online_users_list', Array.from(agencyMap.keys()));
+      }
     });
 
-    // Join specific active conversation room
-    socket.on('join_conversation', ({ conversationId, userId }) => {
-      if (conversationId) {
+    // Join specific active conversation room after checking membership & agency boundary
+    socket.on('join_conversation', async ({ conversationId }) => {
+      if (!conversationId) return;
+      try {
+        const chatService = require('./services/chat.service');
+        await chatService.assertConversationAccess(conversationId, currentUser);
         socket.join(`conversation_${conversationId}`);
-        if (userId) {
-          registerUser(userId);
-        }
-      }
+      } catch {}
     });
 
     // Leave conversation room
@@ -60,28 +115,28 @@ function initSocket(httpServer, isAllowedOrigin) {
       }
     });
 
-    // Real-time typing indicators
-    socket.on('typing', ({ conversationId, userId, userName, isTyping }) => {
-      if (conversationId) {
+    // Real-time typing indicators (only within joined conversation, identity from verified socket.user)
+    socket.on('typing', ({ conversationId, isTyping }) => {
+      if (conversationId && socket.rooms.has(`conversation_${conversationId}`)) {
         socket.to(`conversation_${conversationId}`).emit('user_typing', {
           conversationId,
-          userId,
-          userName,
-          isTyping,
+          userId: currentUserId,
+          userName: currentUser.name,
+          isTyping: Boolean(isTyping),
         });
       }
     });
 
     // Mark messages as read in real time
-    socket.on('mark_read', async ({ conversationId, userId }) => {
-      if (conversationId && userId) {
+    socket.on('mark_read', async ({ conversationId }) => {
+      if (conversationId) {
         try {
           const chatService = require('./services/chat.service');
-          const readResult = await chatService.markMessagesRead(conversationId, userId);
+          const readResult = await chatService.markMessagesRead(conversationId, currentUser);
           if (readResult && readResult.updatedCount > 0) {
             io.to(`conversation_${conversationId}`).emit('messages_read', {
               conversationId,
-              userId,
+              userId: currentUserId,
               messageIds: readResult.messageIds,
             });
           }
@@ -92,12 +147,12 @@ function initSocket(httpServer, isAllowedOrigin) {
     });
 
     // Delete message broadcast
-    socket.on('delete_message', async ({ conversationId, messageId, deleteType, userId }) => {
+    socket.on('delete_message', async ({ conversationId, messageId, deleteType }) => {
       if (conversationId && messageId) {
         try {
           const chatService = require('./services/chat.service');
-          await chatService.deleteMessage(conversationId, messageId, deleteType, userId);
-          broadcastMessageDeleted(conversationId, messageId, deleteType, userId);
+          await chatService.deleteMessage(conversationId, messageId, deleteType, currentUser);
+          broadcastMessageDeleted(conversationId, messageId, deleteType, currentUserId);
         } catch (err) {
           console.error('Socket delete_message error:', err.message);
         }
@@ -105,12 +160,15 @@ function initSocket(httpServer, isAllowedOrigin) {
     });
 
     socket.on('disconnect', () => {
-      if (currentUserId && onlineUserSockets.has(currentUserId)) {
-        const sockets = onlineUserSockets.get(currentUserId);
-        sockets.delete(socket.id);
-        if (sockets.size === 0) {
-          onlineUserSockets.delete(currentUserId);
-          io.emit('user_offline', { userId: currentUserId });
+      if (currentAgencyId && agencyOnlineUsers.has(currentAgencyId)) {
+        const agencyMap = agencyOnlineUsers.get(currentAgencyId);
+        if (agencyMap.has(currentUserId)) {
+          const sockets = agencyMap.get(currentUserId);
+          sockets.delete(socket.id);
+          if (sockets.size === 0) {
+            agencyMap.delete(currentUserId);
+            io.to(`agency_${currentAgencyId}`).emit('user_offline', { userId: currentUserId });
+          }
         }
       }
     });
@@ -194,9 +252,7 @@ function broadcastNotification(notification, targetUserId) {
   const agencyId = notification.agency_id || notification.agencyId;
   if (agencyId) {
     io.to(`agency_${agencyId}`).emit('new_notification', notification);
-    return;
   }
-  io.emit('new_notification', notification);
 }
 
 module.exports = {

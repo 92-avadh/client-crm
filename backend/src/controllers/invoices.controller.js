@@ -49,9 +49,30 @@ const create = asyncHandler(async (req, res) => {
     .optionalString('notes', { max: 2000, label: 'Notes' })
     .oneOf('status', invoices.INVOICE_STATUSES, { label: 'Status' })
     .array('items', { max: 200, label: 'Line items' })
+    .optionalString('bankAccountId', { max: 50, label: 'Bank account ID' })
     .validate();
 
-  res.status(201).json(await invoices.createInvoice(req.user, body));
+  const payload = {
+    ...body,
+    isRecurring: Boolean(req.body?.isRecurring),
+    sendEmail: req.body?.sendEmail !== undefined ? Boolean(req.body.sendEmail) : undefined,
+    bankAccountSnapshot: req.body?.bankAccountSnapshot && typeof req.body.bankAccountSnapshot === 'object'
+      ? {
+          id: String(req.body.bankAccountSnapshot.id || '').slice(0, 50),
+          bankName: String(req.body.bankAccountSnapshot.bankName || '').slice(0, 150),
+          bankAccountName: String(req.body.bankAccountSnapshot.bankAccountName || '').slice(0, 150),
+          bankAccountNumber: String(req.body.bankAccountSnapshot.bankAccountNumber || '').slice(0, 50),
+          bankIfsc: String(req.body.bankAccountSnapshot.bankIfsc || '').slice(0, 20),
+          bankBranch: String(req.body.bankAccountSnapshot.bankBranch || '').slice(0, 150),
+          upiId: String(req.body.bankAccountSnapshot.upiId || '').slice(0, 100),
+          qrCodeUrl: typeof req.body.bankAccountSnapshot.qrCodeUrl === 'string' && req.body.bankAccountSnapshot.qrCodeUrl.length <= 3_000_000
+            ? req.body.bankAccountSnapshot.qrCodeUrl
+            : '',
+        }
+      : undefined,
+  };
+
+  res.status(201).json(await invoices.createInvoice(req.user, payload));
 });
 
 const updateStatus = asyncHandler(async (req, res) => {
@@ -97,4 +118,17 @@ const bulkRemove = asyncHandler(async (req, res) => {
   res.json({ success: true, count, message: `${count} invoice(s) deleted successfully` });
 });
 
-module.exports = { list, get, create, updateStatus, pdfData, remove, bulkRemove };
+/** POST /api/invoices/:id/remind — dispatch payment reminder email to client */
+const remind = asyncHandler(async (req, res) => {
+  if (!canWriteInvoices(req.user)) {
+    return res.status(403).json({ error: "You don't have permission to send payment reminders." });
+  }
+  const result = await invoices.sendInvoiceReminder(req.user, req.params.id);
+  if (!result) return res.status(404).json({ error: 'We could not find that invoice.' });
+  if (result.error === 'forbidden') {
+    return res.status(403).json({ error: "You don't have permission to send reminders for this invoice." });
+  }
+  res.json(result);
+});
+
+module.exports = { list, get, create, updateStatus, pdfData, remove, bulkRemove, remind };

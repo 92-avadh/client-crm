@@ -67,6 +67,7 @@ export const InvoicePreviewModal: React.FC<Props> = ({
         style={{
           ...modalCard,
           maxWidth: 900,
+          height: '94vh',
           maxHeight: '94vh',
           display: 'flex',
           flexDirection: 'column',
@@ -81,6 +82,7 @@ export const InvoicePreviewModal: React.FC<Props> = ({
         <div
           className="no-print"
           style={{
+            flexShrink: 0,
             padding: '12px 18px',
             borderBottom: '1px solid var(--border)',
             background: 'var(--bg-subtle)',
@@ -235,11 +237,12 @@ export const InvoicePreviewModal: React.FC<Props> = ({
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
             padding: '24px 16px',
             background: 'var(--bg-canvas, #090d16)',
-            display: 'flex',
-            justifyContent: 'center',
+            display: 'block',
           }}
         >
           <div
@@ -247,10 +250,11 @@ export const InvoicePreviewModal: React.FC<Props> = ({
             style={{
               width: '100%',
               maxWidth: 800,
+              margin: '0 auto',
               background: '#ffffff',
+              color: '#0f172a',
               borderRadius: 6,
               boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
-              overflow: 'hidden',
             }}
           >
             {activeTemplate === 'modern' && (

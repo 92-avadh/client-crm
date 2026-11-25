@@ -16,6 +16,32 @@ function mapSettings(r) {
     try { invoiceDesign = JSON.parse(r.invoice_design); } catch { invoiceDesign = {}; }
   }
 
+  let bankAccounts = [];
+  if (Array.isArray(r.bank_accounts)) {
+    bankAccounts = r.bank_accounts;
+  } else if (typeof r.bank_accounts === 'string') {
+    try {
+      const parsed = JSON.parse(r.bank_accounts);
+      if (Array.isArray(parsed)) bankAccounts = parsed;
+    } catch { bankAccounts = []; }
+  }
+  // Backwards compatibility: synthesize Slot 1 from legacy flat columns if bank_accounts is empty
+  if (bankAccounts.length === 0 && (r.bank_name || r.bank_account_name || r.bank_account_number || r.bank_ifsc || r.upi_id)) {
+    bankAccounts = [{
+      id: 'bank_1',
+      bankName: r.bank_name || '',
+      bankAccountName: r.bank_account_name || '',
+      bankAccountNumber: r.bank_account_number || '',
+      bankIfsc: r.bank_ifsc || '',
+      bankBranch: r.bank_branch || '',
+      upiId: r.upi_id || '',
+      qrCodeUrl: '',
+      isDefault: true,
+    }];
+  }
+  bankAccounts = bankAccounts.slice(0, 2);
+  const defaultBank = bankAccounts.find(b => b.isDefault) || bankAccounts[0];
+
   return {
     id: r.id,
     companyName: r.company_name,
@@ -37,12 +63,13 @@ function mapSettings(r) {
     defaultGstRate: parseFloat(r.default_gst_rate != null ? r.default_gst_rate : 18),
     defaultHsnSac: r.default_hsn_sac,
     invoicePrefix: r.invoice_prefix,
-    bankName: r.bank_name || '',
-    bankAccountName: r.bank_account_name,
-    bankAccountNumber: r.bank_account_number,
-    bankIfsc: r.bank_ifsc,
-    bankBranch: r.bank_branch,
-    upiId: r.upi_id,
+    bankName: defaultBank?.bankName ?? r.bank_name ?? '',
+    bankAccountName: defaultBank?.bankAccountName ?? r.bank_account_name,
+    bankAccountNumber: defaultBank?.bankAccountNumber ?? r.bank_account_number,
+    bankIfsc: defaultBank?.bankIfsc ?? r.bank_ifsc,
+    bankBranch: defaultBank?.bankBranch ?? r.bank_branch,
+    upiId: defaultBank?.upiId ?? r.upi_id,
+    bankAccounts,
     razorpayKeyId: r.razorpay_key_id,
     razorpayConnected: r.razorpay_connected,
     subscriptionPlan: {
@@ -71,7 +98,7 @@ async function getSettings(user) {
     "SELECT * FROM settings WHERE agency_id = $1 OR id = $2 OR id = $1 ORDER BY CASE WHEN agency_id = $1 THEN 0 WHEN id = $2 THEN 1 ELSE 2 END LIMIT 1",
     [agencyId, settingsId]
   );
-  if (!rows.length) {
+  if (!rows.length && agencyId === 'usr_admin') {
     const fallback = await pool.query("SELECT * FROM settings WHERE id = 'main' LIMIT 1");
     if (fallback.rows.length) {
       rows = fallback.rows;
@@ -88,6 +115,13 @@ async function updateSettings(user, data) {
   const agencyId = user ? getAgencyId(user) : 'usr_admin';
   const settingsId = agencyId === 'usr_admin' ? 'main' : 'set_' + agencyId;
   const sp = data.subscriptionPlan || {};
+  const hasBankAccounts = Array.isArray(data.bankAccounts);
+  const syncedAccounts = hasBankAccounts ? data.bankAccounts.slice(0, 2) : null;
+  const primaryBank = syncedAccounts
+    ? (syncedAccounts.find(b => b.isDefault) || syncedAccounts[0] || {
+        bankName: '', bankAccountName: '', bankAccountNumber: '', bankIfsc: '', bankBranch: '', upiId: ''
+      })
+    : null;
 
   const { rows } = await pool.query(
     `INSERT INTO settings (
@@ -96,9 +130,9 @@ async function updateSettings(user, data) {
       razorpay_key_id, razorpay_connected, subscription_plan_name, subscription_price, subscription_billing_cycle,
       subscription_renewal_date, subscription_status, retention_threshold_days, whatsapp_enabled, invoice_design,
       currency, currency_symbol, industry, team_size, goals, dashboard_layout, dashboard_focus,
-      slack_webhook_url, discord_webhook_url, agency_id, bank_name, company_logo, updated_at
+      slack_webhook_url, discord_webhook_url, agency_id, bank_name, company_logo, bank_accounts, updated_at
     )
-    VALUES ($35, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $36, $37, $38, NOW())
+    VALUES ($35, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $36, $37, $38, $39, NOW())
     ON CONFLICT (id) DO UPDATE SET
       company_name = COALESCE($1, settings.company_name),
       company_email = COALESCE($2, settings.company_email),
@@ -137,6 +171,7 @@ async function updateSettings(user, data) {
       agency_id = COALESCE(settings.agency_id, $36),
       bank_name = COALESCE($37, settings.bank_name),
       company_logo = CASE WHEN $38 = '__CLEAR__' THEN NULL WHEN $38 IS NOT NULL THEN $38 ELSE settings.company_logo END,
+      bank_accounts = COALESCE($39, settings.bank_accounts),
       updated_at = NOW()
     RETURNING *`,
     [
@@ -150,11 +185,11 @@ async function updateSettings(user, data) {
       data.defaultGstRate !== undefined ? data.defaultGstRate : null,
       data.defaultHsnSac ?? null,
       data.invoicePrefix ?? null,
-      data.bankAccountName ?? null,
-      data.bankAccountNumber ?? null,
-      data.bankIfsc ?? null,
-      data.bankBranch ?? null,
-      data.upiId ?? null,
+      primaryBank ? primaryBank.bankAccountName : (data.bankAccountName ?? null),
+      primaryBank ? primaryBank.bankAccountNumber : (data.bankAccountNumber ?? null),
+      primaryBank ? primaryBank.bankIfsc : (data.bankIfsc ?? null),
+      primaryBank ? primaryBank.bankBranch : (data.bankBranch ?? null),
+      primaryBank ? primaryBank.upiId : (data.upiId ?? null),
       data.razorpayKeyId ?? null,
       data.razorpayConnected !== undefined ? data.razorpayConnected : null,
       sp.name ?? null,
@@ -176,8 +211,9 @@ async function updateSettings(user, data) {
       data.discordWebhookUrl !== undefined ? data.discordWebhookUrl : null,
       settingsId,
       agencyId,
-      data.bankName ?? null,
+      primaryBank ? primaryBank.bankName : (data.bankName ?? null),
       data.companyLogo === '' ? '__CLEAR__' : (data.companyLogo ?? (data.invoiceDesign?.logoUrl !== undefined ? (data.invoiceDesign.logoUrl || '__CLEAR__') : null)),
+      syncedAccounts ? JSON.stringify(syncedAccounts) : null,
     ]
   );
   if (data.onboardingCompleted !== undefined && rows[0]) {

@@ -250,9 +250,16 @@ export const Dashboard: React.FC = () => {
     })
     .reduce((a, p) => a + (Number(p?.amount) || 0), 0);
 
-  const overdueInvoices = safeInvoices.filter(i => i?.status === 'Overdue');
+  const nowDate = new Date();
+  const formatLocalYearMonth = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const localTodayStr = `${formatLocalYearMonth(nowDate)}-${String(nowDate.getDate()).padStart(2, '0')}`;
+
+  const overdueInvoices = safeInvoices.filter(i =>
+    i?.status === 'Overdue' ||
+    ((i?.status === 'Sent' || i?.status === 'Partially Paid') && i?.dueDate && i.dueDate < localTodayStr)
+  );
   const unpaidInvoicesBalance = safeInvoices
-    .filter(i => i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedOrInactiveBrandIds.has(i.brandId)))
+    .filter(i => i && (i.status === 'Sent' || i.status === 'Partially Paid' || i.status === 'Overdue') && (!i.brandId || !churnedOrInactiveBrandIds.has(i.brandId)))
     .reduce((a, i) => a + Math.max(0, (Number(i?.totalAmount) || 0) - (Number(i?.paidAmount) || 0)), 0);
 
   // Pending Collections strictly comes from actual unpaid invoices and pending cleared payments.
@@ -267,7 +274,7 @@ export const Dashboard: React.FC = () => {
   const myMeetings = safeMeetings.filter(m => (role === 'team' || !userPerms.includes('meetings') ? (m?.attendeeIds || []).includes(currentUser?.id) : true));
 
   // ── Monthly Revenue / Expense / Pending Maps ─────────────────
-  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const currentMonthKey = formatLocalYearMonth(nowDate);
 
   const monthlyIncomeMap: Record<string, number> = {};
   safePayments.forEach(p => {
@@ -284,7 +291,7 @@ export const Dashboard: React.FC = () => {
 
   const monthlyPendingMap: Record<string, number> = {};
   safeInvoices.forEach(i => {
-    if (i && (i.status === 'Sent' || i.status === 'Overdue') && (!i.brandId || !churnedOrInactiveBrandIds.has(i.brandId))) {
+    if (i && (i.status === 'Sent' || i.status === 'Partially Paid' || i.status === 'Overdue') && (!i.brandId || !churnedOrInactiveBrandIds.has(i.brandId))) {
       const dateStr = i.issueDate || i.dueDate || currentMonthKey;
       const key = String(dateStr).slice(0, 7);
       const balance = Math.max(0, (Number(i?.totalAmount) || 0) - (Number(i?.paidAmount) || 0));
@@ -320,10 +327,9 @@ export const Dashboard: React.FC = () => {
 
   // Trailing 6 months window
   const trailing6Months: string[] = [];
-  const nowDate = new Date();
   for (let i = 5; i >= 0; i--) {
     const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - i, 1);
-    trailing6Months.push(d.toISOString().slice(0, 7));
+    trailing6Months.push(formatLocalYearMonth(d));
   }
 
   const allMonthKeysSet = new Set([
@@ -366,13 +372,12 @@ export const Dashboard: React.FC = () => {
       ? Math.round(activeBrands.reduce((a, b) => a + (b.monthlyFee || 0), 0) / activeBrands.length)
       : 0;
 
+  const prevMonthKey = trailing6Months[trailing6Months.length - 2];
+  const prevMonthIncome = monthlyIncomeMap[prevMonthKey] || 0;
+  const currMonthIncomeForGrowth = monthlyIncomeMap[currentMonthKey] || 0;
   const growthRate =
-    months.length >= 2 && months[months.length - 2].income > 0
-      ? Math.round(
-          ((months[months.length - 1].income - months[months.length - 2].income) /
-            months[months.length - 2].income) *
-            100
-        )
+    prevMonthIncome > 0
+      ? Math.round(((currMonthIncomeForGrowth - prevMonthIncome) / prevMonthIncome) * 100)
       : null;
 
   // ── Time Period Filter (All-Time vs This Month) ────────────

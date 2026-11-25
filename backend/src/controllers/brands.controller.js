@@ -69,7 +69,7 @@ const update = asyncHandler(async (req, res) => {
     return res.status(403).json({ error: "You don't have permission to edit this client." });
   }
   const body = validateClient(req.body);
-  const updated = await brands.updateBrand(req.params.id, body);
+  const updated = await brands.updateBrand(req.params.id, body, req.user);
   if (!updated) return res.status(404).json({ error: 'We could not find that client.' });
   res.json(updated);
 });
@@ -133,7 +133,7 @@ const addDocument = asyncHandler(async (req, res) => {
     .optionalString('category', { max: 100, label: 'Category' })
     .optionalString('renewalDate', { max: 20, label: 'Renewal date' })
     .optionalString('status', { max: 50, label: 'Status' })
-    .optionalString('fileUrl', { max: 2000, label: 'File URL' })
+    .optionalString('fileUrl', { max: 14_000_000, label: 'File URL' })
     .validate();
 
   res.status(201).json(await brands.addDocument(req.params.id, body));

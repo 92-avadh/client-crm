@@ -136,7 +136,7 @@ const serverMemoryCache = new Map();
 function cacheMiddleware(ttlSeconds = 20) {
   return (req, res, next) => {
     if (req.method !== 'GET') return next();
-    const key = `${req.baseUrl || ''}${req.path}_${req.user?.agencyId || req.user?.id || 'anon'}`;
+    const key = `${req.originalUrl || `${req.baseUrl || ''}${req.path}`}_${req.user?.agencyId || 'none'}_${req.user?.id || 'anon'}`;
     const cached = serverMemoryCache.get(key);
     if (cached && Date.now() < cached.expiry) {
       res.setHeader('X-Cache', 'HIT');
@@ -194,6 +194,7 @@ app.use('/api/settings', auth, cacheMiddleware(30), require('./src/routes/settin
 app.use('/api/holidays', auth, cacheMiddleware(60), require('./src/routes/holidays'));
 app.use('/api/audit-logs', auth, cacheMiddleware(15), require('./src/routes/auditLogs'));
 app.use('/api/recurring-invoices', auth, require('./src/routes/recurring-invoices'));
+app.use('/api/retention', auth, require('./src/routes/health'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
@@ -265,6 +266,7 @@ connectWithRetry()
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS slack_webhook_url TEXT;
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS discord_webhook_url TEXT;
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS company_logo TEXT;
+        ALTER TABLE settings ADD COLUMN IF NOT EXISTS bank_accounts JSONB DEFAULT '[]';
 
         -- Brand Retention & SaaS Strategy fields
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'INR';
@@ -273,7 +275,9 @@ connectWithRetry()
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS used_hours NUMERIC(10,2) DEFAULT 0;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS deliverables JSONB DEFAULT '[]';
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS survey_reminder_scheduled_at TIMESTAMP;
-        ALTER TABLE brands ADD COLUMN IF NOT EXISTS nps_score INTEGER DEFAULT 9;
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS nps_score INTEGER;
+        ALTER TABLE brands ALTER COLUMN nps_score DROP DEFAULT;
+        ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS attempts INTEGER DEFAULT 0;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS contract_start_date DATE;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS contract_end_date DATE;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS magic_token VARCHAR(100);
@@ -284,9 +288,11 @@ connectWithRetry()
         ALTER TABLE brand_documents ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Signed';
         ALTER TABLE brand_documents ADD COLUMN IF NOT EXISTS file_url TEXT;
 
-        -- Invoices per-client currency
+        -- Invoices per-client currency & selected settlement bank snapshot
         ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'INR';
         ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency_symbol VARCHAR(10) DEFAULT '₹';
+        ALTER TABLE invoices ADD COLUMN IF NOT EXISTS bank_account_id VARCHAR(50);
+        ALTER TABLE invoices ADD COLUMN IF NOT EXISTS bank_account_snapshot JSONB;
 
         -- Backfill magic tokens for existing brands
         UPDATE brands SET magic_token = 'tok_' || substr(md5(random()::text || id), 1, 24) WHERE magic_token IS NULL;

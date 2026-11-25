@@ -13,6 +13,7 @@ import { ReceiptPrinterModal } from './ReceiptPrinterModal';
 import { RazorpayModal, OfflinePaymentModal, type OfflineForm } from './PaymentModals';
 import { RecurringPanel } from './RecurringPanel';
 import { getDefaultPermissionsForRole } from '../team/permissionsConfig';
+import { api } from '../../services/api';
 import {
   AlertDialog,
   AlertDialogPopup,
@@ -71,15 +72,30 @@ export const InvoicesManager: React.FC = () => {
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [remindingInvoiceId, setRemindingInvoiceId] = useState<string | null>(null);
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringInvoiceIds, setRecurringInvoiceIds] = useState<Set<string>>(
-    () => new Set(invoices.slice(0, 2).map((i) => i.id))
-  );
+  const [extraRecurringIds, setExtraRecurringIds] = useState<Set<string>>(new Set());
+  const recurringInvoiceIds = useMemo(() => {
+    const ids = new Set<string>(extraRecurringIds);
+    (invoices || []).forEach((inv) => {
+      if (inv?.isRecurring) ids.add(inv.id);
+    });
+    return ids;
+  }, [invoices, extraRecurringIds]);
+  const recurringBrandIds = useMemo(() => {
+    const ids = new Set<string>();
+    (invoices || []).forEach((inv) => {
+      if ((inv?.isRecurring || extraRecurringIds.has(inv?.id)) && inv?.brandId) {
+        ids.add(inv.brandId);
+      }
+    });
+    return ids;
+  }, [invoices, extraRecurringIds]);
   const [pausedRecurringIds, setPausedRecurringIds] = useState<Set<string>>(new Set());
   const [offlineForm, setOfflineForm] = useState<OfflineForm>(() => ({
     mode: 'Bank Transfer',
@@ -177,11 +193,15 @@ export const InvoicesManager: React.FC = () => {
         totalAmount: builder.totals.totalAmount,
         notes: builder.notes,
         status: shouldSend ? 'Sent' : 'Draft',
+        isRecurring,
+        sendEmail: shouldSend,
+        bankAccountId: builder.selectedBank?.id || null,
+        bankAccountSnapshot: builder.selectedBank || null,
       });
 
       setPage(0);
       if (isRecurring && newInvoice?.id) {
-        setRecurringInvoiceIds((prev) => new Set([...prev, newInvoice.id]));
+        setExtraRecurringIds((prev) => new Set([...prev, newInvoice.id]));
       }
       setIsRecurring(false);
       builder.reset();
@@ -196,6 +216,19 @@ export const InvoicesManager: React.FC = () => {
       // Error notification handled in createInvoice
     } finally {
       setIsCreatingInvoice(false);
+    }
+  };
+
+  const handleSendReminder = async (inv: Invoice) => {
+    if (!canManage) return;
+    setRemindingInvoiceId(inv.id);
+    try {
+      const res = await api.invoices.remind(inv.id);
+      showToast(`Payment reminder emailed to ${res.sentTo} for ${inv.invoiceNumber}`, 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to send payment reminder', 'error');
+    } finally {
+      setRemindingInvoiceId(null);
     }
   };
 
@@ -578,6 +611,8 @@ export const InvoicesManager: React.FC = () => {
         onView={setSelectedInvoiceId}
         onPay={(inv) => { setPayingInvoice(inv); setShowPayModal(true); }}
         onWhatsApp={openWhatsAppShare}
+        onRemind={canManage ? handleSendReminder : undefined}
+        remindingId={remindingInvoiceId}
         onPrintReceipt={(inv) => { setReceiptInvoice(inv); setShowReceiptModal(true); }}
         onDelete={handleDeleteInvoice}
         deletingId={deletingInvoiceId}
@@ -611,6 +646,11 @@ export const InvoicesManager: React.FC = () => {
         onDueDateChange={builder.setDueDate}
         items={builder.items}
         onUpdateItem={builder.updateItem}
+        onAddItem={builder.addItem}
+        onRemoveItem={builder.removeItem}
+        bankAccounts={builder.bankAccounts}
+        selectedBankId={builder.selectedBankId}
+        onSelectBankId={builder.setSelectedBankId}
         hasGst={builder.hasGst}
         onHasGstChange={builder.setHasGst}
         isRecurring={isRecurring}
@@ -670,7 +710,7 @@ export const InvoicesManager: React.FC = () => {
       <RecurringPanel
         open={showRecurringPanel}
         brands={brands}
-        recurringIds={recurringInvoiceIds}
+        recurringIds={recurringBrandIds}
         pausedIds={pausedRecurringIds}
         onTogglePause={togglePauseRecurring}
         onDraftInvoices={handleDraftInvoices}

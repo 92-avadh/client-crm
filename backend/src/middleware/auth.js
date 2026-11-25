@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const pool = require('../db');
 const { getAgencyId } = require('../utils/agency');
 const { resolvePermissions } = require('../utils/permissions');
 

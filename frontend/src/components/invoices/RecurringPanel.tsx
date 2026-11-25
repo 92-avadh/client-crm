@@ -38,7 +38,7 @@ function getNextDueDate(billingCycleDay: number): Date {
 export const RecurringPanel: React.FC<Props> = ({
   open, brands, recurringIds, pausedIds, onTogglePause, onClose, onEdit, onDraftInvoices,
 }) => {
-  const { showToast } = useApp();
+  const { showToast, loadDomain } = useApp();
   const [runningJob, setRunningJob] = useState(false);
 
   if (!open) return null;
@@ -55,14 +55,12 @@ export const RecurringPanel: React.FC<Props> = ({
   const handleRunJobNow = async () => {
     setRunningJob(true);
     try {
-      const res = await api.recurringInvoices.runNow();
-      const count = res.data?.invoicesCreated ?? 0;
+      const res: any = await api.recurringInvoices.runNow();
+      const count = res?.count ?? res?.generated?.length ?? 0;
+      await loadDomain?.('invoices', true);
       showToast(`Automated monthly billing completed: ${count} invoice(s) generated`, 'success');
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Failed to trigger automated billing job', 'error');
+      showToast(err?.message || 'Failed to trigger automated billing job', 'error');
     } finally {
       setRunningJob(false);
     }

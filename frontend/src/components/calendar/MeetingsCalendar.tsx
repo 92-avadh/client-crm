@@ -69,12 +69,20 @@ export const MeetingsCalendar: React.FC = () => {
     });
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!meetingForm.title) return;
-    await addMeeting(meetingForm);
-    setShowAddModal(false);
-    setMeetingForm({ title: '', brandId: '', date: today, time: '10:00', durationMinutes: 45, linkOrLocation: '', attendeeIds: [currentUser.id], notes: '' });
+    if (!meetingForm.title || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await addMeeting(meetingForm);
+      setShowAddModal(false);
+      setMeetingForm({ title: '', brandId: '', date: today, time: '10:00', durationMinutes: 45, linkOrLocation: '', attendeeIds: [currentUser.id], notes: '' });
+    } catch {
+      // Error toast surfaced by addMeeting
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const visibleMeetings = (meetings as Meeting[]).filter((m) => {
@@ -82,10 +90,10 @@ export const MeetingsCalendar: React.FC = () => {
       return m.attendeeIds?.includes(currentUser.id) || m.brandId === currentUser.brandId;
     }
     return true;
-  }).sort((a, b) => a.date.localeCompare(b.date));
+  }).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
-  const upcomingMeetings = visibleMeetings.filter(m => m.date >= today);
-  const pastMeetings     = visibleMeetings.filter(m => m.date < today);
+  const upcomingMeetings = visibleMeetings.filter(m => (m.date || '') >= today);
+  const pastMeetings     = visibleMeetings.filter(m => (m.date || '') < today);
 
   const getBrandName = (brandId?: string) => brands.find((b: any) => b.id === brandId)?.name || '';
 

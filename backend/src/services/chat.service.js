@@ -96,6 +96,45 @@ async function getReadByForMessages(messageIds) {
   return map;
 }
 
+async function assertConversationAccess(conversationId, user) {
+  const userId = typeof user === 'string' ? user : user?.id;
+  if (!userId) {
+    const err = new Error('Authentication required.');
+    err.status = 401;
+    throw err;
+  }
+
+  const { rows: convRows } = await pool.query(
+    'SELECT id, type, agency_id, brand_id FROM conversations WHERE id = $1',
+    [conversationId]
+  );
+  if (!convRows.length) {
+    return null;
+  }
+  const conv = convRows[0];
+
+  if (typeof user === 'object' && user !== null) {
+    const userAgencyId = getAgencyId(user);
+    if (conv.agency_id && String(conv.agency_id) !== String(userAgencyId)) {
+      const err = new Error('Access denied to this conversation.');
+      err.status = 403;
+      throw err;
+    }
+  }
+
+  const { rows: partRows } = await pool.query(
+    'SELECT 1 FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2',
+    [conversationId, userId]
+  );
+  if (!partRows.length) {
+    const err = new Error('You are not a participant in this conversation.');
+    err.status = 403;
+    throw err;
+  }
+
+  return conv;
+}
+
 /**
  * Batch-fetch attachments for multiple messages in a single query.
  * Returns a Map of message_id -> attachment array.
@@ -211,7 +250,7 @@ async function listConversations(userId, { page = 1, pageSize = 50 } = {}) {
      FROM conversations c
      INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
      WHERE cp.user_id = $1
-     ORDER BY c.last_message_time DESC NULLS LAST, c.created_at DESC
+     ORDER BY CASE WHEN c.last_message_time ~ '^\\d{4}-' THEN c.last_message_time ELSE COALESCE(to_char(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS'), '') END DESC
      LIMIT $2 OFFSET $3`,
     [userId, pageSize, offset]
   );
@@ -256,7 +295,16 @@ async function listConversations(userId, { page = 1, pageSize = 50 } = {}) {
   return { data, total, page, pageSize };
 }
 
-async function listMessages(conversationId, { page = 1, pageSize = 100 } = {}) {
+async function listMessages(conversationId, userOrOpts = {}, maybeOpts = {}) {
+  const hasUser = userOrOpts && typeof userOrOpts === 'object' && userOrOpts.id;
+  const { page = 1, pageSize = 100 } = hasUser ? maybeOpts : userOrOpts;
+  if (hasUser) {
+    const conv = await assertConversationAccess(conversationId, userOrOpts);
+    if (!conv) {
+      return { data: [], total: 0, page: 1, pageSize, totalPages: 1 };
+    }
+  }
+
   // Count total
   const { rows: countRows } = await pool.query(
     'SELECT COUNT(*) FROM chat_messages WHERE conversation_id=$1',
@@ -295,8 +343,9 @@ async function sendMessage(conversationId, user, { text, attachments = [] }) {
     const id = msgId();
     const ts = new Date().toISOString();
 
-    // Ensure conversation exists in DB so foreign key never fails
-    const { rows: convCheck } = await client.query('SELECT id FROM conversations WHERE id = $1', [conversationId]);
+    // Ensure conversation exists in DB & verify tenant/participant access
+    const { rows: convCheck } = await client.query('SELECT id, agency_id FROM conversations WHERE id = $1', [conversationId]);
+    const agencyId = getAgencyId(user);
     if (convCheck.length === 0) {
       let otherUserId = null;
       if (conversationId.includes('usr_')) {
@@ -304,7 +353,26 @@ async function sendMessage(conversationId, user, { text, attachments = [] }) {
         const uids = parts.filter(p => p.startsWith('usr_') && p !== user.id);
         if (uids.length > 0) otherUserId = uids[0];
       }
-      const agencyId = getAgencyId(user);
+      if (!otherUserId) {
+        const err = new Error('Conversation not found.');
+        err.status = 404;
+        throw err;
+      }
+      const { rows: otherRows } = await client.query(
+        'SELECT id, agency_id, created_by, role FROM users WHERE id = $1 AND is_active = true',
+        [otherUserId]
+      );
+      if (!otherRows.length) {
+        const err = new Error('Recipient account not found.');
+        err.status = 404;
+        throw err;
+      }
+      const otherAgencyId = getAgencyId(otherRows[0]);
+      if (String(otherAgencyId) !== String(agencyId)) {
+        const err = new Error('Cannot message users outside your workspace.');
+        err.status = 403;
+        throw err;
+      }
       await client.query(
         `INSERT INTO conversations (id, type, title, last_message, last_message_time, unread_count, agency_id)
          VALUES ($1, 'direct', 'Direct Chat', $2, $3, 0, $4)
@@ -315,11 +383,24 @@ async function sendMessage(conversationId, user, { text, attachments = [] }) {
         `INSERT INTO conversation_participants (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
         [conversationId, user.id]
       );
-      if (otherUserId) {
-        await client.query(
-          `INSERT INTO conversation_participants (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-          [conversationId, otherUserId]
-        );
+      await client.query(
+        `INSERT INTO conversation_participants (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [conversationId, otherUserId]
+      );
+    } else {
+      if (convCheck[0].agency_id && String(convCheck[0].agency_id) !== String(agencyId)) {
+        const err = new Error('Access denied to this conversation.');
+        err.status = 403;
+        throw err;
+      }
+      const { rows: partRows } = await client.query(
+        'SELECT 1 FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2',
+        [conversationId, user.id]
+      );
+      if (!partRows.length) {
+        const err = new Error('You are not a participant in this conversation.');
+        err.status = 403;
+        throw err;
       }
     }
 
@@ -372,7 +453,10 @@ async function sendMessage(conversationId, user, { text, attachments = [] }) {
   }
 }
 
-async function markMessagesRead(conversationId, userId) {
+async function markMessagesRead(conversationId, userOrId) {
+  const userId = typeof userOrId === 'string' ? userOrId : userOrId?.id;
+  await assertConversationAccess(conversationId, userOrId);
+
   // Find messages in this conversation not yet read by userId
   const { rows } = await pool.query(
     `SELECT m.id FROM chat_messages m
@@ -464,6 +548,22 @@ async function getOrCreateDirectConversation(user, targetUserId) {
     throw err;
   }
 
+  const { rows: targetUserRows } = await pool.query(
+    'SELECT id, name, avatar, role, designation, agency_id, created_by, is_active FROM users WHERE id = $1',
+    [targetUserId]
+  );
+  const targetUser = targetUserRows[0];
+  if (!targetUser || targetUser.is_active === false) {
+    const err = new Error('Team member not found.');
+    err.status = 404;
+    throw err;
+  }
+  if (String(getAgencyId(targetUser)) !== String(getAgencyId(user))) {
+    const err = new Error('Access denied. Team member belongs to another workspace.');
+    err.status = 403;
+    throw err;
+  }
+
   // Check if a direct conversation between user.id and targetUserId already exists
   const { rows } = await pool.query(
     `SELECT c.* FROM conversations c
@@ -473,12 +573,6 @@ async function getOrCreateDirectConversation(user, targetUserId) {
      LIMIT 1`,
     [user.id, targetUserId]
   );
-
-  const { rows: targetUserRows } = await pool.query(
-    'SELECT id, name, avatar, role, designation FROM users WHERE id = $1',
-    [targetUserId]
-  );
-  const targetUser = targetUserRows[0];
 
   if (rows.length > 0) {
     const participantsMap = await getParticipantsForConversations([rows[0].id]);
@@ -503,12 +597,20 @@ async function getOrCreateDirectConversation(user, targetUserId) {
   return newConv;
 }
 
-async function deleteMessage(conversationId, messageId, deleteType, userId) {
+async function deleteMessage(conversationId, messageId, deleteType, userOrId) {
+  const userId = typeof userOrId === 'string' ? userOrId : userOrId?.id;
+  await assertConversationAccess(conversationId, userOrId);
+
   if (deleteType === 'forEveryone') {
-    await pool.query(
-      `UPDATE chat_messages SET text = 'This message was deleted' WHERE id = $1 AND conversation_id = $2`,
-      [messageId, conversationId]
+    const { rowCount } = await pool.query(
+      `UPDATE chat_messages SET text = 'This message was deleted' WHERE id = $1 AND conversation_id = $2 AND sender_id = $3`,
+      [messageId, conversationId, userId]
     );
+    if (rowCount === 0) {
+      const err = new Error('You can only delete your own messages for everyone.');
+      err.status = 403;
+      throw err;
+    }
     await pool.query('DELETE FROM message_attachments WHERE message_id = $1', [messageId]);
   } else {
     await pool.query(
@@ -519,31 +621,25 @@ async function deleteMessage(conversationId, messageId, deleteType, userId) {
   return { success: true, conversationId, messageId, deleteType };
 }
 
-async function deleteConversation(conversationId, userId) {
-  try {
-    await pool.query('DELETE FROM message_read_by WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
-    await pool.query('DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
-    await pool.query('DELETE FROM chat_messages WHERE conversation_id = $1', [conversationId]);
-    await pool.query('DELETE FROM conversation_participants WHERE conversation_id = $1', [conversationId]);
-    await pool.query('DELETE FROM conversations WHERE id = $1', [conversationId]);
-  } catch (err) {
-    console.warn('deleteConversation warning:', err.message);
-  }
+async function deleteConversation(conversationId, userOrId) {
+  await assertConversationAccess(conversationId, userOrId);
+  await pool.query('DELETE FROM message_read_by WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
+  await pool.query('DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
+  await pool.query('DELETE FROM chat_messages WHERE conversation_id = $1', [conversationId]);
+  await pool.query('DELETE FROM conversation_participants WHERE conversation_id = $1', [conversationId]);
+  await pool.query('DELETE FROM conversations WHERE id = $1', [conversationId]);
   return { success: true, conversationId };
 }
 
-async function clearConversationMessages(conversationId) {
-  try {
-    await pool.query('DELETE FROM message_read_by WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
-    await pool.query('DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
-    await pool.query('DELETE FROM chat_messages WHERE conversation_id = $1', [conversationId]);
-    await pool.query(
-      'UPDATE conversations SET last_message = NULL, last_message_time = NULL, unread_count = 0 WHERE id = $1',
-      [conversationId]
-    );
-  } catch (err) {
-    console.warn('clearConversationMessages warning:', err.message);
-  }
+async function clearConversationMessages(conversationId, userOrId) {
+  await assertConversationAccess(conversationId, userOrId);
+  await pool.query('DELETE FROM message_read_by WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
+  await pool.query('DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id = $1)', [conversationId]);
+  await pool.query('DELETE FROM chat_messages WHERE conversation_id = $1', [conversationId]);
+  await pool.query(
+    'UPDATE conversations SET last_message = NULL, last_message_time = NULL, unread_count = 0 WHERE id = $1',
+    [conversationId]
+  );
   return { success: true, conversationId };
 }
 
@@ -551,6 +647,7 @@ module.exports = {
   CONVERSATION_TYPES,
   mapConv,
   mapMsg,
+  assertConversationAccess,
   listConversations,
   listMessages,
   sendMessage,

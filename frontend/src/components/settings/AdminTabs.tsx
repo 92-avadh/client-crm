@@ -149,10 +149,12 @@ export const HolidaysTab: React.FC<HolidaysProps> = ({
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{h.title}</span>
                 <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20, ...badgeColor }}>{h.type}</span>
               </div>
-              <button type="button" onClick={() => setHolidayToDelete({ id: h.id, title: h.title })}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', padding: 4, borderRadius: 6 }}>
-                ✕
-              </button>
+              {type !== 'National' && (
+                <button type="button" onClick={() => setHolidayToDelete({ id: h.id, title: h.title })}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', padding: 4, borderRadius: 6 }}>
+                  ✕
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -206,6 +208,7 @@ export const SecurityTab: React.FC<{
 }> = ({ isAdmin, auditLogs, onResetWorkspace }) => {
   const [auditPage, setAuditPage] = React.useState(0);
   const [auditPageSize, setAuditPageSize] = React.useState(10);
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
 
   // The audit trail grows without bound, so page it rather than rendering
   // every entry at once — hundreds of styled cards would lag the tab.
@@ -280,7 +283,7 @@ export const SecurityTab: React.FC<{
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => onResetWorkspace?.('empty')}
+            onClick={() => setShowResetConfirm(true)}
             style={{
               padding: '9px 16px',
               borderRadius: 8,
@@ -302,6 +305,31 @@ export const SecurityTab: React.FC<{
           There is no demo dataset — the workspace runs on real records only.
         </p>
       </div>
+    )}
+
+    {showResetConfirm && (
+      <AlertDialog open onOpenChange={(o) => { if (!o) setShowResetConfirm(false); }}>
+        <AlertDialogPopup from="bottom" className="sm:max-w-[440px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset All Workspace Data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes all clients, invoices, payments, expenses, projects, tasks, leads, meetings, and team members. Your admin account will be preserved. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowResetConfirm(false);
+                onResetWorkspace?.('empty');
+              }}
+              style={{ background: 'var(--danger-text, #dc2626)', color: '#ffffff' }}
+            >
+              Yes, Clear Workspace
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogPopup>
+      </AlertDialog>
     )}
   </div>
   );

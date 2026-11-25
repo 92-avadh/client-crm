@@ -6,6 +6,7 @@ function mapNotif(n) {
     id: n.id, type: n.type, title: n.title, message: n.message,
     timestamp: n.timestamp, isRead: n.is_read, linkModule: n.link_module,
     brandId: n.brand_id, recipientRoles: n.recipient_roles, targetUserId: n.target_user_id,
+    agencyId: n.agency_id || null,
     createdAt: n.created_at
   };
 }
@@ -13,7 +14,7 @@ function mapNotif(n) {
 async function listNotifications(user, { unreadOnly } = {}) {
   const isTeamMember = user.role !== 'brand';
   const agencyId = getAgencyId(user);
-  let query = `SELECT * FROM notifications WHERE (agency_id = $4 OR (agency_id IS NULL AND brand_id IN (SELECT id FROM brands WHERE agency_id = $4 OR owner_id = $4)) OR (agency_id IS NULL AND $4 = 'usr_admin')) AND ($1 = ANY(recipient_roles) OR ($3::boolean = true AND 'team' = ANY(recipient_roles)) OR recipient_roles IS NULL OR target_user_id = $2)`;
+  let query = `SELECT * FROM notifications WHERE (agency_id = $4 OR (agency_id IS NULL AND brand_id IN (SELECT id FROM brands WHERE agency_id = $4 OR owner_id = $4))) AND ($1 = ANY(recipient_roles) OR ($3::boolean = true AND 'team' = ANY(recipient_roles)) OR recipient_roles IS NULL OR target_user_id = $2)`;
   const params = [user.role, user.id, isTeamMember, agencyId];
   let idx = 5;
 
