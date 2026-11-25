@@ -104,7 +104,7 @@ async function updateLeadStage(user, id, stage) {
   let query = 'UPDATE leads SET stage=$1 WHERE id=$2';
   const params = [stage, id];
   if (agencyId) {
-    query += ' AND (agency_id=$3 OR (agency_id IS NULL AND (owner_id=$3 OR $3=\'usr_admin\')))';
+    query += ' AND (agency_id=$3 OR (agency_id IS NULL AND owner_id=$3))';
     params.push(agencyId);
   }
   query += ' RETURNING *';
@@ -188,7 +188,7 @@ async function updateLead(user, id, data) {
     id
   ];
   if (agencyId) {
-    query += " AND (agency_id = $12 OR (agency_id IS NULL AND (owner_id = $12 OR $12 = 'usr_admin')))";
+    query += ' AND (agency_id = $12 OR (agency_id IS NULL AND owner_id = $12))';
     params.push(agencyId);
   }
   query += ' RETURNING *';
@@ -198,14 +198,17 @@ async function updateLead(user, id, data) {
 
 async function deleteLead(user, id) {
   const agencyId = user ? getAgencyId(user) : null;
-  await pool.query('UPDATE meetings SET lead_id = NULL WHERE lead_id = $1', [id]);
-  let query = 'DELETE FROM leads WHERE id = $1';
+  let checkQuery = 'SELECT id FROM leads WHERE id = $1';
   const params = [id];
   if (agencyId) {
-    query += " AND (agency_id = $2 OR (agency_id IS NULL AND (owner_id = $2 OR $2 = 'usr_admin')))";
+    checkQuery += ' AND (agency_id = $2 OR (agency_id IS NULL AND owner_id = $2))';
     params.push(agencyId);
   }
-  const { rowCount } = await pool.query(query, params);
+  const { rows: owned } = await pool.query(checkQuery, params);
+  if (!owned.length) return false;
+
+  await pool.query('UPDATE meetings SET lead_id = NULL WHERE lead_id = $1', [id]);
+  const { rowCount } = await pool.query('DELETE FROM leads WHERE id = $1', [id]);
   return rowCount > 0;
 }
 
