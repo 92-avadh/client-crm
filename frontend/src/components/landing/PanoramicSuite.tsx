@@ -22,7 +22,7 @@ export const PanoramicSuite: React.FC = () => {
 
       <div className="max-w-[1400px] mx-auto text-center relative z-10">
         <p className="text-base sm:text-xl text-slate-300 max-w-[680px] mx-auto leading-relaxed mb-16 font-medium">
-          Say goodbye to six disconnected tools. Retentio combines client sentiment radar, recurring billing, white-label portals, and agency chat into one synced command center.
+          Say goodbye to six disconnected tools. Retentio combines client sentiment radar, recurring billing, white-label portals, and instant alerts into one synced command center.
         </p>
 
         {/* ── Monank 5-Phone Panoramic Fan Suite ── */}

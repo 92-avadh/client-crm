@@ -9,7 +9,6 @@ import {
   Receipt,
   Wallet,
   CreditCard,
-  MessageSquare,
   CalendarDays,
   Target,
   Settings,
@@ -35,7 +34,6 @@ export const Sidebar: React.FC = () => {
     invoices,
     tasks,
     notifications,
-    conversations,
     sidebarCollapsed,
     toggleSidebar,
     mobileSidebarOpen,
@@ -68,10 +66,6 @@ export const Sidebar: React.FC = () => {
     ).length,
     [tasks, role, currentUser?.id]
   );
-  const unreadChat = useMemo(
-    () => conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0),
-    [conversations]
-  );
   const unreadNotifCount = useMemo(
     () => (notifications || []).filter(n => n && !n.isRead).length,
     [notifications]
@@ -99,8 +93,6 @@ export const Sidebar: React.FC = () => {
     { id: 'team',         label: 'Team',                icon: Users,           roles: ['admin','hr'] },
     { id: 'inbox',        label: 'Inbox',               icon: Inbox,           roles: ['admin','hr','team','brand'],
       badge: unreadNotifCount || undefined, badgeVariant: 'danger' },
-    { id: 'chat',         label: 'Team Chat',           icon: MessageSquare,   roles: ['admin','hr','team','brand'],
-      badge: unreadChat || undefined, badgeVariant: 'warn' },
     { id: 'meetings',     label: 'Meetings',            icon: CalendarDays,    roles: ['admin','hr','team','brand'] },
     { id: 'leads',        label: 'Leads Pipeline',      icon: Target,          roles: ['admin','hr'] },
     { id: 'settings',     label: 'Settings',            icon: Settings,        roles: ['admin','hr','team','brand'] },
@@ -119,8 +111,8 @@ export const Sidebar: React.FC = () => {
     // the role-based defaults.
     return i.roles.includes(role) || (role !== 'brand' && i.roles.includes('team'));
   });
-  const coreItems = items.filter(i => !['chat','meetings','leads','settings'].includes(i.id));
-  const commItems = items.filter(i => ['chat','meetings','leads'].includes(i.id));
+  const coreItems = items.filter(i => !['meetings','leads','settings'].includes(i.id));
+  const commItems = items.filter(i => ['meetings','leads'].includes(i.id));
   const sysItems  = items.filter(i => i.id === 'settings');
 
   const BadgePill = ({ item, isSelected }: { item: NavItem; isSelected?: boolean }) => {
@@ -154,7 +146,7 @@ export const Sidebar: React.FC = () => {
           setMobileSidebarOpen(false);
         }}
         className={`nav-item ${isSelected ? 'active' : ''}`}
-        title={sidebarCollapsed ? item.label : undefined}
+        data-tip={sidebarCollapsed ? item.label : undefined}
         style={{
           justifyContent: sidebarCollapsed ? 'center' : 'space-between',
           padding: sidebarCollapsed ? '10px 0' : '9px 12px',

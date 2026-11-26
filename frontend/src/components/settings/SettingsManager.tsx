@@ -59,12 +59,11 @@ export const SettingsManager: React.FC = () => {
 
   React.useEffect(() => {
     setFormData({ ...settings });
-    if (settings.companyLogo || settings.invoiceDesign?.logoUrl) {
-      setInvoiceDesign((prev) => ({
-        ...prev,
-        logoUrl: prev.logoUrl || settings.companyLogo || settings.invoiceDesign?.logoUrl || '',
-      }));
-    }
+    setInvoiceDesign((prev) => ({
+      ...prev,
+      ...(settings.invoiceDesign || {}),
+      logoUrl: settings.companyLogo || settings.invoiceDesign?.logoUrl || prev.logoUrl || '',
+    }));
   }, [settings]);
 
   React.useEffect(() => {
@@ -95,9 +94,10 @@ export const SettingsManager: React.FC = () => {
       footerText: '',
       termsAndConditions: 'Payment due within 15 days of invoice date. Late payment may attract interest.',
       showLogo: true,
-      showSignature: false,
-      ...(settings.invoiceDesign || {}),
+      showSignature: true,
       ...saved,
+      ...(settings.invoiceDesign || {}),
+      logoUrl: settings.companyLogo || settings.invoiceDesign?.logoUrl || saved.logoUrl || '',
     };
   });
 

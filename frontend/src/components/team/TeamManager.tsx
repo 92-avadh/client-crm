@@ -53,7 +53,6 @@ export const TeamManager: React.FC = () => {
     brands,
     showToast,
     loadDomain,
-    startDirectChat,
     addTeamMember,
     updateTeamMember,
     deactivateTeamMember,

@@ -163,17 +163,18 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
 
   const phoneError = error || getPhoneValidationError();
 
-  const handlePhoneChange = (value: string) => {
-    // Allow only digits, spaces, dashes, parentheses
-    const cleaned = value.replace(/[^\d\s\-()]/g, '');
-    onPhoneChange(cleaned);
+  const getMaxLength = (country: Country = selectedCountry) => {
+    const lengths = Array.isArray(country.phoneLength)
+      ? country.phoneLength
+      : [country.phoneLength];
+    return Math.max(...lengths);
   };
 
-  const getMaxLength = () => {
-    const lengths = Array.isArray(selectedCountry.phoneLength)
-      ? selectedCountry.phoneLength
-      : [selectedCountry.phoneLength];
-    return Math.max(...lengths);
+  const handlePhoneChange = (value: string) => {
+    // Allow digits only and strictly cap at the selected country's maximum digits
+    const maxLen = getMaxLength();
+    const digitsOnly = value.replace(/\D/g, '').slice(0, maxLen);
+    onPhoneChange(digitsOnly);
   };
 
   return (
@@ -253,14 +254,15 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
         {/* Phone input */}
         <input
           type="tel"
+          inputMode="numeric"
           value={phoneNumber}
           onChange={e => handlePhoneChange(e.target.value)}
           onBlur={() => {
             setIsTouched(true);
             if (onBlur) onBlur();
           }}
-          placeholder={placeholder || `Phone (${getMaxLength()} digits)`}
-          maxLength={getMaxLength() + 3} // Allow for spaces/dashes
+          placeholder={placeholder || `Enter ${getMaxLength()} digits`}
+          maxLength={getMaxLength()}
           style={{
             flex: 1,
             padding: '10px 12px',
@@ -293,16 +295,24 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
       )}
 
       {/* Hint when no error */}
-      {!phoneError && phoneNumber && (
-        <div style={{
-          marginTop: 6,
-          fontSize: 11,
-          color: 'var(--text-muted)',
-          fontWeight: 500,
-        }}>
-          {selectedCountry.name} · {getMaxLength()} digits expected
-        </div>
-      )}
+      {!phoneError && phoneNumber && (() => {
+        const digitsLen = phoneNumber.replace(/\D/g, '').length;
+        const maxLen = getMaxLength();
+        const validLengths = Array.isArray(selectedCountry.phoneLength)
+          ? selectedCountry.phoneLength
+          : [selectedCountry.phoneLength];
+        const isComplete = validLengths.includes(digitsLen);
+        return (
+          <div style={{
+            marginTop: 6,
+            fontSize: 11,
+            color: isComplete ? '#10b981' : 'var(--text-muted)',
+            fontWeight: isComplete ? 700 : 500,
+          }}>
+            {selectedCountry.name} · {digitsLen}/{maxLen} digits
+          </div>
+        );
+      })()}
 
       {/* Dropdown */}
       {isOpen && (
@@ -369,12 +379,17 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
               </div>
             ) : (
               filtered.map(country => {
-                const isSelected = country.code === country.code;
+                const isSelected = country.code === countryCode;
                 return (
                   <button
                     key={country.code}
                     type="button"
                     onClick={() => {
+                      const nextMax = getMaxLength(country);
+                      const trimmedDigits = (phoneNumber || '').replace(/\D/g, '').slice(0, nextMax);
+                      if (trimmedDigits !== phoneNumber) {
+                        onPhoneChange(trimmedDigits);
+                      }
                       onCountryChange(country);
                       setIsOpen(false);
                       setSearch('');

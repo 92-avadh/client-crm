@@ -5,6 +5,15 @@ import { useConfirm } from '../../hooks/useConfirm';
 import { isDirty } from '../../hooks/isDirty';
 import { CountryCodePicker, type Country } from '../ui/CountryCodePicker';
 import { COUNTRY_PHONE_LENGTHS } from './ClientsManager';
+import {
+  sanitizePersonName,
+  sanitizePlaceName,
+  sanitizePincode,
+  sanitizeGstin,
+  sanitizePan,
+  isValidGSTIN,
+  isValidPAN,
+} from '../../utils/validation';
 
 export interface ClientFormData {
   name: string;
@@ -184,8 +193,12 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
     switch (field) {
       case 'name':
         return !String(formData.name || '').trim() ? 'Client name is required' : '';
-      case 'ownerName':
-        return !String(formData.ownerName || '').trim() ? 'Contact person is required' : '';
+      case 'ownerName': {
+        const val = String(formData.ownerName || '').trim();
+        if (!val) return 'Contact person is required';
+        if (!/[a-zA-Z]{2,}/.test(val)) return 'Contact person name must contain letters only';
+        return '';
+      }
       case 'mobile': {
         const val = String(formData.mobile || '').trim();
         if (!val) return 'Mobile number is required';
@@ -206,8 +219,22 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
         return !String(formData.billingAddress || '').trim() ? 'Billing address is required' : '';
       case 'state':
         return !String(formData.state || '').trim() ? 'State is required' : '';
-      case 'pincode':
-        return !String(formData.pincode || '').trim() ? 'Pincode is required' : '';
+      case 'pincode': {
+        const val = String(formData.pincode || '').trim();
+        if (!val) return 'Pincode is required';
+        if ((formData.countryCode || 'IN') === 'IN' && !/^\d{6}$/.test(val)) {
+          return 'Pincode must be 6 digits';
+        }
+        return '';
+      }
+      case 'gstNumber':
+        return formData.gstNumber && !isValidGSTIN(formData.gstNumber)
+          ? 'Enter a valid 15-character GSTIN (e.g. 24AAAAA0000A1Z5)'
+          : '';
+      case 'pan':
+        return formData.pan && !isValidPAN(formData.pan)
+          ? 'Enter a valid 10-character PAN (e.g. ABCDE1234F)'
+          : '';
       case 'serviceDetails': {
         if (!serviceOption) return 'Service details are required';
         if (serviceOption === 'Others' && !String(formData.serviceDetails || '').trim()) {
@@ -261,10 +288,10 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
             <ErrorBanner message={submitError} />
 
             <FieldRow>
-              <FormField label="Client Name" required value={formData.name} error={getFieldError('name')}
-                onBlur={() => handleBlur('name')} placeholder="e.g. Apex Media Pvt Ltd" onChange={(v) => onFormChange({ name: v })} />
-              <FormField label="Contact Person (Owner)" required value={formData.ownerName} error={getFieldError('ownerName')}
-                onBlur={() => handleBlur('ownerName')} placeholder="e.g. Vikram Seth" onChange={(v) => onFormChange({ ownerName: v })} />
+              <FormField label="Client Name" required maxLength={100} value={formData.name} error={getFieldError('name')}
+                onBlur={() => handleBlur('name')} placeholder="e.g. Apex Media Pvt Ltd" onChange={(v) => onFormChange({ name: v.slice(0, 100) })} />
+              <FormField label="Contact Person (Owner)" required maxLength={80} value={formData.ownerName} error={getFieldError('ownerName')}
+                onBlur={() => handleBlur('ownerName')} placeholder="e.g. Vikram Seth" onChange={(v) => onFormChange({ ownerName: sanitizePersonName(v) })} />
             </FieldRow>
 
             <FieldRow>
@@ -274,7 +301,10 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
                 </label>
                 <CountryCodePicker
                   countryCode={formData.countryCode}
-                  onCountryChange={(c: Country) => onFormChange({ countryCode: c.code })}
+                  onCountryChange={(c: Country) => onFormChange({
+                    countryCode: c.code,
+                    pincode: sanitizePincode(formData.pincode, c.code),
+                  })}
                   phoneNumber={formData.mobile}
                   onPhoneChange={(v) => onFormChange({ mobile: v })}
                   onBlur={() => handleBlur('mobile')}
@@ -283,27 +313,32 @@ export const OnboardClientModal: React.FC<OnboardProps> = ({
                   required
                 />
               </div>
-              <FormField label="Email Address" required value={formData.email} error={getFieldError('email')}
-                onBlur={() => handleBlur('email')} type="email" placeholder="e.g. accounts@apexmedia.in" onChange={(v) => onFormChange({ email: v })} />
+              <FormField label="Email Address" required maxLength={120} value={formData.email} error={getFieldError('email')}
+                onBlur={() => handleBlur('email')} type="email" placeholder="e.g. accounts@apexmedia.in" onChange={(v) => onFormChange({ email: v.trimStart() })} />
             </FieldRow>
 
-            <FormField label="Billing Address" required value={formData.billingAddress} error={getFieldError('billingAddress')}
+            <FormField label="Billing Address" required maxLength={255} value={formData.billingAddress} error={getFieldError('billingAddress')}
               onBlur={() => handleBlur('billingAddress')} placeholder="Street, area" onChange={(v) => onFormChange({ billingAddress: v })} />
 
             <div className="rg-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-              <FormField label="City" value={formData.city || ''} error={getFieldError('city')}
-                onBlur={() => handleBlur('city')} placeholder="e.g. Surat" onChange={(v) => onFormChange({ city: v })} />
-              <FormField label="State" required value={formData.state} error={getFieldError('state')}
-                onBlur={() => handleBlur('state')} placeholder="e.g. Gujarat" onChange={(v) => onFormChange({ state: v })} />
-              <FormField label="Pincode" required value={formData.pincode} error={getFieldError('pincode')}
-                onBlur={() => handleBlur('pincode')} placeholder="e.g. 395006" onChange={(v) => onFormChange({ pincode: v })} />
+              <FormField label="City" maxLength={60} value={formData.city || ''} error={getFieldError('city')}
+                onBlur={() => handleBlur('city')} placeholder="e.g. Surat" onChange={(v) => onFormChange({ city: sanitizePlaceName(v) })} />
+              <FormField label="State" required maxLength={60} value={formData.state} error={getFieldError('state')}
+                onBlur={() => handleBlur('state')} placeholder="e.g. Gujarat" onChange={(v) => onFormChange({ state: sanitizePlaceName(v) })} />
+              <FormField label="Pincode" required maxLength={(formData.countryCode || 'IN') === 'IN' ? 6 : 10}
+                inputMode={(formData.countryCode || 'IN') === 'IN' ? 'numeric' : 'text'}
+                value={formData.pincode} error={getFieldError('pincode')}
+                onBlur={() => handleBlur('pincode')} placeholder="e.g. 395006"
+                onChange={(v) => onFormChange({ pincode: sanitizePincode(v, formData.countryCode || 'IN') })} />
             </div>
 
             <FieldRow>
-              <FormField label="GSTIN" value={formData.gstNumber} error={errors.gstNumber} mono
-                placeholder="24AAAAA0000A1Z5" onChange={(v) => onFormChange({ gstNumber: v.toUpperCase() })} />
-              <FormField label="PAN" value={formData.pan} error={errors.pan} mono
-                placeholder="AAAAA0000A" onChange={(v) => onFormChange({ pan: v.toUpperCase() })} />
+              <FormField label="GSTIN" maxLength={15} value={formData.gstNumber} error={getFieldError('gstNumber')}
+                onBlur={() => handleBlur('gstNumber')} mono placeholder="24AAAAA0000A1Z5"
+                onChange={(v) => onFormChange({ gstNumber: sanitizeGstin(v) })} />
+              <FormField label="PAN" maxLength={10} value={formData.pan} error={getFieldError('pan')}
+                onBlur={() => handleBlur('pan')} mono placeholder="AAAAA0000A"
+                onChange={(v) => onFormChange({ pan: sanitizePan(v) })} />
             </FieldRow>
 
             <div>
@@ -499,8 +534,12 @@ export const EditClientModal: React.FC<EditProps> = ({
     switch (field) {
       case 'name':
         return !String(formData.name || '').trim() ? 'Client name is required' : '';
-      case 'ownerName':
-        return !String(formData.ownerName || '').trim() ? 'Contact person is required' : '';
+      case 'ownerName': {
+        const val = String(formData.ownerName || '').trim();
+        if (!val) return 'Contact person is required';
+        if (!/[a-zA-Z]{2,}/.test(val)) return 'Contact person name must contain letters only';
+        return '';
+      }
       case 'mobile': {
         const val = String(formData.mobile || '').trim();
         if (!val) return 'Mobile number is required';
@@ -517,6 +556,21 @@ export const EditClientModal: React.FC<EditProps> = ({
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Please enter a valid email address';
         return '';
       }
+      case 'pincode': {
+        const val = String(formData.pincode || '').trim();
+        if (val && (formData.countryCode || 'IN') === 'IN' && !/^\d{6}$/.test(val)) {
+          return 'Pincode must be 6 digits';
+        }
+        return '';
+      }
+      case 'gstNumber':
+        return formData.gstNumber && !isValidGSTIN(formData.gstNumber)
+          ? 'Enter a valid 15-character GSTIN (e.g. 24AAAAA0000A1Z5)'
+          : '';
+      case 'pan':
+        return formData.pan && !isValidPAN(formData.pan)
+          ? 'Enter a valid 10-character PAN (e.g. ABCDE1234F)'
+          : '';
       default:
         return '';
     }
@@ -562,10 +616,10 @@ export const EditClientModal: React.FC<EditProps> = ({
             <ErrorBanner message={submitError} />
 
             <FieldRow>
-              <FormField label="Client Name" required value={formData.name} error={getFieldError('name')}
-                onBlur={() => handleBlur('name')} onChange={(v) => onFormChange({ name: v })} />
-              <FormField label="Contact Person (Owner)" required value={formData.ownerName} error={getFieldError('ownerName')}
-                onBlur={() => handleBlur('ownerName')} onChange={(v) => onFormChange({ ownerName: v })} />
+              <FormField label="Client Name" required maxLength={100} value={formData.name} error={getFieldError('name')}
+                onBlur={() => handleBlur('name')} onChange={(v) => onFormChange({ name: v.slice(0, 100) })} />
+              <FormField label="Contact Person (Owner)" required maxLength={80} value={formData.ownerName} error={getFieldError('ownerName')}
+                onBlur={() => handleBlur('ownerName')} onChange={(v) => onFormChange({ ownerName: sanitizePersonName(v) })} />
             </FieldRow>
 
             <FieldRow>
@@ -575,7 +629,10 @@ export const EditClientModal: React.FC<EditProps> = ({
                 </label>
                 <CountryCodePicker
                   countryCode={formData.countryCode}
-                  onCountryChange={(c: Country) => onFormChange({ countryCode: c.code })}
+                  onCountryChange={(c: Country) => onFormChange({
+                    countryCode: c.code,
+                    pincode: sanitizePincode(formData.pincode, c.code),
+                  })}
                   phoneNumber={formData.mobile}
                   onPhoneChange={(v) => onFormChange({ mobile: v })}
                   onBlur={() => handleBlur('mobile')}
@@ -584,27 +641,32 @@ export const EditClientModal: React.FC<EditProps> = ({
                   required
                 />
               </div>
-              <FormField label="Email Address" required value={formData.email} error={getFieldError('email')}
-                onBlur={() => handleBlur('email')} type="email" onChange={(v) => onFormChange({ email: v })} />
+              <FormField label="Email Address" required maxLength={120} value={formData.email} error={getFieldError('email')}
+                onBlur={() => handleBlur('email')} type="email" onChange={(v) => onFormChange({ email: v.trimStart() })} />
             </FieldRow>
 
-            <FormField label="Billing Address" value={formData.billingAddress} error={errors.billingAddress}
+            <FormField label="Billing Address" maxLength={255} value={formData.billingAddress} error={errors.billingAddress}
               onChange={(v) => onFormChange({ billingAddress: v })} />
 
             <div className="rg-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-              <FormField label="City" value={formData.city || ''} error={errors.city}
-                placeholder="e.g. Surat" onChange={(v) => onFormChange({ city: v })} />
-              <FormField label="State" value={formData.state} error={errors.state}
-                placeholder="e.g. Maharashtra" onChange={(v) => onFormChange({ state: v })} />
-              <FormField label="Pincode" value={formData.pincode} error={errors.pincode}
-                placeholder="e.g. 400001" onChange={(v) => onFormChange({ pincode: v })} />
+              <FormField label="City" maxLength={60} value={formData.city || ''} error={errors.city}
+                placeholder="e.g. Surat" onChange={(v) => onFormChange({ city: sanitizePlaceName(v) })} />
+              <FormField label="State" maxLength={60} value={formData.state} error={errors.state}
+                placeholder="e.g. Maharashtra" onChange={(v) => onFormChange({ state: sanitizePlaceName(v) })} />
+              <FormField label="Pincode" maxLength={(formData.countryCode || 'IN') === 'IN' ? 6 : 10}
+                inputMode={(formData.countryCode || 'IN') === 'IN' ? 'numeric' : 'text'}
+                value={formData.pincode} error={getFieldError('pincode')}
+                onBlur={() => handleBlur('pincode')} placeholder="e.g. 400001"
+                onChange={(v) => onFormChange({ pincode: sanitizePincode(v, formData.countryCode || 'IN') })} />
             </div>
 
             <FieldRow>
-              <FormField label="GSTIN" value={formData.gstNumber} mono
-                onChange={(v) => onFormChange({ gstNumber: v.toUpperCase() })} />
-              <FormField label="PAN" value={formData.pan} mono
-                onChange={(v) => onFormChange({ pan: v.toUpperCase() })} />
+              <FormField label="GSTIN" maxLength={15} value={formData.gstNumber} error={getFieldError('gstNumber')}
+                onBlur={() => handleBlur('gstNumber')} mono
+                onChange={(v) => onFormChange({ gstNumber: sanitizeGstin(v) })} />
+              <FormField label="PAN" maxLength={10} value={formData.pan} error={getFieldError('pan')}
+                onBlur={() => handleBlur('pan')} mono
+                onChange={(v) => onFormChange({ pan: sanitizePan(v) })} />
             </FieldRow>
 
             <div>

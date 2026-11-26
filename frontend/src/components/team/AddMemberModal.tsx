@@ -8,7 +8,7 @@ import { RoleSelector } from './RoleSelector';
 import { PermissionsSelector } from './PermissionsSelector';
 import { getDefaultPermissionsForRole, CORPORATE_ROLES } from './permissionsConfig';
 import { AVATAR_FORMAT_HINT } from '../../utils/fileValidation';
-import { sanitizePhone, isValidPhone, isValidEmail } from '../../utils/validation';
+import { sanitizePhone, sanitizePersonName, isValidPhone, isValidEmail } from '../../utils/validation';
 
 export interface AddMemberForm {
   name: string;
@@ -229,16 +229,29 @@ export const AddMemberModal: React.FC<Props> = ({
               {/* Fields */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={labelStyle}>Full Name *</label>
-                <input type="text" value={form.name} maxLength={100} placeholder="e.g. Sarah Jenkins" required onChange={(e) => onFormChange({ name: e.target.value })} style={inputStyle} />
+                <input type="text" value={form.name} maxLength={80} placeholder="e.g. Sarah Jenkins" required onChange={(e) => onFormChange({ name: sanitizePersonName(e.target.value) })} style={inputStyle} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={labelStyle}>Email Address *</label>
-                <input type="email" value={form.email} maxLength={120} placeholder="e.g. sarah@company.com" required onChange={(e) => onFormChange({ email: e.target.value })} style={inputStyle} />
+                <input type="email" value={form.email} maxLength={120} placeholder="e.g. sarah@company.com" required onChange={(e) => onFormChange({ email: e.target.value.trimStart() })} style={inputStyle} />
               </div>
               <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={labelStyle}>Phone (Optional)</label>
-                  <input type="tel" value={form.phone} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => onFormChange({ phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })} style={inputStyle} />
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={form.phone}
+                    maxLength={15}
+                    placeholder="9876543210"
+                    onChange={(e) => {
+                      const raw = sanitizePhone(e.target.value);
+                      const hasPlus = raw.startsWith('+');
+                      const digits = raw.replace(/\D/g, '').slice(0, hasPlus ? 12 : 10);
+                      onFormChange({ phone: hasPlus ? `+${digits}` : digits });
+                    }}
+                    style={inputStyle}
+                  />
                 </div>
                 <RoleSelector
                   label="Role"

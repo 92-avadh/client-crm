@@ -553,12 +553,18 @@ async function deleteBrand(user, id) {
     await client.query('DELETE FROM brand_documents WHERE brand_id = $1', [id]);
     await client.query('DELETE FROM notifications WHERE brand_id = $1', [id]);
 
-    const { rows: convs } = await client.query('SELECT id FROM conversations WHERE brand_id = $1', [id]);
-    if (convs.length > 0) {
-      const convIds = convs.map(c => c.id);
-      await client.query('DELETE FROM conversation_participants WHERE conversation_id = ANY($1)', [convIds]);
-      await client.query('DELETE FROM chat_messages WHERE conversation_id = ANY($1)', [convIds]);
-      await client.query('DELETE FROM conversations WHERE brand_id = $1', [id]);
+    await client.query('SAVEPOINT sp_legacy_chat');
+    try {
+      const { rows: convs } = await client.query('SELECT id FROM conversations WHERE brand_id = $1', [id]);
+      if (convs.length > 0) {
+        const convIds = convs.map(c => c.id);
+        await client.query('DELETE FROM conversation_participants WHERE conversation_id = ANY($1)', [convIds]);
+        await client.query('DELETE FROM chat_messages WHERE conversation_id = ANY($1)', [convIds]);
+        await client.query('DELETE FROM conversations WHERE brand_id = $1', [id]);
+      }
+      await client.query('RELEASE SAVEPOINT sp_legacy_chat');
+    } catch {
+      await client.query('ROLLBACK TO SAVEPOINT sp_legacy_chat');
     }
 
     await client.query('DELETE FROM brands WHERE id = $1', [id]);

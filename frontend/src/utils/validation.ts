@@ -28,6 +28,40 @@ export function sanitizePhone(input: string): string {
   return input.replace(/[^0-9+\s\-()]/g, '');
 }
 
+/** Keeps digits only, optionally capped at maxLength */
+export function sanitizeDigitsOnly(input: string, maxLength?: number): string {
+  const digits = String(input || '').replace(/\D/g, '');
+  return typeof maxLength === 'number' ? digits.slice(0, maxLength) : digits;
+}
+
+/** Keeps only letters, spaces, dots, apostrophes, and hyphens for human names */
+export function sanitizePersonName(input: string, maxLength = 80): string {
+  return String(input || '').replace(/[^a-zA-Z\s.'-]/g, '').slice(0, maxLength);
+}
+
+/** Keeps only letters, spaces, dots, apostrophes, and hyphens for City / State */
+export function sanitizePlaceName(input: string, maxLength = 60): string {
+  return String(input || '').replace(/[^a-zA-Z\s.'-]/g, '').slice(0, maxLength);
+}
+
+/** Sanitizes postal / pincode: digits-only (6 max) for IN, alphanumeric up to 10 otherwise */
+export function sanitizePincode(input: string, countryCode = 'IN'): string {
+  if (countryCode === 'IN') {
+    return String(input || '').replace(/\D/g, '').slice(0, 6);
+  }
+  return String(input || '').replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 10);
+}
+
+/** Sanitizes GSTIN: uppercase alphanumeric up to 15 chars */
+export function sanitizeGstin(input: string): string {
+  return String(input || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+}
+
+/** Sanitizes PAN: uppercase alphanumeric up to 10 chars */
+export function sanitizePan(input: string): string {
+  return String(input || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+}
+
 /** Validates international phone format and minimum/maximum digit length */
 export function isValidPhone(
   phone: string,

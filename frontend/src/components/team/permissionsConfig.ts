@@ -61,12 +61,6 @@ export const AVAILABLE_PERMISSIONS: ModulePermission[] = [
     category: 'collaboration',
   },
   {
-    id: 'chat',
-    label: 'Team Chat & Channels',
-    description: 'Direct messaging and real-time team conversation channels',
-    category: 'collaboration',
-  },
-  {
     id: 'meetings',
     label: 'Meetings Calendar',
     description: 'Client calls, internal standups & scheduling calendar',
@@ -101,7 +95,7 @@ export const CORPORATE_ROLES: CorporateRoleOption[] = [
     value: 'team',
     label: 'Team Member',
     category: 'General',
-    description: 'Standard collaborator with tasks, calendar, clients & chat',
+    description: 'Standard collaborator with tasks, calendar & clients',
   },
   {
     value: 'hr',
@@ -180,7 +174,6 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         'expenses',
         'team',
         'inbox',
-        'chat',
         'meetings',
         'leads',
         'settings',
@@ -188,23 +181,23 @@ export function getDefaultPermissionsForRole(role: string): string[] {
     case 'finance':
       return ['dashboard', 'clients', 'invoices', 'finance', 'expenses', 'inbox'];
     case 'sales':
-      return ['dashboard', 'leads', 'clients', 'meetings', 'chat', 'inbox'];
+      return ['dashboard', 'leads', 'clients', 'meetings', 'inbox'];
     case 'marketing':
-      return ['dashboard', 'clients', 'projects', 'tasks', 'leads', 'chat', 'meetings'];
+      return ['dashboard', 'clients', 'projects', 'tasks', 'leads', 'meetings'];
     case 'project_manager':
     case 'operations_manager':
-      return ['dashboard', 'clients', 'projects', 'tasks', 'team', 'inbox', 'chat', 'meetings'];
+      return ['dashboard', 'clients', 'projects', 'tasks', 'team', 'inbox', 'meetings'];
     case 'account_executive':
-      return ['dashboard', 'clients', 'projects', 'tasks', 'invoices', 'chat', 'meetings'];
+      return ['dashboard', 'clients', 'projects', 'tasks', 'invoices', 'meetings'];
     case 'creative_designer':
-      return ['dashboard', 'clients', 'projects', 'tasks', 'chat', 'meetings'];
+      return ['dashboard', 'clients', 'projects', 'tasks', 'meetings'];
     case 'developer':
-      return ['dashboard', 'projects', 'tasks', 'chat'];
+      return ['dashboard', 'projects', 'tasks'];
     case 'brand':
-      return ['inbox', 'chat', 'meetings', 'settings'];
+      return ['inbox', 'meetings', 'settings'];
     case 'team':
     default:
-      return ['dashboard', 'clients', 'projects', 'tasks', 'inbox', 'chat', 'meetings'];
+      return ['dashboard', 'clients', 'projects', 'tasks', 'inbox', 'meetings'];
   }
 }
 
@@ -217,13 +210,13 @@ export interface PermissionPreset {
 export const PERMISSION_PRESETS: PermissionPreset[] = [
   {
     name: 'All Access',
-    description: 'Complete access to all 14 dashboard modules',
+    description: 'Complete access to all 12 dashboard modules',
     permissions: [...ALL_PERMISSION_IDS],
   },
   {
     name: 'Operations & Execution',
-    description: 'Projects, tasks, calendar, clients & team chat',
-    permissions: ['dashboard', 'clients', 'projects', 'tasks', 'team', 'inbox', 'chat', 'meetings'],
+    description: 'Projects, tasks, calendar, clients & inbox',
+    permissions: ['dashboard', 'clients', 'projects', 'tasks', 'team', 'inbox', 'meetings'],
   },
   {
     name: 'Finance & Billing',
@@ -232,7 +225,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
   },
   {
     name: 'Sales & Growth',
-    description: 'Leads pipeline, client onboarding, meetings & messaging',
-    permissions: ['dashboard', 'leads', 'clients', 'meetings', 'chat', 'inbox'],
+    description: 'Leads pipeline, client onboarding, meetings & alerts',
+    permissions: ['dashboard', 'leads', 'clients', 'meetings', 'inbox'],
   },
 ];

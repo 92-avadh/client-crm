@@ -2,6 +2,7 @@ import React from 'react';
 import type { Invoice, AppSettings, Brand } from '../../types';
 import { numberToWordsINR } from '../../utils/numberToWords';
 import { resolveInvoiceBank, buildUpiDeepLink } from '../../utils/bankAccounts';
+import { QrCodeImage } from '../common/QrCodeImage';
 
 export type SwipeTemplateId = 'modern' | 'classic' | 'navy' | 'executive';
 
@@ -38,8 +39,8 @@ const getPayable = (invoice: Invoice): number => {
 
 export const InvoiceLogo: React.FC<{ settings: AppSettings; maxHeight?: number; maxWidth?: number }> = ({
   settings,
-  maxHeight = 36,
-  maxWidth = 140,
+  maxHeight = 40,
+  maxWidth = 150,
 }) => {
   const showLogo = settings.invoiceDesign?.showLogo !== false;
   if (!showLogo) return null;
@@ -50,7 +51,15 @@ export const InvoiceLogo: React.FC<{ settings: AppSettings; maxHeight?: number; 
       <img
         src={agencyLogo}
         alt={settings.companyName || 'Agency Logo'}
-        style={{ maxHeight, maxWidth, objectFit: 'contain' }}
+        style={{
+          display: 'block',
+          width: 'auto',
+          height: 'auto',
+          maxHeight,
+          maxWidth,
+          objectFit: 'contain',
+          flexShrink: 0,
+        }}
         onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
       />
     );
@@ -60,7 +69,15 @@ export const InvoiceLogo: React.FC<{ settings: AppSettings; maxHeight?: number; 
     <img
       src="/retentio-logo-horizontal.png"
       alt={settings.companyName || 'Retentio'}
-      style={{ maxHeight: Math.min(22, maxHeight), maxWidth: Math.min(95, maxWidth), objectFit: 'contain' }}
+      style={{
+        display: 'block',
+        width: 'auto',
+        height: 'auto',
+        maxHeight: Math.min(22, maxHeight),
+        maxWidth: Math.min(95, maxWidth),
+        objectFit: 'contain',
+        flexShrink: 0,
+      }}
       onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
     />
   );
@@ -153,58 +170,133 @@ export const BankDetailsBlock: React.FC<{
 };
 
 /**
- * Custom Uploaded Signature / Company Stamp or Authentic Circular Seal
+ * Authorized Signatory block displaying BOTH signature (first) and company stamp
+ * overlapping by ~50% so both remain clearly visible.
  */
 export const AuthorizedSignatoryStamp: React.FC<{
   companyName?: string;
   signatureUrl?: string;
-}> = ({ companyName, signatureUrl }) => (
-  <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', userSelect: 'none' }}>
-    {signatureUrl ? (
-      <div style={{ height: 68, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
-        <img
-          src={signatureUrl}
-          alt="Authorized Signature"
-          style={{ maxHeight: 68, maxWidth: 140, objectFit: 'contain' }}
-        />
+  stampUrl?: string;
+}> = ({ companyName, signatureUrl, stampUrl }) => {
+  const safeId = React.useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const topId = `topCurve_${safeId}`;
+  const bottomId = `bottomCurve_${safeId}`;
+
+  return (
+    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', userSelect: 'none' }}>
+      <div
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: 150,
+          height: 80,
+          marginBottom: 4,
+        }}
+      >
+        {/* 1. Signature placed FIRST */}
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 104,
+            height: 56,
+            flexShrink: 0,
+          }}
+        >
+          {signatureUrl ? (
+            <img
+              src={signatureUrl}
+              alt="Authorized Signature"
+              style={{ maxHeight: 54, maxWidth: 104, width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
+            />
+          ) : (
+            <svg width="104" height="52" viewBox="0 0 140 60" aria-label="Authorized Signature">
+              <path
+                d="M 10,42 Q 22,12 32,40 T 52,24 Q 58,44 68,26 Q 76,16 82,36 Q 94,20 112,34 Q 122,38 132,30"
+                fill="none"
+                stroke="#0f172a"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M 16,48 Q 62,43 122,46"
+                fill="none"
+                stroke="#334155"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                opacity="0.7"
+              />
+            </svg>
+          )}
+        </div>
+
+        {/* 2. Company Stamp overlapping signature by ~50% */}
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            marginLeft: -42,
+            width: 76,
+            height: 76,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: 'rotate(-6deg)',
+            opacity: 0.84,
+            mixBlendMode: 'multiply',
+            flexShrink: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          {stampUrl ? (
+            <img
+              src={stampUrl}
+              alt="Company Stamp"
+              style={{ maxHeight: 74, maxWidth: 74, width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
+            />
+          ) : (
+            <svg width="76" height="76" viewBox="0 0 100 100" aria-label="Company Stamp">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeDasharray="3,2" />
+              <circle cx="50" cy="50" r="41" fill="none" stroke="#2563eb" strokeWidth="1.4" />
+              <circle cx="50" cy="50" r="30" fill="none" stroke="#2563eb" strokeWidth="1" strokeDasharray="2,1" />
+              <defs>
+                <path id={topId} d="M 18,50 A 32,32 0 0,1 82,50" />
+                <path id={bottomId} d="M 82,50 A 32,32 0 0,1 18,50" />
+              </defs>
+              <text fill="#2563eb" fontSize="7.5" fontWeight="800" letterSpacing="1">
+                <textPath href={`#${topId}`} startOffset="50%" textAnchor="middle">
+                  ★ AUTHORIZED SEAL ★
+                </textPath>
+              </text>
+              <text fill="#2563eb" fontSize="6.5" fontWeight="700" letterSpacing="0.8">
+                <textPath href={`#${bottomId}`} startOffset="50%" textAnchor="middle">
+                  {(companyName || 'VERIFIED').slice(0, 16).toUpperCase()}
+                </textPath>
+              </text>
+              <line x1="26" y1="50" x2="74" y2="50" stroke="#2563eb" strokeWidth="0.9" opacity="0.7" />
+              <text x="50" y="53" textAnchor="middle" fill="#1d4ed8" fontSize="7" fontWeight="800">
+                STAMP
+              </text>
+            </svg>
+          )}
+        </div>
       </div>
-    ) : (
-      <svg width="78" height="78" viewBox="0 0 100 100" style={{ transform: 'rotate(-5deg)', opacity: 0.9 }}>
-        <circle cx="50" cy="50" r="46" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeDasharray="3,2" />
-        <circle cx="50" cy="50" r="42" fill="none" stroke="#2563eb" strokeWidth="1.5" />
-        <circle cx="50" cy="50" r="32" fill="none" stroke="#2563eb" strokeWidth="1" strokeDasharray="2,1" />
-        <defs>
-          <path id="topCurve" d="M 18,50 A 32,32 0 0,1 82,50" />
-          <path id="bottomCurve" d="M 82,50 A 32,32 0 0,1 18,50" />
-        </defs>
-        <text fill="#2563eb" fontSize="8" fontWeight="800" letterSpacing="1.2">
-          <textPath href="#topCurve" startOffset="50%" textAnchor="middle">
-            ★ SIGNATURE ★
-          </textPath>
-        </text>
-        <text fill="#2563eb" fontSize="6.5" fontWeight="700" letterSpacing="0.8">
-          <textPath href="#bottomCurve" startOffset="50%" textAnchor="middle">
-            {(companyName || 'VERIFIED').slice(0, 16).toUpperCase()}
-          </textPath>
-        </text>
-        <path
-          d="M 30,52 Q 40,40 48,54 T 66,46 Q 74,56 70,52"
-          fill="none"
-          stroke="#1d4ed8"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-        />
-        <circle cx="48" cy="42" r="1.5" fill="#1d4ed8" />
-        <line x1="28" y1="57" x2="72" y2="57" stroke="#2563eb" strokeWidth="1" />
-      </svg>
-    )}
-    <div style={{ fontSize: 10, fontWeight: 700, color: '#334155', marginTop: 4 }}>Authorized Signatory</div>
-  </div>
-);
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#334155', marginTop: 2, borderTop: '1px solid #cbd5e1', paddingTop: 3, minWidth: 130, textAlign: 'center' }}>
+        Authorized Signatory
+      </div>
+    </div>
+  );
+};
 
 /**
- * UPI QR Code (prefers uploaded bank QR image; falls back to dynamic UPI QR only if UPI ID exists) + Tap-to-Pay Deep Link.
- * Returns null if no QR image and no UPI ID are configured.
+ * UPI QR Code (prefers uploaded bank QR image; otherwise renders an accurate local
+ * PNG QR code for the UPI deep link with proper quiet zone).
  */
 export const DynamicUpiQrCode: React.FC<{
   upiId?: string;
@@ -215,32 +307,30 @@ export const DynamicUpiQrCode: React.FC<{
 }> = ({ upiId, qrCodeUrl, companyName, amount, invoiceNumber }) => {
   const cleanUpi = (upiId || '').trim();
   const upiDeepLink = buildUpiDeepLink({ upiId: cleanUpi, companyName, amount, invoiceNumber });
-  const generatedQrUrl = upiDeepLink
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=${encodeURIComponent(upiDeepLink)}`
-    : '';
-  const displayQrSrc = qrCodeUrl || generatedQrUrl;
 
-  if (!displayQrSrc && !cleanUpi) return null;
+  if (!qrCodeUrl && !upiDeepLink && !cleanUpi) return null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 5 }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>Pay using UPI:</div>
-      {displayQrSrc && (
-        <div style={{ padding: 4, background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 4, display: 'inline-block' }}>
+      <div style={{ padding: 4, background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 4, display: 'inline-block' }}>
+        {qrCodeUrl ? (
           <img
-            src={displayQrSrc}
+            src={qrCodeUrl}
             alt="UPI QR Code"
             width="92"
             height="92"
-            style={{ display: 'block', objectFit: 'contain' }}
+            style={{ display: 'block', width: 92, height: 92, objectFit: 'contain' }}
             onError={(e) => {
               (e.target as HTMLElement).style.display = 'none';
             }}
           />
-        </div>
-      )}
+        ) : upiDeepLink ? (
+          <QrCodeImage value={upiDeepLink} size={92} alt={`UPI QR for ${cleanUpi}`} />
+        ) : null}
+      </div>
       {cleanUpi && (
-        <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#475569', fontWeight: 600 }}>
+        <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#475569', fontWeight: 600, wordBreak: 'break-all' }}>
           {cleanUpi}
         </div>
       )}
@@ -313,7 +403,11 @@ const InvoicePaymentFooter: React.FC<{
       <div style={{ fontSize: 10.5, color: '#475569', marginBottom: 4 }}>
         For {settings.companyName || 'Agency'}
       </div>
-      <AuthorizedSignatoryStamp companyName={settings.companyName} signatureUrl={settings.invoiceDesign?.signatureUrl} />
+      <AuthorizedSignatoryStamp
+        companyName={settings.companyName}
+        signatureUrl={settings.invoiceDesign?.signatureUrl}
+        stampUrl={settings.invoiceDesign?.stampUrl}
+      />
     </div>
   ) : null;
 
@@ -329,6 +423,7 @@ const InvoicePaymentFooter: React.FC<{
 
   return (
     <div
+      className="inv-footer-grid"
       style={
         bordered
           ? { display: 'grid', gridTemplateColumns: cols.join(' '), borderBottom: '1px solid #0f172a', fontSize: 10.5 }
@@ -393,12 +488,12 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           )}
         </div>
 
-        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, minWidth: 120 }}>
           <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             ORIGINAL FOR RECIPIENT
           </div>
-          <div style={{ marginTop: 8 }}>
-            <InvoiceLogo settings={settings} maxHeight={38} maxWidth={160} />
+          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+            <InvoiceLogo settings={settings} maxHeight={44} maxWidth={165} />
           </div>
         </div>
       </div>
@@ -406,13 +501,13 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
       <div style={{ height: 1, background: '#cbd5e1', margin: '10px 0 14px' }} />
 
       {/* Invoice Details & Addresses */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1.4fr', gap: 16, marginBottom: 14 }}>
+      <div className="inv-meta-3col" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1.4fr', gap: 16, marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>
             Invoice #: <span style={{ fontFamily: 'monospace' }}>{invoice.invoiceNumber}</span>
           </div>
           <div style={{ marginTop: 6 }}>
-            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Customer Details:</div>
+            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Client Details:</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', marginTop: 1 }}>{invoice.brandName || brand?.name || 'Client'}</div>
             {brand?.mobile && <div style={{ fontSize: 10.5, color: '#475569', marginTop: 1 }}>Ph: {brand.mobile}</div>}
             {brand?.email && <div style={{ fontSize: 10.5, color: '#475569' }}>{brand.email}</div>}
@@ -460,13 +555,14 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
       )}
 
       {/* Main Items Table */}
+      <div className="inv-table-scroll">
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
         <thead>
           <tr style={{ borderTop: '1.5px solid #0f172a', borderBottom: '1.5px solid #0f172a', background: '#f8fafc', fontSize: 10.5, fontWeight: 700, color: '#0f172a' }}>
             <th style={{ padding: '7px 6px', textAlign: 'left', width: 32 }}>#</th>
-            <th style={{ padding: '7px 8px', textAlign: 'left' }}>Item</th>
+            <th style={{ padding: '7px 8px', textAlign: 'left' }}>Service</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 80 }}>HSN/SAC</th>
-            <th style={{ padding: '7px 8px', textAlign: 'right', width: 90 }}>Rate/ Item</th>
+            <th style={{ padding: '7px 8px', textAlign: 'right', width: 90 }}>Rate / Service</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 50 }}>Qty</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 90 }}>Taxable Value</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 85 }}>Tax Amount</th>
@@ -507,9 +603,10 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           })}
         </tbody>
       </table>
+      </div>
 
       {/* Summary Box */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+      <div className="inv-summary-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 10.5, color: '#475569', fontWeight: 600 }}>
           Total Items / Qty : {invoice.items.length} / {totalQty}.000
         </div>
@@ -631,7 +728,7 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
         </div>
 
         {/* Company & Invoice Grid Header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderBottom: '1px solid #0f172a' }}>
+        <div className="inv-meta-2col" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderBottom: '1px solid #0f172a' }}>
           <div style={{ padding: '12px 14px', borderRight: '1px solid #0f172a' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <InvoiceLogo settings={settings} maxHeight={34} maxWidth={120} />
@@ -684,10 +781,10 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
           </div>
         </div>
 
-        {/* Customer & Shipping Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderBottom: '1.5px solid #0f172a', fontSize: 10.5 }}>
+        {/* Client & Shipping Row */}
+        <div className="inv-meta-2col" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderBottom: '1.5px solid #0f172a', fontSize: 10.5 }}>
           <div style={{ padding: '8px 14px', borderRight: '1px solid #0f172a' }}>
-            <span style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Customer Details:</span>
+            <span style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Client Details:</span>
             <div style={{ fontWeight: 800, fontSize: 12, color: '#0f172a', marginTop: 1 }}>{invoice.brandName || brand?.name || 'Client'}</div>
             {clientAddr && (
               <>
@@ -707,11 +804,12 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
         </div>
 
         {/* Line Items Table */}
+        <div className="inv-table-scroll">
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #0f172a', fontWeight: 800, color: '#0f172a' }}>
               <th style={{ padding: '6px 6px', borderRight: '1px solid #cbd5e1', width: 28, textAlign: 'center' }}>#</th>
-              <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'left' }}>Item</th>
+              <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'left' }}>Service</th>
               <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'center', width: 85 }}>HSN/SAC</th>
               <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'right', width: 80 }}>Rate</th>
               <th style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', textAlign: 'center', width: 45 }}>Qty</th>
@@ -751,9 +849,10 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
             })}
           </tbody>
         </table>
+        </div>
 
         {/* Subtotal & Tax Calculation Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderBottom: '1.5px solid #0f172a', fontSize: 10.5 }}>
+        <div className="inv-meta-2col" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderBottom: '1.5px solid #0f172a', fontSize: 10.5 }}>
           <div style={{ padding: '8px 12px', borderRight: '1px solid #0f172a', display: 'flex', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, color: '#475569' }}>Total Items / Qty : {invoice.items.length} / {totalQty}.000</span>
           </div>
@@ -937,13 +1036,14 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
       </div>
 
       {/* Items Table with Navy Solid Header Bar */}
+      <div className="inv-table-scroll">
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
         <thead>
           <tr style={{ background: '#002c6c', color: '#ffffff', fontSize: 10.5, fontWeight: 700 }}>
             <th style={{ padding: '8px 8px', textAlign: 'left', width: 32 }}>#</th>
-            <th style={{ padding: '8px 8px', textAlign: 'left' }}>Item</th>
+            <th style={{ padding: '8px 8px', textAlign: 'left' }}>Service</th>
             <th style={{ padding: '8px 8px', textAlign: 'center', width: 85 }}>HSN/SAC</th>
-            <th style={{ padding: '8px 8px', textAlign: 'right', width: 95 }}>Rate/ Item</th>
+            <th style={{ padding: '8px 8px', textAlign: 'right', width: 95 }}>Rate / Service</th>
             <th style={{ padding: '8px 8px', textAlign: 'center', width: 50 }}>Qty</th>
             <th style={{ padding: '8px 8px', textAlign: 'right', width: 100 }}>Amount</th>
           </tr>
@@ -971,9 +1071,10 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
           ))}
         </tbody>
       </table>
+      </div>
 
       {/* Summary */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+      <div className="inv-summary-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 10.5, color: '#64748b' }}>
           Total Items / Qty : {invoice.items.length} / {totalQty}.000
         </div>
@@ -1100,7 +1201,7 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
       </div>
 
       {/* Tinted Metadata Card */}
-      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '12px 14px', display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1fr', gap: 14, marginBottom: 14 }}>
+      <div className="inv-meta-3col" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '12px 14px', display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1fr', gap: 14, marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Bill to</div>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{invoice.brandName || brand?.name || 'Client'}</div>
@@ -1134,10 +1235,11 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
       </div>
 
       {/* Items Table */}
+      <div className="inv-table-scroll">
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
         <thead>
           <tr style={{ borderTop: '1.5px solid #cbd5e1', borderBottom: '1.5px solid #cbd5e1', fontSize: 10.5, fontWeight: 800, color: '#0f172a' }}>
-            <th style={{ padding: '7px 8px', textAlign: 'left' }}>Item</th>
+            <th style={{ padding: '7px 8px', textAlign: 'left' }}>Service</th>
             <th style={{ padding: '7px 8px', textAlign: 'center', width: 45 }}>Qty</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 90 }}>Rate</th>
             <th style={{ padding: '7px 8px', textAlign: 'right', width: 85 }}>Tax</th>
@@ -1167,9 +1269,10 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
           })}
         </tbody>
       </table>
+      </div>
 
       {/* Summary */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+      <div className="inv-summary-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 10.5, color: '#64748b' }}>
           Total Items / Qty : {invoice.items.length} / {totalQty}.000
         </div>

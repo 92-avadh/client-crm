@@ -67,7 +67,7 @@ export const FaqSection: React.FC = () => {
               <span className="faq__icon" aria-hidden="true"></span>
             </summary>
             <p className="m-text">
-              Yes. Retentio provides a bespoke client portal hosted on your custom domain with your logo, color palette, and favicon. Clients can review deliverables, approve project milestones, access invoices, and chat directly with your team.
+              Yes. Retentio provides a bespoke client portal hosted on your custom domain with your logo, color palette, and favicon. Clients can review deliverables, approve project milestones, access invoices, and share instant feedback with your team.
             </p>
           </details>
 

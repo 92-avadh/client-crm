@@ -189,7 +189,6 @@ app.use('/api/expenses', auth, require('./src/routes/expenses'));
 app.use('/api/meetings', auth, require('./src/routes/meetings'));
 app.use('/api/leads', auth, require('./src/routes/leads'));
 app.use('/api/notifications', auth, require('./src/routes/notifications'));
-app.use('/api/chat', auth, require('./src/routes/chat'));
 app.use('/api/settings', auth, cacheMiddleware(30), require('./src/routes/settings'));
 app.use('/api/holidays', auth, cacheMiddleware(60), require('./src/routes/holidays'));
 app.use('/api/audit-logs', auth, cacheMiddleware(15), require('./src/routes/auditLogs'));
@@ -326,7 +325,6 @@ connectWithRetry()
         ALTER TABLE notifications ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
         ALTER TABLE settings ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
         ALTER TABLE holidays ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
-        ALTER TABLE conversations ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
         ALTER TABLE recurring_invoices ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
         ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS agency_id VARCHAR(50);
 
@@ -346,7 +344,6 @@ connectWithRetry()
         UPDATE notifications SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE settings SET agency_id = 'usr_admin' WHERE id = 'main' AND agency_id IS NULL;
         UPDATE holidays SET agency_id = 'usr_admin' WHERE agency_id IS NULL AND type != 'National';
-        UPDATE conversations SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE recurring_invoices SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE audit_logs SET agency_id = 'usr_admin' WHERE agency_id IS NULL;
         UPDATE brands SET payment_status = 'Pending' WHERE status IN ('Churned', 'Inactive') AND payment_status = 'Paid';

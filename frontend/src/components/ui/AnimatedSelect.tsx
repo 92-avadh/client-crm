@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/animate-ui/components/radix/dropdown-menu';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Search } from 'lucide-react';
 
 export interface SelectOption {
   value: string;
@@ -19,6 +19,8 @@ export interface AnimatedSelectProps {
   onChange: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -33,6 +35,8 @@ export const AnimatedSelect: React.FC<AnimatedSelectProps> = ({
   onChange,
   options,
   placeholder = 'Select an option',
+  searchable = false,
+  searchPlaceholder = 'Search...',
   error,
   required,
   disabled = false,
@@ -40,7 +44,22 @@ export const AnimatedSelect: React.FC<AnimatedSelectProps> = ({
   buttonStyle,
 }) => {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const selectedOption = options.find((o) => o.value === value);
+
+  const filteredOptions = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!searchable || !q) return options;
+    return options.filter((o) => o.label.toLowerCase().includes(q));
+  }, [options, searchable, searchQuery]);
+
+  useEffect(() => {
+    if (open && searchable) {
+      const t = setTimeout(() => searchInputRef.current?.focus(), 40);
+      return () => clearTimeout(t);
+    }
+  }, [open, searchable]);
 
   return (
     <div style={{ ...style }}>
@@ -59,7 +78,13 @@ export const AnimatedSelect: React.FC<AnimatedSelectProps> = ({
         </label>
       )}
 
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu
+        open={open}
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen);
+          if (!nextOpen) setSearchQuery('');
+        }}
+      >
         <DropdownMenuTrigger asChild disabled={disabled}>
           <button
             type="button"
@@ -118,11 +143,63 @@ export const AnimatedSelect: React.FC<AnimatedSelectProps> = ({
           style={{
             width: 'var(--radix-dropdown-menu-trigger-width)',
             minWidth: 160,
-            maxHeight: 260,
+            maxHeight: 280,
             overflowY: 'auto',
           }}
         >
-          {options.map((opt) => {
+          {searchable && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 5,
+                background: 'var(--bg-card, #ffffff)',
+                padding: '6px 6px 8px',
+                borderBottom: '1px solid var(--border)',
+                marginBottom: 4,
+              }}
+            >
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search
+                  size={13}
+                  style={{
+                    position: 'absolute',
+                    left: 9,
+                    color: 'var(--text-muted)',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder={searchPlaceholder}
+                  style={{
+                    width: '100%',
+                    padding: '6px 10px 6px 28px',
+                    borderRadius: 7,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-subtle)',
+                    color: 'var(--text-primary)',
+                    fontSize: 12,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {filteredOptions.length === 0 ? (
+            <div style={{ padding: '14px 12px', textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>
+              No matching options found
+            </div>
+          ) : (
+          filteredOptions.map((opt) => {
             const isSelected = opt.value === value;
             return (
               <DropdownMenuItem
@@ -155,7 +232,7 @@ export const AnimatedSelect: React.FC<AnimatedSelectProps> = ({
                 {isSelected && <Check size={14} style={{ color: 'var(--brand-green, #059639)', flexShrink: 0 }} />}
               </DropdownMenuItem>
             );
-          })}
+          }))}
         </DropdownMenuContent>
       </DropdownMenu>
 

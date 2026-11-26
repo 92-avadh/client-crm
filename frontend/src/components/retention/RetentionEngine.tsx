@@ -5,63 +5,82 @@ import type { Brand, ClientHealthScore, AgencyHealthOverview } from '../../types
 import {
   Activity,
   AlertTriangle,
-  Clock,
-  CheckCircle,
-  MessageSquare,
+  CheckCircle2,
+  CheckSquare,
+  Wallet,
+  CalendarCheck,
+  Smile,
   PhoneCall,
-  Calendar,
-  Zap,
-  ArrowRight,
   ShieldCheck,
-  Share2,
-  Sliders,
-  XCircle,
-  Send,
-  Star,
-  ExternalLink,
+  MessageCircle,
   TrendingUp,
   RefreshCw,
-  Sparkles
+  HeartPulse,
+  BookOpen,
+  User,
 } from 'lucide-react';
 import { AnimatedNumber } from '../../hooks/useCountUp';
+import { PageGuideModal } from '../common/PageGuideModal';
 
 const inputFieldStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
-  borderRadius: 10, fontSize: 14, color: 'var(--text-primary)', background: 'var(--bg-subtle)',
-  outline: 'none', boxSizing: 'border-box',
+  width: '100%',
+  padding: '10px 14px',
+  border: '1px solid var(--border)',
+  borderRadius: 10,
+  fontSize: 14,
+  color: 'var(--text-primary)',
+  background: 'var(--bg-subtle)',
+  outline: 'none',
+  boxSizing: 'border-box',
 };
 const btnPrimary: React.CSSProperties = {
-  padding: '8px 14px', background: 'var(--solid-btn-bg)', color: 'var(--solid-btn-text)', border: 'none',
-  borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', gap: 6,
+  padding: '9px 15px',
+  background: 'var(--solid-btn-bg)',
+  color: 'var(--solid-btn-text)',
+  border: 'none',
+  borderRadius: 9,
+  fontSize: 12.5,
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
 };
 const btnSecondary: React.CSSProperties = {
-  padding: '8px 14px', background: 'var(--bg-raised)', color: 'var(--text-primary)',
-  border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', gap: 6,
+  padding: '9px 15px',
+  background: 'var(--bg-raised)',
+  color: 'var(--text-primary)',
+  border: '1px solid var(--border)',
+  borderRadius: 9,
+  fontSize: 12.5,
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
 };
 const modalOverlay: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 1000,
-  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+  position: 'fixed',
+  inset: 0,
+  background: 'var(--overlay)',
+  zIndex: 1000,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 24,
 };
-const badgeDanger: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--danger-bg)', color: 'var(--danger-text)' };
-const badgeSuccess: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'var(--success-bg)', color: 'var(--success-text)' };
-const badgeWarning: React.CSSProperties = { display: 'inline-flex', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' };
 
 export const RetentionEngine: React.FC = () => {
   const {
     currentUser,
     brands,
-    retentionAlerts,
     settings,
     updateSettings,
-    snoozeBrandRetention,
     markBrandChurned,
     logBrandActivity,
     setActiveTab,
     setSelectedBrandId,
-    setActiveConversationId,
-    showToast
+    showToast,
   } = useApp();
 
   const role = currentUser.role;
@@ -71,10 +90,12 @@ export const RetentionEngine: React.FC = () => {
   const [filterTier, setFilterTier] = useState<'all' | 'churn' | 'expansion' | 'stable'>('all');
   const [selectedBrandForLog, setSelectedBrandForLog] = useState<Brand | null>(null);
   const [callNote, setCallNote] = useState('');
+  const [showGuide, setShowGuide] = useState(false);
 
   const fetchHealth = () => {
     setLoadingHealth(true);
-    return api.retention.getOverview()
+    return api.retention
+      .getOverview()
       .then((res: AgencyHealthOverview) => setHealthData(res))
       .catch((err: any) => console.warn('Health overview fetch error:', err.message))
       .finally(() => setLoadingHealth(false));
@@ -86,12 +107,13 @@ export const RetentionEngine: React.FC = () => {
 
   const handleUpdateThreshold = (days: number) => {
     updateSettings({ retentionThresholdDays: days });
+    showToast(`Inactivity reminder set to ${days} days`, 'info');
   };
 
   const handleLogFollowUp = (brandId: string) => {
     if (!callNote.trim()) return;
     logBrandActivity(brandId, `Follow-up Call: ${callNote}`);
-    showToast(`Check-in saved for client! Activity updated.`, 'success');
+    showToast('Call note saved!', 'success');
     setSelectedBrandForLog(null);
     setCallNote('');
     fetchHealth();
@@ -101,258 +123,228 @@ export const RetentionEngine: React.FC = () => {
     const text = score.recommendation.suggestedMessage;
     const url = `https://wa.me/${score.mobile.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
-    logBrandActivity(score.brandId, `WhatsApp Message: ${score.recommendation.title}`);
-    showToast('WhatsApp message sent and recorded!', 'success');
+    logBrandActivity(score.brandId, `WhatsApp Check-in: ${score.recommendation.title}`);
+    showToast('Opened WhatsApp check-in message', 'success');
   };
 
   const getFilteredScores = () => {
     if (!healthData) return [];
-    if (filterTier === 'churn') return healthData.scores.filter(s => s.totalScore < 60);
-    if (filterTier === 'expansion') return healthData.scores.filter(s => s.totalScore >= 85);
-    if (filterTier === 'stable') return healthData.scores.filter(s => s.totalScore >= 60 && s.totalScore < 85);
+    if (filterTier === 'churn') return healthData.scores.filter((s) => s.totalScore < 60);
+    if (filterTier === 'expansion') return healthData.scores.filter((s) => s.totalScore >= 85);
+    if (filterTier === 'stable') return healthData.scores.filter((s) => s.totalScore >= 60 && s.totalScore < 85);
     return healthData.scores;
   };
 
   const filteredScores = getFilteredScores();
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-      {/* ── Page Header */}
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+      {/* ── Simple Header */}
       <div
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-        style={{ paddingBottom: 24, borderBottom: '1px solid var(--border)' }}
+        style={{ paddingBottom: 18, borderBottom: '1px solid var(--border)' }}
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2, margin: 0 }}>
-              Client Health &amp; Retention
+            <div
+              data-tip="Shows how happy each client is (0 to 100)"
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                background: 'rgba(16, 185, 129, 0.12)',
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <HeartPulse size={20} />
+            </div>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
+              Client Health
             </h1>
-            <span style={{ padding: '3px 10px', borderRadius: 20, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: 11, fontWeight: 800 }}>
-              Live Health Scoring
-            </span>
           </div>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6, marginBottom: 0 }}>
-            Calculates an automatic 0–100 health score for every client based on task progress, on-time payments, meeting frequency, and client feedback.
+            A simple 0–100 score for each active client based on tasks, payments, check-ins, and client feedback.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap w-fit self-start sm:self-auto">
           <button
+            type="button"
+            onClick={() => setShowGuide(true)}
+            data-tip="Simple explanation of this page"
+            style={{
+              ...btnSecondary,
+              background: 'rgba(16, 185, 129, 0.1)',
+              borderColor: 'rgba(16, 185, 129, 0.3)',
+              color: '#059669',
+            }}
+          >
+            <BookOpen size={14} />
+            <span>How This Works</span>
+          </button>
+
+          <button
+            type="button"
             onClick={fetchHealth}
             disabled={loadingHealth}
-            style={{ ...btnSecondary, fontSize: 12 }}
-            title="Recalculate dynamic health scores across all active clients"
+            data-tip="Recalculate scores using latest tasks & payments"
+            style={btnSecondary}
           >
-            <RefreshCw style={{ width: 13, height: 13 }} className={loadingHealth ? 'animate-spin' : ''} />
-            <span>Recalculate Scores</span>
+            <RefreshCw style={{ width: 14, height: 14, color: '#0284c7' }} className={loadingHealth ? 'animate-spin' : ''} />
+            <span>Refresh</span>
           </button>
 
           {role === 'admin' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 8px' }}>
-              <Sliders style={{ width: 14, height: 14, color: 'var(--text-muted)', marginLeft: 4 }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Inactivity Alert:</span>
-              {[7, 15, 30].map((days) => (
-                <button
-                  key={days}
-                  onClick={() => handleUpdateThreshold(days)}
-                  style={{
-                    padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                    background: settings.retentionThresholdDays === days ? 'var(--solid-btn-bg)' : 'transparent',
-                    color: settings.retentionThresholdDays === days ? 'var(--solid-btn-text)' : 'var(--text-secondary)'
-                  }}
-                >
-                  {days}d
-                </button>
-              ))}
-            </div>
+            <select
+              value={settings.retentionThresholdDays || 15}
+              onChange={(e) => handleUpdateThreshold(Number(e.target.value))}
+              aria-label="Inactivity reminder days"
+              data-tip="Get an alert if no one talks to a client for this many days"
+              style={{
+                padding: '9px 12px',
+                borderRadius: 9,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <option value={7}>Alert if quiet: 7 days</option>
+              <option value={15}>Alert if quiet: 15 days</option>
+              <option value={30}>Alert if quiet: 30 days</option>
+            </select>
           )}
         </div>
       </div>
 
-      {/* 4 Pillars Formula Indicator */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-            25%
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Task Progress</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tasks completed on time</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-            25%
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>On-Time Payments</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Invoices paid without delays</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-            25%
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Meeting Frequency</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Check-in meeting held in last 30 days</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-            25%
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>Client Feedback</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Satisfaction rating from client</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Retention Health Metrics Overview Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+      {/* ── Click-to-Filter Summary Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
         <div
-          onClick={() => setFilterTier('churn')}
+          onClick={() => setFilterTier(filterTier === 'churn' ? 'all' : 'churn')}
+          data-tip="Click to show clients who need a call or message soon"
           className="stat-card"
           style={{
             cursor: 'pointer',
             border: filterTier === 'churn' ? '2px solid #ef4444' : '1px solid var(--border)',
-            background: filterTier === 'churn' ? 'rgba(239, 68, 68, 0.05)' : 'var(--bg-card)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span className="metric-label" style={{ color: '#ef4444' }}>🚨 At-Risk Clients (&lt;60)</span>
-            <AlertTriangle style={{ width: 16, height: 16, color: '#ef4444' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="metric-label" style={{ color: '#ef4444' }}>Needs Attention (Under 60)</span>
+            <AlertTriangle size={16} style={{ color: '#ef4444' }} />
           </div>
           <div className="metric-value font-amount count-up" style={{ color: '#ef4444' }}>
             <AnimatedNumber value={healthData?.overview.churnRisksCount || 0} />
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Immediate reconnect &amp; audit required</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>Follow up soon</div>
         </div>
 
         <div
-          onClick={() => setFilterTier('expansion')}
+          onClick={() => setFilterTier(filterTier === 'stable' ? 'all' : 'stable')}
+          data-tip="Click to show clients doing well (score 60–84)"
+          className="stat-card"
+          style={{
+            cursor: 'pointer',
+            border: filterTier === 'stable' ? '2px solid #0284c7' : '1px solid var(--border)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="metric-label" style={{ color: '#0284c7' }}>On Track (60–84)</span>
+            <ShieldCheck size={16} style={{ color: '#0284c7' }} />
+          </div>
+          <div className="metric-value font-amount count-up" style={{ color: '#0284c7' }}>
+            <AnimatedNumber value={healthData?.overview.stableCount || 0} />
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>Work &amp; bills on time</div>
+        </div>
+
+        <div
+          onClick={() => setFilterTier(filterTier === 'expansion' ? 'all' : 'expansion')}
+          data-tip="Click to show your happiest clients (score 85+)"
           className="stat-card"
           style={{
             cursor: 'pointer',
             border: filterTier === 'expansion' ? '2px solid #10b981' : '1px solid var(--border)',
-            background: filterTier === 'expansion' ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-card)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span className="metric-label" style={{ color: '#10b981' }}>🌟 Ready for Growth (&gt;85)</span>
-            <Sparkles style={{ width: 16, height: 16, color: '#10b981' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="metric-label" style={{ color: '#10b981' }}>Very Happy (85+)</span>
+            <TrendingUp size={16} style={{ color: '#10b981' }} />
           </div>
           <div className="metric-value font-amount count-up" style={{ color: '#10b981' }}>
             <AnimatedNumber value={healthData?.overview.expansionCount || 0} />
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>High satisfaction; ready for retainer plan upgrade</div>
-        </div>
-
-        <div
-          onClick={() => setFilterTier('stable')}
-          className="stat-card"
-          style={{
-            cursor: 'pointer',
-            border: filterTier === 'stable' ? '2px solid var(--border-focus)' : '1px solid var(--border)',
-            background: filterTier === 'stable' ? 'rgba(56, 189, 248, 0.05)' : 'var(--bg-card)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span className="metric-label">🟡 Stable Retainers (60-84)</span>
-            <CheckCircle style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
-          </div>
-          <div className="metric-value font-amount count-up">
-            <AnimatedNumber value={healthData?.overview.stableCount || 0} />
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Healthy delivery &amp; active retainer cadence</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>Great for extra work</div>
         </div>
 
         <div
           onClick={() => setFilterTier('all')}
+          data-tip="Click to show all active clients"
           className="stat-card"
           style={{
             cursor: 'pointer',
             border: filterTier === 'all' ? '2px solid var(--border-focus)' : '1px solid var(--border)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span className="metric-label">Average Health Score</span>
-            <TrendingUp style={{ width: 16, height: 16, color: 'var(--text-primary)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="metric-label">Average Score</span>
+            <Activity size={16} style={{ color: '#6366f1' }} />
           </div>
           <div className="metric-value font-amount count-up" style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
             <AnimatedNumber value={healthData?.overview.averageHealth || 100} />
             <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>/ 100</span>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Across {healthData?.overview.totalClients || brands.length} active agency retainers</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>
+            {healthData?.overview.totalClients || brands.length} active clients
+          </div>
         </div>
       </div>
 
-      {/* Interactive Tier Filter Tabs */}
-      <div className="no-scrollbar" style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
-        {[
-          { id: 'all', label: `All Clients (${healthData?.scores.length || 0})` },
-          { id: 'churn', label: `🚨 At-Risk Clients (${healthData?.overview.churnRisksCount || 0})` },
-          { id: 'expansion', label: `🌟 Upsell Opportunities (${healthData?.overview.expansionCount || 0})` },
-          { id: 'stable', label: `🟡 Stable Accounts (${healthData?.overview.stableCount || 0})` },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFilterTier(tab.id as any)}
-            style={{
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-              padding: '8px 14px',
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              border: 'none',
-              background: filterTier === tab.id ? 'var(--solid-btn-bg)' : 'var(--bg-subtle)',
-              color: filterTier === tab.id ? 'var(--solid-btn-text)' : 'var(--text-secondary)',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Client Health Cards Grid */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* ── Client Cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {filteredScores.length === 0 ? (
-          <div style={{ padding: 48, borderRadius: 14, background: 'var(--bg-card)', border: '1px solid var(--border)', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <ShieldCheck style={{ width: 44, height: 44, color: 'var(--success-text)', margin: '0 auto 12px' }} />
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: 16 }}>No Clients in This Category</h3>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-              All clients in this group are happy and up to date.
+          <div style={{ padding: 44, borderRadius: 14, background: 'var(--bg-card)', border: '1px solid var(--border)', textAlign: 'center' }}>
+            <CheckCircle2 style={{ width: 40, height: 40, color: '#10b981', margin: '0 auto 10px' }} />
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: 16 }}>
+              No clients in this filter
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 12px' }}>
+              Click &ldquo;Show All Clients&rdquo; to see everyone.
             </p>
+            {filterTier !== 'all' && (
+              <button type="button" onClick={() => setFilterTier('all')} style={btnSecondary}>
+                Show All Clients
+              </button>
+            )}
           </div>
         ) : (
           filteredScores.map((score) => {
             const isDanger = score.totalScore < 60;
             const isExpansion = score.totalScore >= 85;
-            const scoreColor = isDanger ? '#ef4444' : (isExpansion ? '#10b981' : '#38bdf8');
-            const matchingBrand = brands.find(b => b.id === score.brandId);
+            const scoreColor = isDanger ? '#ef4444' : isExpansion ? '#10b981' : '#0284c7';
+            const statusBg = isDanger ? 'rgba(239, 68, 68, 0.12)' : isExpansion ? 'rgba(16, 185, 129, 0.12)' : 'rgba(2, 132, 199, 0.12)';
+            const matchingBrand = brands.find((b) => b.id === score.brandId);
 
             return (
               <div
                 key={score.brandId}
                 style={{
                   background: 'var(--bg-card)',
-                  border: isDanger ? '1.5px solid rgba(239, 68, 68, 0.4)' : (isExpansion ? '1.5px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border)'),
+                  border: isDanger ? '1.5px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border)',
                   borderRadius: 16,
-                  padding: '20px 24px',
+                  padding: '20px 22px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 16,
-                  boxShadow: isDanger ? '0 8px 24px rgba(239, 68, 68, 0.08)' : 'none',
+                  gap: 14,
                 }}
               >
-                {/* Header row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-primary)' }}>
@@ -360,194 +352,153 @@ export const RetentionEngine: React.FC = () => {
                       </span>
                       <span
                         style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
                           padding: '3px 10px',
-                          borderRadius: 20,
+                          borderRadius: 999,
                           fontSize: 11,
                           fontWeight: 800,
-                          background: isDanger ? 'var(--danger-bg)' : (isExpansion ? 'var(--success-bg)' : 'rgba(56, 189, 248, 0.15)'),
+                          background: statusBg,
                           color: scoreColor,
                         }}
                       >
-                        {isDanger ? '🚨 Needs Attention' : (isExpansion ? '🌟 Ready to Grow' : '🟢 Healthy & Stable')}
+                        {isDanger ? <AlertTriangle size={12} /> : isExpansion ? <TrendingUp size={12} /> : <CheckCircle2 size={12} />}
+                        <span>{isDanger ? 'Needs Attention' : isExpansion ? 'Very Happy' : 'On Track'}</span>
                       </span>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-                        {score.currencySymbol}{score.monthlyFee.toLocaleString()}/mo Retainer
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                        {score.currencySymbol}{score.monthlyFee.toLocaleString()}/mo
                       </span>
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                      Contact: {score.ownerName} · Mobile: {score.mobile}
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
+                      Contact: {score.ownerName} · {score.mobile}
                     </div>
                   </div>
 
-                  {/* Health Score Pill */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-                        Health Score
-                      </div>
-                      <div style={{ fontSize: 24, fontWeight: 900, color: scoreColor, lineHeight: 1.1 }}>
-                        {score.totalScore}<span style={{ fontSize: 14, color: 'var(--text-muted)' }}>/100</span>
-                      </div>
+                  <div style={{ textAlign: 'right' }} data-tip="Total score out of 100">
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                      Score
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: scoreColor, lineHeight: 1.1 }}>
+                      {score.totalScore}<span style={{ fontSize: 13, color: 'var(--text-muted)' }}>/100</span>
                     </div>
                   </div>
                 </div>
 
-                {/* 4 Factor Score Breakdown Bars */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, background: 'var(--bg-subtle)', borderRadius: 12, padding: 14 }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Deliverable Velocity</span>
-                      <strong style={{ color: 'var(--text-primary)' }}>{score.breakdown.taskVelocity.score}/25</strong>
+                {/* Simple 4-Part Score Breakdown */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, background: 'var(--bg-subtle)', borderRadius: 12, padding: 12 }}>
+                  <div data-tip="Tasks finished on time (out of 25)">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <CheckSquare size={13} style={{ color: '#0284c7' }} /> Tasks Finished
+                      </span>
+                      <strong>{score.breakdown.taskVelocity.score}/25</strong>
                     </div>
-                    <div style={{ height: 6, borderRadius: 6, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(score.breakdown.taskVelocity.score / 25) * 100}%`, background: '#38bdf8' }} />
+                    <div style={{ height: 5, borderRadius: 6, background: 'rgba(148, 163, 184, 0.25)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${(score.breakdown.taskVelocity.score / 25) * 100}%`, background: '#0284c7' }} />
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{score.breakdown.taskVelocity.details}</div>
                   </div>
 
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Payment Health</span>
-                      <strong style={{ color: 'var(--text-primary)' }}>{score.breakdown.paymentHealth.score}/25</strong>
+                  <div data-tip="Invoices paid on time (out of 25)">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <Wallet size={13} style={{ color: '#10b981' }} /> Payments on Time
+                      </span>
+                      <strong>{score.breakdown.paymentHealth.score}/25</strong>
                     </div>
-                    <div style={{ height: 6, borderRadius: 6, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                    <div style={{ height: 5, borderRadius: 6, background: 'rgba(148, 163, 184, 0.25)', overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${(score.breakdown.paymentHealth.score / 25) * 100}%`, background: '#10b981' }} />
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{score.breakdown.paymentHealth.details}</div>
                   </div>
 
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Strategic Cadence</span>
-                      <strong style={{ color: 'var(--text-primary)' }}>{score.breakdown.strategicCadence.score}/25</strong>
+                  <div data-tip="Recent calls or meetings (out of 25)">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <CalendarCheck size={13} style={{ color: '#8b5cf6' }} /> Recent Check-ins
+                      </span>
+                      <strong>{score.breakdown.strategicCadence.score}/25</strong>
                     </div>
-                    <div style={{ height: 6, borderRadius: 6, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(score.breakdown.strategicCadence.score / 25) * 100}%`, background: '#a855f7' }} />
+                    <div style={{ height: 5, borderRadius: 6, background: 'rgba(148, 163, 184, 0.25)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${(score.breakdown.strategicCadence.score / 25) * 100}%`, background: '#8b5cf6' }} />
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{score.breakdown.strategicCadence.details}</div>
                   </div>
 
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Client Feedback (NPS)</span>
-                      <strong style={{ color: 'var(--text-primary)' }}>{score.breakdown.clientFeedback.score}/25</strong>
+                  <div data-tip="Client rating from portal (out of 25)">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <Smile size={13} style={{ color: '#f59e0b' }} /> Client Rating
+                      </span>
+                      <strong>{score.breakdown.clientFeedback.score}/25</strong>
                     </div>
-                    <div style={{ height: 6, borderRadius: 6, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                    <div style={{ height: 5, borderRadius: 6, background: 'rgba(148, 163, 184, 0.25)', overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${(score.breakdown.clientFeedback.score / 25) * 100}%`, background: '#f59e0b' }} />
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{score.breakdown.clientFeedback.details}</div>
                   </div>
                 </div>
 
-                {/* AI / Algorithmic Recommendation Banner */}
-                <div
-                  style={{
-                    padding: '12px 16px',
-                    borderRadius: 10,
-                    background: isDanger ? 'var(--danger-bg)' : (isExpansion ? 'var(--success-bg)' : 'var(--bg-subtle)'),
-                    border: isDanger ? '1px solid var(--danger-border)' : (isExpansion ? '1px solid var(--success-border)' : '1px solid var(--border)'),
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                  }}
-                >
-                  <div style={{ fontSize: 13, fontWeight: 800, color: isDanger ? 'var(--danger-text)' : (isExpansion ? 'var(--success-text)' : 'var(--text-primary)') }}>
-                    {score.recommendation.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    {score.recommendation.description}
-                  </div>
+                {/* Simple Next Action Tip */}
+                <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', padding: '10px 14px', borderRadius: 10, background: statusBg }}>
+                  <strong style={{ color: scoreColor }}>Tip:</strong> {score.recommendation.description}
                 </div>
 
-                {/* Action buttons row */}
+                {/* Only 3 Clear, Predictable Buttons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <button
+                    type="button"
                     onClick={() => openWhatsAppAction(score)}
+                    data-tip="Opens WhatsApp to send a quick check-in message"
                     style={{
                       ...btnPrimary,
-                      background: isDanger ? '#ef4444' : (isExpansion ? '#10b981' : 'var(--solid-btn-bg)'),
+                      background: '#059669',
                       color: '#ffffff',
                     }}
                   >
-                    <Share2 style={{ width: 14, height: 14 }} />
-                    <span>{isDanger ? '1-Click WhatsApp Reconnect' : (isExpansion ? '1-Click Pitch Upsell' : 'WhatsApp Check-in')}</span>
+                    <MessageCircle size={14} />
+                    <span>Message on WhatsApp</span>
                   </button>
 
-                  {matchingBrand?.magicToken && (
-                    <button
-                      onClick={() => window.open(`/portal/${matchingBrand.magicToken}`, '_blank')}
-                      style={{ ...btnSecondary, fontSize: 12 }}
-                      title="Open passwordless Magic Link client portal"
-                    >
-                      <ExternalLink style={{ width: 13, height: 13 }} />
-                      <span>View Client Portal</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (matchingBrand) setSelectedBrandForLog(matchingBrand);
+                    }}
+                    data-tip="Write down what you discussed on a call or meeting"
+                    style={btnSecondary}
+                  >
+                    <PhoneCall size={14} style={{ color: '#0284c7' }} />
+                    <span>Save Call Note</span>
+                  </button>
 
                   <button
+                    type="button"
                     onClick={() => {
                       if (matchingBrand) {
                         setSelectedBrandId(matchingBrand.id);
                         setActiveTab('clients');
                       }
                     }}
-                    style={{ ...btnSecondary, fontSize: 12 }}
+                    data-tip="Go to this client's profile, portal link & invoices"
+                    style={btnSecondary}
                   >
-                    <Activity style={{ width: 13, height: 13 }} />
-                    <span>Open Client Profile</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      if (matchingBrand) setSelectedBrandForLog(matchingBrand);
-                    }}
-                    style={{ ...btnSecondary, fontSize: 12 }}
-                  >
-                    <PhoneCall style={{ width: 13, height: 13 }} />
-                    <span>Add Check-in</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      await snoozeBrandRetention(score.brandId);
-                      await fetchHealth();
-                    }}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      background: 'var(--bg-raised)',
-                      color: 'var(--text-secondary)',
-                      border: '1px solid var(--border)',
-                      cursor: 'pointer',
-                      fontSize: 12,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
-                    title="Snooze alert by 7 days"
-                  >
-                    <Clock style={{ width: 13, height: 13 }} />
-                    <span>Snooze (7d)</span>
+                    <User size={14} style={{ color: '#6366f1' }} />
+                    <span>Open Client</span>
                   </button>
 
                   {(role === 'admin' || role === 'hr') && isDanger && (
                     <button
+                      type="button"
                       onClick={async () => {
                         await markBrandChurned(score.brandId);
                         await fetchHealth();
                       }}
+                      data-tip="Move client to Inactive so they stop showing in new invoices"
                       style={{
-                        padding: '8px 12px',
-                        borderRadius: 8,
-                        background: 'transparent',
-                        color: 'var(--text-muted)',
-                        border: '1px solid var(--border)',
-                        cursor: 'pointer',
-                        fontSize: 12,
+                        ...btnSecondary,
+                        color: 'var(--danger-text)',
                         marginLeft: 'auto',
                       }}
                     >
-                      Archive as Inactive
+                      Mark Inactive
                     </button>
                   )}
                 </div>
@@ -557,7 +508,7 @@ export const RetentionEngine: React.FC = () => {
         )}
       </div>
 
-      {/* Add Check-in Modal */}
+      {/* Save Call Note Modal */}
       {selectedBrandForLog && (
         <div style={modalOverlay} onClick={() => setSelectedBrandForLog(null)}>
           <div
@@ -566,45 +517,45 @@ export const RetentionEngine: React.FC = () => {
               border: '1px solid var(--border)',
               borderRadius: 16,
               padding: 24,
-              maxWidth: 480,
+              maxWidth: 460,
               width: '100%',
               display: 'flex',
               flexDirection: 'column',
-              gap: 16,
+              gap: 14,
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                Add Note: {selectedBrandForLog.name}
+                Save Call Note — {selectedBrandForLog.name}
               </h3>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                Adding a note or call keeps client activity fresh and up to date.
+                Record what you discussed so this client stays marked as active.
               </p>
             </div>
 
             <textarea
               rows={4}
-              placeholder="Summary of discussion, deliverables talked about, next steps..."
+              placeholder="Write what you talked about and the next step..."
               value={callNote}
               onChange={(e) => setCallNote(e.target.value)}
               style={inputFieldStyle}
             />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button onClick={() => setSelectedBrandForLog(null)} style={btnSecondary}>
+              <button type="button" onClick={() => setSelectedBrandForLog(null)} style={btnSecondary}>
                 Cancel
               </button>
-              <button onClick={() => handleLogFollowUp(selectedBrandForLog.id)} style={btnPrimary}>
-                <CheckCircle style={{ width: 14, height: 14 }} />
-                <span>Save Check-in</span>
+              <button type="button" onClick={() => handleLogFollowUp(selectedBrandForLog.id)} style={btnPrimary}>
+                <CheckCircle2 size={14} />
+                <span>Save Note</span>
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <PageGuideModal open={showGuide} pageId="retention" onClose={() => setShowGuide(false)} />
     </div>
   );
 };
-
-export default RetentionEngine;

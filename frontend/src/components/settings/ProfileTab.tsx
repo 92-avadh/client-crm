@@ -682,11 +682,15 @@ export const ProfileTab: React.FC<ProfileProps> = ({
           </label>
           <input
             type="tel"
+            inputMode="numeric"
             value={profilePhone}
-            maxLength={20}
-            placeholder="+91 98765 43210"
+            maxLength={15}
+            placeholder="9876543210"
             onChange={(e) => {
-              onProfileChange({ phone: sanitizePhone(e.target.value) });
+              const raw = sanitizePhone(e.target.value);
+              const hasPlus = raw.startsWith('+');
+              const digits = raw.replace(/\D/g, '').slice(0, hasPlus ? 12 : 10);
+              onProfileChange({ phone: hasPlus ? `+${digits}` : digits });
               if (formErrors.phone) setFormErrors(prev => ({ ...prev, phone: undefined }));
             }}
             style={{

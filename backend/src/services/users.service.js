@@ -285,8 +285,14 @@ async function deleteUser(actor, id) {
     await client.query('DELETE FROM brand_assignments WHERE member_id = $1', [targetId]);
     await client.query('DELETE FROM project_assignments WHERE member_id = $1', [targetId]);
     await client.query('DELETE FROM meeting_attendees WHERE user_id = $1', [targetId]);
-    await client.query('DELETE FROM conversation_participants WHERE user_id = $1', [targetId]);
-    await client.query('DELETE FROM message_read_by WHERE user_id = $1', [targetId]);
+    await client.query('SAVEPOINT sp_legacy_chat_user');
+    try {
+      await client.query('DELETE FROM conversation_participants WHERE user_id = $1', [targetId]);
+      await client.query('DELETE FROM message_read_by WHERE user_id = $1', [targetId]);
+      await client.query('RELEASE SAVEPOINT sp_legacy_chat_user');
+    } catch {
+      await client.query('ROLLBACK TO SAVEPOINT sp_legacy_chat_user');
+    }
     await client.query('DELETE FROM push_subscriptions WHERE user_id = $1', [targetId]);
 
     await client.query('UPDATE tasks SET assignee_id = NULL WHERE assignee_id = $1', [targetId]);

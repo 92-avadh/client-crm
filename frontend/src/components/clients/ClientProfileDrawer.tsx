@@ -45,7 +45,6 @@ interface Props {
   activeTab: ProfileTab;
   onTabChange: (tab: ProfileTab) => void;
   onClose: () => void;
-  onChat?: (brandId: string) => void;
   onEdit?: (brand: Brand) => void;
   onDelete?: (brand: Brand) => void;
 }
@@ -71,7 +70,7 @@ function formatOrdinalDay(day?: number | string | null): string {
 
 /** Client profile drawer with Retainer Scope, Contract Vault, Gross Margin, and Magic Link Portal. */
 export const ClientProfileDrawer: React.FC<Props> = ({
-  brand, role, allUsers, invoices, tasks, activeTab, onTabChange, onClose, onChat, onEdit, onDelete,
+  brand, role, allUsers, invoices, tasks, activeTab, onTabChange, onClose, onEdit, onDelete,
 }) => {
   const canManage = role === 'admin' || role === 'hr';
   const { currencySymbol: globalCurrencySymbol = '₹', expenses = [], showToast, updateBrand, loadDomain } = useApp();

@@ -74,7 +74,7 @@ export const CallsSection: React.FC<CallsSectionProps> = ({ onStartTrial }) => {
               </p>
             </li>
             <li className="calls__item">
-              <h3 className="m-text-5">Works with your email, payments & team chat</h3>
+              <h3 className="m-text-5">Works with your email, payments &amp; client alerts</h3>
               <p className="m-text-8">
                 Syncs invisibly with your existing tools in 60 seconds. Your team and clients don’t change how they communicate or do work.
               </p>

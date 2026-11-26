@@ -426,18 +426,6 @@ export const api = {
     pushUnsubscribe: (endpoint: string) => req<any>('POST', '/notifications/push-unsubscribe', { endpoint }),
     testPush: () => req<any>('POST', '/notifications/test-push'),
   },
-  chat: {
-    conversations: () => req<any[]>('GET', '/chat/conversations'),
-    messages: (convId: string) => req<any[]>('GET', `/chat/conversations/${convId}/messages`),
-    sendMessage: (convId: string, data: any) => req<any>('POST', `/chat/conversations/${convId}/messages`, data),
-    createConversation: (data: any) => req<any>('POST', '/chat/conversations', data),
-    direct: (targetUserId: string) => req<any>('POST', `/chat/direct/${targetUserId}`),
-    markRead: (convId: string) => req<any>('POST', `/chat/conversations/${convId}/read`),
-    deleteMessage: (convId: string, messageId: string, deleteType: string) =>
-      req<any>('DELETE', `/chat/conversations/${convId}/messages/${messageId}`, { deleteType }),
-    deleteConversation: (convId: string) => req<any>('DELETE', `/chat/conversations/${convId}`),
-    clearConversation: (convId: string) => req<any>('POST', `/chat/conversations/${convId}/clear`),
-  },
   settings: {
     get: () => req<any>('GET', '/settings'),
     update: (data: any) => req<any>('PATCH', '/settings', data),

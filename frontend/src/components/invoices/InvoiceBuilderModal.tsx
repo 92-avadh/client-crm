@@ -53,6 +53,10 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
   selectedBrand, totals,
 }) => {
   const { settings, updateSettings, currencySymbol = '₹', showToast } = useApp();
+  const activeBrands = React.useMemo(
+    () => (brands || []).filter((b) => b && b.status === 'Active'),
+    [brands]
+  );
   const [showAddBankForm, setShowAddBankForm] = useState(false);
   const [draftBank, setDraftBank] = useState(EMPTY_DRAFT_BANK);
   const [savingBank, setSavingBank] = useState(false);
@@ -152,11 +156,14 @@ export const InvoiceBuilderModal: React.FC<Props> = ({
               <AnimatedSelect
                 label="Select Client (1-Click Pre-fill)"
                 required
+                searchable
+                searchPlaceholder="Search active client by name..."
                 value={brandId}
                 onChange={onSelectBrand}
-                options={brands.map((b) => ({
+                placeholder={activeBrands.length === 0 ? 'No active clients available' : 'Select an active client'}
+                options={activeBrands.map((b) => ({
                   value: b.id,
-                  label: `${b.name}${b.status !== 'Active' ? ` (${b.status})` : ''} (₹${(b.monthlyFee || 0).toLocaleString('en-IN')}/mo)`,
+                  label: `${b.name} (${currencySymbol}${(b.monthlyFee || 0).toLocaleString('en-IN')}/mo)`,
                 }))}
               />
             </div>

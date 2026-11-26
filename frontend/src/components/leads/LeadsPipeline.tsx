@@ -23,6 +23,7 @@ import DatePicker from '@/components/ui/DatePicker';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { getPlanLimits } from '../../utils/subscriptionPlan';
 import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
+import { sanitizePersonName, sanitizePhone } from '../../utils/validation';
 
 const inputFieldStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', border: '1px solid var(--border)',
@@ -411,9 +412,10 @@ export const LeadsPipeline: React.FC = () => {
                 <input
                   type="text"
                   required
+                  maxLength={80}
                   placeholder="e.g. John Doe"
                   value={leadForm.name}
-                  onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
+                  onChange={(e) => setLeadForm({ ...leadForm, name: sanitizePersonName(e.target.value) })}
                   style={inputFieldStyle}
                 />
               </div>
@@ -423,19 +425,27 @@ export const LeadsPipeline: React.FC = () => {
                   <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Email</label>
                   <input
                     type="email"
+                    maxLength={120}
                     placeholder="john@example.com"
                     value={leadForm.email}
-                    onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                    onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value.trimStart() })}
                     style={inputFieldStyle}
                   />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4 }}>Phone</label>
                   <input
-                    type="text"
-                    placeholder="+91 98765 43210"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={15}
+                    placeholder="+91 9876543210"
                     value={leadForm.phone}
-                    onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
+                    onChange={(e) => {
+                      const raw = sanitizePhone(e.target.value);
+                      const hasPlus = raw.startsWith('+');
+                      const digits = raw.replace(/\D/g, '').slice(0, hasPlus ? 12 : 10);
+                      setLeadForm({ ...leadForm, phone: hasPlus ? `+${digits}` : digits });
+                    }}
                     style={inputFieldStyle}
                   />
                 </div>
@@ -514,8 +524,9 @@ export const LeadsPipeline: React.FC = () => {
                 <input
                   type="text"
                   required
+                  maxLength={80}
                   value={editLeadForm.name}
-                  onChange={(e) => setEditLeadForm({ ...editLeadForm, name: e.target.value })}
+                  onChange={(e) => setEditLeadForm({ ...editLeadForm, name: sanitizePersonName(e.target.value) })}
                   style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                 />
               </div>
@@ -525,6 +536,7 @@ export const LeadsPipeline: React.FC = () => {
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Company</label>
                   <input
                     type="text"
+                    maxLength={100}
                     value={editLeadForm.company}
                     onChange={(e) => setEditLeadForm({ ...editLeadForm, company: e.target.value })}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
@@ -534,8 +546,9 @@ export const LeadsPipeline: React.FC = () => {
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Contact Person</label>
                   <input
                     type="text"
+                    maxLength={80}
                     value={editLeadForm.contact}
-                    onChange={(e) => setEditLeadForm({ ...editLeadForm, contact: e.target.value })}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, contact: sanitizePersonName(e.target.value) })}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                   />
                 </div>
@@ -546,17 +559,25 @@ export const LeadsPipeline: React.FC = () => {
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Email</label>
                   <input
                     type="email"
+                    maxLength={120}
                     value={editLeadForm.email}
-                    onChange={(e) => setEditLeadForm({ ...editLeadForm, email: e.target.value })}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, email: e.target.value.trimStart() })}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                   />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Phone</label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={15}
                     value={editLeadForm.phone}
-                    onChange={(e) => setEditLeadForm({ ...editLeadForm, phone: e.target.value })}
+                    onChange={(e) => {
+                      const raw = sanitizePhone(e.target.value);
+                      const hasPlus = raw.startsWith('+');
+                      const digits = raw.replace(/\D/g, '').slice(0, hasPlus ? 12 : 10);
+                      setEditLeadForm({ ...editLeadForm, phone: hasPlus ? `+${digits}` : digits });
+                    }}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                   />
                 </div>

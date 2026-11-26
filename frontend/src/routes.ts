@@ -12,7 +12,6 @@ export const ROUTES = {
   finance: '/finance',
   expenses: '/expenses',
   retention: '/retention',
-  chat: '/chat',
   meetings: '/meetings',
   leads: '/leads',
   team: '/team',

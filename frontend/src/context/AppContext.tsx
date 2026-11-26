@@ -7,9 +7,6 @@ import {
   connectSocket,
   disconnectSocket,
   getSocket,
-  joinConversationRoom,
-  leaveConversationRoom,
-  emitMarkRead,
 } from '../services/socket';
 import type {
   User,
@@ -23,8 +20,6 @@ import type {
   Lead,
   AppNotification,
   NotificationType,
-  Conversation,
-  ChatMessage,
   AppSettings,
   Holiday,
   AuditLogItem
@@ -107,17 +102,6 @@ interface AppContextType {
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
 
-  conversations: Conversation[];
-  activeConversationId: string;
-  setActiveConversationId: (id: string) => void;
-  messages: Record<string, ChatMessage[]>;
-  sendMessage: (conversationId: string, text: string, attachments?: any[]) => Promise<void>;
-  loadMessages: (convId: string) => Promise<void>;
-  startDirectChat: (targetUserId: string) => Promise<string>;
-  markConversationRead: (convId: string) => Promise<void>;
-  deleteMessage: (conversationId: string, messageId: string, deleteType: 'forEveryone' | 'forMe') => Promise<void>;
-  deleteConversation: (convId: string) => Promise<void>;
-  clearConversation: (convId: string) => Promise<void>;
   onlineUserIds: Set<string>;
   isUserOnline: (userId: string) => boolean;
 
@@ -769,9 +753,6 @@ export const AppProvider: React.FC<{
     } catch {}
     return [];
   });
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string>('');
-  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState<AppSettings>(() => {
     const localCurr = localStorage.getItem('retentio_currency') || 'INR';
@@ -1185,77 +1166,6 @@ export const AppProvider: React.FC<{
             if (notifList) setNotifications(notifList);
             break;
           }
-          case 'chat': {
-            const [convsData, usersData] = await Promise.all([
-              req('chat', api.chat.conversations()),
-              req('team', api.users.listAll()),
-            ]);
-            const usersList = extractDataArray<User>(usersData);
-            if (usersList && usersList.length > 0) setAllUsers(usersList);
-            const allU = usersList && usersList.length > 0 ? usersList : allUsers;
-
-            const baseConvs = extractDataArray<any>(convsData) || [];
-            const enriched = baseConvs.map((c: any) => {
-              if (c.type === 'direct') {
-                const otherId = c.participantIds?.find((id: any) => String(id) !== String(currentUser.id));
-                const foundUser = allU.find((u: any) => String(u.id) === String(otherId) || (u.name && u.name === c.title && u.name !== 'Direct Chat'));
-
-                if (foundUser) {
-                  return {
-                    ...c,
-                    title: foundUser.name,
-                    otherMember: {
-                      id: foundUser.id,
-                      name: foundUser.name,
-                      avatar: foundUser.avatar,
-                      role: foundUser.role,
-                      designation: foundUser.designation || foundUser.role,
-                      email: foundUser.email,
-                    },
-                  };
-                }
-              }
-              return c;
-            });
-
-            // Ensure every active agency colleague has a visible direct chat channel without manual addition
-            if (currentUser && currentUser.role !== 'brand') {
-              const colleagues = (allU || []).filter((u: any) => u && currentUser && u.id !== currentUser.id && u.role !== 'brand' && u?.status !== 'inactive');
-              for (const col of colleagues) {
-                const exists = enriched.some((c: any) =>
-                  c.type === 'direct' && (
-                    (c.participantIds && c.participantIds.includes(col.id)) ||
-                    (c.otherMember && c.otherMember.id === col.id) ||
-                    c.title === col.name
-                  )
-                );
-                if (!exists) {
-                  const autoConvId = `conv_dm_${[currentUser.id, col.id].sort().join('_')}`;
-                  enriched.push({
-                    id: autoConvId,
-                    type: 'direct',
-                    title: col.name,
-                    participantIds: [currentUser.id, col.id],
-                    lastMessage: 'Direct conversation ready',
-                    lastMessageTime: 'Just now',
-                    unreadCount: 0,
-                    otherMember: {
-                      id: col.id,
-                      name: col.name,
-                      avatar: col.avatar,
-                      role: col.role,
-                      designation: col.designation || col.role,
-                      email: col.email,
-                    },
-                  });
-                }
-              }
-            }
-
-            setConversations(enriched);
-            if (enriched.length > 0) setActiveConversationId((prev) => prev || enriched[0].id);
-            break;
-          }
           case 'settings': {
             const [settingsData, holidaysData] = await Promise.all([
               req('settings', api.settings.get()),
@@ -1330,7 +1240,7 @@ export const AppProvider: React.FC<{
       setApiError(null);
       const domains = [
         'dashboard', 'clients', 'projects', 'tasks', 'invoices', 'finance', 'expenses',
-        'leads', 'meetings', 'team', 'inbox', 'chat', 'settings',
+        'leads', 'meetings', 'team', 'inbox', 'settings',
       ];
       await Promise.all(domains.map((d) => loadDomain(d)));
     } finally {
@@ -2380,11 +2290,6 @@ export const AppProvider: React.FC<{
   };
 
   // ---- Socket.io Real-Time Synchronization ----
-  const activeConversationIdRef = useRef(activeConversationId);
-  useEffect(() => {
-    activeConversationIdRef.current = activeConversationId;
-  }, [activeConversationId]);
-
   useEffect(() => {
     if (!currentUser) {
       disconnectSocket();
@@ -2393,118 +2298,6 @@ export const AppProvider: React.FC<{
 
     connectSocket(currentUser.id, currentUser.agencyId);
     const s = getSocket();
-
-    const handleNewMessage = ({ conversationId, message }: { conversationId: string; message: ChatMessage }) => {
-      setMessages(prev => {
-        const existing = prev[conversationId] || [];
-        // 1. If already in list by exact ID, ignore
-        if (existing.some(m => m.id === message.id)) return prev;
-
-        // 2. If sent by current user, replace matching optimistic message to avoid duplicate
-        if (message.senderId === currentUser.id) {
-          const optimisticIdx = existing.findIndex(
-            m => m.id.startsWith('msg-') && m.text === message.text
-          );
-          if (optimisticIdx !== -1) {
-            const next = [...existing];
-            next[optimisticIdx] = message;
-            return {
-              ...prev,
-              [conversationId]: next,
-            };
-          }
-        }
-
-        return {
-          ...prev,
-          [conversationId]: [...existing, message],
-        };
-      });
-
-      setConversations(prev =>
-        prev.map(c => {
-          if (c.id === conversationId) {
-            const isCurrentlyActive = activeConversationIdRef.current === conversationId;
-            const newUnread = isCurrentlyActive || message.senderId === currentUser.id
-              ? 0
-              : (c.unreadCount || 0) + 1;
-            return {
-              ...c,
-              lastMessage: message.text || (message.attachments?.length ? 'Attachment' : ''),
-              lastMessageTime: 'Just now',
-              unreadCount: newUnread,
-            };
-          }
-          return c;
-        })
-      );
-
-      // If active in this conversation, automatically acknowledge receipt
-      if (activeConversationIdRef.current === conversationId && message.senderId !== currentUser.id) {
-        emitMarkRead(conversationId, currentUser.id);
-      } else if (message.senderId !== currentUser.id) {
-        // Trigger native mobile/desktop alert for incoming chat
-        sendNativeNotification({
-          title: message.senderName ? `💬 ${message.senderName}` : '💬 New Chat Message',
-          body: message.text || (message.attachments?.length ? 'Sent an attachment' : 'New message received'),
-          url: '/chat',
-          tag: `chat_${conversationId}`,
-        }).catch(() => {});
-      }
-    };
-
-    const handleMessagesRead = ({ conversationId, userId }: { conversationId: string; userId: string }) => {
-      setMessages(prev => {
-        const list = prev[conversationId];
-        if (!list) return prev;
-        return {
-          ...prev,
-          [conversationId]: list.map(m => {
-            if (m.senderId !== userId) {
-              const newReadBy = m.readBy?.includes(userId) ? m.readBy : [...(m.readBy || []), userId];
-              return { ...m, readBy: newReadBy, isRead: true };
-            }
-            return m;
-          }),
-        };
-      });
-    };
-
-    const handleConversationUpdated = ({ conversationId, lastMessage, lastMessageTime }: any) => {
-      setConversations(prev =>
-        prev.map(c =>
-          c.id === conversationId ? { ...c, lastMessage, lastMessageTime } : c
-        )
-      );
-    };
-
-    const handleNewConversation = (conv: Conversation) => {
-      setConversations(prev => {
-        if (prev.some(c => c.id === conv.id)) return prev;
-        return [conv, ...prev];
-      });
-    };
-
-    const handleMessageDeleted = ({ conversationId, messageId, deleteType, userId }: any) => {
-      setMessages(prev => {
-        const list = prev[conversationId];
-        if (!list) return prev;
-        if (deleteType === 'forEveryone') {
-          return {
-            ...prev,
-            [conversationId]: list.map(m =>
-              m.id === messageId ? { ...m, isDeletedForEveryone: true, text: 'This message was deleted' } : m
-            ),
-          };
-        } else if (userId === currentUser.id) {
-          return {
-            ...prev,
-            [conversationId]: list.filter(m => m.id !== messageId),
-          };
-        }
-        return prev;
-      });
-    };
 
     const handleOnlineUsersList = (ids: string[]) => {
       if (Array.isArray(ids)) {
@@ -2578,22 +2371,12 @@ export const AppProvider: React.FC<{
       }
     };
 
-    s.on('new_message', handleNewMessage);
-    s.on('messages_read', handleMessagesRead);
-    s.on('conversation_updated', handleConversationUpdated);
-    s.on('new_conversation', handleNewConversation);
-    s.on('message_deleted', handleMessageDeleted);
     s.on('online_users_list', handleOnlineUsersList);
     s.on('user_online', handleUserOnline);
     s.on('user_offline', handleUserOffline);
     s.on('new_notification', handleNewNotification);
 
     return () => {
-      s.off('new_message', handleNewMessage);
-      s.off('messages_read', handleMessagesRead);
-      s.off('conversation_updated', handleConversationUpdated);
-      s.off('new_conversation', handleNewConversation);
-      s.off('message_deleted', handleMessageDeleted);
       s.off('online_users_list', handleOnlineUsersList);
       s.off('user_online', handleUserOnline);
       s.off('user_offline', handleUserOffline);
@@ -2607,213 +2390,6 @@ export const AppProvider: React.FC<{
     const target = (allUsers || []).find(u => u && u.id === userId);
     return target ? (target as any)?.status !== 'inactive' && (target as any)?.isActive !== false : false;
   }, [onlineUserIds, allUsers]);
-
-  // Join/leave conversation room when active conversation changes
-  useEffect(() => {
-    if (!currentUser || !activeConversationId) return;
-
-    joinConversationRoom(activeConversationId, currentUser.id);
-    emitMarkRead(activeConversationId, currentUser.id);
-    api.chat.markRead(activeConversationId).catch(() => {});
-    setConversations(prev =>
-      prev.map(c => (c.id === activeConversationId ? { ...c, unreadCount: 0 } : c))
-    );
-
-    return () => {
-      leaveConversationRoom(activeConversationId);
-    };
-  }, [activeConversationId, currentUser?.id]);
-
-  // ---- Chat ----
-  // ---- Chat ----
-  const loadMessages = async (convId: string) => {
-    try {
-      // Drains every page of the thread. A single call only returns the newest
-      // 100 messages, so a longer conversation was silently truncated.
-      const msgs = await fetchAll<any>(`/chat/conversations/${convId}/messages`, 100);
-      if (msgs && msgs.length > 0) {
-        setMessages(prev => ({ ...prev, [convId]: msgs }));
-      }
-    } catch (err: any) {
-      console.warn('API chat.messages failed, preserving local messages:', err);
-    }
-    if (currentUser) {
-      try {
-        emitMarkRead(convId, currentUser.id);
-        api.chat.markRead(convId).catch(() => {});
-        setConversations(prev =>
-          prev.map(c => (c.id === convId ? { ...c, unreadCount: 0 } : c))
-        );
-      } catch {}
-    }
-  };
-
-  const startDirectChat = async (targetUserId: string): Promise<string> => {
-    try {
-      const conv = await api.chat.direct(targetUserId);
-      if (conv && conv.id) {
-        setConversations(prev => {
-          if (prev.some(c => c.id === conv.id)) {
-            return prev.map(c => (c.id === conv.id ? { ...c, ...conv } : c));
-          }
-          return [conv, ...prev];
-        });
-        setActiveConversationId(conv.id);
-        setActiveTab('chat');
-        return conv.id;
-      }
-    } catch (err: any) {
-      console.warn('API chat.direct failed, creating local direct conversation:', err);
-    }
-
-    // Local-first fallback for direct chat
-    const targetUser = allUsers.find(u => u.id === targetUserId);
-    const existing = conversations.find(
-      c => c.type === 'direct' && c.participantIds?.includes(targetUserId)
-    );
-    if (existing) {
-      setActiveConversationId(existing.id);
-      setActiveTab('chat');
-      return existing.id;
-    }
-
-    const localConvId = `conv-dm-${targetUserId}-${Date.now()}`;
-    const newConv: Conversation = {
-      id: localConvId,
-      title: targetUser?.name || 'Direct Chat',
-      type: 'direct',
-      participantIds: [currentUser.id, ...(targetUser ? [targetUser.id] : [])],
-      lastMessage: 'Conversation started',
-      lastMessageTime: 'Just now',
-      unreadCount: 0,
-      otherMember: targetUser ? {
-        id: targetUser.id,
-        name: targetUser.name,
-        avatar: targetUser.avatar,
-        role: targetUser.role
-      } : undefined
-    };
-
-    setConversations(prev => [newConv, ...prev]);
-    setActiveConversationId(localConvId);
-    setActiveTab('chat');
-    return localConvId;
-  };
-
-  const markConversationRead = async (convId: string) => {
-    if (!convId || !currentUser) return;
-    try {
-      emitMarkRead(convId, currentUser.id);
-      await api.chat.markRead(convId).catch(() => {});
-      setConversations(prev =>
-        prev.map(c => (c.id === convId ? { ...c, unreadCount: 0 } : c))
-      );
-    } catch {}
-  };
-
-  const sendMessage = async (conversationId: string, text: string, attachments: any[] = []) => {
-    if (!text.trim() && (!attachments || attachments.length === 0)) return;
-    const optimisticMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      conversationId,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      senderRole: currentUser.role,
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      readBy: [currentUser.id],
-      isRead: true,
-      attachments: attachments || []
-    };
-    setMessages(prev => ({
-      ...prev,
-      [conversationId]: [...(prev[conversationId] || []), optimisticMsg]
-    }));
-    setConversations(prev =>
-      prev.map(c => (c.id === conversationId ? { ...c, lastMessage: text, lastMessageTime: 'Just now' } : c))
-    );
-
-    try {
-      const created = await api.chat.sendMessage(conversationId, { text, attachments });
-      if (created && created.id) {
-        setMessages(prev => {
-          const list = prev[conversationId] || [];
-          // If socket already added this message by real ID, remove the optimistic one to prevent duplicate
-          if (list.some(m => m.id === created.id)) {
-            return {
-              ...prev,
-              [conversationId]: list.filter(m => m.id !== optimisticMsg.id)
-            };
-          }
-          return {
-            ...prev,
-            [conversationId]: list.map(m => m.id === optimisticMsg.id ? created : m)
-          };
-        });
-      }
-    } catch (err: any) {
-      // The message was never persisted. Keep the bubble but flag it as failed
-      // so it is visibly not a confirmed send, and tell the user.
-      console.warn('API chat.sendMessage failed, marking optimistic message as unsent:', err);
-      setMessages(prev => ({
-        ...prev,
-        [conversationId]: (prev[conversationId] || []).map(m =>
-          m.id === optimisticMsg.id ? { ...m, failed: true } : m
-        )
-      }));
-      showToast('Message could not be sent. Check your connection.', 'error');
-    }
-  };
-
-  const deleteMessage = async (conversationId: string, messageId: string, deleteType: 'forEveryone' | 'forMe') => {
-    if (!currentUser) return;
-    // Apply the local update only after the server confirms it.
-    await api.chat.deleteMessage(conversationId, messageId, deleteType);
-    setMessages(prev => {
-      const list = prev[conversationId] || [];
-      if (deleteType === 'forEveryone') {
-        return {
-          ...prev,
-          [conversationId]: list.map(m =>
-            m.id === messageId ? { ...m, isDeletedForEveryone: true, text: 'This message was deleted' } : m
-          ),
-        };
-      } else {
-        return {
-          ...prev,
-          [conversationId]: list.filter(m => m.id !== messageId),
-        };
-      }
-    });
-  };
-
-  const deleteConversation = async (convId: string) => {
-    // Await the delete so a failure does not silently drop the conversation
-    // from local state while it still exists on the server.
-    await api.chat.deleteConversation(convId);
-    setConversations(prev => prev.filter(c => c.id !== convId));
-    setMessages(prev => {
-      const next = { ...prev };
-      delete next[convId];
-      return next;
-    });
-    if (activeConversationId === convId) {
-      const remaining = conversations.filter(c => c.id !== convId);
-      setActiveConversationId(remaining[0]?.id || '');
-    }
-  };
-
-  const clearConversation = async (convId: string) => {
-    // Await the clear so a failure does not wipe the local view of a
-    // conversation whose messages are still on the server.
-    await api.chat.clearConversation(convId);
-    setMessages(prev => ({ ...prev, [convId]: [] }));
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === convId ? { ...c, lastMessage: '', lastMessageTime: '', unreadCount: 0 } : c
-      )
-    );
-  };
 
   // ---- Settings ----
   const updateSettings = async (updates: Partial<AppSettings>) => {
@@ -2978,7 +2554,6 @@ export const AppProvider: React.FC<{
         setMeetings([]);
         setLeads([]);
         setNotifications([]);
-        setConversations([]);
         setSelectedBrandId(null);
         setSelectedInvoiceId(null);
 
@@ -3159,17 +2734,6 @@ export const AppProvider: React.FC<{
         pushNotification,
         markNotificationAsRead,
         markAllNotificationsAsRead,
-        conversations,
-        activeConversationId,
-        setActiveConversationId,
-        messages,
-        sendMessage,
-        loadMessages,
-        startDirectChat,
-        markConversationRead,
-        deleteMessage,
-        deleteConversation,
-        clearConversation,
         onlineUserIds,
         isUserOnline,
         settings,

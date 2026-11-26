@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
-import { isValidEmail, isValidPhone, sanitizePhone, isValidGSTIN, isValidPAN } from '../../utils/validation';
+import {
+  isValidEmail,
+  isValidPhone,
+  sanitizePhone,
+  isValidGSTIN,
+  isValidPAN,
+  sanitizePersonName,
+  sanitizePlaceName,
+  sanitizePincode,
+  sanitizeGstin,
+  sanitizePan,
+} from '../../utils/validation';
 import {
   Building2,
   FileText,
@@ -554,9 +565,9 @@ export const ClientIntakePage: React.FC = () => {
                   type="text"
                   required
                   placeholder="e.g. Marcus Vance"
-                  maxLength={100}
+                  maxLength={80}
                   value={form.ownerName}
-                  onChange={e => setForm({ ...form, ownerName: e.target.value })}
+                  onChange={e => setForm({ ...form, ownerName: sanitizePersonName(e.target.value) })}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   style={inputStyle}
@@ -573,7 +584,7 @@ export const ClientIntakePage: React.FC = () => {
                   placeholder="name@company.com"
                   maxLength={120}
                   value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  onChange={e => setForm({ ...form, email: e.target.value.trimStart() })}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   style={inputStyle}
@@ -586,11 +597,17 @@ export const ClientIntakePage: React.FC = () => {
                 </label>
                 <input
                   type="tel"
+                  inputMode="numeric"
                   required
-                  placeholder="+91 98765 43210"
-                  maxLength={20}
+                  placeholder="10-digit mobile number"
+                  maxLength={15}
                   value={form.mobile}
-                  onChange={e => setForm({ ...form, mobile: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    const hasPlus = raw.startsWith('+');
+                    const digits = raw.replace(/\D/g, '').slice(0, hasPlus ? 12 : 10);
+                    setForm({ ...form, mobile: hasPlus ? `+${digits}` : digits });
+                  }}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   style={inputStyle}
@@ -649,7 +666,7 @@ export const ClientIntakePage: React.FC = () => {
                     placeholder="Mumbai"
                     maxLength={60}
                     value={form.city}
-                    onChange={e => setForm({ ...form, city: e.target.value })}
+                    onChange={e => setForm({ ...form, city: sanitizePlaceName(e.target.value) })}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     style={inputStyle}
@@ -662,7 +679,7 @@ export const ClientIntakePage: React.FC = () => {
                     placeholder="Maharashtra"
                     maxLength={60}
                     value={form.state}
-                    onChange={e => setForm({ ...form, state: e.target.value })}
+                    onChange={e => setForm({ ...form, state: sanitizePlaceName(e.target.value) })}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     style={inputStyle}
@@ -672,10 +689,11 @@ export const ClientIntakePage: React.FC = () => {
                   <label style={labelStyle}>Pincode</label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     placeholder="400001"
-                    maxLength={10}
+                    maxLength={6}
                     value={form.pincode}
-                    onChange={e => setForm({ ...form, pincode: e.target.value })}
+                    onChange={e => setForm({ ...form, pincode: sanitizePincode(e.target.value, 'IN') })}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     style={inputStyle}
@@ -693,7 +711,7 @@ export const ClientIntakePage: React.FC = () => {
                     placeholder="27AAAAA0000A1Z5"
                     maxLength={15}
                     value={form.gstNumber}
-                    onChange={e => setForm({ ...form, gstNumber: e.target.value.toUpperCase() })}
+                    onChange={e => setForm({ ...form, gstNumber: sanitizeGstin(e.target.value) })}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     style={inputStyle}
@@ -708,7 +726,7 @@ export const ClientIntakePage: React.FC = () => {
                     placeholder="ABCDE1234F"
                     maxLength={10}
                     value={form.pan}
-                    onChange={e => setForm({ ...form, pan: e.target.value.toUpperCase() })}
+                    onChange={e => setForm({ ...form, pan: sanitizePan(e.target.value) })}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     style={inputStyle}

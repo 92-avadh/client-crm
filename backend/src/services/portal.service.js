@@ -23,7 +23,7 @@ async function getPortalDataByToken(token) {
   // Fetch Agency / Platform Settings for Branded Header scoped to brand's agency
   const brandAgencyId = brand.agency_id || brand.owner_id;
   const settingsRes = await pool.query(
-    `SELECT company_name, company_email, company_phone, company_address,
+    `SELECT company_name, company_logo, invoice_design, company_email, company_phone, company_address,
             bank_name, bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id, bank_accounts
      FROM settings WHERE agency_id = $1 OR id = $1 OR id = 'set_' || $1 LIMIT 1`,
     [brandAgencyId || 'main']
@@ -31,7 +31,7 @@ async function getPortalDataByToken(token) {
   let agency = settingsRes.rows[0];
   if (!agency) {
     const mainSettings = await pool.query(
-      `SELECT company_name, company_email, company_phone, company_address,
+      `SELECT company_name, company_logo, invoice_design, company_email, company_phone, company_address,
               bank_name, bank_account_name, bank_account_number, bank_ifsc, bank_branch, upi_id, bank_accounts
        FROM settings WHERE id = 'main'`
     );
@@ -62,9 +62,17 @@ async function getPortalDataByToken(token) {
   const usedHours = parseFloat(brand.used_hours || 0);
   const hoursRemaining = Math.max(0, retainerHours - usedHours);
 
+  let agencyDesign = {};
+  if (agency.invoice_design && typeof agency.invoice_design === 'object') {
+    agencyDesign = agency.invoice_design;
+  } else if (typeof agency.invoice_design === 'string') {
+    try { agencyDesign = JSON.parse(agency.invoice_design); } catch { agencyDesign = {}; }
+  }
+
   return {
     agency: {
       companyName: agency.company_name || 'Agency Workspace',
+      companyLogo: agency.company_logo || agencyDesign.logoUrl || '',
       companyEmail: agency.company_email || '',
       companyPhone: agency.company_phone || '',
       companyAddress: agency.company_address || '',

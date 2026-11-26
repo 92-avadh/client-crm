@@ -15,6 +15,8 @@ interface FieldProps {
   placeholder?: string;
   mono?: boolean;
   required?: boolean;
+  maxLength?: number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
 }
 
 const toDateInputValue = (val: string | number | undefined | null): string => {
@@ -34,7 +36,7 @@ const toDateInputValue = (val: string | number | undefined | null): string => {
 
 /** Labelled input that turns red and shows the message when invalid. */
 export const FormField: React.FC<FieldProps> = ({
-  label, value, onChange, onBlur, error, helper, type = 'text', placeholder, mono, required,
+  label, value, onChange, onBlur, error, helper, type = 'text', placeholder, mono, required, maxLength, inputMode,
 }) => {
   const inputValue = type === 'date' ? toDateInputValue(value) : (value ?? '');
 
@@ -47,6 +49,8 @@ export const FormField: React.FC<FieldProps> = ({
         type={type}
         placeholder={placeholder}
         value={inputValue}
+        maxLength={maxLength}
+        inputMode={inputMode}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
       onWheel={(e) => {

@@ -19,7 +19,9 @@ import {
   Camera,
   Loader2,
   Trash2,
+  BookOpen,
 } from 'lucide-react';
+import { PageGuideModal } from '../common/PageGuideModal';
 import { processImageFile } from '../team/imageUtils';
 import { ImageCropperModal } from '../ui/ImageCropperModal';
 import { validateImageFile, AVATAR_FORMAT_HINT } from '../../utils/fileValidation';
@@ -43,6 +45,7 @@ export const Topbar: React.FC = () => {
     notifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
+    activeTab,
     setActiveTab,
     brands,
     invoices,
@@ -62,6 +65,7 @@ export const Topbar: React.FC = () => {
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [showPageGuide, setShowPageGuide] = useState(false);
   const [search, setSearch] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [photoAction, setPhotoAction] = useState<'uploading' | 'removing' | null>(null);
@@ -290,6 +294,7 @@ export const Topbar: React.FC = () => {
   ));
 
   return (
+    <>
     <header
       style={{
         height: 62,
@@ -617,12 +622,38 @@ export const Topbar: React.FC = () => {
 
       {/* ── Right: Actions ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'flex-end' }}>
-
+        {/* Page Guide Button (Available on every page) */}
+        <button
+          type="button"
+          onClick={() => setShowPageGuide(true)}
+          data-tip="Open step-by-step guide for this page"
+          aria-label="Open Simple Page Guide"
+          style={{
+            height: 38,
+            padding: '0 12px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'rgba(16, 185, 129, 0.1)',
+            border: '1px solid rgba(16, 185, 129, 0.28)',
+            color: '#059669',
+            borderRadius: 8,
+            fontSize: 12.5,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <BookOpen size={15} />
+          <span className="hidden sm:inline">Guide</span>
+        </button>
 
         {/* Theme Toggle (Dark / Light with Circular Reveal & Icon Animation) */}
         <button
           id="theme-toggle-btn"
           data-theme-toggle="true"
+          data-tip={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           role="switch"
           aria-checked={theme === 'dark'}
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -633,7 +664,6 @@ export const Topbar: React.FC = () => {
               toggleTheme(e.currentTarget);
             }
           }}
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           style={{
             position: 'relative',
             width: 38,
@@ -685,6 +715,8 @@ export const Topbar: React.FC = () => {
         <DropdownMenu open={showNotifMenu} onOpenChange={setShowNotifMenu}>
           <DropdownMenuTrigger asChild>
             <button
+              data-tip="Notifications & Alerts"
+              aria-label="Notifications & Alerts"
               style={{
                 position: 'relative',
                 width: 38,
@@ -1203,5 +1235,11 @@ export const Topbar: React.FC = () => {
 
       {confirmDialog}
     </header>
+    <PageGuideModal
+      open={showPageGuide}
+      pageId={activeTab}
+      onClose={() => setShowPageGuide(false)}
+    />
+    </>
   );
 };

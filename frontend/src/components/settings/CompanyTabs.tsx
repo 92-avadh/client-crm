@@ -4,9 +4,10 @@ import type { AppSettings, BankAccount } from '../../types';
 import { fieldStyle, saveBtnStyle, fieldGridStyle, tabBodyStyle, TabHeader } from './settingsUi';
 import { SUPPORTED_CURRENCIES, getCurrencyConfig, formatCurrency } from '../../utils/currency';
 import { validateImageFile, LOGO_FORMAT_HINT } from '../../utils/fileValidation';
-import { isValidEmail, isValidPhone, sanitizePhone, isValidGSTIN, isValidPAN } from '../../utils/validation';
+import { isValidEmail, isValidPhone, sanitizePhone, isValidGSTIN, isValidPAN, sanitizeGstin, sanitizePan } from '../../utils/validation';
 import { isDirty } from '../../hooks/isDirty';
 import { normalizeBankAccounts, MAX_BANK_ACCOUNTS } from '../../utils/bankAccounts';
+import { SignatoryAssetsFields } from './SignatoryAssetsFields';
 
 interface Props {
   formData: AppSettings;
@@ -306,6 +307,31 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
             )}
           </div>
         </div>
+
+        {/* Authorized Signature & Company Stamp */}
+        <SignatoryAssetsFields
+          signatureUrl={formData.invoiceDesign?.signatureUrl}
+          stampUrl={formData.invoiceDesign?.stampUrl}
+          companyName={formData.companyName}
+          onChangeSignature={(url) =>
+            onChange({
+              invoiceDesign: {
+                ...(formData.invoiceDesign || {}),
+                signatureUrl: url,
+                showSignature: true,
+              },
+            })
+          }
+          onChangeStamp={(url) =>
+            onChange({
+              invoiceDesign: {
+                ...(formData.invoiceDesign || {}),
+                stampUrl: url,
+                showSignature: true,
+              },
+            })
+          }
+        />
       </div>
 
       <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '10px 0' }} />
@@ -360,18 +386,42 @@ export const CompanyTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
             <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
               Currency Symbol Display
             </label>
-            <input
-              type="text"
+            <select
               value={formData.currencySymbol || activeCurrencyConfig.symbol}
               onChange={(e) => onChange({ currencySymbol: e.target.value })}
               style={{
                 ...fieldStyle,
-                fontFamily: 'monospace',
+                cursor: 'pointer',
                 fontWeight: 800,
                 fontSize: 14,
               }}
-              placeholder="e.g. $, ₹, €, £"
-            />
+              title="Choose how currency amounts appear across invoices and reports"
+            >
+              {(() => {
+                const baseSymbols = SUPPORTED_CURRENCIES.map((c) => ({
+                  symbol: c.symbol,
+                  label: `${c.symbol} — ${c.code} (${c.name})`,
+                }));
+                const extraCodes = [
+                  { symbol: 'INR', label: 'INR — Text Code (Indian Rupee)' },
+                  { symbol: 'USD', label: 'USD — Text Code (US Dollar)' },
+                  { symbol: 'EUR', label: 'EUR — Text Code (Euro)' },
+                  { symbol: 'GBP', label: 'GBP — Text Code (British Pound)' },
+                  { symbol: 'AED', label: 'AED — Text Code (UAE Dirham)' },
+                  { symbol: 'SAR', label: 'SAR — Text Code (Saudi Riyal)' },
+                ];
+                const allOptions = [...baseSymbols, ...extraCodes];
+                const current = formData.currencySymbol || activeCurrencyConfig.symbol;
+                if (current && !allOptions.some((o) => o.symbol === current)) {
+                  allOptions.unshift({ symbol: current, label: `${current} — Custom` });
+                }
+                return allOptions.map((opt) => (
+                  <option key={opt.symbol} value={opt.symbol}>
+                    {opt.label}
+                  </option>
+                ));
+              })()}
+            </select>
           </div>
         </div>
 
@@ -594,9 +644,9 @@ export const TaxTab: React.FC<Props> = ({ formData, onChange, onSave }) => {
       )}
       <div style={fieldGridStyle}>
         <Field label="Company GSTIN" value={formData.companyGst} mono maxLength={15} placeholder="e.g. 27AAAAA0000A1Z5"
-          onChange={(v) => onChange({ companyGst: v.toUpperCase() })} />
+          onChange={(v) => onChange({ companyGst: sanitizeGstin(v) })} />
         <Field label="PAN Number" value={formData.companyPan} mono maxLength={10} placeholder="e.g. ABCDE1234F"
-          onChange={(v) => onChange({ companyPan: v.toUpperCase() })} />
+          onChange={(v) => onChange({ companyPan: sanitizePan(v) })} />
         <Field label="Home State" value={formData.companyState} maxLength={60} placeholder="e.g. Maharashtra"
           onChange={(v) => onChange({ companyState: v })} />
         <Field label="Default SAC Code" value={formData.defaultHsnSac} mono maxLength={15} placeholder="e.g. 998311"

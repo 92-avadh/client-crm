@@ -62,8 +62,9 @@ export const InvoicePreviewModal: React.FC<Props> = ({
   };
 
   return (
-    <div style={modalOverlay} onClick={onClose}>
+    <div className="invoice-preview-backdrop" style={modalOverlay} onClick={onClose}>
       <div
+        className="invoice-preview-shell"
         style={{
           ...modalCard,
           maxWidth: 900,
@@ -164,6 +165,7 @@ export const InvoicePreviewModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => window.print()}
+              title="Download PDF or print invoice (A4 layout)"
               style={{
                 ...btnSecondary,
                 fontSize: 12,
@@ -175,7 +177,7 @@ export const InvoicePreviewModal: React.FC<Props> = ({
               }}
             >
               <Printer style={{ width: 14, height: 14 }} />
-              <span>Print / PDF</span>
+              <span>Save PDF / Print</span>
             </button>
             {onPrintReceipt && (
               <button
@@ -235,12 +237,14 @@ export const InvoicePreviewModal: React.FC<Props> = ({
 
         {/* Scrollable Container with White Paper Sheet Preview */}
         <div
+          className="invoice-preview-scroll"
           style={{
             flex: 1,
             minHeight: 0,
             overflowY: 'auto',
+            overflowX: 'auto',
             WebkitOverflowScrolling: 'touch',
-            padding: '24px 16px',
+            padding: '16px 12px',
             background: 'var(--bg-canvas, #090d16)',
             display: 'block',
           }}

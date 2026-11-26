@@ -13,6 +13,7 @@ import { COUNTRIES, parsePhoneAndCountry } from '../ui/CountryCodePicker';
 import Pagination from '../ui/Pagination';
 import { getPlanLimits } from '../../utils/subscriptionPlan';
 import { PlanUpgradeModal } from '../common/PlanUpgradeModal';
+import { isValidGSTIN, isValidPAN } from '../../utils/validation';
 
 const todayIso = () => new Date().toISOString().split('T')[0];
 
@@ -57,7 +58,12 @@ export const COUNTRY_PHONE_LENGTHS: Record<string, number[]> = {
 export function validateClientForm(f: ClientFormData, isEdit = false): Record<string, string> {
   const errs: Record<string, string> = {};
   if (!String(f.name || '').trim()) errs.name = 'Client name is required';
-  if (!String(f.ownerName || '').trim()) errs.ownerName = 'Contact person is required';
+  const ownerClean = String(f.ownerName || '').trim();
+  if (!ownerClean) {
+    errs.ownerName = 'Contact person is required';
+  } else if (!/[a-zA-Z]{2,}/.test(ownerClean)) {
+    errs.ownerName = 'Contact person name must contain letters only';
+  }
   if (!String(f.mobile || '').trim()) {
     errs.mobile = 'Mobile number is required';
   } else {
@@ -90,10 +96,23 @@ export function validateClientForm(f: ClientFormData, isEdit = false): Record<st
   if (!isEdit) {
     if (!String(f.billingAddress || '').trim()) errs.billingAddress = 'Billing address is required';
     if (!String(f.state || '').trim()) errs.state = 'State is required';
-    if (!String(f.pincode || '').trim()) errs.pincode = 'Pincode is required';
+    const pinClean = String(f.pincode || '').trim();
+    if (!pinClean) {
+      errs.pincode = 'Pincode is required';
+    } else if ((f.countryCode || 'IN') === 'IN' && !/^\d{6}$/.test(pinClean)) {
+      errs.pincode = 'Pincode must be 6 digits';
+    }
     if (!String(f.serviceDetails || '').trim()) errs.serviceDetails = 'Service details are required';
     if (!String(f.monthlyFee || '').trim()) errs.monthlyFee = 'Monthly fee is required';
     if (!String(f.billingCycleDay || '').trim()) errs.billingCycleDay = 'Billing cycle day is required';
+  } else if (String(f.pincode || '').trim() && (f.countryCode || 'IN') === 'IN' && !/^\d{6}$/.test(String(f.pincode).trim())) {
+    errs.pincode = 'Pincode must be 6 digits';
+  }
+  if (String(f.gstNumber || '').trim() && !isValidGSTIN(String(f.gstNumber))) {
+    errs.gstNumber = 'Enter a valid 15-character GSTIN (e.g. 24AAAAA0000A1Z5)';
+  }
+  if (String(f.pan || '').trim() && !isValidPAN(String(f.pan))) {
+    errs.pan = 'Enter a valid 10-character PAN (e.g. ABCDE1234F)';
   }
   return errs;
 }
@@ -108,7 +127,7 @@ export const ClientsManager: React.FC = () => {
   const {
     currentUser, brands, allUsers, addBrand, updateBrand, deleteBrand, assignMembersToBrand,
     selectedBrandId, setSelectedBrandId, invoices, tasks, setActiveTab, showToast,
-    currencySymbol, conversations, setActiveConversationId, startDirectChat, settings
+    currencySymbol, settings
   } = useApp();
 
   const role = currentUser.role;
@@ -395,7 +414,7 @@ export const ClientsManager: React.FC = () => {
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>
             {role === 'team'
-              ? 'View details and chat channels for clients you are actively assigned to.'
+              ? 'View details and portals for clients you are actively assigned to.'
               : 'Onboard clients, configure GST retainers, assign team members, and monitor retention health.'}
           </p>
         </div>

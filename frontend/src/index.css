@@ -1880,7 +1880,34 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   }
 }
 
-/* ─── Swipe Invoice Printing & A4 Media Styles ─────────────────────── */
+/* ─── Swipe Invoice Mobile Screen & A4 Print Media Styles ──────────── */
+@media screen and (max-width: 640px) {
+  .swipe-template-root {
+    padding: 14px !important;
+  }
+  .swipe-template-root .inv-meta-3col,
+  .swipe-template-root .inv-meta-2col,
+  .swipe-template-root .inv-footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .swipe-template-root .inv-footer-grid > div {
+    border-right: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+  .swipe-template-root .inv-table-scroll {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 10px;
+  }
+  .swipe-template-root .inv-table-scroll table {
+    min-width: 560px;
+  }
+}
+
 @media print {
   /* Hide all dashboard chrome, sidebar, topbar, modal overlays, controls */
   html, body {
@@ -1889,11 +1916,34 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
     padding: 0 !important;
     margin: 0 !important;
     height: auto !important;
+    width: 100% !important;
     overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   body * {
     visibility: hidden;
+  }
+
+  /* Unclip modal wrappers so mobile & desktop browsers print the FULL multi-section A4 sheet */
+  .invoice-preview-backdrop,
+  .invoice-preview-shell,
+  .invoice-preview-scroll {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
 
   .printable-invoice,
@@ -1902,9 +1952,9 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   }
 
   .printable-invoice {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -1915,6 +1965,14 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
     border: none !important;
     border-radius: 0 !important;
     page-break-after: avoid;
+  }
+
+  .swipe-template-root .inv-table-scroll {
+    overflow: visible !important;
+  }
+  .swipe-template-root .inv-table-scroll table {
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   .no-print,

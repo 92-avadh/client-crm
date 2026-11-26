@@ -13,6 +13,7 @@ import { ROUTES, DEFAULT_ROUTE } from './routes';
 import { getDefaultPermissionsForRole } from './components/team/permissionsConfig';
 import { PremiumLogoLoader } from './components/common/PremiumLogoLoader';
 import { SubscriptionBanner } from './components/common/SubscriptionBanner';
+import { GlobalTooltipLayer } from './components/common/GlobalTooltipLayer';
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -28,7 +29,6 @@ const importClients = () => import('./components/clients/ClientsManager').then(m
 const importInvoices = () => import('./components/invoices/InvoicesManager').then(m => ({ default: m.InvoicesManager }));
 const importFinance = () => import('./components/finance/FinanceManager').then(m => ({ default: m.FinanceManager }));
 const importExpenses = () => import('./components/expenses/ExpensesManager').then(m => ({ default: m.ExpensesManager }));
-const importChat = () => import('./components/chat/ChatManager').then(m => ({ default: m.ChatManager }));
 const importProjectsAndTasks = () => import('./components/projects/ProjectsAndTasks').then(m => ({ default: m.ProjectsAndTasks }));
 const importMeetings = () => import('./components/calendar/MeetingsCalendar').then(m => ({ default: m.MeetingsCalendar }));
 const importLeads = () => import('./components/leads/LeadsPipeline').then(m => ({ default: m.LeadsPipeline }));
@@ -45,7 +45,6 @@ const ClientsManager = lazy(importClients);
 const InvoicesManager = lazy(importInvoices);
 const FinanceManager = lazy(importFinance);
 const ExpensesManager = lazy(importExpenses);
-const ChatManager = lazy(importChat);
 const ProjectsAndTasks = lazy(importProjectsAndTasks);
 const MeetingsCalendar = lazy(importMeetings);
 const LeadsPipeline = lazy(importLeads);
@@ -71,7 +70,6 @@ export const prefetchRoute = (tab: string) => {
     case 'settings': importSettings(); break;
     case 'team': importTeam(); break;
     case 'inbox': importInbox(); break;
-    case 'chat': importChat(); break;
     case 'retention': importRetention(); break;
     default: break;
   }
@@ -174,7 +172,7 @@ const MainLayout: React.FC = () => {
     const timer = setTimeout(() => {
       [
         'clients', 'projects', 'tasks', 'invoices', 'finance', 'expenses',
-        'chat', 'meetings', 'leads', 'team', 'inbox', 'settings'
+        'meetings', 'leads', 'team', 'inbox', 'settings'
       ].forEach(prefetchRoute);
     }, 1200);
     return () => clearTimeout(timer);
@@ -484,7 +482,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path={ROUTES.finance} element={<PermissionGate module="finance"><FinanceManager /></PermissionGate>} />
         <Route path={ROUTES.expenses} element={<PermissionGate module="expenses"><ExpensesManager /></PermissionGate>} />
         <Route path={ROUTES.retention} element={<PermissionGate module="retention"><RetentionEngine /></PermissionGate>} />
-        <Route path={ROUTES.chat} element={<PermissionGate module="chat"><ChatManager /></PermissionGate>} />
         <Route path={ROUTES.meetings} element={<PermissionGate module="meetings"><MeetingsCalendar /></PermissionGate>} />
         <Route path={ROUTES.leads} element={<PermissionGate module="leads"><LeadsPipeline /></PermissionGate>} />
         <Route path={ROUTES.team} element={<PermissionGate module="team"><TeamManager /></PermissionGate>} />
@@ -820,6 +817,7 @@ export const App: React.FC = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <GlobalTooltipLayer />
       <ErrorBoundary>
         <AppRoutes
           isLoggedIn={isLoggedIn}

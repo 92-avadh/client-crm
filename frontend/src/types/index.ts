@@ -415,6 +415,7 @@ export interface AgencyHealthOverview {
 export interface PortalData {
   agency: {
     companyName: string;
+    companyLogo?: string;
     companyEmail: string;
     companyPhone: string;
     companyAddress: string;

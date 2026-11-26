@@ -89,11 +89,17 @@ const update = asyncHandler(async (req, res) => {
     }
   }
 
-  // Validate optional custom signature image size in invoiceDesign
+  // Validate optional custom signature & stamp image sizes in invoiceDesign
   if (req.body.invoiceDesign?.signatureUrl) {
     const sig = String(req.body.invoiceDesign.signatureUrl);
     if (sig.length > 3_000_000) {
       return res.status(400).json({ error: 'Signature image is too large (max ~2MB).' });
+    }
+  }
+  if (req.body.invoiceDesign?.stampUrl) {
+    const stamp = String(req.body.invoiceDesign.stampUrl);
+    if (stamp.length > 3_000_000) {
+      return res.status(400).json({ error: 'Company stamp image is too large (max ~2MB).' });
     }
   }
 
