@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Printer, Share2, Sparkles, Check, FileSpreadsheet, Receipt } from 'lucide-react';
 import type { Invoice, AppSettings, Brand } from '../../types';
 import { btnSecondary, modalOverlay, modalCard } from './invoiceStyles';
@@ -61,7 +62,7 @@ export const InvoicePreviewModal: React.FC<Props> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="invoice-preview-backdrop" style={modalOverlay} onClick={onClose}>
       <div
         className="invoice-preview-shell"
@@ -276,7 +277,8 @@ export const InvoicePreviewModal: React.FC<Props> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

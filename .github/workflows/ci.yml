@@ -5,9 +5,53 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which service to build & deploy'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - frontend
+          - backend
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  lint-and-build:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      root_deps: ${{ steps.filter.outputs.root_deps }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect Changed Areas
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'wrangler.json'
+            backend:
+              - 'backend/**'
+              - 'server.js'
+            root_deps:
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+
+  frontend-ci:
+    needs: detect-changes
+    if: >-
+      (github.event_name != 'workflow_dispatch' && (needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.root_deps == 'true')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.target != 'backend')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,40 +59,129 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: '.node-version'
           cache: 'npm'
 
-      - name: Install Frontend Dependencies
-        working-directory: ./frontend
+      - name: Install Workspace Dependencies
         run: npm ci
 
       - name: Lint Frontend
-        working-directory: ./frontend
-        run: npx oxlint src/ 2>/dev/null || echo "oxlint not configured, skipping"
+        run: npm run lint --workspace=frontend
 
-      - name: Build Frontend
-        working-directory: ./frontend
+      - name: Typecheck & Build Frontend
         run: npm run build
 
-      - name: Install Backend Dependencies
-        working-directory: ./backend
-        run: npm ci
+      - name: Upload Frontend Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+          retention-days: 1
 
-      - name: Backend Syntax Check
-        working-directory: ./backend
-        run: |
-          for f in server.js src/**/*.js; do
-            node -c "$f" || exit 1
-          done
-
-  deploy:
-    needs: lint-and-build
+  backend-ci:
+    needs: detect-changes
+    if: >-
+      (github.event_name != 'workflow_dispatch' && (needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.root_deps == 'true')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.target != 'frontend')
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Production
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Install Workspace Dependencies
+        run: npm ci
+
+      - name: Backend Syntax Check
         run: |
-          echo "Deployment happens here — configure your deployment target"
-          echo "Options: Render, Railway, VPS with docker-compose, etc."
+          node --check server.js
+          find backend -name "*.js" -not -path "*/node_modules/*" -print0 | xargs -0 -n1 node --check
+
+      - name: Run Backend Tests (if configured)
+        run: npm test --workspace=backend --if-present
+
+  deploy-frontend:
+    needs: [detect-changes, frontend-ci, backend-ci]
+    if: >-
+      always() && !cancelled() &&
+      github.ref == 'refs/heads/main' &&
+      (
+        (github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true') ||
+        (github.event_name == 'workflow_dispatch' && inputs.target != 'backend')
+      ) &&
+      needs.frontend-ci.result == 'success' &&
+      (needs.backend-ci.result == 'success' || needs.backend-ci.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: production-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Cloudflare Credentials
+        id: creds
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CF_TOKEN" ] && [ -n "$CF_ACCOUNT" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID secret is missing. Skipping live frontend deployment."
+            {
+              echo "### Frontend Deploy Skipped"
+              echo "Add \`CLOUDFLARE_API_TOKEN\` and \`CLOUDFLARE_ACCOUNT_ID\` in GitHub Repository Secrets to deploy to Cloudflare Workers after CI passes."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Setup Node.js
+        if: steps.creds.outputs.configured == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - name: Install Workspace Dependencies
+        if: steps.creds.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Deploy Frontend to Cloudflare Workers
+        if: steps.creds.outputs.configured == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.json
+
+  deploy-backend:
+    needs: [detect-changes, frontend-ci, backend-ci]
+    if: >-
+      always() && !cancelled() &&
+      github.ref == 'refs/heads/main' &&
+      (
+        (github.event_name == 'push' && needs.detect-changes.outputs.backend == 'true') ||
+        (github.event_name == 'workflow_dispatch' && inputs.target != 'frontend')
+      ) &&
+      needs.backend-ci.result == 'success' &&
+      (needs.frontend-ci.result == 'success' || needs.frontend-ci.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: production-backend
+    steps:
+      - name: Trigger Render Backend Deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_URL secret is missing. Skipping live backend deployment."
+            {
+              echo "### Backend Deploy Skipped"
+              echo "Add \`RENDER_DEPLOY_HOOK_URL\` in GitHub Repository Secrets (from Render Service -> Settings -> Deploy Hook) to trigger Render deploys only after CI passes."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "Triggered Render backend deployment after backend CI passed."

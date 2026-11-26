@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { PortalData } from '../../types';
@@ -383,27 +384,33 @@ export const ClientPortal: React.FC = () => {
             height: auto !important;
             overflow: visible !important;
           }
-          body * { visibility: hidden !important; }
+          body > :not(.portal-invoice-backdrop) {
+            display: none !important;
+          }
           .portal-invoice-backdrop,
           #portal-printable-invoice {
             position: static !important;
             inset: auto !important;
+            display: block !important;
             width: 100% !important;
             max-width: 100% !important;
             height: auto !important;
             max-height: none !important;
             overflow: visible !important;
             background: #ffffff !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
             color: #0f172a !important;
             box-shadow: none !important;
             border: none !important;
-            padding: 12px !important;
+            border-radius: 0 !important;
+            padding: 8px !important;
             margin: 0 !important;
           }
-          #portal-printable-invoice, #portal-printable-invoice * {
-            visibility: visible !important;
+          .portal-no-print,
+          .portal-no-print * {
+            display: none !important;
           }
-          .portal-no-print { display: none !important; }
         }
       `}</style>
 
@@ -1086,7 +1093,7 @@ export const ClientPortal: React.FC = () => {
       </main>
 
       {/* Clean White-Paper Invoice Detail & Mobile-Safe Print Modal */}
-      {selectedInvoice && (
+      {selectedInvoice && createPortal(
         <div
           className="portal-invoice-backdrop"
           style={{
@@ -1337,7 +1344,8 @@ export const ClientPortal: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Proactive 1-Click Micro-Survey Modal */}

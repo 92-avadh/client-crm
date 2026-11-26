@@ -1922,14 +1922,20 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
     print-color-adjust: exact !important;
   }
 
-  body * {
-    visibility: hidden;
+  /* When printing an Invoice Modal or Portal Invoice portal mounted on <body>,
+     hide #root and unrelated siblings with display:none so Page 1 starts immediately
+     with zero blank pages or clipped heights. */
+  body:has(> .invoice-preview-backdrop) > :not(.invoice-preview-backdrop),
+  body:has(> .portal-invoice-backdrop) > :not(.portal-invoice-backdrop) {
+    display: none !important;
   }
 
   /* Unclip modal wrappers so mobile & desktop browsers print the FULL multi-section A4 sheet */
   .invoice-preview-backdrop,
   .invoice-preview-shell,
-  .invoice-preview-scroll {
+  .invoice-preview-scroll,
+  .portal-invoice-backdrop,
+  #portal-printable-invoice {
     position: static !important;
     inset: auto !important;
     width: 100% !important;
@@ -1941,17 +1947,15 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
     padding: 0 !important;
     margin: 0 !important;
     background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
   }
 
   .printable-invoice,
-  .printable-invoice * {
-    visibility: visible;
-  }
-
-  .printable-invoice {
+  #portal-printable-invoice {
     position: static !important;
     left: auto !important;
     top: auto !important;
@@ -1976,7 +1980,9 @@ select.input-field option { background: var(--bg); color: var(--text-primary); }
   }
 
   .no-print,
-  .no-print * {
+  .no-print *,
+  .portal-no-print,
+  .portal-no-print * {
     display: none !important;
   }
 

@@ -467,9 +467,11 @@ export const SwipeModernTemplate: React.FC<TemplateProps> = ({ invoice, settings
           <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.12em', color: '#1e3a8a', textTransform: 'uppercase' }}>
             TAX INVOICE
           </div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-            {settings.companyName || 'Agency'}
-          </div>
+          {settings.invoiceDesign?.showCompanyName !== false && (
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
+              {settings.companyName || 'Agency'}
+            </div>
+          )}
           {settings.companyGst && (
             <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
               <span style={{ fontWeight: 700, color: '#0f172a' }}>GSTIN:</span> {settings.companyGst}
@@ -733,9 +735,11 @@ export const SwipeClassicFramedTemplate: React.FC<TemplateProps> = ({ invoice, s
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <InvoiceLogo settings={settings} maxHeight={34} maxWidth={120} />
               <div>
-                <div style={{ fontSize: 15, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase' }}>
-                  {settings.companyName || 'Agency'}
-                </div>
+                {settings.invoiceDesign?.showCompanyName !== false && (
+                  <div style={{ fontSize: 15, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase' }}>
+                    {settings.companyName || 'Agency'}
+                  </div>
+                )}
                 {settings.companyGst && (
                   <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0f172a' }}>
                     GSTIN {settings.companyGst}
@@ -979,7 +983,9 @@ export const SwipeVibrantNavyTemplate: React.FC<TemplateProps> = ({ invoice, set
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
             <InvoiceLogo settings={settings} maxHeight={36} maxWidth={130} />
             <div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#002c6c' }}>{settings.companyName || 'Agency'}</div>
+              {settings.invoiceDesign?.showCompanyName !== false && (
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#002c6c' }}>{settings.companyName || 'Agency'}</div>
+              )}
               {settings.companyGst && (
                 <div style={{ fontSize: 10.5, fontWeight: 700, color: '#475569' }}>GSTIN {settings.companyGst}</div>
               )}
@@ -1166,7 +1172,9 @@ export const SwipeExecutiveCardTemplate: React.FC<TemplateProps> = ({ invoice, s
           <div style={{ marginBottom: 6 }}>
             <InvoiceLogo settings={settings} maxHeight={38} maxWidth={140} />
           </div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a' }}>{settings.companyName || 'Agency'}</div>
+          {settings.invoiceDesign?.showCompanyName !== false && (
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a' }}>{settings.companyName || 'Agency'}</div>
+          )}
           {settings.companyAddress && (
             <div style={{ fontSize: 10.5, color: '#475569', maxWidth: 360, marginTop: 2, lineHeight: 1.4 }}>
               {settings.companyAddress}

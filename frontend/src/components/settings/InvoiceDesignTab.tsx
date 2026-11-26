@@ -14,6 +14,7 @@ export interface InvoiceDesign {
   footerText: string;
   termsAndConditions: string;
   showLogo: boolean;
+  showCompanyName?: boolean;
   showSignature: boolean;
   logoUrl?: string;
   signatureUrl?: string;
@@ -260,6 +261,8 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <ToggleRow title="Show Logo on Invoice" description="Display your brand mark in the invoice header."
         checked={design.showLogo} onChange={(v) => onChange({ showLogo: v })} />
+      <ToggleRow title="Show Company Name in Invoice Header" description="Display your company name as text in the invoice header (turn off if your logo already contains your name)."
+        checked={design.showCompanyName !== false} onChange={(v) => onChange({ showCompanyName: v })} />
       <ToggleRow title="Show Signature Block" description="Add an authorised signatory area to the invoice."
         checked={design.showSignature} onChange={(v) => onChange({ showSignature: v })} />
     </div>
@@ -288,7 +291,9 @@ export const InvoiceDesignTab: React.FC<Props> = ({ design, onChange, settings, 
       <div style={{ border: `2px solid ${design.primaryColor}`, borderRadius: 12, padding: '24px 28px', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 520 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: design.primaryColor }}>{settings.companyName || 'Your Agency'}</div>
+            {design.showCompanyName !== false && (
+              <div style={{ fontSize: 14, fontWeight: 900, color: design.primaryColor }}>{settings.companyName || 'Your Agency'}</div>
+            )}
             {design.showLogo && (
               <div style={{ marginTop: 6, display: 'inline-flex', padding: '3px 8px', borderRadius: 6, background: '#ffffff', border: '1px solid var(--border)' }}>
                 <img

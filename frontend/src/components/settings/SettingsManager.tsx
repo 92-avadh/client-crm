@@ -94,6 +94,7 @@ export const SettingsManager: React.FC = () => {
       footerText: '',
       termsAndConditions: 'Payment due within 15 days of invoice date. Late payment may attract interest.',
       showLogo: true,
+      showCompanyName: true,
       showSignature: true,
       ...saved,
       ...(settings.invoiceDesign || {}),
